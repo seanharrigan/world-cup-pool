@@ -65,6 +65,23 @@
                     <p class="text-blue-600 font-bold uppercase tracking-widest text-xs">2026 World Cup Pool Selection & Scoring</p>
                 </header>
 
+                <section class="bg-blue-50 p-6 rounded-3xl border-2 border-blue-100 space-y-4">
+                    <h2 class="text-xl font-black uppercase tracking-tight">Your Team Identity</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-blue-600 mb-1">Team Nickname (Leaderboard Name)</label>
+                            <input type="text" id="nickname-input" placeholder="e.g. Goal Diggers" class="w-full p-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-gray-900">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-blue-600 mb-1">Real Name</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="realname-input" placeholder="Your Full Name" class="flex-grow p-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-gray-900">
+                                <button onclick="saveIdentityOnly()" class="bg-blue-600 text-white px-4 rounded-xl font-black uppercase text-[10px] hover:bg-blue-700 transition-all">Save Identity</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <section class="space-y-4">
                         <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2">Squad Building</h2>
@@ -146,7 +163,7 @@
             <div class="flex-grow h-full overflow-y-auto p-4 md:p-10 bg-white text-gray-900 pb-48 md:pb-10">
                 <header class="mb-8 flex flex-col md:flex-row justify-between items-center border-b-4 border-gray-900 pb-6 gap-4">
                     <h1 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter">Selection</h1>
-                    <div id="countdown" class="flex gap-3 text-center bg-gray-900 text-white px-6 py-3 rounded-2xl shadow-xl">
+                    <div id="countdown" class="flex gap-3 text-center bg-gray-900 text-white px-4 py-2 rounded-xl shadow-xl">
                         <div><div id="days" class="text-lg font-black">00</div><div class="text-[8px] uppercase text-gray-400 font-bold">Days</div></div>
                         <div class="text-blue-500 font-bold">:</div>
                         <div><div id="hours" class="text-lg font-black">00</div><div class="text-[8px] uppercase text-gray-400 font-bold">Hrs</div></div>
@@ -162,7 +179,7 @@
                     <h2 class="text-xl font-black italic uppercase text-white tracking-widest">My Roster</h2>
                     <span id="roster-count" class="bg-blue-600 px-2 py-0.5 rounded-full text-[10px] font-bold text-white uppercase">0</span>
                 </div>
-                <div id="roster-list" class="max-h-[150px] md:max-h-none overflow-y-auto space-y-2 mb-6 md:flex-grow"></div>
+                <div id="roster-list" class="max-h-[150px] md:max-h-none overflow-y-auto space-y-2 mb-6 md:flex-grow text-white"></div>
                 <div class="bg-gray-900 p-4 rounded-2xl border border-gray-800 mb-4">
                     <div class="flex justify-between items-center">
                         <span class="text-gray-500 text-[10px] font-black uppercase">Budget</span>
@@ -173,11 +190,55 @@
             </div>
         </div>
 
-        <div id="page-leaderboard" class="page-content hidden h-full w-full overflow-y-auto p-12 bg-white text-gray-900">
-            <div class="max-w-3xl mx-auto text-center py-20">
-                <div class="text-6xl mb-6">📊</div>
-                <h1 class="text-5xl font-black uppercase italic mb-4">Leaderboard</h1>
-                <p class="text-gray-500 font-bold uppercase tracking-widest italic">Rankings update live on kickoff.</p>
+        <div id="page-leaderboard" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-white text-gray-900">
+            <div class="max-w-5xl mx-auto">
+                <header class="mb-8 text-center">
+                    <h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter">Leaderboard</h1>
+                    <p class="text-blue-600 font-bold uppercase tracking-widest text-xs italic">Tournament Standings</p>
+                </header>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                    <div class="bg-gray-900 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-center text-center">
+                        <div class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1">Total Entries</div>
+                        <div id="total-players-count" class="text-4xl font-black">0</div>
+                        <div class="text-[10px] font-bold text-blue-500 uppercase mt-1">($40 Entry Fee)</div>
+                    </div>
+                    <div class="bg-green-600 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-center text-center">
+                        <div class="text-[10px] font-black uppercase text-green-200 tracking-widest mb-1">Total Prize Pot</div>
+                        <div id="total-prize-pot" class="text-4xl font-black">$0</div>
+                    </div>
+                    <div class="bg-gray-50 border-2 border-gray-100 p-6 rounded-3xl shadow-sm space-y-2">
+                        <div class="flex justify-between items-center font-black uppercase text-xs">
+                            <span class="text-gray-400">1st Place</span>
+                            <span id="prize-1st" class="text-green-600">$0</span>
+                        </div>
+                        <div class="flex justify-between items-center font-black uppercase text-xs">
+                            <span class="text-gray-400">2nd Place</span>
+                            <span id="prize-2nd" class="text-gray-900">$0</span>
+                        </div>
+                        <div class="flex justify-between items-center font-black uppercase text-xs">
+                            <span class="text-gray-400">3rd Place</span>
+                            <span id="prize-3rd" class="text-gray-900">$0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 rounded-3xl border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-900 text-white uppercase text-[10px] tracking-[0.2em] font-black">
+                                <tr>
+                                    <th class="px-6 py-4 text-center">Rank</th>
+                                    <th class="px-6 py-4">Team</th>
+                                    <th class="px-6 py-4">Squad</th>
+                                    <th class="px-6 py-4 text-right">Points</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-body" class="font-bold text-gray-700">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -252,6 +313,96 @@
             document.getElementById(`nav-${pageId}`).classList.add('active');
             if(pageId === 'picks') updateUI();
             if(pageId === 'groups') renderGroups();
+            if(pageId === 'leaderboard') fetchLeaderboard();
+        }
+
+        async function fetchLeaderboard() {
+            const body = document.getElementById('leaderboard-body');
+            body.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center animate-pulse uppercase text-xs font-black">Updating Standings...</td></tr>';
+            
+            try {
+                const { data, error } = await supabaseClient.from('picks').select('user_email, team_nickname, team_realname, team_name, cost');
+                if (error) throw error;
+
+                const userMap = new Map();
+                if (data && data.length > 0) {
+                    data.forEach(row => {
+                        if (!userMap.has(row.user_email)) {
+                            userMap.set(row.user_email, {
+                                nickname: row.team_nickname || "TBA",
+                                realname: row.team_realname || "Joined",
+                                squad: []
+                            });
+                        }
+                        const teamData = teams.find(t => t.name === row.team_name);
+                        if (teamData) {
+                            userMap.get(row.user_email).squad.push({
+                                flag: teamData.flag,
+                                cost: row.cost
+                            });
+                        }
+                    });
+                }
+
+                // Update Summary Stats
+                const playerCount = userMap.size;
+                const totalPot = playerCount * 40;
+                document.getElementById('total-players-count').innerText = playerCount;
+                document.getElementById('total-prize-pot').innerText = `$${totalPot.toLocaleString()}`;
+                document.getElementById('prize-1st').innerText = `$${Math.floor(totalPot * 0.65).toLocaleString()}`;
+                document.getElementById('prize-2nd').innerText = `$${Math.floor(totalPot * 0.25).toLocaleString()}`;
+                document.getElementById('prize-3rd').innerText = `$${Math.floor(totalPot * 0.10).toLocaleString()}`;
+
+                if (playerCount === 0) {
+                    body.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-400 uppercase text-xs font-black">No active rosters found</td></tr>';
+                    return;
+                }
+
+                let html = "";
+                let index = 1;
+                userMap.forEach((user) => {
+                    const squadFlags = user.squad
+                        .sort((a, b) => b.cost - a.cost)
+                        .map(s => `<span class="text-xl" title="Cost: $${s.cost}">${s.flag}</span>`)
+                        .join(' ');
+
+                    html += `
+                        <tr class="border-b border-gray-100 hover:bg-blue-50 transition-colors">
+                            <td class="px-6 py-4 text-center text-blue-600 font-black italic">#${index++}</td>
+                            <td class="px-6 py-4">
+                                <div class="text-gray-900 font-black uppercase text-sm leading-tight">${user.nickname}</div>
+                                <div class="text-gray-400 text-[9px] font-bold uppercase tracking-widest mt-0.5">${user.realname}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex gap-2 flex-wrap">${squadFlags}</div>
+                            </td>
+                            <td class="px-6 py-4 text-right font-mono text-xl font-bold text-gray-900">0</td>
+                        </tr>
+                    `;
+                });
+                body.innerHTML = html;
+
+            } catch (err) {
+                console.error(err);
+                body.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-red-500 font-bold uppercase text-[10px]">Database Connection Failed</td></tr>`;
+            }
+        }
+
+        async function saveIdentityOnly() {
+            const nick = document.getElementById('nickname-input').value.trim();
+            const real = document.getElementById('realname-input').value.trim();
+            if(!nick || !real) return showToast("Enter both Nickname and Real Name.");
+
+            try {
+                const { error } = await supabaseClient.from('picks')
+                    .update({ team_nickname: nick, team_realname: real })
+                    .eq('user_email', userEmail);
+                
+                if(error) throw error;
+                showToast("Identity updated!", "success");
+            } catch (err) {
+                showToast("Save Error: " + err.message);
+            }
         }
 
         function renderGroups() {
@@ -276,6 +427,15 @@
             document.getElementById('main-app').classList.remove('hidden');
             setTimeout(() => document.getElementById('main-app').classList.remove('opacity-0'), 50);
             document.getElementById('user-display-nav').innerText = userEmail;
+            
+            try {
+                const { data } = await supabaseClient.from('picks').select('team_nickname, team_realname').eq('user_email', userEmail).limit(1);
+                if (data && data[0]) {
+                    document.getElementById('nickname-input').value = data[0].team_nickname || "";
+                    document.getElementById('realname-input').value = data[0].team_realname || "";
+                }
+            } catch(e) {}
+
             renderPool();
             loadFromSupabase();
             startCountdown();
@@ -346,19 +506,32 @@
 
         async function saveToSupabase() {
             if (isLocked) return;
+            const nick = document.getElementById('nickname-input').value.trim();
+            const real = document.getElementById('realname-input').value.trim();
+            
+            if (!nick || !real) return showToast("Enter Nickname and Real Name under Instructions tab.");
+
             const spent = myPicks.reduce((acc, t) => acc + t.cost, 0);
             const t3Count = myPicks.filter(t => t.tier === 3).length;
             if (spent > 150) return showToast("Over $150 budget.");
             if (t3Count < 3) return showToast("Pick at least 3 Tier 3 teams.");
+            
             const btn = document.getElementById('save-btn');
             btn.innerText = "...";
             btn.classList.add('saving');
             try {
                 await supabaseClient.from('picks').delete().eq('user_email', userEmail);
-                const toInsert = myPicks.map(t => ({ user_email: userEmail, team_name: t.name, tier: t.tier, cost: t.cost }));
+                const toInsert = myPicks.map(t => ({ 
+                    user_email: userEmail, 
+                    team_name: t.name, 
+                    tier: t.tier, 
+                    cost: t.cost,
+                    team_nickname: nick,
+                    team_realname: real 
+                }));
                 const { error } = await supabaseClient.from('picks').insert(toInsert);
                 if (error) throw error;
-                showToast("✅ Saved!", 'success');
+                showToast("✅ Roster saved!", "success");
             } catch (err) {
                 showToast("Error: " + err.message);
             } finally {
@@ -368,12 +541,14 @@
         }
 
         async function loadFromSupabase() {
-            const { data, error } = await supabaseClient.from('picks').select('*').eq('user_email', userEmail);
-            if (error) return console.error("Load Error:", error);
-            if (data && data.length > 0) {
-                myPicks = data.map(dbRow => teams.find(t => t.name === dbRow.team_name)).filter(t => t);
-                updateUI();
-            }
+            try {
+                const { data, error } = await supabaseClient.from('picks').select('*').eq('user_email', userEmail);
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    myPicks = data.map(dbRow => teams.find(t => t.name === dbRow.team_name)).filter(t => t);
+                    updateUI();
+                }
+            } catch(e) {}
         }
 
         function showToast(message, type = 'error') {
