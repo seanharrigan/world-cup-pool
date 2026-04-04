@@ -61,99 +61,34 @@
     <div id="main-app" class="hidden h-[calc(100vh-64px)] opacity-0 transition-opacity duration-700">
         
         <div id="page-instructions" class="page-content h-full overflow-y-auto p-12 bg-white text-gray-900">
-            <div class="max-w-4xl mx-auto space-y-12">
-                <header>
-                    <h1 class="text-5xl font-black uppercase italic mb-2 tracking-tighter">The Official Rules</h1>
-                    <p class="text-blue-600 font-bold uppercase tracking-widest text-sm">2026 World Cup Pool Selection & Scoring</p>
-                </header>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-                    <section class="space-y-4">
-                        <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2">Squad Building</h2>
-                        <p class="font-bold text-gray-600 italic">Budget: $150 (Fake Money)</p>
-                        <ul class="space-y-3 font-medium text-gray-700">
-                            <li class="flex items-start gap-3"><span class="text-blue-600 font-black">▶</span> <strong>Tier 1:</strong> Maximum ONE team (optional).</li>
-                            <li class="flex items-start gap-3"><span class="text-blue-600 font-black">▶</span> <strong>Tier 2:</strong> No pick limits.</li>
-                            <li class="flex items-start gap-3"><span class="text-blue-600 font-black">▶</span> <strong>Tier 3:</strong> You MUST pick at least THREE teams.</li>
-                            <li class="flex items-start gap-3 text-red-600 font-black"><span class="animate-pulse">⚠️</span> DO NOT OVERSPEND!</li>
-                        </ul>
-                    </section>
-
-                    <section class="space-y-4">
-                        <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2">Entry & Prizes</h2>
-                        <div class="bg-gray-900 text-white p-6 rounded-3xl shadow-xl">
-                            <div class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Entry Fee</div>
-                            <div class="text-4xl font-black mb-4">$40 <span class="text-sm text-gray-500 italic">per person</span></div>
-                            <div class="space-y-2 border-t border-gray-800 pt-4">
-                                <div class="flex justify-between font-bold"><span>1st Place</span><span class="text-green-400">65% of pot</span></div>
-                                <div class="flex justify-between font-bold text-gray-300"><span>2nd Place</span><span>25% of pot</span></div>
-                                <div class="flex justify-between font-bold text-gray-500"><span>3rd Place</span><span>10% of pot</span></div>
-                            </div>
-                        </div>
-                    </section>
+            <div class="max-w-3xl mx-auto">
+                <h1 class="text-5xl font-black uppercase italic mb-8">The Rules</h1>
+                <div class="space-y-6 text-lg leading-relaxed text-gray-600 font-medium">
+                    <p class="border-l-4 border-blue-600 pl-6">Welcome to the 2026 World Cup Pool. You have a <strong class="text-gray-900">$150 budget</strong> to build your ultimate squad.</p>
+                    <ul class="list-disc pl-6 space-y-4">
+                        <li><strong>Tier 1:</strong> You may only select <span class="text-blue-600 font-bold">ONE</span> powerhouse team.</li>
+                        <li><strong>Tier 3:</strong> You must select at least <span class="text-blue-600 font-bold">THREE</span> underdog teams.</li>
+                        <li><strong>Deadline:</strong> All picks lock on June 11, 2026.</li>
+                        <li><strong>Scoring:</strong> Points are awarded based on match results and tournament progression.</li>
+                    </ul>
                 </div>
-
-                <section class="space-y-6">
-                    <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2 text-center">Point Scoring</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="bg-blue-50 p-8 rounded-3xl border-2 border-blue-100">
-                            <h3 class="font-black uppercase mb-4 text-blue-900 italic">Group Phase</h3>
-                            <div class="space-y-2 font-bold">
-                                <div class="flex justify-between"><span>Win</span><span class="bg-blue-600 text-white px-3 py-1 rounded-lg">3 Pts</span></div>
-                                <div class="flex justify-between"><span>Tie</span><span class="bg-blue-400 text-white px-3 py-1 rounded-lg">1 Pt</span></div>
-                                <div class="flex justify-between text-blue-600"><span>Advance to Knockouts</span><span>+1 Pt</span></div>
-                            </div>
-                        </div>
-                        <div class="bg-purple-50 p-8 rounded-3xl border-2 border-purple-100">
-                            <h3 class="font-black uppercase mb-4 text-purple-900 italic">Knockout Phase</h3>
-                            <div class="space-y-2 font-bold">
-                                <div class="flex justify-between italic"><span>Match Win</span><span class="bg-purple-600 text-white px-3 py-1 rounded-lg">3 Pts</span></div>
-                                <p class="text-[10px] text-purple-400 mt-4 uppercase">* No points awarded for Bronze (3rd place) game</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-gray-100 p-8 rounded-3xl">
-                        <h3 class="text-center font-black uppercase mb-6 tracking-widest italic">Stage Multipliers</h3>
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                            <div class="text-center bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
-                                <div class="text-[10px] font-black text-gray-400 uppercase">Round 32</div>
-                                <div class="text-2xl font-black text-blue-600">x2</div>
-                            </div>
-                            <div class="text-center bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
-                                <div class="text-[10px] font-black text-gray-400 uppercase">Round 16</div>
-                                <div class="text-2xl font-black text-blue-600">x3</div>
-                            </div>
-                            <div class="text-center bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
-                                <div class="text-[10px] font-black text-gray-400 uppercase">Quarters</div>
-                                <div class="text-2xl font-black text-blue-600">x5</div>
-                            </div>
-                            <div class="text-center bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
-                                <div class="text-[10px] font-black text-gray-400 uppercase">Semis</div>
-                                <div class="text-2xl font-black text-blue-600">x8</div>
-                            </div>
-                            <div class="text-center bg-gray-900 p-4 rounded-2xl shadow-xl">
-                                <div class="text-[10px] font-black text-gray-400 uppercase">Finals</div>
-                                <div class="text-2xl font-black text-yellow-400">x12</div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-                <div class="h-20"></div>
             </div>
         </div>
 
         <div id="page-groups" class="page-content hidden h-full overflow-y-auto p-12 bg-gray-50 text-gray-900">
              <div class="max-w-5xl mx-auto">
                 <h1 class="text-4xl font-black uppercase italic mb-8">Group Standings</h1>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="groups-grid"></div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="groups-grid">
+                    </div>
              </div>
         </div>
 
         <div id="page-picks" class="page-content hidden h-full flex">
             <div class="w-2/3 h-full overflow-y-auto p-10 bg-white text-gray-900">
                 <header class="mb-10 flex justify-between items-center border-b-4 border-gray-900 pb-6">
-                    <div><h1 class="text-4xl font-black uppercase italic tracking-tighter">Team Selection</h1></div>
+                    <div>
+                        <h1 class="text-4xl font-black uppercase italic tracking-tighter">Team Selection</h1>
+                    </div>
                     <div id="countdown" class="flex gap-4 text-center bg-gray-900 text-white px-6 py-3 rounded-2xl shadow-xl">
                         <div><div id="days" class="text-xl font-black">00</div><div class="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Days</div></div>
                         <div class="text-xl font-black text-blue-500">:</div>
@@ -178,13 +113,14 @@
             </div>
         </div>
 
-        <div id="page-leaderboard" class="page-content hidden h-full overflow-y-auto p-12 bg-white text-gray-900 text-center py-20">
-            <div class="max-w-3xl mx-auto">
+        <div id="page-leaderboard" class="page-content hidden h-full overflow-y-auto p-12 bg-white text-gray-900">
+            <div class="max-w-3xl mx-auto text-center py-20">
                 <div class="text-6xl mb-6">📊</div>
                 <h1 class="text-5xl font-black uppercase italic mb-4">Leaderboard</h1>
                 <p class="text-gray-500 font-bold uppercase tracking-widest">Rankings will go live after the first whistle.</p>
             </div>
         </div>
+
     </div>
 
     <div id="toast-container" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] space-y-2 pointer-events-none"></div>
@@ -250,28 +186,33 @@
             {"flag": "🇭🇹", "tier": 3, "group": "C", "name": "Haiti", "cost": 2}
         ];
 
+        // --- NAVIGATION LOGIC ---
         function showPage(pageId) {
             document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            
             document.getElementById(`page-${pageId}`).classList.remove('hidden');
             document.getElementById(`nav-${pageId}`).classList.add('active');
-            if(pageId === 'picks') updateUI();
+            
+            if(pageId === 'picks') updateUI(); // Refresh selected states
             if(pageId === 'groups') renderGroups();
         }
 
         function renderGroups() {
             const container = document.getElementById('groups-grid');
             container.innerHTML = '';
-            ['A','B','C','D','E','F','G','H','I','J','K','L'].forEach(g => {
+            const groups = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+            groups.forEach(g => {
                 const groupTeams = teams.filter(t => t.group === g);
                 const card = document.createElement('div');
                 card.className = "bg-white p-6 rounded-2xl shadow-sm border border-gray-100";
                 card.innerHTML = `<h3 class="font-black italic text-xl mb-4 border-b pb-2">GROUP ${g}</h3>` + 
-                    groupTeams.map(t => `<div class="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0"><span class="text-2xl">${t.flag}</span><span class="font-bold text-sm text-gray-800">${t.name}</span></div>`).join('');
+                    groupTeams.map(t => `<div class="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0"><span class="text-2xl">${t.flag}</span><span class="font-bold text-sm">${t.name}</span></div>`).join('');
                 container.appendChild(card);
             });
         }
 
+        // --- AUTH & CORE ---
         async function handleLogin() {
             const email = document.getElementById('email-input').value.toLowerCase().trim();
             if (!email.includes('@')) return showToast("Enter a valid email address.");
@@ -281,12 +222,14 @@
             document.getElementById('main-app').classList.remove('hidden');
             setTimeout(() => document.getElementById('main-app').classList.remove('opacity-0'), 50);
             document.getElementById('user-display-nav').innerText = userEmail;
+            
             renderPool();
             loadFromSupabase();
             startCountdown();
-            showPage('instructions');
+            showPage('instructions'); // Start on instructions
         }
 
+        // --- REST OF YOUR FUNCTIONS (UNCHANGED LOGIC, JUST WRAPPED) ---
         function startCountdown() {
             const timer = setInterval(function() {
                 const now = new Date().getTime();
@@ -295,12 +238,15 @@
                 const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                 const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                
+                // Only update if pick page is visible or elements exist
                 if(document.getElementById("days")) {
                     document.getElementById("days").innerText = days.toString().padStart(2, '0');
                     document.getElementById("hours").innerText = hours.toString().padStart(2, '0');
                     document.getElementById("minutes").innerText = minutes.toString().padStart(2, '0');
                     document.getElementById("seconds").innerText = seconds.toString().padStart(2, '0');
                 }
+                
                 if (distance < 0) {
                     clearInterval(timer);
                     isLocked = true;
