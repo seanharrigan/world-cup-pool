@@ -183,7 +183,7 @@
                     <span id="roster-count" class="bg-blue-600 px-2 py-0.5 rounded-full text-[10px] font-bold text-white uppercase">0</span>
                 </div>
                 <div id="roster-list" class="max-h-[150px] md:max-h-none overflow-y-auto space-y-2 mb-6 md:flex-grow text-white"></div>
-                <div class="bg-gray-900 p-4 rounded-2xl border border-gray-800 mb-4">
+                <div class="bg-gray-900 p-4 rounded-2xl border border-gray-800 mb-4 text-white">
                     <div class="flex justify-between items-center">
                         <span class="text-gray-500 text-[10px] font-black uppercase tracking-widest">Budget</span>
                         <span id="budget-display" class="text-2xl font-mono font-bold text-green-400">$150</span>
@@ -232,8 +232,7 @@
                             <thead class="bg-gray-900 text-white uppercase text-[10px] tracking-[0.2em] font-black">
                                 <tr>
                                     <th class="px-6 py-4 text-center">Rank</th>
-                                    <th class="px-6 py-4">Team</th>
-                                    <th class="px-6 py-4">Squad</th>
+                                    <th class="px-6 py-4">Player & Squad</th>
                                     <th class="px-6 py-4 text-right">Points</th>
                                 </tr>
                             </thead>
@@ -335,7 +334,7 @@
 
         async function fetchLeaderboard() {
             const body = document.getElementById('leaderboard-body');
-            body.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center animate-pulse uppercase text-xs font-black">Updating Standings...</td></tr>';
+            body.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center animate-pulse uppercase text-xs font-black">Updating Standings...</td></tr>';
             
             try {
                 const { data, error } = await supabaseClient.from('picks').select('user_email, team_nickname, team_realname, team_name, cost');
@@ -370,7 +369,7 @@
                 document.getElementById('prize-3rd').innerText = `$${Math.floor(totalPot * 0.10).toLocaleString()}`;
 
                 if (playerCount === 0) {
-                    body.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-400 uppercase text-xs font-black">No active rosters found</td></tr>';
+                    body.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-gray-400 uppercase text-xs font-black">No active rosters found</td></tr>';
                     return;
                 }
 
@@ -379,7 +378,7 @@
                 userMap.forEach((user) => {
                     const squadFlags = user.squad
                         .sort((a, b) => b.cost - a.cost)
-                        .map(s => `<span class="text-xl" title="Cost: $${s.cost}">${s.flag}</span>`)
+                        .map(s => `<span class="text-lg" title="Cost: $${s.cost}">${s.flag}</span>`)
                         .join(' ');
 
                     html += `
@@ -388,9 +387,7 @@
                             <td class="px-6 py-4">
                                 <div class="text-gray-900 font-black uppercase text-sm leading-tight">${user.nickname}</div>
                                 <div class="text-gray-400 text-[9px] font-bold uppercase tracking-widest mt-0.5">${user.realname}</div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex gap-2 flex-wrap">${squadFlags}</div>
+                                <div class="flex gap-1.5 mt-2">${squadFlags}</div>
                             </td>
                             <td class="px-6 py-4 text-right font-mono text-xl font-bold text-gray-900">0</td>
                         </tr>
@@ -400,7 +397,7 @@
 
             } catch (err) {
                 console.error(err);
-                body.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-red-500 font-bold uppercase text-[10px]">Database Connection Failed</td></tr>`;
+                body.innerHTML = `<tr><td colspan="3" class="px-6 py-8 text-center text-red-500 font-bold uppercase text-[10px]">Database Connection Failed</td></tr>`;
             }
         }
 
@@ -516,7 +513,7 @@
                 if (poolEl) poolEl.classList.add('selected');
                 const item = document.createElement('div');
                 item.className = "flex items-center justify-between bg-gray-800 p-3 rounded-xl border border-gray-700 text-white animate-in slide-in-from-right";
-                item.innerHTML = `<div class="flex items-center gap-2 text-white"><span class="text-xl text-white">${t.flag}</span><div class="text-[9px] font-black uppercase tracking-widest truncate text-white">${t.name}</div></div><div class="flex items-center gap-2 text-white"><span class="text-green-400 font-mono font-bold text-xs">$${t.cost}</span>${!isLocked ? `<button onclick="toggleTeam('${t.name}')" class="text-gray-500 hover:text-red-500 text-lg font-bold">&times;</button>` : ''}</div>`;
+                item.innerHTML = `<div class="flex items-center gap-2 text-white"><span class="text-xl text-white">${t.flag}</span><div class="text-[9px] font-black uppercase tracking-widest truncate text-white">${t.name}</div></div><div class="flex items-center gap-2 text-white"><span class="text-green-400 font-mono font-bold text-xs">$${t.cost}</span>${!isLocked ? `<button onclick="toggleTeam('${t.name}')" class="text-gray-500 hover:text-red-500 text-lg font-bold transition-colors">&times;</button>` : ''}</div>`;
                 list.appendChild(item);
             });
             
@@ -526,9 +523,11 @@
             
             // RED TEXT IF NEGATIVE
             if (remaining < 0) {
-                display.classList.replace('text-green-400', 'text-red-500');
+                display.classList.add('text-red-500');
+                display.classList.remove('text-green-400');
             } else {
-                display.classList.replace('text-red-500', 'text-green-400');
+                display.classList.add('text-green-400');
+                display.classList.remove('text-red-500');
             }
             
             document.getElementById('roster-count').innerText = `${myPicks.length}`;
