@@ -46,7 +46,7 @@
         @media (min-width: 768px) { .roster-minimized { transform: none !important; } }
 
         #mobile-menu { transition: max-height 0.3s ease-out; max-height: 0; overflow: hidden; }
-        #mobile-menu.open { max-height: 300px; }
+        #mobile-menu.open { max-height: 400px; }
     </style>
 </head>
 <body class="bg-gray-950 text-white h-screen overflow-hidden font-sans flex flex-col text-left">
@@ -72,14 +72,12 @@
                 <span onclick="showPage('groups')" id="nav-groups" class="nav-link">Groups</span>
                 <span onclick="showPage('picks')" id="nav-picks" class="nav-link text-white">My Picks</span>
                 <span onclick="showPage('leaderboard')" id="nav-leaderboard" class="nav-link">Leaderboard</span>
-                <div id="user-display-nav" class="hidden lg:block text-[10px] font-bold text-blue-500 uppercase tracking-widest truncate max-w-[150px] ml-4"></div>
+                <div id="user-display-nav" class="hidden lg:block text-[10px] font-bold text-blue-500 uppercase tracking-widest truncate max-w-[150px] ml-4 text-left"></div>
             </div>
 
-            <div class="flex items-center gap-1 md:hidden">
-                <button onclick="toggleMobileMenu()" class="p-2 text-gray-400 focus:outline-none">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-                </button>
-            </div>
+            <button onclick="toggleMobileMenu()" class="md:hidden p-2 text-gray-400 focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
         </div>
 
         <div id="mobile-menu" class="md:hidden flex flex-col font-black uppercase text-xs tracking-widest text-gray-500 bg-gray-950">
@@ -116,7 +114,7 @@
                     </div>
                 </section>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-gray-900 text-left">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-gray-900 text-left border-b-2 border-gray-100 pb-8">
                     <section class="space-y-4 text-left">
                         <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2 text-left">Squad Building</h2>
                         <ul class="space-y-3 font-medium text-gray-700 text-left">
@@ -138,6 +136,48 @@
                         </div>
                     </section>
                 </div>
+
+                <section class="space-y-6 text-gray-900">
+                    <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2 text-left">Point Scoring</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 font-bold text-gray-800">
+                        <div class="bg-blue-50 p-6 rounded-2xl border-2 border-blue-100">
+                            <h3 class="uppercase mb-2 italic">Group Phase</h3>
+                            <p>Win: 3 pts | Tie: 1 pt</p>
+                            <p class="text-blue-600">Advance to Knockouts: +1 pt</p>
+                        </div>
+                        <div class="bg-purple-50 p-6 rounded-2xl border-2 border-purple-100">
+                            <h3 class="uppercase mb-2 italic">Knockout Phase</h3>
+                            <p>Win: 3 pts</p>
+                            <p class="text-xs text-purple-400 font-normal uppercase mt-2">* No points for bronze game</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-100 p-6 rounded-2xl">
+                        <h3 class="text-center font-black uppercase mb-4 italic">Stage Multipliers</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+                            <div class="text-center bg-white p-3 rounded-xl border border-gray-200">
+                                <div class="text-[8px] font-black text-gray-400 uppercase">Round 32</div>
+                                <div class="text-xl font-black text-blue-600">x2</div>
+                            </div>
+                            <div class="text-center bg-white p-3 rounded-xl border border-gray-200">
+                                <div class="text-[8px] font-black text-gray-400 uppercase">Round 16</div>
+                                <div class="text-xl font-black text-blue-600">x3</div>
+                            </div>
+                            <div class="text-center bg-white p-3 rounded-xl border border-gray-200">
+                                <div class="text-[8px] font-black text-gray-400 uppercase">Quarters</div>
+                                <div class="text-xl font-black text-blue-600">x5</div>
+                            </div>
+                            <div class="text-center bg-white p-3 rounded-xl border border-gray-200">
+                                <div class="text-[8px] font-black text-gray-400 uppercase">Semis</div>
+                                <div class="text-xl font-black text-blue-600">x8</div>
+                            </div>
+                            <div class="text-center bg-gray-900 p-3 rounded-xl">
+                                <div class="text-[8px] font-black text-gray-400 uppercase text-white">Finals</div>
+                                <div class="text-xl font-black text-yellow-400">x12</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
                 <div class="h-40 md:hidden"></div>
             </div>
         </div>
@@ -176,7 +216,7 @@
                 <div id="roster-list" class="max-h-[150px] md:max-h-none overflow-y-auto space-y-2 mb-4 md:mb-6 md:flex-grow text-white text-left"></div>
                 <div class="flex flex-row md:flex-col items-center gap-3 text-left">
                     <div class="flex-grow md:w-full bg-gray-900 p-3 md:p-4 rounded-2xl border border-gray-800 text-white text-left">
-                        <div class="flex justify-between items-center text-left">
+                        <div class="flex justify-between items-center text-left text-white">
                             <span class="text-gray-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-left">Budget</span>
                             <span id="budget-display" class="text-xl md:text-2xl font-mono font-bold text-green-400 text-left">$150</span>
                         </div>
@@ -189,7 +229,7 @@
         <div id="page-leaderboard" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-white text-gray-900 text-left">
             <div class="max-w-5xl mx-auto text-left">
                 <header class="mb-8 text-center text-gray-900">
-                    <h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter text-center">Leaderboard</h1>
+                    <h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter text-center text-gray-900">Leaderboard</h1>
                     <p class="text-blue-600 font-bold uppercase tracking-widest text-xs italic text-center">Live Standings</p>
                 </header>
 
@@ -204,8 +244,8 @@
                     </div>
                     <div class="bg-gray-50 border-2 border-gray-100 p-6 rounded-3xl shadow-sm space-y-2 text-gray-900 text-center">
                         <div class="flex justify-between items-center font-black uppercase text-xs"><span>1st Place</span><span id="prize-1st" class="text-green-600 font-bold">$0</span></div>
-                        <div class="flex justify-between items-center font-black uppercase text-xs"><span>2nd Place</span><span id="prize-2nd" class="font-bold">$0</span></div>
-                        <div class="flex justify-between items-center font-black uppercase text-xs"><span>3rd Place</span><span id="prize-3rd" class="font-bold">$0</span></div>
+                        <div class="flex justify-between items-center font-black uppercase text-xs"><span>2nd Place</span><span id="prize-2nd" class="font-bold text-gray-900">$0</span></div>
+                        <div class="flex justify-between items-center font-black uppercase text-xs"><span>3rd Place</span><span id="prize-3rd" class="font-bold text-gray-900">$0</span></div>
                     </div>
                 </div>
                 
@@ -386,7 +426,7 @@
             ['A','B','C','D','E','F','G','H','I','J','K','L'].forEach(g => {
                 const groupTeams = teams.filter(t => t.group === g);
                 const card = document.createElement('div'); card.className = "bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-gray-900 text-left";
-                card.innerHTML = `<h3 class="font-black italic text-xl mb-4 border-b pb-2 text-left">GROUP ${g}</h3>` + groupTeams.map(t => `<div class="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0 text-left"><span class="text-2xl">${t.flag}</span><span class="font-bold text-sm text-gray-800">${t.name}</span></div>`).join('');
+                card.innerHTML = `<h3 class="font-black italic text-xl mb-4 border-b pb-2 text-left">GROUP ${g}</h3>` + groupTeams.map(t => `<div class="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0 text-left text-gray-900"><span class="text-2xl">${t.flag}</span><span class="font-bold text-sm">${t.name}</span></div>`).join('');
                 container.appendChild(card);
             });
         }
@@ -430,7 +470,7 @@
             [1, 2, 3].forEach(tierNum => {
                 const tierTeams = teams.filter(t => t.tier === tierNum);
                 const section = document.createElement('div');
-                section.innerHTML = `<div class="flex items-center gap-4 mb-4"><div class="bg-gray-900 text-white px-3 py-1 font-black italic text-xs tracking-widest uppercase">Tier ${tierNum}</div><div class="h-px bg-gray-200 flex-grow"></div></div><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 text-left">${tierTeams.map(t => `<div onclick="toggleTeam('${t.name}')" id="pool-${t.name.replace(/\s/g, '')}" class="team-card bg-white border-2 border-gray-100 rounded-2xl p-2 shadow-sm ${isLocked ? 'locked-ui' : ''} text-gray-900 text-left text-left"><div class="flex justify-between items-start text-left mb-1"><span class="text-3xl text-left">${t.flag}</span><span class="bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-xs text-left">$${t.cost}</span></div><div class="font-black text-gray-900 uppercase text-[10px] tracking-tight truncate text-left">${t.name}</div></div>`).join('')}</div>`;
+                section.innerHTML = `<div class="flex items-center gap-4 mb-4"><div class="bg-gray-900 text-white px-3 py-1 font-black italic text-xs tracking-widest uppercase text-left">Tier ${tierNum}</div><div class="h-px bg-gray-200 flex-grow"></div></div><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 text-left">${tierTeams.map(t => `<div onclick="toggleTeam('${t.name}')" id="pool-${t.name.replace(/\s/g, '')}" class="team-card bg-white border-2 border-gray-100 rounded-2xl p-2 shadow-sm ${isLocked ? 'locked-ui' : ''} text-gray-900 text-left"><div class="flex justify-between items-start text-left mb-1"><span class="text-3xl text-left">${t.flag}</span><span class="bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-xs text-left">$${t.cost}</span></div><div class="font-black text-gray-900 uppercase text-[10px] tracking-tight truncate text-left">${t.name}</div></div>`).join('')}</div>`;
                 container.appendChild(section);
             });
         }
@@ -459,7 +499,7 @@
                 if (poolEl) poolEl.classList.add('selected');
                 const item = document.createElement('div');
                 item.className = "flex items-center justify-between bg-gray-800 p-3 rounded-xl border border-gray-700 text-white text-left";
-                item.innerHTML = `<div class="flex items-center gap-2 text-left"><span class="text-xl text-left">${t.flag}</span><div class="text-[9px] font-black uppercase tracking-widest truncate text-left">${t.name}</div></div><div class="flex items-center gap-2 text-left"><span class="text-green-400 font-mono font-bold text-xs text-left">$${t.cost}</span>${!isLocked ? `<button onclick="toggleTeam('${t.name}')" class="text-gray-500 hover:text-red-500 text-lg font-bold transition-colors text-right">&times;</button>` : ''}</div>`;
+                item.innerHTML = `<div class="flex items-center gap-2 text-left text-white"><span class="text-xl text-left">${t.flag}</span><div class="text-[9px] font-black uppercase tracking-widest truncate text-left text-white">${t.name}</div></div><div class="flex items-center gap-2 text-left text-white"><span class="text-green-400 font-mono font-bold text-xs text-left">$${t.cost}</span>${!isLocked ? `<button onclick="toggleTeam('${t.name}')" class="text-gray-500 hover:text-red-500 text-lg font-bold transition-colors text-right">&times;</button>` : ''}</div>`;
                 list.appendChild(item);
             });
             const remaining = 150 - spent;
