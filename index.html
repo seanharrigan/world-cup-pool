@@ -37,7 +37,7 @@
         <div class="bg-gray-800 p-8 md:p-10 rounded-3xl border border-gray-700 max-w-md w-full text-center shadow-2xl">
             <div class="text-5xl md:text-6xl mb-6">⚽</div>
             <h2 class="text-2xl md:text-3xl font-black mb-2 italic uppercase tracking-tighter text-white">2026 World Cup Pool</h2>
-            <input type="email" id="email-input" placeholder="Enter email..." class="w-full p-4 rounded-2xl bg-gray-900 border border-gray-700 mb-4 text-white focus:border-blue-500 outline-none">
+            <input type="email" id="email-input" placeholder="Enter email..." class="w-full p-4 rounded-2xl bg-gray-900 border border-gray-700 mb-4 text-white focus:border-blue-500 outline-none font-bold">
             <button onclick="handleLogin()" id="login-btn" class="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-500 transition-all text-white">Enter</button>
         </div>
     </div>
@@ -53,7 +53,10 @@
             <span onclick="showPage('picks')" id="nav-picks" class="nav-link text-white">My Picks</span>
             <span onclick="showPage('leaderboard')" id="nav-leaderboard" class="nav-link">Leaderboard</span>
         </div>
-        <div id="user-display-nav" class="hidden lg:block text-[10px] font-bold text-blue-500 uppercase tracking-widest truncate max-w-[150px]"></div>
+        <div class="flex items-center gap-2">
+            <div id="user-display-nav" class="hidden lg:block text-[10px] font-bold text-blue-500 uppercase tracking-widest truncate max-w-[150px]"></div>
+            <button onclick="logout()" class="text-gray-500 hover:text-red-500 font-black text-xs px-2" title="Logout">✕</button>
+        </div>
     </nav>
 
     <div id="main-app" class="hidden h-[calc(100vh-60px)] w-full opacity-0 transition-opacity duration-700">
@@ -66,7 +69,7 @@
                 </header>
 
                 <section class="bg-blue-50 p-6 rounded-3xl border-2 border-blue-100 space-y-4">
-                    <h2 class="text-xl font-black uppercase tracking-tight">Your Team Identity</h2>
+                    <h2 class="text-xl font-black uppercase tracking-tight text-gray-900">Your Team Identity</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-black uppercase text-blue-600 mb-1">Team Nickname (Leaderboard Name)</label>
@@ -83,7 +86,7 @@
                 </section>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <section class="space-y-4">
+                    <section class="space-y-4 text-gray-900">
                         <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2">Squad Building</h2>
                         <ul class="space-y-3 font-medium text-gray-700">
                             <li><strong>$150 Budget:</strong> Fake money to spend on picks.</li>
@@ -93,7 +96,7 @@
                             <li class="text-red-600 font-black">DO NOT OVERSPEND!</li>
                         </ul>
                     </section>
-                    <section class="space-y-4">
+                    <section class="space-y-4 text-gray-900">
                         <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2">Entry & Prizes</h2>
                         <div class="bg-gray-900 text-white p-6 rounded-3xl shadow-xl">
                             <div class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Entry Fee</div>
@@ -107,7 +110,7 @@
                     </section>
                 </div>
 
-                <section class="space-y-6">
+                <section class="space-y-6 text-gray-900">
                     <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2">Point Scoring</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 font-bold text-gray-800">
                         <div class="bg-blue-50 p-6 rounded-2xl border-2 border-blue-100">
@@ -142,7 +145,7 @@
                                 <div class="text-xl font-black text-blue-600">x8</div>
                             </div>
                             <div class="text-center bg-gray-900 p-3 rounded-xl">
-                                <div class="text-[8px] font-black text-gray-400 uppercase">Finals</div>
+                                <div class="text-[8px] font-black text-gray-400 uppercase text-white">Finals</div>
                                 <div class="text-xl font-black text-yellow-400">x12</div>
                             </div>
                         </div>
@@ -182,7 +185,7 @@
                 <div id="roster-list" class="max-h-[150px] md:max-h-none overflow-y-auto space-y-2 mb-6 md:flex-grow text-white"></div>
                 <div class="bg-gray-900 p-4 rounded-2xl border border-gray-800 mb-4">
                     <div class="flex justify-between items-center">
-                        <span class="text-gray-500 text-[10px] font-black uppercase">Budget</span>
+                        <span class="text-gray-500 text-[10px] font-black uppercase tracking-widest">Budget</span>
                         <span id="budget-display" class="text-2xl font-mono font-bold text-green-400">$150</span>
                     </div>
                 </div>
@@ -191,7 +194,7 @@
         </div>
 
         <div id="page-leaderboard" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-white text-gray-900">
-            <div class="max-w-5xl mx-auto">
+            <div class="max-w-5xl mx-auto text-gray-900">
                 <header class="mb-8 text-center">
                     <h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter">Leaderboard</h1>
                     <p class="text-blue-600 font-bold uppercase tracking-widest text-xs italic">Tournament Standings</p>
@@ -207,18 +210,18 @@
                         <div class="text-[10px] font-black uppercase text-green-200 tracking-widest mb-1">Total Prize Pot</div>
                         <div id="total-prize-pot" class="text-4xl font-black">$0</div>
                     </div>
-                    <div class="bg-gray-50 border-2 border-gray-100 p-6 rounded-3xl shadow-sm space-y-2">
+                    <div class="bg-gray-50 border-2 border-gray-100 p-6 rounded-3xl shadow-sm space-y-2 text-gray-900">
                         <div class="flex justify-between items-center font-black uppercase text-xs">
-                            <span class="text-gray-400">1st Place</span>
-                            <span id="prize-1st" class="text-green-600">$0</span>
+                            <span class="text-gray-400 italic">1st Place</span>
+                            <span id="prize-1st" class="text-green-600 font-mono text-lg">$0</span>
                         </div>
                         <div class="flex justify-between items-center font-black uppercase text-xs">
-                            <span class="text-gray-400">2nd Place</span>
-                            <span id="prize-2nd" class="text-gray-900">$0</span>
+                            <span class="text-gray-400 italic">2nd Place</span>
+                            <span id="prize-2nd" class="font-mono text-lg text-gray-900">$0</span>
                         </div>
                         <div class="flex justify-between items-center font-black uppercase text-xs">
-                            <span class="text-gray-400">3rd Place</span>
-                            <span id="prize-3rd" class="text-gray-900">$0</span>
+                            <span class="text-gray-400 italic">3rd Place</span>
+                            <span id="prize-3rd" class="font-mono text-lg text-gray-900">$0</span>
                         </div>
                     </div>
                 </div>
@@ -306,6 +309,20 @@
             {"flag": "🇭🇹", "tier": 3, "group": "C", "name": "Haiti", "cost": 2}
         ];
 
+        // --- AUTH PERSISTENCE ---
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedEmail = localStorage.getItem('wc_pool_user_email');
+            if (savedEmail) {
+                document.getElementById('email-input').value = savedEmail;
+                handleLogin();
+            }
+        });
+
+        function logout() {
+            localStorage.removeItem('wc_pool_user_email');
+            location.reload();
+        }
+
         function showPage(pageId) {
             document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
@@ -344,7 +361,6 @@
                     });
                 }
 
-                // Update Summary Stats
                 const playerCount = userMap.size;
                 const totalPot = playerCount * 40;
                 document.getElementById('total-players-count').innerText = playerCount;
@@ -411,7 +427,7 @@
             ['A','B','C','D','E','F','G','H','I','J','K','L'].forEach(g => {
                 const groupTeams = teams.filter(t => t.group === g);
                 const card = document.createElement('div');
-                card.className = "bg-white p-6 rounded-2xl shadow-sm border border-gray-100";
+                card.className = "bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-gray-900";
                 card.innerHTML = `<h3 class="font-black italic text-xl mb-4 border-b pb-2">GROUP ${g}</h3>` + 
                     groupTeams.map(t => `<div class="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0"><span class="text-2xl">${t.flag}</span><span class="font-bold text-sm text-gray-800">${t.name}</span></div>`).join('');
                 container.appendChild(card);
@@ -419,9 +435,12 @@
         }
 
         async function handleLogin() {
-            const email = document.getElementById('email-input').value.toLowerCase().trim();
-            if (!email.includes('@')) return showToast("Enter a valid email address.");
-            userEmail = email;
+            const emailInput = document.getElementById('email-input').value.toLowerCase().trim();
+            if (!emailInput.includes('@')) return showToast("Enter a valid email address.");
+            userEmail = emailInput;
+            
+            localStorage.setItem('wc_pool_user_email', userEmail);
+
             document.getElementById('auth-overlay').classList.add('hidden');
             document.getElementById('top-nav').classList.remove('hidden');
             document.getElementById('main-app').classList.remove('hidden');
@@ -468,7 +487,7 @@
             [1, 2, 3].forEach(tierNum => {
                 const tierTeams = teams.filter(t => t.tier === tierNum);
                 const section = document.createElement('div');
-                section.innerHTML = `<div class="flex items-center gap-4 mb-4"><div class="bg-gray-900 text-white px-3 py-1 font-black italic text-xs tracking-widest uppercase">Tier ${tierNum}</div><div class="h-px bg-gray-200 flex-grow"></div></div><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">${tierTeams.map(t => `<div onclick="toggleTeam('${t.name}')" id="pool-${t.name.replace(/\s/g, '')}" class="team-card bg-white border-2 border-gray-100 rounded-2xl p-2 shadow-sm ${isLocked ? 'locked-ui' : ''}"><div class="flex justify-between items-start mb-1"><span class="text-3xl">${t.flag}</span><span class="bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-xs">$${t.cost}</span></div><div class="font-black text-gray-900 uppercase text-[10px] tracking-tight truncate">${t.name}</div></div>`).join('')}</div>`;
+                section.innerHTML = `<div class="flex items-center gap-4 mb-4"><div class="bg-gray-900 text-white px-3 py-1 font-black italic text-xs tracking-widest uppercase">Tier ${tierNum}</div><div class="h-px bg-gray-200 flex-grow"></div></div><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">${tierTeams.map(t => `<div onclick="toggleTeam('${t.name}')" id="pool-${t.name.replace(/\s/g, '')}" class="team-card bg-white border-2 border-gray-100 rounded-2xl p-2 shadow-sm ${isLocked ? 'locked-ui' : ''} text-gray-900"><div class="flex justify-between items-start mb-1"><span class="text-3xl">${t.flag}</span><span class="bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-xs">$${t.cost}</span></div><div class="font-black text-gray-900 uppercase text-[10px] tracking-tight truncate">${t.name}</div></div>`).join('')}</div>`;
                 container.appendChild(section);
             });
         }
@@ -497,10 +516,21 @@
                 if (poolEl) poolEl.classList.add('selected');
                 const item = document.createElement('div');
                 item.className = "flex items-center justify-between bg-gray-800 p-3 rounded-xl border border-gray-700 text-white animate-in slide-in-from-right";
-                item.innerHTML = `<div class="flex items-center gap-2"><span class="text-xl">${t.flag}</span><div class="text-[9px] font-black uppercase tracking-widest truncate">${t.name}</div></div><div class="flex items-center gap-2"><span class="text-green-400 font-mono font-bold text-xs">$${t.cost}</span>${!isLocked ? `<button onclick="toggleTeam('${t.name}')" class="text-gray-500 hover:text-red-500 text-lg font-bold transition-colors">&times;</button>` : ''}</div>`;
+                item.innerHTML = `<div class="flex items-center gap-2 text-white"><span class="text-xl text-white">${t.flag}</span><div class="text-[9px] font-black uppercase tracking-widest truncate text-white">${t.name}</div></div><div class="flex items-center gap-2 text-white"><span class="text-green-400 font-mono font-bold text-xs">$${t.cost}</span>${!isLocked ? `<button onclick="toggleTeam('${t.name}')" class="text-gray-500 hover:text-red-500 text-lg font-bold">&times;</button>` : ''}</div>`;
                 list.appendChild(item);
             });
-            document.getElementById('budget-display').innerText = `$${150 - spent}`;
+            
+            const remaining = 150 - spent;
+            const display = document.getElementById('budget-display');
+            display.innerText = `$${remaining}`;
+            
+            // RED TEXT IF NEGATIVE
+            if (remaining < 0) {
+                display.classList.replace('text-green-400', 'text-red-500');
+            } else {
+                display.classList.replace('text-red-500', 'text-green-400');
+            }
+            
             document.getElementById('roster-count').innerText = `${myPicks.length}`;
         }
 

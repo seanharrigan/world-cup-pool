@@ -37,7 +37,7 @@
         <div class="bg-gray-800 p-8 md:p-10 rounded-3xl border border-gray-700 max-w-md w-full text-center shadow-2xl">
             <div class="text-5xl md:text-6xl mb-6">⚽</div>
             <h2 class="text-2xl md:text-3xl font-black mb-2 italic uppercase tracking-tighter text-white">2026 World Cup Pool</h2>
-            <input type="email" id="email-input" placeholder="Enter email..." class="w-full p-4 rounded-2xl bg-gray-900 border border-gray-700 mb-4 text-white focus:border-blue-500 outline-none">
+            <input type="email" id="email-input" placeholder="Enter email..." class="w-full p-4 rounded-2xl bg-gray-900 border border-gray-700 mb-4 text-white focus:border-blue-500 outline-none font-bold">
             <button onclick="handleLogin()" id="login-btn" class="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-500 transition-all text-white">Enter</button>
         </div>
     </div>
@@ -53,7 +53,10 @@
             <span onclick="showPage('picks')" id="nav-picks" class="nav-link text-white">My Picks</span>
             <span onclick="showPage('leaderboard')" id="nav-leaderboard" class="nav-link">Leaderboard</span>
         </div>
-        <div id="user-display-nav" class="hidden lg:block text-[10px] font-bold text-blue-500 uppercase tracking-widest truncate max-w-[150px]"></div>
+        <div class="flex items-center gap-2">
+            <div id="user-display-nav" class="hidden lg:block text-[10px] font-bold text-blue-500 uppercase tracking-widest truncate max-w-[150px]"></div>
+            <button onclick="logout()" class="text-gray-500 hover:text-red-500 font-black text-xs px-2">✕</button>
+        </div>
     </nav>
 
     <div id="main-app" class="hidden h-[calc(100vh-60px)] w-full opacity-0 transition-opacity duration-700">
@@ -179,9 +182,9 @@
                     <h2 class="text-xl font-black italic uppercase text-white tracking-widest">My Roster</h2>
                     <span id="roster-count" class="bg-blue-600 px-2 py-0.5 rounded-full text-[10px] font-bold text-white uppercase">0</span>
                 </div>
-                <div id="roster-list" class="max-h-[150px] md:max-h-none overflow-y-auto space-y-2 mb-6 md:flex-grow"></div>
+                <div id="roster-list" class="max-h-[150px] md:max-h-none overflow-y-auto space-y-2 mb-6 md:flex-grow text-white"></div>
                 <div class="bg-gray-900 p-4 rounded-2xl border border-gray-800 mb-4">
-                    <div class="flex justify-between items-center">
+                    <div class="flex justify-between items-center text-white">
                         <span class="text-gray-500 text-[10px] font-black uppercase">Budget</span>
                         <span id="budget-display" class="text-2xl font-mono font-bold text-green-400">$150</span>
                     </div>
@@ -191,18 +194,44 @@
         </div>
 
         <div id="page-leaderboard" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-white text-gray-900">
-            <div class="max-w-6xl mx-auto">
-                <header class="mb-10 text-center">
+            <div class="max-w-5xl mx-auto">
+                <header class="mb-8 text-center">
                     <h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter">Leaderboard</h1>
-                    <p class="text-blue-600 font-bold uppercase tracking-widest text-xs italic">Live Standings</p>
+                    <p class="text-blue-600 font-bold uppercase tracking-widest text-xs italic">Tournament Standings</p>
                 </header>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                    <div class="bg-gray-900 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-center text-center">
+                        <div class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1">Total Entries</div>
+                        <div id="total-players-count" class="text-4xl font-black">0</div>
+                        <div class="text-[10px] font-bold text-blue-500 uppercase mt-1">($40 Entry Fee)</div>
+                    </div>
+                    <div class="bg-green-600 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-center text-center">
+                        <div class="text-[10px] font-black uppercase text-green-200 tracking-widest mb-1">Total Prize Pot</div>
+                        <div id="total-prize-pot" class="text-4xl font-black">$0</div>
+                    </div>
+                    <div class="bg-gray-50 border-2 border-gray-100 p-6 rounded-3xl shadow-sm space-y-2">
+                        <div class="flex justify-between items-center font-black uppercase text-xs text-gray-900">
+                            <span class="text-gray-400 italic">1st Place</span>
+                            <span id="prize-1st" class="text-green-600 font-mono text-lg">$0</span>
+                        </div>
+                        <div class="flex justify-between items-center font-black uppercase text-xs text-gray-900">
+                            <span class="text-gray-400 italic">2nd Place</span>
+                            <span id="prize-2nd" class="font-mono text-lg">$0</span>
+                        </div>
+                        <div class="flex justify-between items-center font-black uppercase text-xs text-gray-900">
+                            <span class="text-gray-400 italic">3rd Place</span>
+                            <span id="prize-3rd" class="font-mono text-lg">$0</span>
+                        </div>
+                    </div>
+                </div>
                 
                 <div class="bg-gray-50 rounded-3xl border border-gray-200 overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
                             <thead class="bg-gray-900 text-white uppercase text-[10px] tracking-[0.2em] font-black">
                                 <tr>
-                                    <th class="px-6 py-4">Rank</th>
+                                    <th class="px-6 py-4 text-center">Rank</th>
                                     <th class="px-6 py-4">Team</th>
                                     <th class="px-6 py-4">Squad</th>
                                     <th class="px-6 py-4 text-right">Points</th>
@@ -280,6 +309,20 @@
             {"flag": "🇭🇹", "tier": 3, "group": "C", "name": "Haiti", "cost": 2}
         ];
 
+        // --- AUTH SESSION CHECK ---
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedEmail = localStorage.getItem('wc_pool_user_email');
+            if (savedEmail) {
+                document.getElementById('email-input').value = savedEmail;
+                handleLogin(); // Auto-login
+            }
+        });
+
+        function logout() {
+            localStorage.removeItem('wc_pool_user_email');
+            location.reload();
+        }
+
         function showPage(pageId) {
             document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
@@ -292,7 +335,7 @@
 
         async function fetchLeaderboard() {
             const body = document.getElementById('leaderboard-body');
-            body.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center animate-pulse">Loading Standings...</td></tr>';
+            body.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center animate-pulse uppercase text-xs font-black">Updating Standings...</td></tr>';
             
             try {
                 const { data, error } = await supabaseClient.from('picks').select('user_email, team_nickname, team_realname, team_name, cost');
@@ -318,7 +361,15 @@
                     });
                 }
 
-                if (userMap.size === 0) {
+                const playerCount = userMap.size;
+                const totalPot = playerCount * 40;
+                document.getElementById('total-players-count').innerText = playerCount;
+                document.getElementById('total-prize-pot').innerText = `$${totalPot.toLocaleString()}`;
+                document.getElementById('prize-1st').innerText = `$${Math.floor(totalPot * 0.65).toLocaleString()}`;
+                document.getElementById('prize-2nd').innerText = `$${Math.floor(totalPot * 0.25).toLocaleString()}`;
+                document.getElementById('prize-3rd').innerText = `$${Math.floor(totalPot * 0.10).toLocaleString()}`;
+
+                if (playerCount === 0) {
                     body.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-400 uppercase text-xs font-black">No active rosters found</td></tr>';
                     return;
                 }
@@ -326,7 +377,6 @@
                 let html = "";
                 let index = 1;
                 userMap.forEach((user) => {
-                    // Order squad by cost descending
                     const squadFlags = user.squad
                         .sort((a, b) => b.cost - a.cost)
                         .map(s => `<span class="text-xl" title="Cost: $${s.cost}">${s.flag}</span>`)
@@ -334,7 +384,7 @@
 
                     html += `
                         <tr class="border-b border-gray-100 hover:bg-blue-50 transition-colors">
-                            <td class="px-6 py-4 text-blue-600 font-black italic">#${index++}</td>
+                            <td class="px-6 py-4 text-center text-blue-600 font-black italic">#${index++}</td>
                             <td class="px-6 py-4">
                                 <div class="text-gray-900 font-black uppercase text-sm leading-tight">${user.nickname}</div>
                                 <div class="text-gray-400 text-[9px] font-bold uppercase tracking-widest mt-0.5">${user.realname}</div>
@@ -350,7 +400,7 @@
 
             } catch (err) {
                 console.error(err);
-                body.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-red-500 font-bold">Database Link Failed.</td></tr>`;
+                body.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-red-500 font-bold uppercase text-[10px]">Database Connection Failed</td></tr>`;
             }
         }
 
@@ -377,7 +427,7 @@
             ['A','B','C','D','E','F','G','H','I','J','K','L'].forEach(g => {
                 const groupTeams = teams.filter(t => t.group === g);
                 const card = document.createElement('div');
-                card.className = "bg-white p-6 rounded-2xl shadow-sm border border-gray-100";
+                card.className = "bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-gray-900";
                 card.innerHTML = `<h3 class="font-black italic text-xl mb-4 border-b pb-2">GROUP ${g}</h3>` + 
                     groupTeams.map(t => `<div class="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0"><span class="text-2xl">${t.flag}</span><span class="font-bold text-sm text-gray-800">${t.name}</span></div>`).join('');
                 container.appendChild(card);
@@ -388,6 +438,10 @@
             const email = document.getElementById('email-input').value.toLowerCase().trim();
             if (!email.includes('@')) return showToast("Enter a valid email address.");
             userEmail = email;
+            
+            // Save to browser storage
+            localStorage.setItem('wc_pool_user_email', userEmail);
+
             document.getElementById('auth-overlay').classList.add('hidden');
             document.getElementById('top-nav').classList.remove('hidden');
             document.getElementById('main-app').classList.remove('hidden');
@@ -434,7 +488,7 @@
             [1, 2, 3].forEach(tierNum => {
                 const tierTeams = teams.filter(t => t.tier === tierNum);
                 const section = document.createElement('div');
-                section.innerHTML = `<div class="flex items-center gap-4 mb-4"><div class="bg-gray-900 text-white px-3 py-1 font-black italic text-xs tracking-widest uppercase">Tier ${tierNum}</div><div class="h-px bg-gray-200 flex-grow"></div></div><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">${tierTeams.map(t => `<div onclick="toggleTeam('${t.name}')" id="pool-${t.name.replace(/\s/g, '')}" class="team-card bg-white border-2 border-gray-100 rounded-2xl p-2 shadow-sm ${isLocked ? 'locked-ui' : ''}"><div class="flex justify-between items-start mb-1"><span class="text-3xl">${t.flag}</span><span class="bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-xs">$${t.cost}</span></div><div class="font-black text-gray-900 uppercase text-[10px] tracking-tight truncate">${t.name}</div></div>`).join('')}</div>`;
+                section.innerHTML = `<div class="flex items-center gap-4 mb-4"><div class="bg-gray-900 text-white px-3 py-1 font-black italic text-xs tracking-widest uppercase">Tier ${tierNum}</div><div class="h-px bg-gray-200 flex-grow"></div></div><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">${tierTeams.map(t => `<div onclick="toggleTeam('${t.name}')" id="pool-${t.name.replace(/\s/g, '')}" class="team-card bg-white border-2 border-gray-100 rounded-2xl p-2 shadow-sm ${isLocked ? 'locked-ui' : ''} text-gray-900"><div class="flex justify-between items-start mb-1"><span class="text-3xl">${t.flag}</span><span class="bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-xs">$${t.cost}</span></div><div class="font-black text-gray-900 uppercase text-[10px] tracking-tight truncate">${t.name}</div></div>`).join('')}</div>`;
                 container.appendChild(section);
             });
         }
