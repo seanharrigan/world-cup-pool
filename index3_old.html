@@ -83,14 +83,14 @@
 
         <div id="mobile-menu" class="md:hidden flex flex-col font-black uppercase text-xs tracking-widest text-gray-500 bg-gray-950">
             <span onclick="showPage('instructions')" class="py-4 border-b border-gray-900 text-center">Instructions</span>
-            <span onclick="showPage('groups')" class="py-4 border-b border-gray-900 text-center">Groups</span>
+            <span onclick="showPage('groups')" class="py-4 border-b border-gray-900 text-center text-white">Groups</span>
             <span onclick="showPage('picks')" class="py-4 border-b border-gray-900 text-center text-white">My Picks</span>
             <span onclick="showPage('leaderboard')" class="py-4 border-b border-gray-900 text-center text-white">Leaderboard</span>
             <span onclick="showPage('chat')" class="py-4 text-center">Chat</span>
         </div>
     </nav>
 
-    <div id="main-app" class="hidden h-[calc(100vh-60px)] w-full opacity-0 transition-opacity duration-700">
+    <div id="main-app" class="hidden h-[calc(100vh-60px)] w-full opacity-0 transition-opacity duration-700 text-gray-900">
         
         <div id="page-instructions" class="page-content h-full w-full overflow-y-auto p-6 md:p-12 bg-white text-gray-900">
             <div class="max-w-4xl mx-auto space-y-10">
@@ -129,8 +129,8 @@
                         <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2 text-left">Prizes</h2>
                         <div class="bg-gray-900 text-white p-6 rounded-3xl shadow-xl text-left">
                             <div class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1 text-left text-gray-300">Entry Fee</div>
-                            <div class="text-3xl font-black mb-4 text-left">$40</div>
-                            <div class="space-y-1 text-xs font-bold border-t border-gray-800 pt-3 text-left">
+                            <div class="text-3xl font-black mb-4 text-left text-white">$40</div>
+                            <div class="space-y-1 text-xs font-bold border-t border-gray-800 pt-3 text-left text-white">
                                 <div class="flex justify-between text-left"><span>1st Place</span><span class="text-green-400 font-bold">65%</span></div>
                                 <div class="flex justify-between text-left text-gray-300"><span>2nd Place</span><span>25%</span></div>
                                 <div class="flex justify-between text-left text-gray-300"><span>3rd Place</span><span>10%</span></div>
@@ -147,16 +147,16 @@
                             <p>Win: 3 pts | Tie: 1 pt</p>
                             <p class="text-blue-600">Advance to Knockouts: +1 pt</p>
                         </div>
-                        <div class="bg-purple-50 p-6 rounded-2xl border-2 border-purple-100">
-                            <h3 class="uppercase mb-2 italic">Knockout Phase</h3>
+                        <div class="bg-purple-50 p-6 rounded-2xl border-2 border-purple-100 text-gray-900">
+                            <h3 class="uppercase mb-2 italic text-gray-900">Knockout Phase</h3>
                             <p>Win: 3 pts</p>
                             <p class="text-xs text-purple-400 font-normal uppercase mt-2">* No points for bronze game</p>
                         </div>
                     </div>
 
                     <div class="bg-gray-100 p-6 rounded-2xl">
-                        <h3 class="text-center font-black uppercase mb-4 italic">Stage Multipliers</h3>
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-2 text-center">
+                        <h3 class="text-center font-black uppercase mb-4 italic text-gray-900">Stage Multipliers</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-2 text-center text-gray-900">
                             <div class="bg-white p-3 rounded-xl border border-gray-200">
                                 <div class="text-[8px] font-black text-gray-400 uppercase">Round 32</div>
                                 <div class="text-xl font-black text-blue-600">x2</div>
@@ -186,34 +186,29 @@
 
         <div id="page-groups" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-gray-50 text-gray-900 text-left">
              <div class="max-w-6xl mx-auto text-left">
-                <h1 class="text-3xl md:text-4xl font-black uppercase italic mb-8 text-left">Group Standings</h1>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 text-left" id="groups-grid"></div>
+                <h1 class="text-3xl md:text-4xl font-black uppercase italic mb-8 text-left text-gray-900 text-left">Group Standings</h1>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 text-left text-gray-900 text-left" id="groups-grid"></div>
              </div>
         </div>
 
         <div id="page-picks" class="page-content hidden h-full w-full flex flex-col md:flex-row text-left">
             <div class="flex-grow h-full overflow-y-auto p-4 md:p-10 bg-white text-gray-900 pb-[350px] md:pb-10 text-left">
-                <header class="mb-8 flex flex-col md:flex-row justify-between items-center border-b-4 border-gray-900 pb-6 gap-4 text-left">
-                    <h1 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-left">Selection</h1>
-                    <div id="countdown" class="flex gap-3 text-center bg-gray-900 text-white px-4 py-2 rounded-xl shadow-xl text-center">
-                        <div><div id="days" class="text-lg font-black text-center text-white">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center">Days</div></div>
+                <header class="mb-8 flex flex-col md:flex-row justify-between items-center border-b-4 border-gray-900 pb-6 gap-4 text-left text-gray-900">
+                    <h1 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-left text-gray-900">Selection</h1>
+                    <div id="countdown" class="flex gap-3 text-center bg-gray-900 text-white px-4 py-2 rounded-xl shadow-xl text-center text-white">
+                        <div><div id="days" class="text-lg font-black text-center text-white">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center text-white">Days</div></div>
                         <div class="text-blue-500 font-bold">:</div>
-                        <div><div id="hours" class="text-lg font-black text-center text-white">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center">Hrs</div></div>
+                        <div><div id="hours" class="text-lg font-black text-center text-white">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center text-white">Hrs</div></div>
                         <div class="text-blue-500 font-bold">:</div>
-                        <div><div id="minutes" class="text-lg font-black text-center text-white">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center">Min</div></div>
+                        <div><div id="minutes" class="text-lg font-black text-center text-white">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center text-white">Min</div></div>
                     </div>
                 </header>
                 <div id="tiers-container" class="grid gap-12 text-left"></div>
             </div>
 
-            <div id="roster-panel" class="w-full md:w-[350px] fixed bottom-0 md:relative bg-gray-950 p-4 md:p-6 flex flex-col border-t md:border-t-0 md:border-l border-gray-800 z-40 shadow-2xl text-left">
-                <div onclick="toggleMobileRoster()" class="flex justify-between items-center mb-4 cursor-pointer md:cursor-default text-left">
-                    <h2 class="text-lg md:text-xl font-black italic uppercase text-white tracking-widest flex items-center gap-2 text-left">
-                        My Squad <span id="roster-arrow" class="md:hidden text-blue-500 text-xs">▼</span>
-                    </h2>
-                    <span id="roster-count" class="bg-blue-600 px-2 py-0.5 rounded-full text-[10px] font-bold text-white uppercase">0</span>
-                </div>
-                <div id="roster-list" class="max-h-[150px] md:max-h-none overflow-y-auto space-y-2 mb-4 md:mb-6 md:flex-grow text-white text-left"></div>
+            <div id="roster-panel" class="w-full md:w-[350px] fixed bottom-0 md:relative bg-gray-950 p-4 md:p-6 flex flex-col border-t md:border-t-0 md:border-l border-gray-800 z-40 shadow-2xl">
+                <div onclick="toggleMobileRoster()" class="flex justify-between items-center mb-4 cursor-pointer md:cursor-default"><h2 class="text-lg md:text-xl font-black italic uppercase text-white tracking-widest flex items-center gap-2 text-left text-white">My Squad <span id="roster-arrow" class="md:hidden text-blue-500 text-xs">▼</span></h2><span id="roster-count" class="bg-blue-600 px-2 py-0.5 rounded-full text-[10px] font-bold text-white uppercase text-left">0</span></div>
+                <div id="roster-list" class="max-h-[150px] md:max-h-none overflow-y-auto space-y-2 mb-4 md:mb-6 md:flex-grow text-white"></div>
                 <div class="flex flex-row md:flex-col items-center gap-3 text-left">
                     <div class="flex-grow md:w-full bg-gray-900 p-3 md:p-4 rounded-2xl border border-gray-800 text-white text-left">
                         <div class="flex justify-between items-center text-left">
@@ -221,55 +216,27 @@
                             <span id="budget-display" class="text-xl md:text-2xl font-mono font-bold text-green-400 text-left">$150</span>
                         </div>
                     </div>
-                    <button onclick="saveToSupabase()" id="save-btn" class="w-1/3 md:w-full bg-green-600 hover:bg-green-500 py-3 md:py-4 rounded-xl font-black text-sm md:text-xl uppercase tracking-widest transition-all text-white">Save</button>
+                    <button onclick="saveToSupabase()" id="save-btn" class="w-1/3 md:w-full bg-green-600 hover:bg-green-500 py-3 md:py-4 rounded-xl font-black text-sm md:text-xl uppercase tracking-widest transition-all text-white text-left">Save</button>
                 </div>
             </div>
         </div>
 
         <div id="page-leaderboard" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-white text-gray-900 text-left">
             <div class="max-w-5xl mx-auto text-left">
-                <header class="mb-8 text-center">
-                    <h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter text-center">Leaderboard</h1>
-                    <p class="text-blue-600 font-bold uppercase tracking-widest text-xs italic text-center">Live Standings</p>
-                </header>
-
+                <header class="mb-8 text-center text-gray-900"><h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter">Leaderboard</h1><p class="text-blue-600 font-bold uppercase tracking-widest text-xs italic">Live Standings</p></header>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 text-center">
-                    <div class="bg-gray-900 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-center items-center">
-                        <div class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1 text-center">Total Entries</div>
-                        <div id="total-players-count" class="text-4xl font-black text-white text-center">0</div>
-                    </div>
-                    <div class="bg-green-600 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-center items-center text-center">
-                        <div class="text-[10px] font-black uppercase text-green-200 tracking-widest mb-1 text-center">Total Prize Pot</div>
-                        <div id="total-prize-pot" class="text-4xl font-black text-white text-center">$0</div>
-                    </div>
-                    <div class="bg-gray-50 border-2 border-gray-100 p-6 rounded-3xl shadow-sm space-y-2 text-gray-900 text-center">
-                        <div class="flex justify-between items-center font-black uppercase text-xs"><span>1st Place</span><span id="prize-1st" class="text-green-600 font-bold">$0</span></div>
-                        <div class="flex justify-between items-center font-black uppercase text-xs"><span>2nd Place</span><span id="prize-2nd" class="font-bold text-gray-900">$0</span></div>
-                        <div class="flex justify-between items-center font-black uppercase text-xs"><span>3rd Place</span><span id="prize-3rd" class="font-bold text-gray-900">$0</span></div>
-                    </div>
+                    <div class="bg-gray-900 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-center items-center text-center"><div class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1 text-center">Entries</div><div id="total-players-count" class="text-4xl font-black text-center text-white">0</div></div>
+                    <div class="bg-green-600 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-center items-center text-center"><div class="text-[10px] font-black uppercase text-green-200 tracking-widest mb-1 text-center">Pot</div><div id="total-prize-pot" class="text-4xl font-black text-center text-white">$0</div></div>
+                    <div class="bg-gray-50 border-2 border-gray-100 p-6 rounded-3xl shadow-sm space-y-2"><div class="flex justify-between font-black uppercase text-xs"><span>1st</span><span id="prize-1st" class="text-green-600 font-bold">$0</span></div><div class="flex justify-between font-black uppercase text-xs"><span>2nd</span><span id="prize-2nd" class="font-bold text-gray-900">$0</span></div><div class="flex justify-between font-black uppercase text-xs"><span>3rd</span><span id="prize-3rd" class="font-bold text-gray-900">$0</span></div></div>
                 </div>
-                
-                <div class="bg-gray-50 rounded-3xl border border-gray-200 overflow-hidden text-left">
-                    <div class="overflow-x-auto text-left">
-                        <table class="w-full text-left">
-                            <thead class="bg-gray-900 text-white uppercase text-[10px] tracking-[0.2em] font-black text-left">
-                                <tr>
-                                    <th class="px-6 py-4 text-center">Rank</th>
-                                    <th class="px-6 py-4 text-left">Player & Squad</th>
-                                    <th class="px-6 py-4 text-right">Points</th>
-                                </tr>
-                            </thead>
-                            <tbody id="leaderboard-body" class="font-bold text-gray-700 text-left"></tbody>
-                        </table>
-                    </div>
-                </div>
+                <div class="bg-gray-50 rounded-3xl border border-gray-200 overflow-hidden"><table class="w-full text-left text-gray-900"><thead class="bg-gray-900 text-white uppercase text-[10px] tracking-[0.2em] font-black"><tr><th class="px-6 py-4 text-center">Rank</th><th class="px-6 py-4 text-left">Player & Squad</th><th class="px-6 py-4 text-right text-white">Points</th></tr></thead><tbody id="leaderboard-body" class="font-bold"></tbody></table></div>
             </div>
         </div>
 
         <div id="page-chat" class="page-content hidden h-full w-full flex flex-col bg-white text-gray-900">
             <div class="flex-grow overflow-y-auto p-4 md:p-8 space-y-4 flex flex-col" id="chat-box"></div>
             <div class="p-4 bg-gray-50 border-t flex gap-2">
-                <input type="text" id="chat-input" placeholder="Type a message..." class="flex-grow p-4 rounded-2xl border-2 border-gray-200 focus:border-blue-500 outline-none font-bold text-gray-900">
+                <input type="text" id="chat-input" placeholder="Type message..." class="flex-grow p-4 rounded-2xl border-2 border-gray-200 focus:border-blue-500 outline-none font-bold text-gray-900">
                 <button onclick="sendChatMessage()" class="bg-blue-600 text-white px-8 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-500">Send</button>
             </div>
             <div class="h-20 md:hidden"></div>
@@ -283,9 +250,7 @@
         const SUPABASE_KEY = 'sb_publishable_3cT0wz86jjMqaEciDUwseg_Y59smIY3';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         const LOCK_DATE = new Date('2026-06-11T12:00:00'); 
-        let userEmail = "";
-        let myPicks = [];
-        let isLocked = new Date() > LOCK_DATE;
+        let userEmail = ""; let myPicks = []; let isLocked = new Date() > LOCK_DATE;
 
         const teams = [
             {"flag": "🇪🇸", "tier": 1, "group": "H", "name": "Spain", "cost": 50},
@@ -293,8 +258,6 @@
             {"flag": "🇫🇷", "tier": 1, "group": "I", "name": "France", "cost": 50},
             {"flag": "🇦🇷", "tier": 1, "group": "J", "name": "Argentina", "cost": 45},
             {"flag": "🇧🇷", "tier": 1, "group": "C", "name": "Brazil", "cost": 45},
-            {"flag": "🇦🇹", "tier": 2, "group": "J", "name": "Austria", "cost": 20},
-            {"flag": "🇸🇳", "tier": 2, "group": "I", "name": "Senegal", "cost": 15},
             {"flag": "🇵🇹", "tier": 1, "group": "K", "name": "Portugal", "cost": 40},
             {"flag": "🇩🇪", "tier": 1, "group": "E", "name": "Germany", "cost": 40},
             {"flag": "🇳🇱", "tier": 2, "group": "F", "name": "Netherlands", "cost": 35},
@@ -309,6 +272,8 @@
             {"flag": "🇺🇾", "tier": 2, "group": "H", "name": "Uruguay", "cost": 20},
             {"flag": "🇪🇨", "tier": 2, "group": "E", "name": "Ecuador", "cost": 20},
             {"flag": "🇭🇷", "tier": 2, "group": "L", "name": "Croatia", "cost": 20},
+            {"flag": "🇦🇹", "tier": 2, "group": "J", "name": "Austria", "cost": 20},
+            {"flag": "🇸🇳", "tier": 2, "group": "I", "name": "Senegal", "cost": 15},
             {"flag": "🇹🇷", "tier": 2, "group": "D", "name": "Turkiye", "cost": 15},
             {"flag": "🇸🇪", "tier": 2, "group": "F", "name": "Sweden", "cost": 15},
             {"flag": "🇨🇦", "tier": 2, "group": "B", "name": "Canada", "cost": 10},
@@ -340,36 +305,24 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             const savedEmail = localStorage.getItem('wc_pool_user_email');
-            if (savedEmail) {
-                document.getElementById('email-input').value = savedEmail;
-                handleLogin();
-            }
+            if (savedEmail) { document.getElementById('email-input').value = savedEmail; handleLogin(); }
         });
 
-        function logout() {
-            localStorage.removeItem('wc_pool_user_email');
-            location.reload();
-        }
+        function logout() { localStorage.removeItem('wc_pool_user_email'); location.reload(); }
 
         function showPage(pageId) {
             document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             document.getElementById(`page-${pageId}`).classList.remove('hidden');
-            const desktopNav = document.getElementById(`nav-${pageId}`);
-            if (desktopNav) desktopNav.classList.add('active');
-            
+            const nav = document.getElementById(`nav-${pageId}`); if(nav) nav.classList.add('active');
             if(pageId === 'picks') updateUI();
-            if(pageId === 'groups') renderGroups();
             if(pageId === 'leaderboard') fetchLeaderboard();
+            if(pageId === 'groups') renderGroups();
             if(pageId === 'chat') setupChat();
-            
             document.getElementById('mobile-menu').classList.remove('open');
         }
 
-        function toggleMobileMenu() {
-            document.getElementById('mobile-menu').classList.toggle('open');
-        }
-
+        function toggleMobileMenu() { document.getElementById('mobile-menu').classList.toggle('open'); }
         function toggleMobileRoster() {
             const panel = document.getElementById('roster-panel');
             const arrow = document.getElementById('roster-arrow');
@@ -377,143 +330,136 @@
             arrow.innerText = isMinimized ? '▲' : '▼';
         }
 
-        // --- CHAT LOGIC ---
         function setupChat() {
             fetchMessages();
-            // Subscribe to real-time updates for messages table
-            supabaseClient.channel('chat-room')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                    renderMessage(payload.new);
-                }).subscribe();
+            supabaseClient.channel('chat-channel').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => { renderMessage(payload.new); }).subscribe();
         }
 
         async function fetchMessages() {
-            const { data } = await supabaseClient.from('messages').select('*').order('created_at', { ascending: true }).limit(100);
-            const box = document.getElementById('chat-box');
-            box.innerHTML = '';
+            const { data } = await supabaseClient.from('messages').select('*').order('created_at', { ascending: true }).limit(50);
+            const box = document.getElementById('chat-box'); box.innerHTML = '';
             if (data) data.forEach(msg => renderMessage(msg));
         }
 
         function renderMessage(msg) {
-            const box = document.getElementById('chat-box');
-            if (!box) return;
+            const box = document.getElementById('chat-box'); if(!box) return;
             const isMe = msg.user_email === userEmail;
             const msgEl = document.createElement('div');
-            msgEl.className = `max-w-[80%] p-4 rounded-2xl text-left ${isMe ? 'bg-blue-600 text-white self-end rounded-tr-none' : 'bg-gray-100 text-gray-900 self-start rounded-tl-none'}`;
-            msgEl.innerHTML = `
-                <div class="text-[9px] font-black uppercase text-left ${isMe ? 'text-blue-200' : 'text-blue-600'}">
-                    ${msg.nickname} <span class="opacity-50">(${msg.realname})</span>
-                </div>
-                <div class="font-bold mt-1 text-sm text-left">${msg.content}</div>
-            `;
-            box.appendChild(msgEl);
-            box.scrollTop = box.scrollHeight;
+            msgEl.className = `max-w-[80%] p-4 rounded-2xl text-left ${isMe ? 'bg-blue-600 text-white self-end rounded-tr-none' : 'bg-gray-100 self-start rounded-tl-none text-gray-900'}`;
+            msgEl.innerHTML = `<div class="text-[9px] font-black uppercase text-left ${isMe ? 'text-blue-200' : 'text-blue-600'}">${msg.nickname} <span class="opacity-50">(${msg.realname})</span></div><div class="font-bold mt-1 text-sm text-left">${msg.content}</div>`;
+            box.appendChild(msgEl); box.scrollTop = box.scrollHeight;
         }
 
         async function sendChatMessage() {
-            const input = document.getElementById('chat-input');
-            const content = input.value.trim();
-            const nick = document.getElementById('nickname-input').value.trim();
-            const real = document.getElementById('realname-input').value.trim();
-            if (!content) return;
-            if (!nick || !real) return showToast("Set your Name in Instructions first!");
-
-            const { error } = await supabaseClient.from('messages').insert([{
-                user_email: userEmail,
-                nickname: nick,
-                realname: real,
-                content: content
-            }]);
-            
-            if (error) showToast("Send Error: " + error.message);
+            const input = document.getElementById('chat-input'); const content = input.value.trim();
+            const nick = document.getElementById('nickname-input').value.trim(); const real = document.getElementById('realname-input').value.trim();
+            if (!content || !nick || !real) return showToast("Set your Name first!");
+            await supabaseClient.from('messages').insert([{ user_email: userEmail, nickname: nick, realname: real, content: content }]);
             input.value = '';
         }
 
-        // --- PRE-EXISTING APP LOGIC ---
         async function handleLogin() {
-            const emailInput = document.getElementById('email-input').value.toLowerCase().trim();
-            if (!emailInput.includes('@')) return showToast("Enter a valid email address.");
-            userEmail = emailInput;
-            localStorage.setItem('wc_pool_user_email', userEmail);
+            const input = document.getElementById('email-input').value.toLowerCase().trim();
+            if (!input.includes('@')) return showToast("Invalid email.");
+            userEmail = input; localStorage.setItem('wc_pool_user_email', userEmail);
             document.getElementById('auth-overlay').classList.add('hidden');
             document.getElementById('top-nav').classList.remove('hidden');
             document.getElementById('main-app').classList.remove('hidden');
             setTimeout(() => document.getElementById('main-app').classList.remove('opacity-0'), 50);
             document.getElementById('user-display-nav').innerText = userEmail;
-            
-            try {
-                const { data } = await supabaseClient.from('picks').select('team_nickname, team_realname').eq('user_email', userEmail).limit(1);
-                if (data && data[0]) {
-                    document.getElementById('nickname-input').value = data[0].team_nickname || "";
-                    document.getElementById('realname-input').value = data[0].team_realname || "";
-                }
-            } catch(e) {}
-
-            renderPool();
-            loadFromSupabase();
-            startCountdown();
-            showPage('instructions');
+            const { data } = await supabaseClient.from('picks').select('team_nickname, team_realname').eq('user_email', userEmail).limit(1);
+            if (data && data[0]) {
+                document.getElementById('nickname-input').value = data[0].team_nickname || "";
+                document.getElementById('realname-input').value = data[0].team_realname || "";
+            }
+            renderPool(); loadFromSupabase(); startCountdown(); showPage('instructions');
         }
 
         async function fetchLeaderboard() {
             const body = document.getElementById('leaderboard-body');
-            body.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center animate-pulse uppercase text-xs font-black text-gray-400">Updating Standings...</td></tr>';
-            
+            body.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-gray-400 font-black uppercase text-xs">Updating...</td></tr>';
             try {
                 const { data, error } = await supabaseClient.from('picks').select('user_email, team_nickname, team_realname, team_name, cost');
                 if (error) throw error;
-
                 const userMap = new Map();
                 if (data) {
                     data.forEach(row => {
-                        if (!userMap.has(row.user_email)) {
-                            userMap.set(row.user_email, { nickname: row.team_nickname || "TBA", realname: row.team_realname || "Joined", squad: [] });
-                        }
+                        if (!userMap.has(row.user_email)) userMap.set(row.user_email, { nickname: row.team_nickname || "TBA", realname: row.team_realname || "Joined", squad: [] });
                         const teamData = teams.find(t => t.name === row.team_name);
                         if (teamData) userMap.get(row.user_email).squad.push({ flag: teamData.flag, cost: row.cost });
                     });
                 }
-
-                const playerCount = userMap.size;
-                const totalPot = playerCount * 40;
+                const playerCount = userMap.size; const totalPot = playerCount * 40;
                 document.getElementById('total-players-count').innerText = playerCount;
                 document.getElementById('total-prize-pot').innerText = `$${totalPot.toLocaleString()}`;
                 document.getElementById('prize-1st').innerText = `$${Math.floor(totalPot * 0.65).toLocaleString()}`;
                 document.getElementById('prize-2nd').innerText = `$${Math.floor(totalPot * 0.25).toLocaleString()}`;
                 document.getElementById('prize-3rd').innerText = `$${Math.floor(totalPot * 0.10).toLocaleString()}`;
-
-                if (playerCount === 0) {
-                    body.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-gray-400 uppercase text-xs font-black">No active rosters found</td></tr>';
-                    return;
-                }
-
+                if (playerCount === 0) { body.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-gray-400 uppercase text-xs">No active rosters found</td></tr>'; return; }
                 let html = ""; let index = 1;
                 userMap.forEach((user) => {
                     const squadFlags = user.squad.sort((a, b) => b.cost - a.cost).map(s => `<span class="text-lg">${s.flag}</span>`).join(' ');
-                    html += `
-                        <tr class="border-b border-gray-100 hover:bg-blue-50 transition-colors">
-                            <td class="px-6 py-4 text-center text-blue-600 font-black italic">#${index++}</td>
-                            <td class="px-6 py-4 text-left">
-                                <div class="text-gray-900 font-black uppercase text-sm leading-tight text-left">${user.nickname}</div>
-                                <div class="text-gray-400 text-[9px] font-bold uppercase tracking-widest mt-0.5 text-left">${user.realname}</div>
-                                <div class="flex gap-1.5 mt-2 text-left">${squadFlags}</div>
-                            </td>
-                            <td class="px-6 py-4 text-right font-mono text-xl font-bold text-gray-900">0</td>
-                        </tr>`;
+                    html += `<tr class="border-b border-gray-100 hover:bg-blue-50 transition-colors text-left"><td class="px-6 py-4 text-center text-blue-600 font-black italic">#${index++}</td><td class="px-6 py-4 text-left"><div class="text-gray-900 font-black uppercase text-sm leading-tight text-left">${user.nickname}</div><div class="text-gray-400 text-[9px] font-bold uppercase tracking-widest mt-0.5 text-left">${user.realname}</div><div class="flex gap-1 mt-2 text-left">${squadFlags}</div></td><td class="px-6 py-4 text-right font-mono text-xl font-bold text-gray-900 text-right">0</td></tr>`;
                 });
                 body.innerHTML = html;
-            } catch (err) { body.innerHTML = `<tr><td colspan="3" class="px-6 py-8 text-center text-red-500 font-bold uppercase text-[10px]">Database Connection Failed</td></tr>`; }
+            } catch (err) { body.innerHTML = `<tr><td colspan="3" class="px-6 py-8 text-center text-red-500 font-bold uppercase text-[10px]">Error Loading</td></tr>`; }
         }
 
         async function saveIdentityOnly() {
-            const nick = document.getElementById('nickname-input').value.trim();
-            const real = document.getElementById('realname-input').value.trim();
-            if(!nick || !real) return showToast("Enter both Nickname and Real Name.");
-            try {
-                const { error } = await supabaseClient.from('picks').update({ team_nickname: nick, team_realname: real }).eq('user_email', userEmail);
-                if(error) throw error;
-                showToast("Identity updated!", "success");
-            } catch (err) { showToast("Save Error: " + err.message); }
+            const nick = document.getElementById('nickname-input').value.trim(); const real = document.getElementById('realname-input').value.trim();
+            if(!nick || !real) return showToast("Enter both names.");
+            try { await supabaseClient.from('picks').update({ team_nickname: nick, team_realname: real }).eq('user_email', userEmail); showToast("Identity updated!", "success"); } catch (err) { showToast("Save Error: " + err.message); }
+        }
+
+        function renderPool() {
+            const container = document.getElementById('tiers-container'); container.innerHTML = '';
+            [1, 2, 3].forEach(tierNum => {
+                const tierTeams = teams.filter(t => t.tier === tierNum).sort((a, b) => b.cost - a.cost);
+                const section = document.createElement('div');
+                section.innerHTML = `<div class="flex items-center gap-4 mb-4"><div class="bg-gray-900 text-white px-3 py-1 font-black italic text-xs tracking-widest uppercase text-left">Tier ${tierNum}</div><div class="h-px bg-gray-200 flex-grow"></div></div><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 text-left">${tierTeams.map(t => `<div onclick="toggleTeam('${t.name}')" id="pool-${t.name.replace(/\s/g, '')}" class="team-card bg-white border-2 border-gray-100 rounded-2xl p-2 shadow-sm ${isLocked ? 'locked-ui' : ''} text-gray-900 text-left text-left"><div class="flex justify-between items-start text-left mb-1 text-gray-900"><span class="text-3xl text-left text-left">${t.flag}</span><span class="bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-xs text-left text-left">$${t.cost}</span></div><div class="font-black text-gray-900 uppercase text-[10px] tracking-tight truncate text-left text-left">${t.name}</div></div>`).join('')}</div>`;
+                container.appendChild(section);
+            });
+        }
+
+        function toggleTeam(name) {
+            if (isLocked) return; const team = teams.find(t => t.name === name); const idx = myPicks.findIndex(t => t.name === name);
+            if (idx > -1) myPicks.splice(idx, 1);
+            else { if (team.tier === 1 && myPicks.some(t => t.tier === 1)) return showToast("Only 1 Tier 1 allowed."); myPicks.push(team); }
+            updateUI();
+        }
+
+        function updateUI() {
+            let spent = 0; document.querySelectorAll('.team-card').forEach(el => el.classList.remove('selected'));
+            const list = document.getElementById('roster-list'); if(!list) return; list.innerHTML = '';
+            myPicks.sort((a, b) => b.cost - a.cost).forEach(t => { 
+                spent += t.cost; const poolEl = document.getElementById(`pool-${t.name.replace(/\s/g, '')}`); if (poolEl) poolEl.classList.add('selected'); 
+                const item = document.createElement('div'); item.className = "flex items-center justify-between bg-gray-800 p-3 rounded-xl border border-gray-700 text-white text-left"; 
+                item.innerHTML = `<div class="flex items-center gap-2 text-left text-white"><span class="text-xl text-left text-white text-left">${t.flag}</span><div class="text-[9px] font-black uppercase tracking-widest truncate text-left text-white text-left">${t.name}</div></div><div class="flex items-center gap-2 text-white text-left"><span class="text-green-400 font-mono font-bold text-xs text-left text-left">$${t.cost}</span>${!isLocked ? `<button onclick="toggleTeam('${t.name}')" class="text-gray-500 hover:text-red-500 text-lg font-bold transition-colors text-right text-right">×</button>` : ''}</div>`; list.appendChild(item); 
+            });
+            const remaining = 150 - spent; const display = document.getElementById('budget-display'); display.innerText = `$${remaining}`;
+            display.className = remaining < 0 ? "text-xl md:text-2xl font-mono font-bold text-red-500 text-left" : "text-xl md:text-2xl font-mono font-bold text-green-400 text-left";
+            document.getElementById('roster-count').innerText = `${myPicks.length}`;
+        }
+
+        async function saveToSupabase() {
+            if (isLocked) return;
+            const nick = document.getElementById('nickname-input').value.trim(); const real = document.getElementById('realname-input').value.trim();
+            if (!nick || !real) return showToast("Enter Nickname and Real Name under Instructions tab.");
+            const spent = myPicks.reduce((acc, t) => acc + t.cost, 0); if (spent > 150) return showToast("Over $150 budget.");
+            if (myPicks.filter(t => t.tier === 3).length < 3) return showToast("Pick at least 3 Tier 3 teams.");
+            const btn = document.getElementById('save-btn'); btn.innerText = "..."; btn.classList.add('saving');
+            try { await supabaseClient.from('picks').delete().eq('user_email', userEmail); await supabaseClient.from('picks').insert(myPicks.map(t => ({ user_email: userEmail, team_name: t.name, tier: t.tier, cost: t.cost, team_nickname: nick, team_realname: real }))); showToast("✅ Saved!", "success"); } catch (err) { showToast("Error: " + err.message); } finally { btn.innerText = "Save"; btn.classList.remove('saving'); }
+        }
+
+        async function loadFromSupabase() {
+            try { const { data } = await supabaseClient.from('picks').select('*').eq('user_email', userEmail); if (data && data.length > 0) { myPicks = data.map(dbRow => teams.find(t => t.name === dbRow.team_name)).filter(t => t); updateUI(); } } catch(e) {}
+        }
+
+        function showToast(message, type = 'error') {
+            const container = document.getElementById('toast-container'); const toast = document.createElement('div'); const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600'; const icon = type === 'success' ? '✅' : '⚠️';
+            toast.className = `${bgColor} text-white px-6 py-3 rounded-2xl shadow-2xl font-bold uppercase tracking-widest text-[10px] animate-bounce-in flex items-center gap-3 pointer-events-auto text-center`;
+            toast.innerHTML = `<span>${icon}</span> ${message}`; container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(20px)'; toast.style.transition = 'all 0.5s ease'; setTimeout(() => toast.remove(), 500); }, 3000);
         }
 
         function renderGroups() {
@@ -521,79 +467,9 @@
             ['A','B','C','D','E','F','G','H','I','J','K','L'].forEach(g => {
                 const groupTeams = teams.filter(t => t.group === g);
                 const card = document.createElement('div'); card.className = "bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-gray-900 text-left";
-                card.innerHTML = `<h3 class="font-black italic text-xl mb-4 border-b pb-2 text-left">GROUP ${g}</h3>` + groupTeams.map(t => `<div class="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0 text-left"><span class="text-2xl">${t.flag}</span><span class="font-bold text-sm text-gray-800">${t.name}</span></div>`).join('');
+                card.innerHTML = `<h3 class="font-black italic text-xl mb-4 border-b pb-2 text-left">GROUP ${g}</h3>` + groupTeams.map(t => `<div class="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0 text-left text-gray-900"><span class="text-2xl text-left">${t.flag}</span><span class="font-bold text-sm text-left">${t.name}</span></div>`).join('');
                 container.appendChild(card);
             });
-        }
-
-        function renderPool() {
-            const container = document.getElementById('tiers-container'); container.innerHTML = '';
-            [1, 2, 3].forEach(tierNum => {
-                const tierTeams = teams.filter(t => t.tier === tierNum);
-                const section = document.createElement('div');
-                section.innerHTML = `<div class="flex items-center gap-4 mb-4"><div class="bg-gray-900 text-white px-3 py-1 font-black italic text-xs tracking-widest uppercase text-left">Tier ${tierNum}</div><div class="h-px bg-gray-200 flex-grow"></div></div><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 text-left">${tierTeams.map(t => `<div onclick="toggleTeam('${t.name}')" id="pool-${t.name.replace(/\s/g, '')}" class="team-card bg-white border-2 border-gray-100 rounded-2xl p-2 shadow-sm ${isLocked ? 'locked-ui' : ''} text-gray-900 text-left"><div class="flex justify-between items-start text-left mb-1"><span class="text-3xl text-left">${t.flag}</span><span class="bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-xs text-left">$${t.cost}</span></div><div class="font-black text-gray-900 uppercase text-[10px] tracking-tight truncate text-left">${t.name}</div></div>`).join('')}</div>`;
-                container.appendChild(section);
-            });
-        }
-
-        function toggleTeam(name) {
-            if (isLocked) return;
-            const team = teams.find(t => t.name === name);
-            const idx = myPicks.findIndex(t => t.name === name);
-            if (idx > -1) myPicks.splice(idx, 1);
-            else {
-                if (team.tier === 1 && myPicks.some(t => t.tier === 1)) return showToast("Maximum of 1 Tier 1 team allowed.");
-                myPicks.push(team);
-            }
-            updateUI();
-        }
-
-        function updateUI() {
-            let spent = 0; document.querySelectorAll('.team-card').forEach(el => el.classList.remove('selected'));
-            const list = document.getElementById('roster-list'); if(!list) return; list.innerHTML = '';
-            myPicks.forEach(t => {
-                spent += t.cost; const poolEl = document.getElementById(`pool-${t.name.replace(/\s/g, '')}`);
-                if (poolEl) poolEl.classList.add('selected');
-                const item = document.createElement('div');
-                item.className = "flex items-center justify-between bg-gray-800 p-3 rounded-xl border border-gray-700 text-white text-left";
-                item.innerHTML = `<div class="flex items-center gap-2 text-left"><span class="text-xl text-left">${t.flag}</span><div class="text-[9px] font-black uppercase tracking-widest truncate text-left">${t.name}</div></div><div class="flex items-center gap-2 text-left"><span class="text-green-400 font-mono font-bold text-xs text-left">$${t.cost}</span>${!isLocked ? `<button onclick="toggleTeam('${t.name}')" class="text-gray-500 hover:text-red-500 text-lg font-bold transition-colors text-right">&times;</button>` : ''}</div>`;
-                list.appendChild(item);
-            });
-            const remaining = 150 - spent; const display = document.getElementById('budget-display');
-            display.innerText = `$${remaining}`;
-            display.className = remaining < 0 ? "text-xl md:text-2xl font-mono font-bold text-red-500 text-left" : "text-xl md:text-2xl font-mono font-bold text-green-400 text-left";
-            document.getElementById('roster-count').innerText = `${myPicks.length}`;
-        }
-
-        async function saveToSupabase() {
-            if (isLocked) return;
-            const nick = document.getElementById('nickname-input').value.trim();
-            const real = document.getElementById('realname-input').value.trim();
-            if (!nick || !real) return showToast("Enter Nickname and Real Name under Instructions tab.");
-            const spent = myPicks.reduce((acc, t) => acc + t.cost, 0);
-            if (spent > 150) return showToast("Over $150 budget.");
-            if (myPicks.filter(t => t.tier === 3).length < 3) return showToast("Pick at least 3 Tier 3 teams.");
-            
-            const btn = document.getElementById('save-btn'); btn.innerText = "..."; btn.classList.add('saving');
-            try {
-                await supabaseClient.from('picks').delete().eq('user_email', userEmail);
-                await supabaseClient.from('picks').insert(myPicks.map(t => ({ user_email: userEmail, team_name: t.name, tier: t.tier, cost: t.cost, team_nickname: nick, team_realname: real })));
-                showToast("✅ Saved!", "success");
-            } catch (err) { showToast("Error: " + err.message); } finally { btn.innerText = "Save"; btn.classList.remove('saving'); }
-        }
-
-        async function loadFromSupabase() {
-            try { const { data } = await supabaseClient.from('picks').select('*').eq('user_email', userEmail);
-                if (data && data.length > 0) { myPicks = data.map(dbRow => teams.find(t => t.name === dbRow.team_name)).filter(t => t); updateUI(); }
-            } catch(e) {}
-        }
-
-        function showToast(message, type = 'error') {
-            const container = document.getElementById('toast-container'); const toast = document.createElement('div');
-            toast.className = `${type === 'success' ? 'bg-green-600' : 'bg-red-600'} text-white px-6 py-3 rounded-2xl shadow-2xl font-bold uppercase tracking-widest text-[10px] animate-bounce-in flex items-center gap-3 pointer-events-auto text-center`;
-            toast.innerHTML = `<span>${type === 'success' ? '✅' : '⚠️'}</span> ${message}`;
-            container.appendChild(toast);
-            setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(20px)'; toast.style.transition = 'all 0.5s ease'; setTimeout(() => toast.remove(), 500); }, 3000);
         }
 
         function startCountdown() {
@@ -604,7 +480,6 @@
                     document.getElementById("hours").innerText = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
                     document.getElementById("minutes").innerText = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
                 }
-                if (distance < 0) isLocked = true;
             }, 1000);
         }
     </script>
