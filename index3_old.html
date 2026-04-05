@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>World Cup 2026 Pool</title>
+    
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://seanharrigan.github.io/world-cup-pool/">
+    <meta property="og:title" content="2026 World Cup Pool">
+    <meta property="og:description" content="Build your $150 squad. Win the pot.">
+    <meta property="og:image" content="https://seanharrigan.github.io/world-cup-pool/wc-image.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -20,7 +28,10 @@
 
         .nav-link { cursor: pointer; transition: all 0.3s; position: relative; white-space: nowrap; }
         .nav-link.active { color: #3b82f6; }
-        .nav-link.active::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 100%; height: 2px; background: #3b82f6; }
+        
+        @media (min-width: 768px) {
+            .nav-link.active::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 100%; height: 2px; background: #3b82f6; }
+        }
 
         @keyframes bounce-in {
             0% { transform: translate(-50%, 100px); opacity: 0; }
@@ -29,33 +40,53 @@
         }
         .animate-bounce-in { animation: bounce-in 0.5s ease-out forwards; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        #roster-panel { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .roster-minimized { transform: translateY(calc(100% - 70px)); }
+        @media (min-width: 768px) { .roster-minimized { transform: none !important; } }
+
+        #mobile-menu { transition: max-height 0.3s ease-out; max-height: 0; overflow: hidden; }
+        #mobile-menu.open { max-height: 400px; }
     </style>
 </head>
-<body class="bg-gray-950 text-white h-screen overflow-hidden font-sans flex flex-col">
+<body class="bg-gray-950 text-white h-screen overflow-hidden font-sans flex flex-col text-left">
 
     <div id="auth-overlay" class="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4">
         <div class="bg-gray-800 p-8 md:p-10 rounded-3xl border border-gray-700 max-w-md w-full text-center shadow-2xl">
-            <div class="text-5xl md:text-6xl mb-6">⚽</div>
-            <h2 class="text-2xl md:text-3xl font-black mb-2 italic uppercase tracking-tighter text-white">2026 World Cup Pool</h2>
+            <div class="text-5xl md:text-6xl mb-6 text-center">⚽</div>
+            <h2 class="text-2xl md:text-3xl font-black mb-2 italic uppercase tracking-tighter text-white text-center">2026 World Cup Pool</h2>
             <input type="email" id="email-input" placeholder="Enter email..." class="w-full p-4 rounded-2xl bg-gray-900 border border-gray-700 mb-4 text-white focus:border-blue-500 outline-none font-bold">
             <button onclick="handleLogin()" id="login-btn" class="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-500 transition-all text-white">Enter</button>
         </div>
     </div>
 
-    <nav id="top-nav" class="hidden bg-gray-950 border-b border-gray-800 px-4 md:px-8 py-3 flex flex-row justify-between items-center z-50">
-        <div class="flex items-center gap-2">
-            <span class="text-xl">🏆</span>
-            <span class="font-black italic uppercase tracking-tighter text-lg">WC2026</span>
+    <nav id="top-nav" class="hidden bg-gray-950 border-b border-gray-800 px-4 md:px-8 py-3 z-50">
+        <div class="flex justify-between items-center w-full">
+            <div class="flex items-center gap-2">
+                <span class="text-xl md:text-2xl">🏆</span>
+                <span class="font-black italic uppercase tracking-tighter text-lg md:text-xl">WC2026</span>
+            </div>
+
+            <div class="hidden md:flex gap-8 font-black uppercase text-[10px] tracking-widest text-gray-500 items-center">
+                <span onclick="showPage('instructions')" id="nav-instructions" class="nav-link active">Instructions</span>
+                <span onclick="showPage('groups')" id="nav-groups" class="nav-link">Groups</span>
+                <span onclick="showPage('picks')" id="nav-picks" class="nav-link text-white">My Picks</span>
+                <span onclick="showPage('leaderboard')" id="nav-leaderboard" class="nav-link">Leaderboard</span>
+                <span onclick="showPage('chat')" id="nav-chat" class="nav-link">Chat</span>
+                <div id="user-display-nav" class="hidden lg:block text-[10px] font-bold text-blue-500 uppercase tracking-widest truncate max-w-[150px] ml-4"></div>
+            </div>
+
+            <button onclick="toggleMobileMenu()" class="md:hidden p-2 text-gray-400 focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
         </div>
-        <div class="flex gap-4 md:gap-8 font-black uppercase text-[10px] tracking-widest text-gray-500 overflow-x-auto no-scrollbar">
-            <span onclick="showPage('instructions')" id="nav-instructions" class="nav-link active">Instructions</span>
-            <span onclick="showPage('groups')" id="nav-groups" class="nav-link">Groups</span>
-            <span onclick="showPage('picks')" id="nav-picks" class="nav-link text-white">My Picks</span>
-            <span onclick="showPage('leaderboard')" id="nav-leaderboard" class="nav-link">Leaderboard</span>
-        </div>
-        <div class="flex items-center gap-2">
-            <div id="user-display-nav" class="hidden lg:block text-[10px] font-bold text-blue-500 uppercase tracking-widest truncate max-w-[150px]"></div>
-            <button onclick="logout()" class="text-gray-500 hover:text-red-500 font-black text-xs px-2">✕</button>
+
+        <div id="mobile-menu" class="md:hidden flex flex-col font-black uppercase text-xs tracking-widest text-gray-500 bg-gray-950">
+            <span onclick="showPage('instructions')" class="py-4 border-b border-gray-900 text-center">Instructions</span>
+            <span onclick="showPage('groups')" class="py-4 border-b border-gray-900 text-center">Groups</span>
+            <span onclick="showPage('picks')" class="py-4 border-b border-gray-900 text-center text-white">My Picks</span>
+            <span onclick="showPage('leaderboard')" class="py-4 border-b border-gray-900 text-center text-white">Leaderboard</span>
+            <span onclick="showPage('chat')" class="py-4 text-center">Chat</span>
         </div>
     </nav>
 
@@ -63,55 +94,53 @@
         
         <div id="page-instructions" class="page-content h-full w-full overflow-y-auto p-6 md:p-12 bg-white text-gray-900">
             <div class="max-w-4xl mx-auto space-y-10">
-                <header>
-                    <h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter">The Official Rules</h1>
-                    <p class="text-blue-600 font-bold uppercase tracking-widest text-xs">2026 World Cup Pool Selection & Scoring</p>
+                <header class="text-left">
+                    <h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter text-left">The Official Rules</h1>
+                    <p class="text-blue-600 font-bold uppercase tracking-widest text-xs text-left">2026 World Cup Pool Selection & Scoring</p>
                 </header>
 
-                <section class="bg-blue-50 p-6 rounded-3xl border-2 border-blue-100 space-y-4">
-                    <h2 class="text-xl font-black uppercase tracking-tight">Your Team Identity</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-black uppercase text-blue-600 mb-1">Team Nickname (Leaderboard Name)</label>
+                <section class="bg-blue-50 p-6 rounded-3xl border-2 border-blue-100 space-y-4 text-left shadow-sm">
+                    <h2 class="text-xl font-black uppercase tracking-tight text-gray-900 text-left">Your Team Identity</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                        <div class="text-left">
+                            <label class="block text-[10px] font-black uppercase text-blue-600 mb-1 text-left text-gray-400">Team Nickname (Leaderboard Name)</label>
                             <input type="text" id="nickname-input" placeholder="e.g. Goal Diggers" class="w-full p-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-gray-900">
                         </div>
-                        <div>
-                            <label class="block text-[10px] font-black uppercase text-blue-600 mb-1">Real Name</label>
+                        <div class="text-left">
+                            <label class="block text-[10px] font-black uppercase text-blue-600 mb-1 text-left text-gray-400">Real Name</label>
                             <div class="flex gap-2">
                                 <input type="text" id="realname-input" placeholder="Your Full Name" class="flex-grow p-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-gray-900">
-                                <button onclick="saveIdentityOnly()" class="bg-blue-600 text-white px-4 rounded-xl font-black uppercase text-[10px] hover:bg-blue-700 transition-all">Save Identity</button>
+                                <button onclick="saveIdentityOnly()" class="bg-blue-600 text-white px-4 rounded-xl font-black uppercase text-[10px] hover:bg-blue-700 transition-all whitespace-nowrap">Save</button>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <section class="space-y-4">
-                        <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2">Squad Building</h2>
-                        <ul class="space-y-3 font-medium text-gray-700">
-                            <li><strong>$150 Budget:</strong> Fake money to spend on picks.</li>
-                            <li><strong>Tier 1:</strong> Maximum ONE team (optional).</li>
-                            <li><strong>Tier 2:</strong> No pick limits.</li>
-                            <li><strong>Tier 3:</strong> You MUST pick at least THREE teams.</li>
-                            <li class="text-red-600 font-black">DO NOT OVERSPEND!</li>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-gray-900 text-left border-b-2 border-gray-100 pb-8">
+                    <section class="space-y-4 text-left">
+                        <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2 text-left">Squad Building</h2>
+                        <ul class="space-y-3 font-medium text-gray-700 text-left">
+                            <li class="text-left"><strong>$150 Budget:</strong> Build your squad without overspending.</li>
+                            <li class="text-left"><strong>Tier 1:</strong> Maximum ONE team (optional).</li>
+                            <li class="text-left"><strong>Tier 3:</strong> You MUST pick at least THREE teams.</li>
                         </ul>
                     </section>
-                    <section class="space-y-4">
-                        <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2">Entry & Prizes</h2>
-                        <div class="bg-gray-900 text-white p-6 rounded-3xl shadow-xl">
-                            <div class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Entry Fee</div>
-                            <div class="text-3xl font-black mb-4">$40</div>
-                            <div class="space-y-1 text-xs font-bold border-t border-gray-800 pt-3">
-                                <div class="flex justify-between"><span>1st Place</span><span class="text-green-400">65% of pot</span></div>
-                                <div class="flex justify-between"><span>2nd Place</span><span>25% of pot</span></div>
-                                <div class="flex justify-between"><span>3rd Place</span><span>10% of pot</span></div>
+                    <section class="space-y-4 text-left">
+                        <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2 text-left">Prizes</h2>
+                        <div class="bg-gray-900 text-white p-6 rounded-3xl shadow-xl text-left">
+                            <div class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1 text-left text-gray-300">Entry Fee</div>
+                            <div class="text-3xl font-black mb-4 text-left">$40</div>
+                            <div class="space-y-1 text-xs font-bold border-t border-gray-800 pt-3 text-left">
+                                <div class="flex justify-between text-left"><span>1st Place</span><span class="text-green-400 font-bold">65%</span></div>
+                                <div class="flex justify-between text-left text-gray-300"><span>2nd Place</span><span>25%</span></div>
+                                <div class="flex justify-between text-left text-gray-300"><span>3rd Place</span><span>10%</span></div>
                             </div>
                         </div>
                     </section>
                 </div>
 
-                <section class="space-y-6">
-                    <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2">Point Scoring</h2>
+                <section class="space-y-6 text-gray-900">
+                    <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2 text-left">Point Scoring</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 font-bold text-gray-800">
                         <div class="bg-blue-50 p-6 rounded-2xl border-2 border-blue-100">
                             <h3 class="uppercase mb-2 italic">Group Phase</h3>
@@ -127,25 +156,25 @@
 
                     <div class="bg-gray-100 p-6 rounded-2xl">
                         <h3 class="text-center font-black uppercase mb-4 italic">Stage Multipliers</h3>
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
-                            <div class="text-center bg-white p-3 rounded-xl border border-gray-200">
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-2 text-center">
+                            <div class="bg-white p-3 rounded-xl border border-gray-200">
                                 <div class="text-[8px] font-black text-gray-400 uppercase">Round 32</div>
                                 <div class="text-xl font-black text-blue-600">x2</div>
                             </div>
-                            <div class="text-center bg-white p-3 rounded-xl border border-gray-200">
+                            <div class="bg-white p-3 rounded-xl border border-gray-200">
                                 <div class="text-[8px] font-black text-gray-400 uppercase">Round 16</div>
                                 <div class="text-xl font-black text-blue-600">x3</div>
                             </div>
-                            <div class="text-center bg-white p-3 rounded-xl border border-gray-200">
+                            <div class="bg-white p-3 rounded-xl border border-gray-200">
                                 <div class="text-[8px] font-black text-gray-400 uppercase">Quarters</div>
                                 <div class="text-xl font-black text-blue-600">x5</div>
                             </div>
-                            <div class="text-center bg-white p-3 rounded-xl border border-gray-200">
+                            <div class="bg-white p-3 rounded-xl border border-gray-200">
                                 <div class="text-[8px] font-black text-gray-400 uppercase">Semis</div>
                                 <div class="text-xl font-black text-blue-600">x8</div>
                             </div>
-                            <div class="text-center bg-gray-900 p-3 rounded-xl">
-                                <div class="text-[8px] font-black text-gray-400 uppercase">Finals</div>
+                            <div class="bg-gray-900 p-3 rounded-xl text-white">
+                                <div class="text-[8px] font-black uppercase text-gray-400">Finals</div>
                                 <div class="text-xl font-black text-yellow-400">x12</div>
                             </div>
                         </div>
@@ -155,104 +184,104 @@
             </div>
         </div>
 
-        <div id="page-groups" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-gray-50 text-gray-900">
-             <div class="max-w-6xl mx-auto">
-                <h1 class="text-3xl md:text-4xl font-black uppercase italic mb-8">Group Standings</h1>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="groups-grid"></div>
+        <div id="page-groups" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-gray-50 text-gray-900 text-left">
+             <div class="max-w-6xl mx-auto text-left">
+                <h1 class="text-3xl md:text-4xl font-black uppercase italic mb-8 text-left">Group Standings</h1>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 text-left" id="groups-grid"></div>
              </div>
         </div>
 
-        <div id="page-picks" class="page-content hidden h-full w-full flex flex-col md:flex-row">
-            <div class="flex-grow h-full overflow-y-auto p-4 md:p-10 bg-white text-gray-900 pb-48 md:pb-10">
-                <header class="mb-8 flex flex-col md:flex-row justify-between items-center border-b-4 border-gray-900 pb-6 gap-4">
-                    <h1 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter">Selection</h1>
-                    <div id="countdown" class="flex gap-3 text-center bg-gray-900 text-white px-4 py-2 rounded-xl shadow-xl">
-                        <div><div id="days" class="text-lg font-black">00</div><div class="text-[8px] uppercase text-gray-400 font-bold">Days</div></div>
+        <div id="page-picks" class="page-content hidden h-full w-full flex flex-col md:flex-row text-left">
+            <div class="flex-grow h-full overflow-y-auto p-4 md:p-10 bg-white text-gray-900 pb-[350px] md:pb-10 text-left">
+                <header class="mb-8 flex flex-col md:flex-row justify-between items-center border-b-4 border-gray-900 pb-6 gap-4 text-left">
+                    <h1 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-left">Selection</h1>
+                    <div id="countdown" class="flex gap-3 text-center bg-gray-900 text-white px-4 py-2 rounded-xl shadow-xl text-center">
+                        <div><div id="days" class="text-lg font-black text-center text-white">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center">Days</div></div>
                         <div class="text-blue-500 font-bold">:</div>
-                        <div><div id="hours" class="text-lg font-black">00</div><div class="text-[8px] uppercase text-gray-400 font-bold">Hrs</div></div>
+                        <div><div id="hours" class="text-lg font-black text-center text-white">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center">Hrs</div></div>
                         <div class="text-blue-500 font-bold">:</div>
-                        <div><div id="minutes" class="text-lg font-black">00</div><div class="text-[8px] uppercase text-gray-400 font-bold">Min</div></div>
+                        <div><div id="minutes" class="text-lg font-black text-center text-white">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center">Min</div></div>
                     </div>
                 </header>
-                <div id="tiers-container" class="grid gap-12"></div>
+                <div id="tiers-container" class="grid gap-12 text-left"></div>
             </div>
 
-            <div class="w-full md:w-[350px] fixed bottom-0 md:relative bg-gray-950 p-6 flex flex-col border-t md:border-t-0 md:border-l border-gray-800 z-40 shadow-2xl md:shadow-none">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-black italic uppercase text-white tracking-widest">My Roster</h2>
+            <div id="roster-panel" class="w-full md:w-[350px] fixed bottom-0 md:relative bg-gray-950 p-4 md:p-6 flex flex-col border-t md:border-t-0 md:border-l border-gray-800 z-40 shadow-2xl text-left">
+                <div onclick="toggleMobileRoster()" class="flex justify-between items-center mb-4 cursor-pointer md:cursor-default text-left">
+                    <h2 class="text-lg md:text-xl font-black italic uppercase text-white tracking-widest flex items-center gap-2 text-left">
+                        My Squad <span id="roster-arrow" class="md:hidden text-blue-500 text-xs">▼</span>
+                    </h2>
                     <span id="roster-count" class="bg-blue-600 px-2 py-0.5 rounded-full text-[10px] font-bold text-white uppercase">0</span>
                 </div>
-                <div id="roster-list" class="max-h-[150px] md:max-h-none overflow-y-auto space-y-2 mb-6 md:flex-grow text-white"></div>
-                <div class="bg-gray-900 p-4 rounded-2xl border border-gray-800 mb-4">
-                    <div class="flex justify-between items-center text-white">
-                        <span class="text-gray-500 text-[10px] font-black uppercase">Budget</span>
-                        <span id="budget-display" class="text-2xl font-mono font-bold text-green-400">$150</span>
+                <div id="roster-list" class="max-h-[150px] md:max-h-none overflow-y-auto space-y-2 mb-4 md:mb-6 md:flex-grow text-white text-left"></div>
+                <div class="flex flex-row md:flex-col items-center gap-3 text-left">
+                    <div class="flex-grow md:w-full bg-gray-900 p-3 md:p-4 rounded-2xl border border-gray-800 text-white text-left">
+                        <div class="flex justify-between items-center text-left">
+                            <span class="text-gray-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-left">Budget</span>
+                            <span id="budget-display" class="text-xl md:text-2xl font-mono font-bold text-green-400 text-left">$150</span>
+                        </div>
                     </div>
+                    <button onclick="saveToSupabase()" id="save-btn" class="w-1/3 md:w-full bg-green-600 hover:bg-green-500 py-3 md:py-4 rounded-xl font-black text-sm md:text-xl uppercase tracking-widest transition-all text-white">Save</button>
                 </div>
-                <button onclick="saveToSupabase()" id="save-btn" class="w-full bg-green-600 hover:bg-green-500 py-4 rounded-xl font-black text-xl uppercase tracking-widest transition-all text-white">Save</button>
             </div>
         </div>
 
-        <div id="page-leaderboard" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-white text-gray-900">
-            <div class="max-w-5xl mx-auto">
+        <div id="page-leaderboard" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-white text-gray-900 text-left">
+            <div class="max-w-5xl mx-auto text-left">
                 <header class="mb-8 text-center">
-                    <h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter">Leaderboard</h1>
-                    <p class="text-blue-600 font-bold uppercase tracking-widest text-xs italic">Tournament Standings</p>
+                    <h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter text-center">Leaderboard</h1>
+                    <p class="text-blue-600 font-bold uppercase tracking-widest text-xs italic text-center">Live Standings</p>
                 </header>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                    <div class="bg-gray-900 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-center text-center">
-                        <div class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1">Total Entries</div>
-                        <div id="total-players-count" class="text-4xl font-black">0</div>
-                        <div class="text-[10px] font-bold text-blue-500 uppercase mt-1">($40 Entry Fee)</div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 text-center">
+                    <div class="bg-gray-900 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-center items-center">
+                        <div class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1 text-center">Total Entries</div>
+                        <div id="total-players-count" class="text-4xl font-black text-white text-center">0</div>
                     </div>
-                    <div class="bg-green-600 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-center text-center">
-                        <div class="text-[10px] font-black uppercase text-green-200 tracking-widest mb-1">Total Prize Pot</div>
-                        <div id="total-prize-pot" class="text-4xl font-black">$0</div>
+                    <div class="bg-green-600 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-center items-center text-center">
+                        <div class="text-[10px] font-black uppercase text-green-200 tracking-widest mb-1 text-center">Total Prize Pot</div>
+                        <div id="total-prize-pot" class="text-4xl font-black text-white text-center">$0</div>
                     </div>
-                    <div class="bg-gray-50 border-2 border-gray-100 p-6 rounded-3xl shadow-sm space-y-2">
-                        <div class="flex justify-between items-center font-black uppercase text-xs text-gray-900">
-                            <span class="text-gray-400 italic">1st Place</span>
-                            <span id="prize-1st" class="text-green-600 font-mono text-lg">$0</span>
-                        </div>
-                        <div class="flex justify-between items-center font-black uppercase text-xs text-gray-900">
-                            <span class="text-gray-400 italic">2nd Place</span>
-                            <span id="prize-2nd" class="font-mono text-lg">$0</span>
-                        </div>
-                        <div class="flex justify-between items-center font-black uppercase text-xs text-gray-900">
-                            <span class="text-gray-400 italic">3rd Place</span>
-                            <span id="prize-3rd" class="font-mono text-lg">$0</span>
-                        </div>
+                    <div class="bg-gray-50 border-2 border-gray-100 p-6 rounded-3xl shadow-sm space-y-2 text-gray-900 text-center">
+                        <div class="flex justify-between items-center font-black uppercase text-xs"><span>1st Place</span><span id="prize-1st" class="text-green-600 font-bold">$0</span></div>
+                        <div class="flex justify-between items-center font-black uppercase text-xs"><span>2nd Place</span><span id="prize-2nd" class="font-bold text-gray-900">$0</span></div>
+                        <div class="flex justify-between items-center font-black uppercase text-xs"><span>3rd Place</span><span id="prize-3rd" class="font-bold text-gray-900">$0</span></div>
                     </div>
                 </div>
                 
-                <div class="bg-gray-50 rounded-3xl border border-gray-200 overflow-hidden">
-                    <div class="overflow-x-auto">
+                <div class="bg-gray-50 rounded-3xl border border-gray-200 overflow-hidden text-left">
+                    <div class="overflow-x-auto text-left">
                         <table class="w-full text-left">
-                            <thead class="bg-gray-900 text-white uppercase text-[10px] tracking-[0.2em] font-black">
+                            <thead class="bg-gray-900 text-white uppercase text-[10px] tracking-[0.2em] font-black text-left">
                                 <tr>
                                     <th class="px-6 py-4 text-center">Rank</th>
-                                    <th class="px-6 py-4">Team</th>
-                                    <th class="px-6 py-4">Squad</th>
+                                    <th class="px-6 py-4 text-left">Player & Squad</th>
                                     <th class="px-6 py-4 text-right">Points</th>
                                 </tr>
                             </thead>
-                            <tbody id="leaderboard-body" class="font-bold text-gray-700">
-                            </tbody>
+                            <tbody id="leaderboard-body" class="font-bold text-gray-700 text-left"></tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </div>
+
+        <div id="page-chat" class="page-content hidden h-full w-full flex flex-col bg-white text-gray-900">
+            <div class="flex-grow overflow-y-auto p-4 md:p-8 space-y-4 flex flex-col" id="chat-box"></div>
+            <div class="p-4 bg-gray-50 border-t flex gap-2">
+                <input type="text" id="chat-input" placeholder="Type a message..." class="flex-grow p-4 rounded-2xl border-2 border-gray-200 focus:border-blue-500 outline-none font-bold text-gray-900">
+                <button onclick="sendChatMessage()" class="bg-blue-600 text-white px-8 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-500">Send</button>
+            </div>
+            <div class="h-20 md:hidden"></div>
+        </div>
     </div>
 
-    <div id="toast-container" class="fixed bottom-40 md:bottom-10 left-1/2 -translate-x-1/2 z-[100] space-y-2 pointer-events-none"></div>
+    <div id="toast-container" class="fixed bottom-40 md:bottom-10 left-1/2 -translate-x-1/2 z-[100] space-y-2 pointer-events-none text-center"></div>
 
     <script>
         const SUPABASE_URL = 'https://ttqvchhzuyzhzeumysks.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_3cT0wz86jjMqaEciDUwseg_Y59smIY3';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
         const LOCK_DATE = new Date('2026-06-11T12:00:00'); 
         let userEmail = "";
         let myPicks = [];
@@ -264,6 +293,8 @@
             {"flag": "🇫🇷", "tier": 1, "group": "I", "name": "France", "cost": 50},
             {"flag": "🇦🇷", "tier": 1, "group": "J", "name": "Argentina", "cost": 45},
             {"flag": "🇧🇷", "tier": 1, "group": "C", "name": "Brazil", "cost": 45},
+            {"flag": "🇦🇹", "tier": 2, "group": "J", "name": "Austria", "cost": 20},
+            {"flag": "🇸🇳", "tier": 2, "group": "I", "name": "Senegal", "cost": 15},
             {"flag": "🇵🇹", "tier": 1, "group": "K", "name": "Portugal", "cost": 40},
             {"flag": "🇩🇪", "tier": 1, "group": "E", "name": "Germany", "cost": 40},
             {"flag": "🇳🇱", "tier": 2, "group": "F", "name": "Netherlands", "cost": 35},
@@ -278,8 +309,6 @@
             {"flag": "🇺🇾", "tier": 2, "group": "H", "name": "Uruguay", "cost": 20},
             {"flag": "🇪🇨", "tier": 2, "group": "E", "name": "Ecuador", "cost": 20},
             {"flag": "🇭🇷", "tier": 2, "group": "L", "name": "Croatia", "cost": 20},
-            {"flag": "🇦🇹", "tier": 2, "group": "J", "name": "Austria", "cost": 20},
-            {"flag": "🇸🇳", "tier": 2, "group": "I", "name": "Senegal", "cost": 15},
             {"flag": "🇹🇷", "tier": 2, "group": "D", "name": "Turkiye", "cost": 15},
             {"flag": "🇸🇪", "tier": 2, "group": "F", "name": "Sweden", "cost": 15},
             {"flag": "🇨🇦", "tier": 2, "group": "B", "name": "Canada", "cost": 10},
@@ -309,12 +338,11 @@
             {"flag": "🇭🇹", "tier": 3, "group": "C", "name": "Haiti", "cost": 2}
         ];
 
-        // --- AUTH SESSION CHECK ---
         window.addEventListener('DOMContentLoaded', () => {
             const savedEmail = localStorage.getItem('wc_pool_user_email');
             if (savedEmail) {
                 document.getElementById('email-input').value = savedEmail;
-                handleLogin(); // Auto-login
+                handleLogin();
             }
         });
 
@@ -327,121 +355,86 @@
             document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             document.getElementById(`page-${pageId}`).classList.remove('hidden');
-            document.getElementById(`nav-${pageId}`).classList.add('active');
+            const desktopNav = document.getElementById(`nav-${pageId}`);
+            if (desktopNav) desktopNav.classList.add('active');
+            
             if(pageId === 'picks') updateUI();
             if(pageId === 'groups') renderGroups();
             if(pageId === 'leaderboard') fetchLeaderboard();
-        }
-
-        async function fetchLeaderboard() {
-            const body = document.getElementById('leaderboard-body');
-            body.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center animate-pulse uppercase text-xs font-black">Updating Standings...</td></tr>';
+            if(pageId === 'chat') setupChat();
             
-            try {
-                const { data, error } = await supabaseClient.from('picks').select('user_email, team_nickname, team_realname, team_name, cost');
-                if (error) throw error;
-
-                const userMap = new Map();
-                if (data && data.length > 0) {
-                    data.forEach(row => {
-                        if (!userMap.has(row.user_email)) {
-                            userMap.set(row.user_email, {
-                                nickname: row.team_nickname || "TBA",
-                                realname: row.team_realname || "Joined",
-                                squad: []
-                            });
-                        }
-                        const teamData = teams.find(t => t.name === row.team_name);
-                        if (teamData) {
-                            userMap.get(row.user_email).squad.push({
-                                flag: teamData.flag,
-                                cost: row.cost
-                            });
-                        }
-                    });
-                }
-
-                const playerCount = userMap.size;
-                const totalPot = playerCount * 40;
-                document.getElementById('total-players-count').innerText = playerCount;
-                document.getElementById('total-prize-pot').innerText = `$${totalPot.toLocaleString()}`;
-                document.getElementById('prize-1st').innerText = `$${Math.floor(totalPot * 0.65).toLocaleString()}`;
-                document.getElementById('prize-2nd').innerText = `$${Math.floor(totalPot * 0.25).toLocaleString()}`;
-                document.getElementById('prize-3rd').innerText = `$${Math.floor(totalPot * 0.10).toLocaleString()}`;
-
-                if (playerCount === 0) {
-                    body.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-400 uppercase text-xs font-black">No active rosters found</td></tr>';
-                    return;
-                }
-
-                let html = "";
-                let index = 1;
-                userMap.forEach((user) => {
-                    const squadFlags = user.squad
-                        .sort((a, b) => b.cost - a.cost)
-                        .map(s => `<span class="text-xl" title="Cost: $${s.cost}">${s.flag}</span>`)
-                        .join(' ');
-
-                    html += `
-                        <tr class="border-b border-gray-100 hover:bg-blue-50 transition-colors">
-                            <td class="px-6 py-4 text-center text-blue-600 font-black italic">#${index++}</td>
-                            <td class="px-6 py-4">
-                                <div class="text-gray-900 font-black uppercase text-sm leading-tight">${user.nickname}</div>
-                                <div class="text-gray-400 text-[9px] font-bold uppercase tracking-widest mt-0.5">${user.realname}</div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex gap-2 flex-wrap">${squadFlags}</div>
-                            </td>
-                            <td class="px-6 py-4 text-right font-mono text-xl font-bold text-gray-900">0</td>
-                        </tr>
-                    `;
-                });
-                body.innerHTML = html;
-
-            } catch (err) {
-                console.error(err);
-                body.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-red-500 font-bold uppercase text-[10px]">Database Connection Failed</td></tr>`;
-            }
+            document.getElementById('mobile-menu').classList.remove('open');
         }
 
-        async function saveIdentityOnly() {
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.toggle('open');
+        }
+
+        function toggleMobileRoster() {
+            const panel = document.getElementById('roster-panel');
+            const arrow = document.getElementById('roster-arrow');
+            const isMinimized = panel.classList.toggle('roster-minimized');
+            arrow.innerText = isMinimized ? '▲' : '▼';
+        }
+
+        // --- CHAT LOGIC ---
+        function setupChat() {
+            fetchMessages();
+            // Subscribe to real-time updates for messages table
+            supabaseClient.channel('chat-room')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                    renderMessage(payload.new);
+                }).subscribe();
+        }
+
+        async function fetchMessages() {
+            const { data } = await supabaseClient.from('messages').select('*').order('created_at', { ascending: true }).limit(100);
+            const box = document.getElementById('chat-box');
+            box.innerHTML = '';
+            if (data) data.forEach(msg => renderMessage(msg));
+        }
+
+        function renderMessage(msg) {
+            const box = document.getElementById('chat-box');
+            if (!box) return;
+            const isMe = msg.user_email === userEmail;
+            const msgEl = document.createElement('div');
+            msgEl.className = `max-w-[80%] p-4 rounded-2xl text-left ${isMe ? 'bg-blue-600 text-white self-end rounded-tr-none' : 'bg-gray-100 text-gray-900 self-start rounded-tl-none'}`;
+            msgEl.innerHTML = `
+                <div class="text-[9px] font-black uppercase text-left ${isMe ? 'text-blue-200' : 'text-blue-600'}">
+                    ${msg.nickname} <span class="opacity-50">(${msg.realname})</span>
+                </div>
+                <div class="font-bold mt-1 text-sm text-left">${msg.content}</div>
+            `;
+            box.appendChild(msgEl);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const content = input.value.trim();
             const nick = document.getElementById('nickname-input').value.trim();
             const real = document.getElementById('realname-input').value.trim();
-            if(!nick || !real) return showToast("Enter both Nickname and Real Name.");
+            if (!content) return;
+            if (!nick || !real) return showToast("Set your Name in Instructions first!");
 
-            try {
-                const { error } = await supabaseClient.from('picks')
-                    .update({ team_nickname: nick, team_realname: real })
-                    .eq('user_email', userEmail);
-                
-                if(error) throw error;
-                showToast("Identity updated!", "success");
-            } catch (err) {
-                showToast("Save Error: " + err.message);
-            }
-        }
-
-        function renderGroups() {
-            const container = document.getElementById('groups-grid');
-            container.innerHTML = '';
-            ['A','B','C','D','E','F','G','H','I','J','K','L'].forEach(g => {
-                const groupTeams = teams.filter(t => t.group === g);
-                const card = document.createElement('div');
-                card.className = "bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-gray-900";
-                card.innerHTML = `<h3 class="font-black italic text-xl mb-4 border-b pb-2">GROUP ${g}</h3>` + 
-                    groupTeams.map(t => `<div class="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0"><span class="text-2xl">${t.flag}</span><span class="font-bold text-sm text-gray-800">${t.name}</span></div>`).join('');
-                container.appendChild(card);
-            });
-        }
-
-        async function handleLogin() {
-            const email = document.getElementById('email-input').value.toLowerCase().trim();
-            if (!email.includes('@')) return showToast("Enter a valid email address.");
-            userEmail = email;
+            const { error } = await supabaseClient.from('messages').insert([{
+                user_email: userEmail,
+                nickname: nick,
+                realname: real,
+                content: content
+            }]);
             
-            // Save to browser storage
-            localStorage.setItem('wc_pool_user_email', userEmail);
+            if (error) showToast("Send Error: " + error.message);
+            input.value = '';
+        }
 
+        // --- PRE-EXISTING APP LOGIC ---
+        async function handleLogin() {
+            const emailInput = document.getElementById('email-input').value.toLowerCase().trim();
+            if (!emailInput.includes('@')) return showToast("Enter a valid email address.");
+            userEmail = emailInput;
+            localStorage.setItem('wc_pool_user_email', userEmail);
             document.getElementById('auth-overlay').classList.add('hidden');
             document.getElementById('top-nav').classList.remove('hidden');
             document.getElementById('main-app').classList.remove('hidden');
@@ -462,33 +455,83 @@
             showPage('instructions');
         }
 
-        function startCountdown() {
-            const timer = setInterval(function() {
-                const now = new Date().getTime();
-                const distance = LOCK_DATE.getTime() - now;
-                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                if(document.getElementById("days")) {
-                    document.getElementById("days").innerText = days.toString().padStart(2, '0');
-                    document.getElementById("hours").innerText = hours.toString().padStart(2, '0');
-                    document.getElementById("minutes").innerText = minutes.toString().padStart(2, '0');
+        async function fetchLeaderboard() {
+            const body = document.getElementById('leaderboard-body');
+            body.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center animate-pulse uppercase text-xs font-black text-gray-400">Updating Standings...</td></tr>';
+            
+            try {
+                const { data, error } = await supabaseClient.from('picks').select('user_email, team_nickname, team_realname, team_name, cost');
+                if (error) throw error;
+
+                const userMap = new Map();
+                if (data) {
+                    data.forEach(row => {
+                        if (!userMap.has(row.user_email)) {
+                            userMap.set(row.user_email, { nickname: row.team_nickname || "TBA", realname: row.team_realname || "Joined", squad: [] });
+                        }
+                        const teamData = teams.find(t => t.name === row.team_name);
+                        if (teamData) userMap.get(row.user_email).squad.push({ flag: teamData.flag, cost: row.cost });
+                    });
                 }
-                if (distance < 0) {
-                    clearInterval(timer);
-                    isLocked = true;
-                    if(document.getElementById("countdown")) document.getElementById("countdown").innerHTML = "LOCKED";
+
+                const playerCount = userMap.size;
+                const totalPot = playerCount * 40;
+                document.getElementById('total-players-count').innerText = playerCount;
+                document.getElementById('total-prize-pot').innerText = `$${totalPot.toLocaleString()}`;
+                document.getElementById('prize-1st').innerText = `$${Math.floor(totalPot * 0.65).toLocaleString()}`;
+                document.getElementById('prize-2nd').innerText = `$${Math.floor(totalPot * 0.25).toLocaleString()}`;
+                document.getElementById('prize-3rd').innerText = `$${Math.floor(totalPot * 0.10).toLocaleString()}`;
+
+                if (playerCount === 0) {
+                    body.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-gray-400 uppercase text-xs font-black">No active rosters found</td></tr>';
+                    return;
                 }
-            }, 1000);
+
+                let html = ""; let index = 1;
+                userMap.forEach((user) => {
+                    const squadFlags = user.squad.sort((a, b) => b.cost - a.cost).map(s => `<span class="text-lg">${s.flag}</span>`).join(' ');
+                    html += `
+                        <tr class="border-b border-gray-100 hover:bg-blue-50 transition-colors">
+                            <td class="px-6 py-4 text-center text-blue-600 font-black italic">#${index++}</td>
+                            <td class="px-6 py-4 text-left">
+                                <div class="text-gray-900 font-black uppercase text-sm leading-tight text-left">${user.nickname}</div>
+                                <div class="text-gray-400 text-[9px] font-bold uppercase tracking-widest mt-0.5 text-left">${user.realname}</div>
+                                <div class="flex gap-1.5 mt-2 text-left">${squadFlags}</div>
+                            </td>
+                            <td class="px-6 py-4 text-right font-mono text-xl font-bold text-gray-900">0</td>
+                        </tr>`;
+                });
+                body.innerHTML = html;
+            } catch (err) { body.innerHTML = `<tr><td colspan="3" class="px-6 py-8 text-center text-red-500 font-bold uppercase text-[10px]">Database Connection Failed</td></tr>`; }
+        }
+
+        async function saveIdentityOnly() {
+            const nick = document.getElementById('nickname-input').value.trim();
+            const real = document.getElementById('realname-input').value.trim();
+            if(!nick || !real) return showToast("Enter both Nickname and Real Name.");
+            try {
+                const { error } = await supabaseClient.from('picks').update({ team_nickname: nick, team_realname: real }).eq('user_email', userEmail);
+                if(error) throw error;
+                showToast("Identity updated!", "success");
+            } catch (err) { showToast("Save Error: " + err.message); }
+        }
+
+        function renderGroups() {
+            const container = document.getElementById('groups-grid'); container.innerHTML = '';
+            ['A','B','C','D','E','F','G','H','I','J','K','L'].forEach(g => {
+                const groupTeams = teams.filter(t => t.group === g);
+                const card = document.createElement('div'); card.className = "bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-gray-900 text-left";
+                card.innerHTML = `<h3 class="font-black italic text-xl mb-4 border-b pb-2 text-left">GROUP ${g}</h3>` + groupTeams.map(t => `<div class="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0 text-left"><span class="text-2xl">${t.flag}</span><span class="font-bold text-sm text-gray-800">${t.name}</span></div>`).join('');
+                container.appendChild(card);
+            });
         }
 
         function renderPool() {
-            const container = document.getElementById('tiers-container');
-            container.innerHTML = '';
+            const container = document.getElementById('tiers-container'); container.innerHTML = '';
             [1, 2, 3].forEach(tierNum => {
                 const tierTeams = teams.filter(t => t.tier === tierNum);
                 const section = document.createElement('div');
-                section.innerHTML = `<div class="flex items-center gap-4 mb-4"><div class="bg-gray-900 text-white px-3 py-1 font-black italic text-xs tracking-widest uppercase">Tier ${tierNum}</div><div class="h-px bg-gray-200 flex-grow"></div></div><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">${tierTeams.map(t => `<div onclick="toggleTeam('${t.name}')" id="pool-${t.name.replace(/\s/g, '')}" class="team-card bg-white border-2 border-gray-100 rounded-2xl p-2 shadow-sm ${isLocked ? 'locked-ui' : ''} text-gray-900"><div class="flex justify-between items-start mb-1"><span class="text-3xl">${t.flag}</span><span class="bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-xs">$${t.cost}</span></div><div class="font-black text-gray-900 uppercase text-[10px] tracking-tight truncate">${t.name}</div></div>`).join('')}</div>`;
+                section.innerHTML = `<div class="flex items-center gap-4 mb-4"><div class="bg-gray-900 text-white px-3 py-1 font-black italic text-xs tracking-widest uppercase text-left">Tier ${tierNum}</div><div class="h-px bg-gray-200 flex-grow"></div></div><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 text-left">${tierTeams.map(t => `<div onclick="toggleTeam('${t.name}')" id="pool-${t.name.replace(/\s/g, '')}" class="team-card bg-white border-2 border-gray-100 rounded-2xl p-2 shadow-sm ${isLocked ? 'locked-ui' : ''} text-gray-900 text-left"><div class="flex justify-between items-start text-left mb-1"><span class="text-3xl text-left">${t.flag}</span><span class="bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-xs text-left">$${t.cost}</span></div><div class="font-black text-gray-900 uppercase text-[10px] tracking-tight truncate text-left">${t.name}</div></div>`).join('')}</div>`;
                 container.appendChild(section);
             });
         }
@@ -506,21 +549,19 @@
         }
 
         function updateUI() {
-            let spent = 0;
-            document.querySelectorAll('.team-card').forEach(el => el.classList.remove('selected'));
-            const list = document.getElementById('roster-list');
-            if(!list) return;
-            list.innerHTML = '';
+            let spent = 0; document.querySelectorAll('.team-card').forEach(el => el.classList.remove('selected'));
+            const list = document.getElementById('roster-list'); if(!list) return; list.innerHTML = '';
             myPicks.forEach(t => {
-                spent += t.cost;
-                const poolEl = document.getElementById(`pool-${t.name.replace(/\s/g, '')}`);
+                spent += t.cost; const poolEl = document.getElementById(`pool-${t.name.replace(/\s/g, '')}`);
                 if (poolEl) poolEl.classList.add('selected');
                 const item = document.createElement('div');
-                item.className = "flex items-center justify-between bg-gray-800 p-3 rounded-xl border border-gray-700 text-white animate-in slide-in-from-right";
-                item.innerHTML = `<div class="flex items-center gap-2"><span class="text-xl">${t.flag}</span><div class="text-[9px] font-black uppercase tracking-widest truncate">${t.name}</div></div><div class="flex items-center gap-2"><span class="text-green-400 font-mono font-bold text-xs">$${t.cost}</span>${!isLocked ? `<button onclick="toggleTeam('${t.name}')" class="text-gray-500 hover:text-red-500 text-lg font-bold transition-colors">&times;</button>` : ''}</div>`;
+                item.className = "flex items-center justify-between bg-gray-800 p-3 rounded-xl border border-gray-700 text-white text-left";
+                item.innerHTML = `<div class="flex items-center gap-2 text-left"><span class="text-xl text-left">${t.flag}</span><div class="text-[9px] font-black uppercase tracking-widest truncate text-left">${t.name}</div></div><div class="flex items-center gap-2 text-left"><span class="text-green-400 font-mono font-bold text-xs text-left">$${t.cost}</span>${!isLocked ? `<button onclick="toggleTeam('${t.name}')" class="text-gray-500 hover:text-red-500 text-lg font-bold transition-colors text-right">&times;</button>` : ''}</div>`;
                 list.appendChild(item);
             });
-            document.getElementById('budget-display').innerText = `$${150 - spent}`;
+            const remaining = 150 - spent; const display = document.getElementById('budget-display');
+            display.innerText = `$${remaining}`;
+            display.className = remaining < 0 ? "text-xl md:text-2xl font-mono font-bold text-red-500 text-left" : "text-xl md:text-2xl font-mono font-bold text-green-400 text-left";
             document.getElementById('roster-count').innerText = `${myPicks.length}`;
         }
 
@@ -528,63 +569,43 @@
             if (isLocked) return;
             const nick = document.getElementById('nickname-input').value.trim();
             const real = document.getElementById('realname-input').value.trim();
-            
             if (!nick || !real) return showToast("Enter Nickname and Real Name under Instructions tab.");
-
             const spent = myPicks.reduce((acc, t) => acc + t.cost, 0);
-            const t3Count = myPicks.filter(t => t.tier === 3).length;
             if (spent > 150) return showToast("Over $150 budget.");
-            if (t3Count < 3) return showToast("Pick at least 3 Tier 3 teams.");
+            if (myPicks.filter(t => t.tier === 3).length < 3) return showToast("Pick at least 3 Tier 3 teams.");
             
-            const btn = document.getElementById('save-btn');
-            btn.innerText = "...";
-            btn.classList.add('saving');
+            const btn = document.getElementById('save-btn'); btn.innerText = "..."; btn.classList.add('saving');
             try {
                 await supabaseClient.from('picks').delete().eq('user_email', userEmail);
-                const toInsert = myPicks.map(t => ({ 
-                    user_email: userEmail, 
-                    team_name: t.name, 
-                    tier: t.tier, 
-                    cost: t.cost,
-                    team_nickname: nick,
-                    team_realname: real 
-                }));
-                const { error } = await supabaseClient.from('picks').insert(toInsert);
-                if (error) throw error;
-                showToast("✅ Roster saved!", "success");
-            } catch (err) {
-                showToast("Error: " + err.message);
-            } finally {
-                btn.innerText = "Save";
-                btn.classList.remove('saving');
-            }
+                await supabaseClient.from('picks').insert(myPicks.map(t => ({ user_email: userEmail, team_name: t.name, tier: t.tier, cost: t.cost, team_nickname: nick, team_realname: real })));
+                showToast("✅ Saved!", "success");
+            } catch (err) { showToast("Error: " + err.message); } finally { btn.innerText = "Save"; btn.classList.remove('saving'); }
         }
 
         async function loadFromSupabase() {
-            try {
-                const { data, error } = await supabaseClient.from('picks').select('*').eq('user_email', userEmail);
-                if (error) throw error;
-                if (data && data.length > 0) {
-                    myPicks = data.map(dbRow => teams.find(t => t.name === dbRow.team_name)).filter(t => t);
-                    updateUI();
-                }
+            try { const { data } = await supabaseClient.from('picks').select('*').eq('user_email', userEmail);
+                if (data && data.length > 0) { myPicks = data.map(dbRow => teams.find(t => t.name === dbRow.team_name)).filter(t => t); updateUI(); }
             } catch(e) {}
         }
 
         function showToast(message, type = 'error') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
-            const icon = type === 'success' ? '✅' : '⚠️';
-            toast.className = `${bgColor} text-white px-6 py-3 rounded-2xl shadow-2xl font-bold uppercase tracking-widest text-[10px] animate-bounce-in flex items-center gap-3 pointer-events-auto`;
-            toast.innerHTML = `<span>${icon}</span> ${message}`;
+            const container = document.getElementById('toast-container'); const toast = document.createElement('div');
+            toast.className = `${type === 'success' ? 'bg-green-600' : 'bg-red-600'} text-white px-6 py-3 rounded-2xl shadow-2xl font-bold uppercase tracking-widest text-[10px] animate-bounce-in flex items-center gap-3 pointer-events-auto text-center`;
+            toast.innerHTML = `<span>${type === 'success' ? '✅' : '⚠️'}</span> ${message}`;
             container.appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateY(20px)';
-                toast.style.transition = 'all 0.5s ease';
-                setTimeout(() => toast.remove(), 500);
-            }, 3000);
+            setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(20px)'; toast.style.transition = 'all 0.5s ease'; setTimeout(() => toast.remove(), 500); }, 3000);
+        }
+
+        function startCountdown() {
+            setInterval(() => {
+                const distance = LOCK_DATE.getTime() - new Date().getTime();
+                if(document.getElementById("days")) {
+                    document.getElementById("days").innerText = Math.floor(distance / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
+                    document.getElementById("hours").innerText = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
+                    document.getElementById("minutes").innerText = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+                }
+                if (distance < 0) isLocked = true;
+            }, 1000);
         }
     </script>
 </body>
