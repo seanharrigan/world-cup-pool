@@ -456,3 +456,13 @@
     </script>
 </body>
 </html>
+
+
+
+function checkAdminStatus() { 
+            const admins = ['seanigan44@gmail.com', 'connorha@student.ubc.ca'];
+            if (admins.includes(userEmail)) { 
+                document.getElementById('nav-admin').classList.remove('hidden'); 
+                document.getElementById('mobile-nav-admin').classList.remove('hidden'); 
+            } 
+        }

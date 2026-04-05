@@ -287,8 +287,14 @@
 
         window.addEventListener('DOMContentLoaded', () => { populateCountryFilter(); const savedEmail = localStorage.getItem('wc_pool_user_email'); if (savedEmail) { document.getElementById('email-input').value = savedEmail; handleLogin(); } });
         function populateCountryFilter() { const select = document.getElementById('leaderboard-country-filter'); const sortedTeams = [...teams].sort((a, b) => a.name.localeCompare(b.name)); sortedTeams.forEach(t => { const opt = document.createElement('option'); opt.value = t.name; opt.innerText = t.name; select.appendChild(opt); }); }
-        function checkAdminStatus() { if (userEmail === 'seanigan44@gmail.com') { document.getElementById('nav-admin').classList.remove('hidden'); document.getElementById('mobile-nav-admin').classList.remove('hidden'); } }
-        
+        function checkAdminStatus() { 
+            const admins = ['seanigan44@gmail.com', 'connorha@student.ubc.ca'];
+            if (admins.includes(userEmail)) { 
+                document.getElementById('nav-admin').classList.remove('hidden'); 
+                document.getElementById('mobile-nav-admin').classList.remove('hidden'); 
+            } 
+        }
+
         function setupAdminPage() {
             const t1 = document.getElementById('admin-team1'); const t2 = document.getElementById('admin-team2'); if(!t1 || !t2) return;
             const options = teams.sort((a,b) => a.name.localeCompare(b.name)).map(t => `<option value="${t.name}">${t.flag} ${t.name}</option>`).join('');
