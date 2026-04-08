@@ -40,13 +40,28 @@ function toggleTeam(name) {
     updateUI();
 }
 
-async function handleLogin() {
-    const input = document.getElementById('email-input').value.toLowerCase().trim();
-    if (!input.includes('@')) {
-        return showToast('Invalid email.');
+async function getExistingProfile(email) {
+    const { data, error } = await supabaseClient
+        .from('picks')
+        .select('team_nickname, team_realname')
+        .eq('user_email', email)
+        .limit(1);
+
+    if (error) {
+        throw error;
     }
 
-    userEmail = input;
+    return data?.[0] || null;
+}
+
+function confirmNewProfileEmail(email) {
+    return window.confirm(
+        `No profile found for ${email}.\n\nCreate a new profile with this email? Please double-check for typos before continuing.`
+    );
+}
+
+function completeLogin(email, existingProfile = null) {
+    userEmail = email;
     localStorage.setItem('wc_pool_user_email', userEmail);
     checkAdminStatus();
 
@@ -60,21 +75,39 @@ async function handleLogin() {
 
     document.getElementById('user-display-nav').innerText = userEmail;
 
-    const { data } = await supabaseClient
-        .from('picks')
-        .select('team_nickname, team_realname')
-        .eq('user_email', userEmail)
-        .limit(1);
-
-    if (data?.[0]) {
-        document.getElementById('nickname-input').value = data[0].team_nickname || '';
-        document.getElementById('realname-input').value = data[0].team_realname || '';
+    if (existingProfile) {
+        document.getElementById('nickname-input').value = existingProfile.team_nickname || '';
+        document.getElementById('realname-input').value = existingProfile.team_realname || '';
     }
 
     renderPool();
     loadFromSupabase();
     startCountdown();
     showPage('instructions');
+}
+
+async function handleLogin(options = {}) {
+    const { skipNewProfileConfirm = false } = options;
+    const input = document.getElementById('email-input').value.toLowerCase().trim();
+
+    if (!input.includes('@')) {
+        return showToast('Invalid email.');
+    }
+
+    try {
+        const existingProfile = await getExistingProfile(input);
+
+        if (!existingProfile && !skipNewProfileConfirm) {
+            const shouldCreate = confirmNewProfileEmail(input);
+            if (!shouldCreate) {
+                return;
+            }
+        }
+
+        completeLogin(input, existingProfile);
+    } catch (error) {
+        showToast(error.message || 'Unable to log in right now.');
+    }
 }
 
 async function saveIdentityOnly() {
@@ -166,7 +199,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const savedEmail = localStorage.getItem('wc_pool_user_email');
     if (savedEmail) {
         document.getElementById('email-input').value = savedEmail;
-        handleLogin();
+        handleLogin({ skipNewProfileConfirm: true });
     }
 });
 
