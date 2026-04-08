@@ -19,6 +19,64 @@ function showToast(message, type = 'error') {
     }, 2800);
 }
 
+function showConfirmModal({
+    title = 'Are you sure?',
+    message = '',
+    detail = '',
+    confirmText = 'Confirm',
+    cancelText = 'Cancel'
+}) {
+    const modal = document.getElementById('confirm-modal');
+    const titleEl = document.getElementById('confirm-modal-title');
+    const messageEl = document.getElementById('confirm-modal-message');
+    const detailEl = document.getElementById('confirm-modal-detail');
+    const confirmButton = document.getElementById('confirm-modal-confirm');
+    const cancelButton = document.getElementById('confirm-modal-cancel');
+
+    if (!modal || !titleEl || !messageEl || !detailEl || !confirmButton || !cancelButton) {
+        return Promise.resolve(window.confirm(message));
+    }
+
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    detailEl.textContent = detail;
+    confirmButton.textContent = confirmText;
+    cancelButton.textContent = cancelText;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    return new Promise((resolve) => {
+        const cleanup = (result) => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            confirmButton.removeEventListener('click', handleConfirm);
+            cancelButton.removeEventListener('click', handleCancel);
+            modal.removeEventListener('click', handleBackdrop);
+            document.removeEventListener('keydown', handleEscape);
+            resolve(result);
+        };
+
+        const handleConfirm = () => cleanup(true);
+        const handleCancel = () => cleanup(false);
+        const handleBackdrop = (event) => {
+            if (event.target === modal) {
+                cleanup(false);
+            }
+        };
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                cleanup(false);
+            }
+        };
+
+        confirmButton.addEventListener('click', handleConfirm);
+        cancelButton.addEventListener('click', handleCancel);
+        modal.addEventListener('click', handleBackdrop);
+        document.addEventListener('keydown', handleEscape);
+    });
+}
+
 function showPage(pageId) {
     document.querySelectorAll('.page-content').forEach((page) => page.classList.add('hidden'));
     document.querySelectorAll('.nav-link').forEach((link) => link.classList.remove('active'));
@@ -178,6 +236,7 @@ function startCountdown() {
 
 Object.assign(window, {
     showToast,
+    showConfirmModal,
     showPage,
     toggleMobileMenu,
     toggleMobileRoster,

@@ -55,9 +55,13 @@ async function getExistingProfile(email) {
 }
 
 function confirmNewProfileEmail(email) {
-    return window.confirm(
-        `No profile found for ${email}.\n\nCreate a new profile with this email? Please double-check for typos before continuing.`
-    );
+    return showConfirmModal({
+        title: 'Create New Profile?',
+        message: `No profile was found for ${email}.`,
+        detail: 'Please double-check for typos before continuing.',
+        confirmText: 'Create Profile',
+        cancelText: 'Go Back'
+    });
 }
 
 function completeLogin(email, existingProfile = null) {
@@ -98,7 +102,7 @@ async function handleLogin(options = {}) {
         const existingProfile = await getExistingProfile(input);
 
         if (!existingProfile && !skipNewProfileConfirm) {
-            const shouldCreate = confirmNewProfileEmail(input);
+            const shouldCreate = await confirmNewProfileEmail(input);
             if (!shouldCreate) {
                 return;
             }
