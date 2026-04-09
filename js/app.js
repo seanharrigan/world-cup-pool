@@ -108,17 +108,16 @@ async function hydrateSavedTimestamp() {
 
     try {
         const { data, error } = await supabaseClient
-            .from('picks')
+            .from('profiles')
             .select('updated_at')
-            .eq('user_email', userEmail)
-            .order('updated_at', { ascending: false })
-            .limit(1);
+            .eq('email', userEmail)
+            .maybeSingle();
 
         if (error) {
             throw error;
         }
 
-        saveState.lastSavedAt = data?.[0]?.updated_at || null;
+        saveState.lastSavedAt = data?.updated_at || null;
     } catch (error) {
         saveState.lastSavedAt = null;
     }
@@ -217,16 +216,16 @@ function toggleTeam(name) {
 
 async function getExistingProfile(email) {
     const { data, error } = await supabaseClient
-        .from('picks')
-        .select('team_nickname, team_realname')
-        .eq('user_email', email)
-        .limit(1);
+        .from('profiles')
+        .select('nickname, realname, has_paid, avatar_url, updated_at')
+        .eq('email', email)
+        .maybeSingle();
 
     if (error) {
         throw error;
     }
 
-    const dbProfile = data?.[0] || null;
+    const dbProfile = data || null;
     if (dbProfile) {
         return dbProfile;
     }
@@ -237,9 +236,33 @@ async function getExistingProfile(email) {
     }
 
     return {
-        team_nickname: localProfile.nickname || '',
-        team_realname: localProfile.realname || ''
+        nickname: localProfile.nickname || '',
+        realname: localProfile.realname || ''
     };
+}
+
+async function upsertProfile(email, profile = {}) {
+    const payload = {
+        email,
+        nickname: profile.nickname || '',
+        realname: profile.realname || ''
+    };
+
+    if (typeof profile.has_paid === 'boolean') {
+        payload.has_paid = profile.has_paid;
+    }
+
+    if (typeof profile.avatar_url === 'string') {
+        payload.avatar_url = profile.avatar_url;
+    }
+
+    const { error } = await supabaseClient
+        .from('profiles')
+        .upsert(payload, { onConflict: 'email' });
+
+    if (error) {
+        throw error;
+    }
 }
 
 function confirmNewProfileEmail(email) {
@@ -269,8 +292,8 @@ async function completeLogin(email, existingProfile = null) {
     setupProfile();
 
     if (existingProfile) {
-        document.getElementById('nickname-input').value = existingProfile.team_nickname || '';
-        document.getElementById('realname-input').value = existingProfile.team_realname || '';
+        document.getElementById('nickname-input').value = existingProfile.nickname || '';
+        document.getElementById('realname-input').value = existingProfile.realname || '';
     }
 
     await hydrateSavedTimestamp();
@@ -304,9 +327,10 @@ async function handleLogin(options = {}) {
             }
 
             saveProfileIdentityLocal(input, newProfile);
+            await upsertProfile(input, newProfile);
             await completeLogin(input, {
-                team_nickname: newProfile.nickname,
-                team_realname: newProfile.realname
+                nickname: newProfile.nickname,
+                realname: newProfile.realname
             });
             return;
         }
@@ -328,16 +352,16 @@ async function saveIdentityOnly() {
     saveProfileIdentityLocal(userEmail, { nickname, realname });
 
     try {
-        await supabaseClient
-            .from('picks')
-            .update({ team_nickname: nickname, team_realname: realname })
-            .eq('user_email', userEmail);
+        await upsertProfile(userEmail, { nickname, realname });
 
         saveState.failed = false;
         saveState.identityDirty = false;
         await hydrateSavedTimestamp();
         updateSaveStatusUI();
         setupDashboard();
+        fetchLeaderboard();
+        fetchAdminUsers();
+        fetchAdminPaidUsers();
         showToast('Identity updated!', 'success');
     } catch (error) {
         updateSaveStatusUI();
@@ -382,11 +406,10 @@ async function saveToSupabase() {
                 user_email: userEmail,
                 team_name: team.name,
                 tier: team.tier,
-                cost: team.cost,
-                team_nickname: nickname,
-                team_realname: realname
+                cost: team.cost
             }))
         );
+        await upsertProfile(userEmail, { nickname, realname });
 
         saveState.failed = false;
         saveState.picksDirty = false;
@@ -395,6 +418,8 @@ async function saveToSupabase() {
         updateSaveStatusUI();
         fetchLeaderboard();
         fetchStats();
+        fetchAdminUsers();
+        fetchAdminPaidUsers();
         setupDashboard();
         showToast('Saved!', 'success');
     } catch (error) {

@@ -96,16 +96,38 @@ function buildTeamPointsMap(matches = []) {
     return teamPointsMap;
 }
 
-function buildLeaderboardData(allPicks = [], allMatches = []) {
+function buildProfilesMap(profileRows = []) {
+    return new Map((profileRows || []).map((profile) => [profile.email, profile]));
+}
+
+function getDisplayProfile(email, profilesMap, pickFallback = {}) {
+    const profile = profilesMap.get(email);
+
+    return {
+        email,
+        nickname: profile?.nickname || pickFallback.nickname || 'TBA',
+        realname: profile?.realname || pickFallback.realname || 'Joined',
+        hasPaid: typeof profile?.has_paid === 'boolean' ? profile.has_paid : Boolean(pickFallback.hasPaid),
+        updatedAt: profile?.updated_at || null,
+        avatarUrl: profile?.avatar_url || null
+    };
+}
+
+function buildLeaderboardData(allPicks = [], allMatches = [], profilesMap = new Map()) {
     const teamPointsMap = buildTeamPointsMap(allMatches);
     const userMap = new Map();
 
     allPicks.forEach((pick) => {
         if (!userMap.has(pick.user_email)) {
+            const displayProfile = getDisplayProfile(pick.user_email, profilesMap, {
+                nickname: pick.team_nickname,
+                realname: pick.team_realname
+            });
+
             userMap.set(pick.user_email, {
                 email: pick.user_email,
-                nickname: pick.team_nickname || 'TBA',
-                realname: pick.team_realname || 'Joined',
+                nickname: displayProfile.nickname,
+                realname: displayProfile.realname,
                 totalPoints: 0,
                 squad: []
             });
@@ -166,9 +188,14 @@ async function setupDashboard() {
     }
 
     try {
-        const [{ data: allPicks, error: picksError }, { data: allMatches, error: matchesError }] = await Promise.all([
+        const [
+            { data: allPicks, error: picksError },
+            { data: allMatches, error: matchesError },
+            { data: allProfiles, error: profilesError }
+        ] = await Promise.all([
             supabaseClient.from('picks').select('*'),
-            supabaseClient.from('matches').select('*').order('match_date_manual', { ascending: false })
+            supabaseClient.from('matches').select('*').order('match_date_manual', { ascending: false }),
+            supabaseClient.from('profiles').select('email, nickname, realname, has_paid, avatar_url, updated_at')
         ]);
 
         if (picksError) {
@@ -179,11 +206,17 @@ async function setupDashboard() {
             throw matchesError;
         }
 
+        if (profilesError) {
+            throw profilesError;
+        }
+
         const picks = allPicks || [];
         const matches = allMatches || [];
+        const profilesMap = buildProfilesMap(allProfiles);
         const teamPointsMap = buildTeamPointsMap(matches);
-        const leaderboardData = buildLeaderboardData(picks, matches);
+        const leaderboardData = buildLeaderboardData(picks, matches, profilesMap);
         const currentUserRows = picks.filter((pick) => pick.user_email === userEmail);
+        const currentProfile = getDisplayProfile(userEmail, profilesMap);
         const myEntry = leaderboardData.find((entry) => entry.email === userEmail);
         const savedSquad = currentUserRows
             .map((pick) => teams.find((team) => team.name === pick.team_name))
@@ -224,9 +257,9 @@ async function setupDashboard() {
             } else if (!myEntry) {
                 welcome.textContent = 'Your current squad is local to this browser until you save it to the pool.';
             } else if (hasUnsaved) {
-                welcome.textContent = `${myEntry?.nickname || 'Manager'}, you have unsaved changes in your squad right now.`;
+                welcome.textContent = `${currentProfile.nickname || myEntry?.nickname || 'Manager'}, you have unsaved changes in your squad right now.`;
             } else {
-                welcome.textContent = `${myEntry?.nickname || 'Manager'}, you are currently ranked #${myRank + 1} with ${myPoints} points.`;
+                welcome.textContent = `${currentProfile.nickname || myEntry?.nickname || 'Manager'}, you are currently ranked #${myRank + 1} with ${myPoints} points.`;
             }
         }
 
@@ -364,26 +397,7 @@ async function fetchAdminUsers() {
     body.innerHTML = '<tr><td colspan="4" class="px-5 py-8 text-center text-gray-500 uppercase text-xs">Loading players...</td></tr>';
 
     try {
-        const { data, error } = await supabaseClient
-            .from('picks')
-            .select('user_email, team_realname, team_nickname');
-
-        if (error) {
-            throw error;
-        }
-
-        const userMap = new Map();
-        data?.forEach((row) => {
-            if (!userMap.has(row.user_email)) {
-                userMap.set(row.user_email, {
-                    email: row.user_email,
-                    realname: row.team_realname || '',
-                    nickname: row.team_nickname || ''
-                });
-            }
-        });
-
-        const users = Array.from(userMap.values()).sort((a, b) => a.email.localeCompare(b.email));
+        const users = await getAdminUserRecords();
         body.innerHTML = users.map((user) => `
             <tr class="border-t border-gray-800">
                 <td class="px-5 py-4 align-top break-all">${user.email}</td>
@@ -411,23 +425,40 @@ function sortAdminUsers(a, b) {
 }
 
 async function getAdminUserRecords() {
-    const { data, error } = await supabaseClient
-        .from('picks')
-        .select('*');
+    const [
+        { data: profiles, error: profilesError },
+        { data: picks, error: picksError }
+    ] = await Promise.all([
+        supabaseClient.from('profiles').select('email, nickname, realname, has_paid, avatar_url, updated_at'),
+        supabaseClient.from('picks').select('user_email, team_nickname, team_realname')
+    ]);
 
-    if (error) {
-        throw error;
+    if (profilesError) {
+        throw profilesError;
+    }
+
+    if (picksError) {
+        throw picksError;
     }
 
     const userMap = new Map();
 
-    data?.forEach((row) => {
+    profiles?.forEach((profile) => {
+        userMap.set(profile.email, {
+            email: profile.email,
+            realname: profile.realname || '',
+            nickname: profile.nickname || '',
+            hasPaid: Boolean(profile.has_paid)
+        });
+    });
+
+    picks?.forEach((row) => {
         if (!userMap.has(row.user_email)) {
             userMap.set(row.user_email, {
                 email: row.user_email,
                 realname: row.team_realname || '',
                 nickname: row.team_nickname || '',
-                hasPaid: Boolean(row.has_paid)
+                hasPaid: false
             });
         }
     });
@@ -468,9 +499,9 @@ async function toggleUserPaidStatus(email, currentValue) {
 
     try {
         const { error } = await supabaseClient
-            .from('picks')
+            .from('profiles')
             .update({ has_paid: nextValue })
-            .eq('user_email', email);
+            .eq('email', email);
 
         if (error) {
             throw error;
@@ -729,9 +760,17 @@ async function deleteUserPicks(email) {
     }
 
     try {
-        const { error } = await supabaseClient.from('picks').delete().eq('user_email', email);
-        if (error) {
-            throw error;
+        const [{ error: picksError }, { error: profileError }] = await Promise.all([
+            supabaseClient.from('picks').delete().eq('user_email', email),
+            supabaseClient.from('profiles').delete().eq('email', email)
+        ]);
+
+        if (picksError) {
+            throw picksError;
+        }
+
+        if (profileError) {
+            throw profileError;
         }
 
         if (userEmail === email) {
@@ -882,49 +921,31 @@ async function fetchLeaderboard() {
     body.innerHTML = '<tr><td colspan="3" class="p-8 text-center text-gray-500">Calculating Live Standings...</td></tr>';
 
     try {
-        const { data: allPicks } = await supabaseClient.from('picks').select('*');
-        const { data: allMatches } = await supabaseClient.from('matches').select('*');
-        const multipliers = { Group: 1, R32: 2, R16: 3, Quarters: 5, Semis: 8, Finals: 12 };
-        const teamPointsMap = {};
+        const [
+            { data: allPicks, error: picksError },
+            { data: allMatches, error: matchesError },
+            { data: allProfiles, error: profilesError }
+        ] = await Promise.all([
+            supabaseClient.from('picks').select('*'),
+            supabaseClient.from('matches').select('*'),
+            supabaseClient.from('profiles').select('email, nickname, realname, has_paid, avatar_url, updated_at')
+        ]);
 
-        teams.forEach((team) => {
-            teamPointsMap[team.name] = 0;
-        });
+        if (picksError) {
+            throw picksError;
+        }
 
-        allMatches?.forEach((match) => {
-            const multiplier = multipliers[match.stage] || 1;
+        if (matchesError) {
+            throw matchesError;
+        }
 
-            if (match.score_home > match.score_away) {
-                teamPointsMap[match.team_home] += 3 * multiplier;
-            } else if (match.score_away > match.score_home) {
-                teamPointsMap[match.team_away] += 3 * multiplier;
-            } else {
-                teamPointsMap[match.team_home] += 1 * multiplier;
-                teamPointsMap[match.team_away] += 1 * multiplier;
-            }
-        });
+        if (profilesError) {
+            throw profilesError;
+        }
 
-        const userMap = new Map();
-        allPicks?.forEach((pick) => {
-            if (!userMap.has(pick.user_email)) {
-                userMap.set(pick.user_email, {
-                    nickname: pick.team_nickname || 'TBA',
-                    realname: pick.team_realname || 'Joined',
-                    totalPoints: 0,
-                    squad: []
-                });
-            }
-
-            const user = userMap.get(pick.user_email);
-            user.totalPoints += teamPointsMap[pick.team_name] || 0;
-
-            const teamData = teams.find((team) => team.name === pick.team_name);
-            if (teamData) {
-                user.squad.push({ flag: teamData.flag, cost: teamData.cost });
-            }
-        });
-
-        let leaderboardData = Array.from(userMap.values()).sort((a, b) => b.totalPoints - a.totalPoints);
+        const profilesMap = buildProfilesMap(allProfiles);
+        let leaderboardData = buildLeaderboardData(allPicks || [], allMatches || [], profilesMap);
+        const playerCount = leaderboardData.length;
         const search = document.getElementById('leaderboard-search').value.toLowerCase();
         const filter = document.getElementById('leaderboard-country-filter').value;
 
@@ -940,7 +961,6 @@ async function fetchLeaderboard() {
             ));
         }
 
-        const playerCount = userMap.size;
         const totalPot = playerCount * 40;
 
         document.getElementById('total-players-count').innerText = playerCount;
