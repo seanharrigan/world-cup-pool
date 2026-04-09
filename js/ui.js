@@ -92,7 +92,6 @@ function showPage(pageId) {
     if (pageId === 'picks') updateUI();
     if (pageId === 'leaderboard') fetchLeaderboard();
     if (pageId === 'groups') renderGroups();
-    if (pageId === 'stats') fetchStats();
     if (pageId === 'admin') setupAdminPage();
     if (pageId === 'chat') setupChat();
     if (pageId === 'results') setupResultsPage();
@@ -195,20 +194,75 @@ function updateUI() {
     document.getElementById('roster-count').innerText = `${myPicks.length}`;
 }
 
-function renderGroups() {
+async function renderGroups() {
     const container = document.getElementById('groups-grid');
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = '<div class="col-span-full rounded-2xl border border-gray-100 bg-white p-8 text-center text-xs font-black uppercase tracking-[0.3em] text-gray-400">Loading group standings...</div>';
+
+    let matches = [];
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('matches')
+            .select('*')
+            .order('match_date_manual', { ascending: true });
+
+        if (error) {
+            throw error;
+        }
+
+        matches = data || [];
+    } catch (error) {
+        matches = [];
+    }
+
     container.innerHTML = '';
 
     ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'].forEach((group) => {
-        const groupTeams = teams.filter((team) => team.group === group);
+        const groupTeams = teams
+            .filter((team) => team.group === group)
+            .map((team) => {
+                const totalPoints = matches.reduce((sum, match) => {
+                    if (match.team_home !== team.name && match.team_away !== team.name) {
+                        return sum;
+                    }
+
+                    return sum + getMatchPointsForTeam(match, team.name);
+                }, 0);
+
+                return {
+                    ...team,
+                    totalPoints
+                };
+            })
+            .sort((a, b) => {
+                if (b.totalPoints !== a.totalPoints) {
+                    return b.totalPoints - a.totalPoints;
+                }
+
+                return a.name.localeCompare(b.name);
+            });
+
         const card = document.createElement('div');
         card.className = 'bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-gray-900 text-left';
         card.innerHTML = `
             <h3 class="font-black italic text-xl mb-4 border-b pb-2 text-left text-gray-900">GROUP ${group}</h3>
             ${groupTeams.map((team) => `
-                <div class="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0 text-left text-gray-900">
-                    <span class="text-2xl text-left">${team.flag}</span>
-                    <span class="font-bold text-sm text-left">${team.name}</span>
+                <div class="flex items-center justify-between gap-3 py-2.5 border-b border-gray-50 last:border-0 text-left text-gray-900">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span class="shrink-0 text-2xl text-left">${team.flag}</span>
+                        <div class="min-w-0">
+                            <div class="font-bold text-sm text-left text-gray-900">${team.name}</div>
+                            <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 text-left">$${team.cost} <span class="text-gray-300">(Tier ${team.tier})</span></div>
+                        </div>
+                    </div>
+                    <div class="shrink-0 text-right">
+                        <div class="text-lg font-black italic leading-none text-gray-900">${team.totalPoints}</div>
+                        <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Pts</div>
+                    </div>
                 </div>
             `).join('')}
         `;

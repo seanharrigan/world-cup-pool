@@ -21,6 +21,7 @@ function setupAdminPage() {
     fetchAdminHistory();
     fetchAdminUsers();
     fetchAdminTeamResults();
+    fetchStats();
 }
 
 function showAdminTab(tabId) {
@@ -70,7 +71,8 @@ function showResultsTab(tabId) {
 }
 
 function setupResultsPage() {
-    showResultsTab('pool');
+    showResultsTab('groups');
+    renderGroups();
     fetchPublicResults();
     fetchPublicTeamResults();
 }
@@ -490,6 +492,10 @@ async function deleteMatch(id) {
     fetchAdminHistory();
     fetchLeaderboard();
     fetchAdminTeamResults();
+    fetchPublicTeamResults();
+    fetchPublicResults();
+    renderGroups();
+    fetchStats();
 }
 
 async function submitManualResult() {
@@ -535,6 +541,11 @@ async function submitManualResult() {
         document.getElementById('admin-score2').value = '';
         fetchAdminHistory();
         fetchAdminTeamResults();
+        fetchPublicTeamResults();
+        fetchPublicResults();
+        renderGroups();
+        fetchLeaderboard();
+        fetchStats();
     } catch (error) {
         showToast(error.message);
     } finally {

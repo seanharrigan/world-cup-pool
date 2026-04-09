@@ -71,9 +71,7 @@
 
             <div class="hidden md:flex gap-6 font-black uppercase text-[10px] tracking-widest text-gray-500 items-center">
                 <span onclick="showPage('instructions')" id="nav-instructions" class="nav-link active">Instructions</span>
-                <span onclick="showPage('groups')" id="nav-groups" class="nav-link">Groups</span>
                 <span onclick="showPage('picks')" id="nav-picks" class="nav-link">My Picks</span>
-                <span onclick="showPage('stats')" id="nav-stats" class="nav-link">Statistics</span>
                 <span onclick="showPage('results')" id="nav-results" class="nav-link">Results</span>
                 <span onclick="showPage('leaderboard')" id="nav-leaderboard" class="nav-link">Leaderboard</span>
                 <span onclick="showPage('admin')" id="nav-admin" class="nav-link hidden text-red-500">Admin</span>
@@ -88,9 +86,7 @@
 
         <div id="mobile-menu" class="md:hidden flex flex-col font-black uppercase text-xs tracking-widest text-gray-500 bg-gray-950 text-center">
             <span onclick="showPage('instructions')" class="py-4 border-b border-gray-900 text-center">Instructions</span>
-            <span onclick="showPage('groups')" class="py-4 border-b border-gray-900 text-center text-white text-center">Groups</span>
             <span onclick="showPage('picks')" class="py-4 border-b border-gray-900 text-center text-white text-center">My Picks</span>
-            <span onclick="showPage('stats')" class="py-4 border-b border-gray-900 text-center text-white text-center">Statistics</span>
             <span onclick="showPage('results')" class="py-4 border-b border-gray-900 text-center text-white text-center text-center">Results</span>
             <span onclick="showPage('leaderboard')" class="py-4 border-b border-gray-900 text-center text-white">Leaderboard</span>
             <span onclick="showPage('admin')" id="mobile-nav-admin" class="py-4 border-b border-gray-900 text-center text-red-500 hidden text-center text-center">Admin</span>
@@ -136,13 +132,6 @@
             </div>
         </div>
 
-        <div id="page-groups" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-gray-50 text-gray-900 text-left">
-             <div class="max-w-6xl mx-auto text-left">
-                <h1 class="text-3xl md:text-4xl font-black uppercase italic mb-8 text-left text-gray-900">Group Standings</h1>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 text-left text-gray-900" id="groups-grid"></div>
-             </div>
-        </div>
-
         <div id="page-picks" class="page-content hidden h-full w-full flex flex-col md:flex-row text-left">
             <div class="flex-grow h-full overflow-y-auto p-4 md:p-10 bg-white text-gray-900 pb-[350px] md:pb-10 text-left">
                 <header class="mb-8 flex flex-col md:flex-row justify-between items-center border-b-4 border-gray-900 pb-6 gap-4 text-left">
@@ -155,21 +144,35 @@
                         <div><div id="minutes" class="text-lg font-black text-center text-white text-center">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center">Min</div></div>
                     </div>
                 </header>
+                <section class="mb-8 rounded-3xl border border-blue-100 bg-blue-50 p-5 text-left text-gray-900">
+                    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <div class="text-[10px] font-black uppercase tracking-[0.25em] text-blue-600">Picking Rules</div>
+                            <h2 class="mt-1 text-xl font-black uppercase italic tracking-tight text-gray-900">Build Within The Pool Limits</h2>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] font-black uppercase tracking-[0.15em]">
+                            <div class="rounded-2xl border border-blue-200 bg-white px-4 py-3 text-gray-900">$150 Max Budget</div>
+                            <div class="rounded-2xl border border-blue-200 bg-white px-4 py-3 text-gray-900">Only 1 Tier 1</div>
+                            <div class="rounded-2xl border border-blue-200 bg-white px-4 py-3 text-gray-900">At Least 3 Tier 3</div>
+                        </div>
+                    </div>
+                </section>
                 <div id="tiers-container" class="grid gap-12 text-left text-gray-900"></div>
             </div>
             <div id="roster-panel" class="w-full md:w-[350px] fixed bottom-0 md:relative bg-gray-950 p-4 md:p-6 flex flex-col border-t md:border-t-0 md:border-l border-gray-800 z-40 shadow-2xl text-left text-white">
                 <div onclick="toggleMobileRoster()" class="flex justify-between items-center mb-4 cursor-pointer md:cursor-default text-left"><h2 class="text-lg md:text-xl font-black italic uppercase text-white tracking-widest flex items-center gap-2 text-left text-white text-left text-white">My Squad <span id="roster-arrow" class="md:hidden text-blue-500 text-xs">▼</span></h2><span id="roster-count" class="bg-blue-600 px-2 py-0.5 rounded-full text-[10px] font-bold text-white text-center">0</span></div>
                 <div id="roster-list" class="max-h-[150px] md:max-h-none overflow-y-auto space-y-2 mb-4 md:mb-6 md:flex-grow text-white text-left"></div>
-                <div class="flex flex-row md:flex-col items-center gap-3 text-left"><div class="flex-grow md:w-full bg-gray-900 p-3 md:p-4 rounded-2xl border border-gray-800 text-white text-left"><div class="flex justify-between items-center text-left text-white"><span class="text-gray-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-left">Budget</span><span id="budget-display" class="text-xl md:text-2xl font-mono font-bold text-green-400 text-left">$150</span></div></div><button onclick="saveToSupabase()" id="save-btn" class="w-1/3 md:w-full bg-green-600 hover:bg-green-500 py-3 md:py-4 rounded-xl font-black text-sm md:text-xl uppercase tracking-widest transition-all text-white text-center">Save</button></div>
-            </div>
-        </div>
-
-        <div id="page-stats" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-gray-50 text-gray-900 text-left">
-            <div class="max-w-5xl mx-auto space-y-12 text-left text-gray-900">
-                <header class="text-center text-gray-900 text-center"><h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter text-center">Pool Statistics</h1><p class="text-blue-600 font-bold uppercase tracking-widest text-xs italic text-center">Live Trends</p></header>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-gray-900 text-left">
-                    <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 text-gray-900"><h2 class="text-xl font-black uppercase mb-6 border-b-4 border-gray-950 pb-2 text-gray-900">Roster Densities</h2><div id="roster-size-stats" class="space-y-4 font-bold text-gray-700 text-gray-900"></div></div>
-                    <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 text-gray-900"><h2 class="text-xl font-black uppercase mb-6 border-b-4 border-gray-950 pb-2 text-gray-900">Top Countries Chosen</h2><div id="country-pick-stats" class="space-y-3 font-bold text-gray-700 text-gray-900"></div></div>
+                <div class="w-full space-y-2 text-left">
+                    <div class="flex flex-row md:flex-col items-center gap-3 text-left">
+                        <div class="flex-grow md:w-full bg-gray-900 p-3 md:p-4 rounded-2xl border border-gray-800 text-white text-left">
+                            <div class="flex justify-between items-center text-left text-white">
+                                <span class="text-gray-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-left">Budget</span>
+                                <span id="budget-display" class="text-xl md:text-2xl font-mono font-bold text-green-400 text-left">$150</span>
+                            </div>
+                        </div>
+                        <button onclick="saveToSupabase()" id="save-btn" class="w-1/3 md:w-full bg-green-600 hover:bg-green-500 py-3 md:py-4 rounded-xl font-black text-sm md:text-xl uppercase tracking-widest transition-all text-white text-center">Save</button>
+                    </div>
+                    <div id="save-status" class="rounded-xl border border-gray-800 bg-gray-900/70 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center md:text-left">No changes yet</div>
                 </div>
             </div>
         </div>
@@ -178,11 +181,19 @@
             <div class="max-w-6xl mx-auto space-y-10 text-left text-gray-900">
                 <header class="text-left border-b border-gray-200 pb-6"><h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter">Results Centre</h1><p class="text-blue-600 font-bold uppercase tracking-widest text-[10px]">Verified Tournament Progress</p></header>
                 <div class="flex flex-wrap gap-3">
-                    <button onclick="showResultsTab('pool')" id="results-tab-pool" class="results-tab active rounded-2xl border border-blue-500/30 bg-blue-600/10 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-blue-700 transition-colors">Pool Results</button>
+                    <button onclick="showResultsTab('groups')" id="results-tab-groups" class="results-tab active rounded-2xl border border-blue-500/30 bg-blue-600/10 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-blue-700 transition-colors">Group Results</button>
+                    <button onclick="showResultsTab('pool')" id="results-tab-pool" class="results-tab rounded-2xl border border-gray-300 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Pool Results</button>
                     <button onclick="showResultsTab('matches')" id="results-tab-matches" class="results-tab rounded-2xl border border-gray-300 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Match Results</button>
                 </div>
 
-                <div id="results-panel-pool" class="results-panel space-y-6">
+                <div id="results-panel-groups" class="results-panel space-y-6">
+                    <section class="space-y-4">
+                        <h2 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-gray-900">Group Standings</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 text-left text-gray-900" id="groups-grid"></div>
+                    </section>
+                </div>
+
+                <div id="results-panel-pool" class="results-panel hidden space-y-6">
                     <section class="space-y-4">
                         <h2 class="text-xl font-black uppercase italic tracking-tight text-gray-900">Point Scoring</h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -307,13 +318,14 @@
         </div>
 
         <div id="page-admin" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-gray-900 text-white text-left">
-            <div class="max-w-4xl mx-auto space-y-10 text-left">
+            <div class="max-w-6xl mx-auto space-y-10 text-left">
                 <header class="text-left border-b border-gray-800 pb-6 text-left text-white text-left text-white text-left"><h1 class="text-4xl font-black uppercase italic mb-2 tracking-tighter text-left">Commissioner Desk</h1><p class="text-blue-500 font-bold uppercase tracking-widest text-xs text-left">Manual Entry & Match Log</p></header>
 
                 <div class="flex flex-wrap gap-3">
                     <button onclick="showAdminTab('matches')" id="admin-tab-matches" class="admin-tab active rounded-2xl border border-blue-500/40 bg-blue-600/20 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-blue-300 transition-colors">Match Entry</button>
                     <button onclick="showAdminTab('manage')" id="admin-tab-manage" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Players & Chat</button>
                     <button onclick="showAdminTab('teams')" id="admin-tab-teams" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Team Results</button>
+                    <button onclick="showAdminTab('stats')" id="admin-tab-stats" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Statistics</button>
                 </div>
 
                 <div id="admin-panel-matches" class="admin-panel space-y-10">
@@ -396,6 +408,23 @@
                                     <tbody id="admin-team-results-body" class="bg-gray-900 text-sm font-bold text-gray-100"></tbody>
                                 </table>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="admin-panel-stats" class="admin-panel hidden space-y-8">
+                    <div>
+                        <h2 class="text-xl font-black uppercase tracking-tight text-white">Pool Statistics</h2>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Live trends and roster breakdowns</p>
+                    </div>
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 text-left">
+                        <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 text-gray-900">
+                            <h2 class="text-xl font-black uppercase mb-6 border-b-4 border-gray-950 pb-2 text-gray-900">Roster Densities</h2>
+                            <div id="roster-size-stats" class="space-y-4 font-bold text-gray-700 text-gray-900"></div>
+                        </div>
+                        <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 text-gray-900">
+                            <h2 class="text-xl font-black uppercase mb-6 border-b-4 border-gray-950 pb-2 text-gray-900">Top Countries Chosen</h2>
+                            <div id="country-pick-stats" class="space-y-3 font-bold text-gray-700 text-gray-900"></div>
                         </div>
                     </div>
                 </div>

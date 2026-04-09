@@ -1,3 +1,112 @@
+const saveState = {
+    picksDirty: false,
+    identityDirty: false,
+    isSaving: false,
+    lastSavedAt: null,
+    failed: false
+};
+
+function getSaveStatusStorageKey() {
+    return userEmail ? `wc_pool_last_saved_${userEmail}` : null;
+}
+
+function formatSavedTime(timestamp) {
+    return new Date(timestamp).toLocaleTimeString([], {
+        hour: 'numeric',
+        minute: '2-digit'
+    });
+}
+
+function updateSaveStatusUI() {
+    const status = document.getElementById('save-status');
+    if (!status) {
+        return;
+    }
+
+    status.className = 'rounded-xl border px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-center md:text-left';
+
+    if (saveState.isSaving) {
+        status.classList.add('border-blue-500/30', 'bg-blue-600/10', 'text-blue-300');
+        status.textContent = 'Saving changes...';
+        return;
+    }
+
+    if (saveState.picksDirty || saveState.identityDirty) {
+        status.classList.add('border-amber-500/30', 'bg-amber-500/10', 'text-amber-300');
+        status.textContent = 'Unsaved changes';
+        return;
+    }
+
+    if (saveState.failed) {
+        status.classList.add('border-red-500/30', 'bg-red-500/10', 'text-red-300');
+        status.textContent = 'Save failed';
+        return;
+    }
+
+    if (saveState.lastSavedAt) {
+        status.classList.add('border-green-500/30', 'bg-green-500/10', 'text-green-300');
+        status.textContent = `Saved at ${formatSavedTime(saveState.lastSavedAt)}`;
+        return;
+    }
+
+    status.classList.add('border-gray-800', 'bg-gray-900/70', 'text-gray-400');
+    status.textContent = 'No changes yet';
+}
+
+function setLastSavedNow() {
+    saveState.lastSavedAt = new Date().toISOString();
+    const storageKey = getSaveStatusStorageKey();
+
+    if (storageKey) {
+        localStorage.setItem(storageKey, saveState.lastSavedAt);
+    }
+}
+
+function hydrateSavedTimestamp() {
+    const storageKey = getSaveStatusStorageKey();
+    saveState.lastSavedAt = storageKey ? localStorage.getItem(storageKey) : null;
+    updateSaveStatusUI();
+}
+
+function markPicksDirty() {
+    saveState.failed = false;
+    saveState.picksDirty = true;
+    updateSaveStatusUI();
+}
+
+function markIdentityDirty() {
+    saveState.failed = false;
+    saveState.identityDirty = true;
+    updateSaveStatusUI();
+}
+
+function clearDirtyFlags() {
+    saveState.failed = false;
+    saveState.picksDirty = false;
+    saveState.identityDirty = false;
+    updateSaveStatusUI();
+}
+
+function setupIdentityChangeTracking() {
+    const nicknameInput = document.getElementById('nickname-input');
+    const realnameInput = document.getElementById('realname-input');
+
+    [nicknameInput, realnameInput].forEach((input) => {
+        if (!input || input.dataset.saveTrackingBound === 'true') {
+            return;
+        }
+
+        input.addEventListener('input', () => {
+            if (!userEmail) {
+                return;
+            }
+
+            markIdentityDirty();
+        });
+        input.dataset.saveTrackingBound = 'true';
+    });
+}
+
 function populateCountryFilter() {
     const select = document.getElementById('leaderboard-country-filter');
     const sortedTeams = [...teams].sort((a, b) => a.name.localeCompare(b.name));
@@ -30,14 +139,15 @@ function toggleTeam(name) {
     if (existingIndex > -1) {
         myPicks.splice(existingIndex, 1);
     } else {
-        if (team.tier === 1 && myPicks.some((entry) => entry.tier === 1)) {
-            return showToast('Only 1 Tier 1 allowed.');
+        if (team.tier === 1) {
+            myPicks = myPicks.filter((entry) => entry.tier !== 1);
         }
 
         myPicks.push(team);
     }
 
     updateUI();
+    markPicksDirty();
 }
 
 async function getExistingProfile(email) {
@@ -64,7 +174,7 @@ function confirmNewProfileEmail(email) {
     });
 }
 
-function completeLogin(email, existingProfile = null) {
+async function completeLogin(email, existingProfile = null) {
     userEmail = email;
     localStorage.setItem('wc_pool_user_email', userEmail);
     checkAdminStatus();
@@ -84,8 +194,10 @@ function completeLogin(email, existingProfile = null) {
         document.getElementById('realname-input').value = existingProfile.team_realname || '';
     }
 
+    hydrateSavedTimestamp();
     renderPool();
-    loadFromSupabase();
+    await loadFromSupabase();
+    clearDirtyFlags();
     startCountdown();
     showPage('instructions');
 }
@@ -108,7 +220,7 @@ async function handleLogin(options = {}) {
             }
         }
 
-        completeLogin(input, existingProfile);
+        await completeLogin(input, existingProfile);
     } catch (error) {
         showToast(error.message || 'Unable to log in right now.');
     }
@@ -128,8 +240,13 @@ async function saveIdentityOnly() {
             .update({ team_nickname: nickname, team_realname: realname })
             .eq('user_email', userEmail);
 
+        saveState.failed = false;
+        saveState.identityDirty = false;
+        setLastSavedNow();
+        updateSaveStatusUI();
         showToast('Identity updated!', 'success');
     } catch (error) {
+        updateSaveStatusUI();
         showToast(error.message);
     }
 }
@@ -156,7 +273,10 @@ async function saveToSupabase() {
     }
 
     const button = document.getElementById('save-btn');
-    button.innerText = '...';
+    saveState.failed = false;
+    saveState.isSaving = true;
+    updateSaveStatusUI();
+    button.innerText = 'Saving...';
     button.classList.add('saving');
 
     try {
@@ -172,10 +292,20 @@ async function saveToSupabase() {
             }))
         );
 
+        saveState.failed = false;
+        saveState.picksDirty = false;
+        saveState.identityDirty = false;
+        setLastSavedNow();
+        updateSaveStatusUI();
         showToast('Saved!', 'success');
     } catch (error) {
+        saveState.isSaving = false;
+        saveState.failed = true;
+        updateSaveStatusUI();
         showToast(error.message);
     } finally {
+        saveState.isSaving = false;
+        updateSaveStatusUI();
         button.innerText = 'Save';
         button.classList.remove('saving');
     }
@@ -217,6 +347,7 @@ function setupLoginKeyboardSubmit() {
 window.addEventListener('DOMContentLoaded', () => {
     populateCountryFilter();
     setupLoginKeyboardSubmit();
+    setupIdentityChangeTracking();
 
     const savedEmail = localStorage.getItem('wc_pool_user_email');
     if (savedEmail) {
