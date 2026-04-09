@@ -694,45 +694,6 @@ async function restoreAuthLogin() {
     }
 }
 
-async function handleLogin(options = {}) {
-    const { skipNewProfileConfirm = false } = options;
-    const input = document.getElementById('email-input').value.toLowerCase().trim();
-
-    if (!input.includes('@')) {
-        return showToast('Invalid email.');
-    }
-
-    try {
-        const existingProfile = await getExistingProfile(input);
-
-        if (!existingProfile && !skipNewProfileConfirm) {
-            const shouldCreate = await confirmNewProfileEmail(input);
-            if (!shouldCreate) {
-                return;
-            }
-
-            const newProfile = await showProfileSetupModal(input);
-            if (!newProfile) {
-                return;
-            }
-
-            saveProfileIdentityLocal(input, newProfile);
-            await upsertProfile(input, newProfile);
-            await completeLogin(input, {
-                nickname: newProfile.nickname,
-                realname: newProfile.realname,
-                favorite_team: newProfile.favoriteTeam,
-                home_country: newProfile.homeCountry
-            });
-            return;
-        }
-
-        await completeLogin(input, existingProfile);
-    } catch (error) {
-        showToast(error.message || 'Unable to log in right now.');
-    }
-}
-
 async function signOutUser() {
     try {
         await supabaseClient.auth.signOut();
@@ -897,39 +858,15 @@ async function loadFromSupabase() {
     }
 }
 
-function setupLoginKeyboardSubmit() {
-    const emailInput = document.getElementById('email-input');
-
-    if (!emailInput) {
-        return;
-    }
-
-    emailInput.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter') {
-            return;
-        }
-
-        event.preventDefault();
-        handleLogin();
-    });
-}
-
 window.addEventListener('DOMContentLoaded', async () => {
     populateCountryFilter();
     populateProfileSelectOptions();
-    setupLoginKeyboardSubmit();
     setupIdentityChangeTracking();
     fetchAppSettings();
 
     const restoredAuth = await restoreAuthLogin();
     if (restoredAuth) {
         return;
-    }
-
-    const savedEmail = localStorage.getItem('wc_pool_user_email');
-    if (savedEmail) {
-        document.getElementById('email-input').value = savedEmail;
-        handleLogin({ skipNewProfileConfirm: true });
     }
 });
 
@@ -943,10 +880,8 @@ Object.assign(window, {
     toggleTeam,
     startGoogleLogin,
     restoreAuthLogin,
-    handleLogin,
     signOutUser,
     saveIdentityOnly,
     saveToSupabase,
-    loadFromSupabase,
-    setupLoginKeyboardSubmit
+    loadFromSupabase
 });
