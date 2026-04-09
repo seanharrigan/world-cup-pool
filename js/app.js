@@ -369,7 +369,9 @@ async function handleLogin(options = {}) {
             await upsertProfile(input, newProfile);
             await completeLogin(input, {
                 nickname: newProfile.nickname,
-                realname: newProfile.realname
+                realname: newProfile.realname,
+                favorite_team: newProfile.favoriteTeam,
+                home_country: newProfile.homeCountry
             });
             return;
         }

@@ -82,16 +82,32 @@ function showProfileSetupModal(email) {
     const messageEl = document.getElementById('profile-setup-message');
     const nicknameInput = document.getElementById('profile-setup-nickname');
     const realnameInput = document.getElementById('profile-setup-realname');
+    const favoriteTeamInput = document.getElementById('profile-setup-favorite-team');
+    const homeCountryInput = document.getElementById('profile-setup-home-country');
     const confirmButton = document.getElementById('profile-setup-confirm');
     const cancelButton = document.getElementById('profile-setup-cancel');
 
-    if (!modal || !messageEl || !nicknameInput || !realnameInput || !confirmButton || !cancelButton) {
+    if (!modal || !messageEl || !nicknameInput || !realnameInput || !favoriteTeamInput || !homeCountryInput || !confirmButton || !cancelButton) {
         return Promise.resolve(null);
+    }
+
+    if (favoriteTeamInput.dataset.optionsLoaded !== 'true') {
+        const options = [...teams]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((team) => `<option value="${team.name}">${team.flag} ${team.name}</option>`)
+            .join('');
+
+        favoriteTeamInput.insertAdjacentHTML('beforeend', options);
+        homeCountryInput.insertAdjacentHTML('beforeend', options);
+        favoriteTeamInput.dataset.optionsLoaded = 'true';
+        homeCountryInput.dataset.optionsLoaded = 'true';
     }
 
     messageEl.textContent = `You're creating a new profile for ${email}.`;
     nicknameInput.value = '';
     realnameInput.value = '';
+    favoriteTeamInput.value = '';
+    homeCountryInput.value = '';
 
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -106,19 +122,23 @@ function showProfileSetupModal(email) {
             document.removeEventListener('keydown', handleEscape);
             nicknameInput.removeEventListener('keydown', handleEnter);
             realnameInput.removeEventListener('keydown', handleEnter);
+            favoriteTeamInput.removeEventListener('keydown', handleEnter);
+            homeCountryInput.removeEventListener('keydown', handleEnter);
             resolve(result);
         };
 
         const submitIfValid = () => {
             const nickname = nicknameInput.value.trim();
             const realname = realnameInput.value.trim();
+            const favoriteTeam = favoriteTeamInput.value;
+            const homeCountry = homeCountryInput.value;
 
             if (!nickname || !realname) {
                 showToast('Enter nickname and real name.');
                 return;
             }
 
-            cleanup({ nickname, realname });
+            cleanup({ nickname, realname, favoriteTeam, homeCountry });
         };
 
         const handleConfirm = () => submitIfValid();
@@ -148,6 +168,8 @@ function showProfileSetupModal(email) {
         document.addEventListener('keydown', handleEscape);
         nicknameInput.addEventListener('keydown', handleEnter);
         realnameInput.addEventListener('keydown', handleEnter);
+        favoriteTeamInput.addEventListener('keydown', handleEnter);
+        homeCountryInput.addEventListener('keydown', handleEnter);
         setTimeout(() => nicknameInput.focus(), 0);
     });
 }
