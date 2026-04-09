@@ -6,6 +6,40 @@ const saveState = {
     failed: false
 };
 
+function getProfileStorageKey(email = userEmail) {
+    return email ? `wc_pool_profile_${email}` : null;
+}
+
+function saveProfileIdentityLocal(email, profile) {
+    const storageKey = getProfileStorageKey(email);
+    if (!storageKey || !profile) {
+        return;
+    }
+
+    localStorage.setItem(storageKey, JSON.stringify({
+        nickname: profile.nickname || '',
+        realname: profile.realname || ''
+    }));
+}
+
+function getLocalProfileIdentity(email) {
+    const storageKey = getProfileStorageKey(email);
+    if (!storageKey) {
+        return null;
+    }
+
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(raw);
+    } catch (error) {
+        return null;
+    }
+}
+
 function getSaveStatusStorageKey() {
     return userEmail ? `wc_pool_last_saved_${userEmail}` : null;
 }
@@ -19,38 +53,54 @@ function formatSavedTime(timestamp) {
 
 function updateSaveStatusUI() {
     const status = document.getElementById('save-status');
-    if (!status) {
+    const dashboardStatus = document.getElementById('dashboard-save-status');
+
+    if (!status && !dashboardStatus) {
         return;
     }
 
-    status.className = 'rounded-xl border px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-center md:text-left';
+    const applyStatus = (element, mode, text, classes) => {
+        if (!element) {
+            return;
+        }
+
+        if (mode === 'dashboard') {
+            element.className = 'mt-2 text-xl font-black uppercase italic';
+            element.classList.add(classes.text);
+        } else {
+            element.className = 'rounded-xl border px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-center md:text-left';
+            element.classList.add(classes.text, classes.border, classes.background);
+        }
+
+        element.textContent = text;
+    };
+
+    const setContent = (text, classes) => {
+        applyStatus(status, 'default', text, classes);
+        applyStatus(dashboardStatus, 'dashboard', text, classes);
+    };
 
     if (saveState.isSaving) {
-        status.classList.add('border-blue-500/30', 'bg-blue-600/10', 'text-blue-300');
-        status.textContent = 'Saving changes...';
+        setContent('Saving changes...', { text: 'text-blue-300', border: 'border-blue-500/30', background: 'bg-blue-600/10' });
         return;
     }
 
     if (saveState.picksDirty || saveState.identityDirty) {
-        status.classList.add('border-amber-500/30', 'bg-amber-500/10', 'text-amber-300');
-        status.textContent = 'Unsaved changes';
+        setContent('Unsaved changes', { text: 'text-amber-300', border: 'border-amber-500/30', background: 'bg-amber-500/10' });
         return;
     }
 
     if (saveState.failed) {
-        status.classList.add('border-red-500/30', 'bg-red-500/10', 'text-red-300');
-        status.textContent = 'Save failed';
+        setContent('Save failed', { text: 'text-red-300', border: 'border-red-500/30', background: 'bg-red-500/10' });
         return;
     }
 
     if (saveState.lastSavedAt) {
-        status.classList.add('border-green-500/30', 'bg-green-500/10', 'text-green-300');
-        status.textContent = `Saved at ${formatSavedTime(saveState.lastSavedAt)}`;
+        setContent(`Saved at ${formatSavedTime(saveState.lastSavedAt)}`, { text: 'text-green-300', border: 'border-green-500/30', background: 'bg-green-500/10' });
         return;
     }
 
-    status.classList.add('border-gray-800', 'bg-gray-900/70', 'text-gray-400');
-    status.textContent = 'No changes yet';
+    setContent('No changes yet', { text: 'text-gray-400', border: 'border-gray-800', background: 'bg-gray-900/70' });
 }
 
 function setLastSavedNow() {
@@ -107,6 +157,13 @@ function setupIdentityChangeTracking() {
     });
 }
 
+function setupProfile() {
+    const emailDisplay = document.getElementById('profile-email-display');
+    if (emailDisplay) {
+        emailDisplay.textContent = userEmail || '-';
+    }
+}
+
 function populateCountryFilter() {
     const select = document.getElementById('leaderboard-country-filter');
     const sortedTeams = [...teams].sort((a, b) => a.name.localeCompare(b.name));
@@ -161,7 +218,20 @@ async function getExistingProfile(email) {
         throw error;
     }
 
-    return data?.[0] || null;
+    const dbProfile = data?.[0] || null;
+    if (dbProfile) {
+        return dbProfile;
+    }
+
+    const localProfile = getLocalProfileIdentity(email);
+    if (!localProfile) {
+        return null;
+    }
+
+    return {
+        team_nickname: localProfile.nickname || '',
+        team_realname: localProfile.realname || ''
+    };
 }
 
 function confirmNewProfileEmail(email) {
@@ -188,6 +258,7 @@ async function completeLogin(email, existingProfile = null) {
     }, 50);
 
     document.getElementById('user-display-nav').innerText = userEmail;
+    setupProfile();
 
     if (existingProfile) {
         document.getElementById('nickname-input').value = existingProfile.team_nickname || '';
@@ -218,6 +289,18 @@ async function handleLogin(options = {}) {
             if (!shouldCreate) {
                 return;
             }
+
+            const newProfile = await showProfileSetupModal(input);
+            if (!newProfile) {
+                return;
+            }
+
+            saveProfileIdentityLocal(input, newProfile);
+            await completeLogin(input, {
+                team_nickname: newProfile.nickname,
+                team_realname: newProfile.realname
+            });
+            return;
         }
 
         await completeLogin(input, existingProfile);
@@ -234,6 +317,8 @@ async function saveIdentityOnly() {
         return showToast('Enter both names.');
     }
 
+    saveProfileIdentityLocal(userEmail, { nickname, realname });
+
     try {
         await supabaseClient
             .from('picks')
@@ -244,6 +329,7 @@ async function saveIdentityOnly() {
         saveState.identityDirty = false;
         setLastSavedNow();
         updateSaveStatusUI();
+        setupDashboard();
         showToast('Identity updated!', 'success');
     } catch (error) {
         updateSaveStatusUI();
@@ -262,6 +348,8 @@ async function saveToSupabase() {
     if (!nickname || !realname) {
         return showToast('Set Nickname and Real Name.');
     }
+
+    saveProfileIdentityLocal(userEmail, { nickname, realname });
 
     const spent = myPicks.reduce((sum, team) => sum + team.cost, 0);
     if (spent > 150) {
@@ -297,6 +385,9 @@ async function saveToSupabase() {
         saveState.identityDirty = false;
         setLastSavedNow();
         updateSaveStatusUI();
+        fetchLeaderboard();
+        fetchStats();
+        setupDashboard();
         showToast('Saved!', 'success');
     } catch (error) {
         saveState.isSaving = false;
@@ -359,6 +450,7 @@ window.addEventListener('DOMContentLoaded', () => {
 Object.assign(window, {
     populateCountryFilter,
     checkAdminStatus,
+    setupProfile,
     toggleTeam,
     handleLogin,
     saveIdentityOnly,

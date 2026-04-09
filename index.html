@@ -70,12 +70,14 @@
             </div>
 
             <div class="hidden md:flex gap-6 font-black uppercase text-[10px] tracking-widest text-gray-500 items-center">
-                <span onclick="showPage('instructions')" id="nav-instructions" class="nav-link active">Instructions</span>
+                <span onclick="showPage('instructions')" id="nav-instructions" class="nav-link active">Dashboard</span>
+                <span onclick="showPage('rules')" id="nav-rules" class="nav-link">Rules</span>
                 <span onclick="showPage('picks')" id="nav-picks" class="nav-link">My Picks</span>
                 <span onclick="showPage('results')" id="nav-results" class="nav-link">Results</span>
                 <span onclick="showPage('leaderboard')" id="nav-leaderboard" class="nav-link">Leaderboard</span>
                 <span onclick="showPage('admin')" id="nav-admin" class="nav-link hidden text-red-500">Admin</span>
                 <span onclick="showPage('chat')" id="nav-chat" class="nav-link">Chat</span>
+                <span onclick="showPage('profile')" id="nav-profile" class="nav-link">Profile</span>
                 <div id="user-display-nav" class="hidden lg:block text-[10px] font-bold text-blue-500 uppercase tracking-widest truncate max-w-[120px] ml-4 text-center"></div>
             </div>
 
@@ -85,30 +87,146 @@
         </div>
 
         <div id="mobile-menu" class="md:hidden flex flex-col font-black uppercase text-xs tracking-widest text-gray-500 bg-gray-950 text-center">
-            <span onclick="showPage('instructions')" class="py-4 border-b border-gray-900 text-center">Instructions</span>
+            <span onclick="showPage('instructions')" class="py-4 border-b border-gray-900 text-center">Dashboard</span>
+            <span onclick="showPage('rules')" class="py-4 border-b border-gray-900 text-center text-white">Rules</span>
             <span onclick="showPage('picks')" class="py-4 border-b border-gray-900 text-center text-white text-center">My Picks</span>
             <span onclick="showPage('results')" class="py-4 border-b border-gray-900 text-center text-white text-center text-center">Results</span>
             <span onclick="showPage('leaderboard')" class="py-4 border-b border-gray-900 text-center text-white">Leaderboard</span>
             <span onclick="showPage('admin')" id="mobile-nav-admin" class="py-4 border-b border-gray-900 text-center text-red-500 hidden text-center text-center">Admin</span>
-            <span onclick="showPage('chat')" class="py-4 text-center">Chat</span>
+            <span onclick="showPage('chat')" class="py-4 border-b border-gray-900 text-center">Chat</span>
+            <span onclick="showPage('profile')" class="py-4 text-center">Profile</span>
         </div>
     </nav>
 
     <div id="main-app" class="hidden h-[calc(100vh-60px)] w-full opacity-0 transition-opacity duration-700 text-gray-900">
         
         <div id="page-instructions" class="page-content h-full w-full overflow-y-auto p-6 md:p-12 bg-white text-gray-900 text-left">
-            <div class="max-w-4xl mx-auto space-y-10">
-                <header class="text-left"><h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter">The Official Rules</h1><p class="text-blue-600 font-bold uppercase tracking-widest text-xs">2026 World Cup Pool Selection & Scoring</p></header>
-                <section class="bg-blue-50 p-6 rounded-3xl border-2 border-blue-100 space-y-4 shadow-sm text-gray-900 text-left">
-                    <h2 class="text-xl font-black uppercase tracking-tight text-left">Your Team Identity</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><label class="block text-[10px] font-black uppercase text-blue-600 mb-1">Nickname</label><input type="text" id="nickname-input" placeholder="e.g. Goal Diggers" class="w-full p-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-gray-900"></div>
-                        <div><label class="block text-[10px] font-black uppercase text-blue-600 mb-1">Real Name</label><div class="flex gap-2"><input type="text" id="realname-input" placeholder="Your Full Name" class="flex-grow p-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-gray-900 text-left"><button onclick="saveIdentityOnly()" class="bg-blue-600 text-white px-4 rounded-xl font-black uppercase text-[10px] text-center">Save</button></div></div>
+            <div class="max-w-6xl mx-auto space-y-10">
+                <header class="space-y-6 text-left">
+                    <div class="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+                        <div class="space-y-3">
+                            <div class="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600">2026 World Cup Pool</div>
+                            <h1 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter">Dashboard</h1>
+                            <p id="dashboard-welcome" class="max-w-2xl text-sm md:text-base font-bold text-gray-500">Loading your pool snapshot...</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <div id="dashboard-lock-badge" class="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-blue-700">Selection Open</div>
+                            <div id="dashboard-countdown" class="flex gap-3 rounded-2xl bg-gray-900 px-4 py-3 text-center text-white shadow-xl">
+                                <div><div id="dashboard-days" class="text-lg font-black text-white">00</div><div class="text-[8px] font-bold uppercase text-gray-400">Days</div></div>
+                                <div class="font-bold text-blue-500">:</div>
+                                <div><div id="dashboard-hours" class="text-lg font-black text-white">00</div><div class="text-[8px] font-bold uppercase text-gray-400">Hrs</div></div>
+                                <div class="font-bold text-blue-500">:</div>
+                                <div><div id="dashboard-minutes" class="text-lg font-black text-white">00</div><div class="text-[8px] font-bold uppercase text-gray-400">Min</div></div>
+                            </div>
+                            <button id="dashboard-primary-cta" onclick="showPage('picks')" class="rounded-2xl bg-gray-900 px-5 py-3 text-[11px] font-black uppercase tracking-[0.25em] text-white transition-colors hover:bg-blue-600">Open My Picks</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+                        <div class="rounded-3xl border border-blue-100 bg-blue-50 p-5">
+                            <div class="text-[10px] font-black uppercase tracking-[0.25em] text-blue-600">My Points</div>
+                            <div id="dashboard-my-points" class="mt-2 text-3xl font-black italic text-gray-900">0</div>
+                        </div>
+                        <div class="rounded-3xl border border-gray-200 bg-white p-5">
+                            <div class="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400">My Rank</div>
+                            <div id="dashboard-my-rank" class="mt-2 text-3xl font-black italic text-gray-900">-</div>
+                        </div>
+                        <div class="rounded-3xl border border-gray-200 bg-white p-5">
+                            <div class="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400">Squad Size</div>
+                            <div id="dashboard-squad-size" class="mt-2 text-3xl font-black italic text-gray-900">0</div>
+                        </div>
+                        <div class="rounded-3xl border border-gray-200 bg-white p-5">
+                            <div class="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400">Budget Left</div>
+                            <div id="dashboard-budget-left" class="mt-2 text-3xl font-black italic text-gray-900">$150</div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-[1.3fr_0.7fr] gap-6">
+                        <div class="rounded-3xl border border-gray-200 bg-gray-900 px-6 py-5 text-white">
+                            <div class="flex items-center justify-between gap-4">
+                                <div>
+                                    <div class="text-[10px] font-black uppercase tracking-[0.25em] text-blue-300">Save Confidence</div>
+                                    <div id="dashboard-save-status" class="mt-2 text-xl font-black uppercase italic">No changes yet</div>
+                                </div>
+                                <button onclick="showPage('picks')" class="rounded-2xl border border-gray-700 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-white transition-colors hover:border-blue-500 hover:bg-blue-600/20">Go To Picks</button>
+                            </div>
+                        </div>
+                        <div class="rounded-3xl border border-green-100 bg-green-50 px-6 py-5 text-gray-900">
+                            <div class="text-[10px] font-black uppercase tracking-[0.25em] text-green-700">Pool Pot</div>
+                            <div id="dashboard-prize-pot" class="mt-2 text-3xl font-black italic">$0</div>
+                            <div id="dashboard-player-count" class="mt-2 text-[11px] font-black uppercase tracking-[0.2em] text-green-700">0 entries</div>
+                        </div>
+                    </div>
+                </header>
+
+                <section class="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-8">
+                    <div class="space-y-8">
+                        <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                            <div class="mb-5 flex items-center justify-between gap-4">
+                                <div>
+                                    <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Leaderboard Snapshot</h2>
+                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Current top contenders</p>
+                                </div>
+                                <button onclick="showPage('leaderboard')" class="rounded-2xl border border-gray-200 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-600 transition-colors hover:border-blue-500 hover:text-blue-600">Full Table</button>
+                            </div>
+                            <div id="dashboard-leaderboard" class="space-y-3 text-left"></div>
+                        </div>
+
+                        <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                            <div class="mb-5 flex items-center justify-between gap-4">
+                                <div>
+                                    <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Latest Results</h2>
+                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Most recent match updates</p>
+                                </div>
+                                <button onclick="showPage('results'); showResultsTab('matches');" class="rounded-2xl border border-gray-200 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-600 transition-colors hover:border-blue-500 hover:text-blue-600">Match Results</button>
+                            </div>
+                            <div id="dashboard-latest-results" class="space-y-3 text-left"></div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-8">
+                        <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                            <div class="mb-5">
+                                <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Most Picked Teams</h2>
+                                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Pool ownership leaders</p>
+                            </div>
+                            <div id="dashboard-most-picked" class="space-y-3 text-left"></div>
+                        </div>
+
+                        <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                            <div class="mb-5">
+                                <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Quick Links</h2>
+                                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Jump back into the pool</p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="showPage('picks')" class="rounded-2xl border border-gray-200 px-4 py-4 text-left transition-colors hover:border-blue-500 hover:bg-blue-50">
+                                    <div class="text-[10px] font-black uppercase tracking-[0.25em] text-blue-600">My Picks</div>
+                                    <div class="mt-2 text-lg font-black uppercase italic text-gray-900">Edit Squad</div>
+                                </button>
+                                <button onclick="showPage('results')" class="rounded-2xl border border-gray-200 px-4 py-4 text-left transition-colors hover:border-blue-500 hover:bg-blue-50">
+                                    <div class="text-[10px] font-black uppercase tracking-[0.25em] text-blue-600">Results</div>
+                                    <div class="mt-2 text-lg font-black uppercase italic text-gray-900">Track Scores</div>
+                                </button>
+                                <button onclick="showPage('leaderboard')" class="rounded-2xl border border-gray-200 px-4 py-4 text-left transition-colors hover:border-blue-500 hover:bg-blue-50">
+                                    <div class="text-[10px] font-black uppercase tracking-[0.25em] text-blue-600">Leaderboard</div>
+                                    <div class="mt-2 text-lg font-black uppercase italic text-gray-900">See Rankings</div>
+                                </button>
+                                <button onclick="showPage('chat')" class="rounded-2xl border border-gray-200 px-4 py-4 text-left transition-colors hover:border-blue-500 hover:bg-blue-50">
+                                    <div class="text-[10px] font-black uppercase tracking-[0.25em] text-blue-600">Chat</div>
+                                    <div class="mt-2 text-lg font-black uppercase italic text-gray-900">Join Talk</div>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </section>
+                <div class="h-20"></div>
+            </div>
+        </div>
+
+        <div id="page-rules" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-white text-gray-900 text-left">
+            <div class="max-w-4xl mx-auto space-y-10">
+                <header class="text-left"><h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter">The Official Rules</h1><p class="text-blue-600 font-bold uppercase tracking-widest text-xs">2026 World Cup Pool Selection & Scoring</p></header>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-gray-900 border-b-2 border-gray-100 pb-8 text-left">
                     <section class="space-y-4"><h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2">Squad Building</h2><ul class="space-y-3 font-medium text-gray-700"><li><strong>$150 Budget:</strong> Build your squad without overspending.</li><li><strong>Tier 1:</strong> Maximum ONE team (optional).</li><li><strong>Tier 3:</strong> You MUST pick at least THREE teams.</li></ul></section>
-                    <section class="space-y-4 text-left"><h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2">Prizes</h2><div class="bg-gray-900 text-white p-6 rounded-3xl shadow-xl text-left text-white text-left"><div class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Entry Fee</div><div class="text-3xl font-black mb-4">$40</div><div class="space-y-1 text-xs font-bold border-t border-gray-800 pt-3 text-white"><div class="flex justify-between"><span>1st Place</span><span class="text-green-400 font-bold">65%</span></div><div class="flex justify-between text-gray-300"><span>2nd Place</span><span>25%</span></div><div class="flex justify-between text-gray-300"><span>3rd Place</span><span>10%</span></div></div></div></section>
+                    <section class="space-y-4 text-left"><h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2">Prizes</h2><div class="bg-gray-900 text-white p-6 rounded-3xl shadow-xl text-left"><div class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Entry Fee</div><div class="text-3xl font-black mb-4">$40</div><div class="space-y-1 text-xs font-bold border-t border-gray-800 pt-3"><div class="flex justify-between"><span>1st Place</span><span class="text-green-400 font-bold">65%</span></div><div class="flex justify-between text-gray-300"><span>2nd Place</span><span>25%</span></div><div class="flex justify-between text-gray-300"><span>3rd Place</span><span>10%</span></div></div></div></section>
                 </div>
                 
                 <section class="space-y-6 text-left">
@@ -436,6 +554,36 @@
             <div class="p-4 bg-gray-50 border-t flex gap-2 text-left"><input type="text" id="chat-input" placeholder="Type a message..." class="flex-grow p-4 rounded-2xl border-2 border-gray-200 focus:border-blue-500 outline-none font-bold text-gray-900"><button onclick="sendChatMessage()" class="bg-blue-600 text-white px-8 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-500 text-center text-white text-center text-white text-center text-white text-center">Send</button></div>
             <div class="h-20 md:hidden"></div>
         </div>
+
+        <div id="page-profile" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-gray-50 text-gray-900 text-left">
+            <div class="max-w-3xl mx-auto space-y-8">
+                <header class="text-left border-b border-gray-200 pb-6">
+                    <h1 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter">Profile</h1>
+                    <p class="text-blue-600 font-bold uppercase tracking-widest text-[10px]">Your identity across leaderboard and chat</p>
+                </header>
+
+                <section class="rounded-3xl border border-blue-100 bg-blue-50 p-6 space-y-5">
+                    <div>
+                        <div class="text-[10px] font-black uppercase tracking-[0.25em] text-blue-600">Account Email</div>
+                        <div id="profile-email-display" class="mt-2 text-2xl font-black italic text-gray-900 break-all">-</div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-blue-600 mb-1">Nickname</label>
+                            <input type="text" id="nickname-input" placeholder="e.g. Goal Diggers" class="w-full p-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-gray-900">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-blue-600 mb-1">Real Name</label>
+                            <input type="text" id="realname-input" placeholder="Your Full Name" class="w-full p-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-gray-900 text-left">
+                        </div>
+                    </div>
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <p class="text-sm font-bold text-gray-500">This name appears on the leaderboard and in chat.</p>
+                        <button onclick="saveIdentityOnly()" class="rounded-2xl bg-blue-600 px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-white transition-colors hover:bg-blue-500">Save Profile</button>
+                    </div>
+                </section>
+            </div>
+        </div>
     </div>
 
     <div id="toast-container" class="fixed bottom-40 md:bottom-10 left-1/2 -translate-x-1/2 z-[100] space-y-2 pointer-events-none text-center text-white text-center text-white text-center text-white text-center text-white text-center text-white text-center"></div>
@@ -455,6 +603,38 @@
             <div class="border-t border-gray-800 bg-gray-950/70 p-4 flex gap-3">
                 <button id="confirm-modal-cancel" class="flex-1 rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-gray-300 hover:bg-gray-700 transition-colors">Cancel</button>
                 <button id="confirm-modal-confirm" class="flex-1 rounded-2xl bg-blue-600 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-white hover:bg-blue-500 transition-colors">Create Profile</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="profile-setup-modal" class="hidden fixed inset-0 z-[111] bg-black/85 backdrop-blur-sm items-center justify-center p-4">
+        <div class="w-full max-w-lg rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden">
+            <div class="p-6 md:p-8 space-y-6">
+                <div class="flex items-center gap-3">
+                    <div class="h-11 w-11 rounded-2xl border border-blue-500/30 bg-blue-600/20 flex items-center justify-center text-xl">🪪</div>
+                    <div>
+                        <div class="text-[10px] font-black uppercase tracking-[0.25em] text-blue-400">New Profile</div>
+                        <h3 class="text-xl font-black uppercase italic tracking-tight text-white">Set Your Pool Identity</h3>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <p id="profile-setup-message" class="text-sm md:text-base font-bold text-gray-100 leading-relaxed text-left">Before you enter the pool, choose the name people will see.</p>
+                    <p class="text-xs uppercase tracking-wider text-gray-400 text-left">This keeps every new entry named from the start.</p>
+                </div>
+                <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="mb-1 block text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Nickname</label>
+                        <input id="profile-setup-nickname" type="text" placeholder="e.g. Goal Diggers" class="w-full rounded-2xl border border-gray-700 bg-gray-950 px-4 py-3 font-bold text-white outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Real Name</label>
+                        <input id="profile-setup-realname" type="text" placeholder="Your full name" class="w-full rounded-2xl border border-gray-700 bg-gray-950 px-4 py-3 font-bold text-white outline-none focus:border-blue-500">
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 bg-gray-950/70 p-4 flex gap-3">
+                <button id="profile-setup-cancel" class="flex-1 rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-gray-300 hover:bg-gray-700 transition-colors">Cancel</button>
+                <button id="profile-setup-confirm" class="flex-1 rounded-2xl bg-blue-600 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-white hover:bg-blue-500 transition-colors">Continue</button>
             </div>
         </div>
     </div>

@@ -77,6 +77,224 @@ function setupResultsPage() {
     fetchPublicTeamResults();
 }
 
+function buildTeamPointsMap(matches = []) {
+    const teamPointsMap = {};
+
+    teams.forEach((team) => {
+        teamPointsMap[team.name] = 0;
+    });
+
+    matches.forEach((match) => {
+        const homePoints = getMatchPointsForTeam(match, match.team_home);
+        const awayPoints = getMatchPointsForTeam(match, match.team_away);
+
+        teamPointsMap[match.team_home] = (teamPointsMap[match.team_home] || 0) + homePoints;
+        teamPointsMap[match.team_away] = (teamPointsMap[match.team_away] || 0) + awayPoints;
+    });
+
+    return teamPointsMap;
+}
+
+function buildLeaderboardData(allPicks = [], allMatches = []) {
+    const teamPointsMap = buildTeamPointsMap(allMatches);
+    const userMap = new Map();
+
+    allPicks.forEach((pick) => {
+        if (!userMap.has(pick.user_email)) {
+            userMap.set(pick.user_email, {
+                email: pick.user_email,
+                nickname: pick.team_nickname || 'TBA',
+                realname: pick.team_realname || 'Joined',
+                totalPoints: 0,
+                squad: []
+            });
+        }
+
+        const user = userMap.get(pick.user_email);
+        user.totalPoints += teamPointsMap[pick.team_name] || 0;
+
+        const teamData = teams.find((team) => team.name === pick.team_name);
+        if (teamData) {
+            user.squad.push({
+                name: teamData.name,
+                flag: teamData.flag,
+                cost: teamData.cost,
+                tier: teamData.tier
+            });
+        }
+    });
+
+    return Array.from(userMap.values()).sort((a, b) => {
+        if (b.totalPoints !== a.totalPoints) {
+            return b.totalPoints - a.totalPoints;
+        }
+
+        return a.nickname.localeCompare(b.nickname);
+    });
+}
+
+async function setupDashboard() {
+    const welcome = document.getElementById('dashboard-welcome');
+    if (!welcome) {
+        return;
+    }
+
+    welcome.textContent = 'Loading your pool snapshot...';
+
+    const myPointsEl = document.getElementById('dashboard-my-points');
+    const myRankEl = document.getElementById('dashboard-my-rank');
+    const squadSizeEl = document.getElementById('dashboard-squad-size');
+    const budgetLeftEl = document.getElementById('dashboard-budget-left');
+    const saveStatusEl = document.getElementById('dashboard-save-status');
+    const prizePotEl = document.getElementById('dashboard-prize-pot');
+    const playerCountEl = document.getElementById('dashboard-player-count');
+    const lockBadgeEl = document.getElementById('dashboard-lock-badge');
+    const ctaButton = document.getElementById('dashboard-primary-cta');
+    const leaderboardEl = document.getElementById('dashboard-leaderboard');
+    const resultsEl = document.getElementById('dashboard-latest-results');
+    const mostPickedEl = document.getElementById('dashboard-most-picked');
+
+    if (leaderboardEl) leaderboardEl.innerHTML = '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Loading leaderboard...</div>';
+    if (resultsEl) resultsEl.innerHTML = '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Loading results...</div>';
+    if (mostPickedEl) mostPickedEl.innerHTML = '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Loading picks...</div>';
+
+    if (lockBadgeEl) {
+        if (isLocked) {
+            lockBadgeEl.className = 'rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-red-700';
+            lockBadgeEl.textContent = 'Selection Locked';
+        } else {
+            lockBadgeEl.className = 'rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-blue-700';
+            lockBadgeEl.textContent = `Lock ${LOCK_DATE.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
+        }
+    }
+
+    if (saveStatusEl) {
+        const sourceSaveStatus = document.getElementById('save-status');
+        saveStatusEl.textContent = sourceSaveStatus ? sourceSaveStatus.textContent : 'No changes yet';
+    }
+
+    try {
+        const [{ data: allPicks, error: picksError }, { data: allMatches, error: matchesError }] = await Promise.all([
+            supabaseClient.from('picks').select('*'),
+            supabaseClient.from('matches').select('*').order('match_date_manual', { ascending: false })
+        ]);
+
+        if (picksError) {
+            throw picksError;
+        }
+
+        if (matchesError) {
+            throw matchesError;
+        }
+
+        const picks = allPicks || [];
+        const matches = allMatches || [];
+        const leaderboardData = buildLeaderboardData(picks, matches);
+        const myEntry = leaderboardData.find((entry) => entry.email === userEmail);
+        const savedSquad = myEntry?.squad || [];
+        const liveSquad = myPicks.length > 0 ? myPicks : savedSquad;
+        const spent = liveSquad.reduce((sum, team) => sum + team.cost, 0);
+        const tierThreeCount = liveSquad.filter((team) => team.tier === 3).length;
+        const hasUnsaved = typeof saveState !== 'undefined' && (saveState.picksDirty || saveState.identityDirty);
+
+        if (myPointsEl) myPointsEl.textContent = `${myEntry?.totalPoints || 0}`;
+        if (myRankEl) myRankEl.textContent = myEntry ? `#${leaderboardData.findIndex((entry) => entry.email === userEmail) + 1}` : '-';
+        if (squadSizeEl) squadSizeEl.textContent = `${liveSquad.length}`;
+        if (budgetLeftEl) budgetLeftEl.textContent = `$${150 - spent}`;
+
+        const playerCount = leaderboardData.length;
+        if (prizePotEl) prizePotEl.textContent = `$${(playerCount * 40).toLocaleString()}`;
+        if (playerCountEl) playerCountEl.textContent = `${playerCount} ${playerCount === 1 ? 'entry' : 'entries'}`;
+
+        if (welcome) {
+            if (!myEntry && liveSquad.length === 0) {
+                welcome.textContent = 'Start building your squad, save your picks, and track the pool from one place.';
+            } else if (hasUnsaved) {
+                welcome.textContent = `${myEntry?.nickname || 'Manager'}, you have unsaved changes in your squad right now.`;
+            } else {
+                welcome.textContent = `${myEntry.nickname}, you are currently ranked #${leaderboardData.findIndex((entry) => entry.email === userEmail) + 1} with ${myEntry.totalPoints} points.`;
+            }
+        }
+
+        if (ctaButton) {
+            if (!myEntry && liveSquad.length === 0) {
+                ctaButton.textContent = 'Start My Picks';
+            } else if (liveSquad.length < 4 || tierThreeCount < 3 || spent > 150) {
+                ctaButton.textContent = 'Finish My Picks';
+            } else {
+                ctaButton.textContent = 'View My Squad';
+            }
+        }
+
+        if (leaderboardEl) {
+            const leaders = leaderboardData.slice(0, 3);
+            leaderboardEl.innerHTML = leaders.map((entry, index) => `
+                <div class="flex items-center justify-between gap-4 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
+                    <div class="min-w-0">
+                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">#${index + 1}</div>
+                        <div class="truncate text-lg font-black uppercase italic text-gray-900">${entry.nickname}</div>
+                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${entry.realname}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-black text-gray-900">${entry.totalPoints}</div>
+                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Pts</div>
+                    </div>
+                </div>
+            `).join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No leaderboard data yet</div>';
+        }
+
+        if (resultsEl) {
+            resultsEl.innerHTML = matches.slice(0, 3).map((match) => `
+                <div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
+                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">${match.match_date_manual || 'TBD'} | ${match.stage}</div>
+                    <div class="mt-2 flex items-center justify-between gap-3 text-sm font-black text-gray-900">
+                        <span class="truncate">${teams.find((team) => team.name === match.team_home)?.flag || ''} ${match.team_home}</span>
+                        <span class="rounded-xl bg-gray-900 px-3 py-1 font-mono text-white">${match.score_home}-${match.score_away}</span>
+                        <span class="truncate text-right">${match.team_away} ${teams.find((team) => team.name === match.team_away)?.flag || ''}</span>
+                    </div>
+                </div>
+            `).join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No results logged yet</div>';
+        }
+
+        if (mostPickedEl) {
+            const countryCounts = {};
+            picks.forEach((pick) => {
+                countryCounts[pick.team_name] = (countryCounts[pick.team_name] || 0) + 1;
+            });
+
+            const topTeams = Object.entries(countryCounts)
+                .sort((a, b) => {
+                    if (b[1] !== a[1]) {
+                        return b[1] - a[1];
+                    }
+
+                    return a[0].localeCompare(b[0]);
+                })
+                .slice(0, 5);
+
+            mostPickedEl.innerHTML = topTeams.map(([name, count]) => {
+                const team = teams.find((entry) => entry.name === name);
+                return `
+                    <div class="flex items-center justify-between gap-4 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
+                        <div class="flex min-w-0 items-center gap-3">
+                            <span class="text-2xl">${team?.flag || ''}</span>
+                            <div class="truncate text-sm font-black uppercase text-gray-900">${name}</div>
+                        </div>
+                        <div class="rounded-full bg-blue-600 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-white">${count}</div>
+                    </div>
+                `;
+            }).join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No picks saved yet</div>';
+        }
+    } catch (error) {
+        if (welcome) {
+            welcome.textContent = 'Unable to load the dashboard right now.';
+        }
+        if (leaderboardEl) leaderboardEl.innerHTML = '<div class="rounded-2xl border border-red-100 bg-red-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Could not load leaderboard</div>';
+        if (resultsEl) resultsEl.innerHTML = '<div class="rounded-2xl border border-red-100 bg-red-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Could not load results</div>';
+        if (mostPickedEl) mostPickedEl.innerHTML = '<div class="rounded-2xl border border-red-100 bg-red-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Could not load picks</div>';
+    }
+}
+
 function updatePublicTeamSortIndicators() {
     const sortState = teamResultsSortState['public-team-results-body'];
     const keys = ['team', 'total', 'G1', 'G2', 'G3', 'R32', 'R16', 'QF', 'SM', 'F'];
@@ -496,6 +714,7 @@ async function deleteMatch(id) {
     fetchPublicResults();
     renderGroups();
     fetchStats();
+    setupDashboard();
 }
 
 async function submitManualResult() {
@@ -546,6 +765,7 @@ async function submitManualResult() {
         renderGroups();
         fetchLeaderboard();
         fetchStats();
+        setupDashboard();
     } catch (error) {
         showToast(error.message);
     } finally {
@@ -792,6 +1012,7 @@ Object.assign(window, {
     setupAdminPage,
     showAdminTab,
     showResultsTab,
+    setupDashboard,
     setupResultsPage,
     setTeamResultsSort,
     fetchAdminHistory,

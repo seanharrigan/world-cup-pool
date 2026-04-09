@@ -77,6 +77,81 @@ function showConfirmModal({
     });
 }
 
+function showProfileSetupModal(email) {
+    const modal = document.getElementById('profile-setup-modal');
+    const messageEl = document.getElementById('profile-setup-message');
+    const nicknameInput = document.getElementById('profile-setup-nickname');
+    const realnameInput = document.getElementById('profile-setup-realname');
+    const confirmButton = document.getElementById('profile-setup-confirm');
+    const cancelButton = document.getElementById('profile-setup-cancel');
+
+    if (!modal || !messageEl || !nicknameInput || !realnameInput || !confirmButton || !cancelButton) {
+        return Promise.resolve(null);
+    }
+
+    messageEl.textContent = `You're creating a new profile for ${email}.`;
+    nicknameInput.value = '';
+    realnameInput.value = '';
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    return new Promise((resolve) => {
+        const cleanup = (result) => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            confirmButton.removeEventListener('click', handleConfirm);
+            cancelButton.removeEventListener('click', handleCancel);
+            modal.removeEventListener('click', handleBackdrop);
+            document.removeEventListener('keydown', handleEscape);
+            nicknameInput.removeEventListener('keydown', handleEnter);
+            realnameInput.removeEventListener('keydown', handleEnter);
+            resolve(result);
+        };
+
+        const submitIfValid = () => {
+            const nickname = nicknameInput.value.trim();
+            const realname = realnameInput.value.trim();
+
+            if (!nickname || !realname) {
+                showToast('Enter nickname and real name.');
+                return;
+            }
+
+            cleanup({ nickname, realname });
+        };
+
+        const handleConfirm = () => submitIfValid();
+        const handleCancel = () => cleanup(null);
+        const handleBackdrop = (event) => {
+            if (event.target === modal) {
+                cleanup(null);
+            }
+        };
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                cleanup(null);
+            }
+        };
+        const handleEnter = (event) => {
+            if (event.key !== 'Enter') {
+                return;
+            }
+
+            event.preventDefault();
+            submitIfValid();
+        };
+
+        confirmButton.addEventListener('click', handleConfirm);
+        cancelButton.addEventListener('click', handleCancel);
+        modal.addEventListener('click', handleBackdrop);
+        document.addEventListener('keydown', handleEscape);
+        nicknameInput.addEventListener('keydown', handleEnter);
+        realnameInput.addEventListener('keydown', handleEnter);
+        setTimeout(() => nicknameInput.focus(), 0);
+    });
+}
+
 function showPage(pageId) {
     document.querySelectorAll('.page-content').forEach((page) => page.classList.add('hidden'));
     document.querySelectorAll('.nav-link').forEach((link) => link.classList.remove('active'));
@@ -89,11 +164,12 @@ function showPage(pageId) {
     const navLinks = document.querySelectorAll(`[id^='nav-${pageId}']`);
     navLinks.forEach((link) => link.classList.add('active'));
 
+    if (pageId === 'instructions') setupDashboard();
     if (pageId === 'picks') updateUI();
     if (pageId === 'leaderboard') fetchLeaderboard();
-    if (pageId === 'groups') renderGroups();
     if (pageId === 'admin') setupAdminPage();
     if (pageId === 'chat') setupChat();
+    if (pageId === 'profile') setupProfile();
     if (pageId === 'results') setupResultsPage();
 
     document.getElementById('mobile-menu').classList.remove('open');
@@ -277,20 +353,40 @@ function startCountdown() {
 
     countdownStarted = true;
 
-    setInterval(() => {
+    const updateCountdownDisplays = () => {
         const distance = LOCK_DATE.getTime() - new Date().getTime();
 
-        if (document.getElementById('days')) {
-            document.getElementById('days').innerText = Math.floor(distance / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
-            document.getElementById('hours').innerText = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
-            document.getElementById('minutes').innerText = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+        if (distance <= 0) {
+            document.getElementById('countdown')?.remove();
+            document.getElementById('dashboard-countdown')?.remove();
+            return;
         }
-    }, 1000);
+
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+
+        if (document.getElementById('days')) {
+            document.getElementById('days').innerText = days;
+            document.getElementById('hours').innerText = hours;
+            document.getElementById('minutes').innerText = minutes;
+        }
+
+        if (document.getElementById('dashboard-days')) {
+            document.getElementById('dashboard-days').innerText = days;
+            document.getElementById('dashboard-hours').innerText = hours;
+            document.getElementById('dashboard-minutes').innerText = minutes;
+        }
+    };
+
+    updateCountdownDisplays();
+    setInterval(updateCountdownDisplays, 1000);
 }
 
 Object.assign(window, {
     showToast,
     showConfirmModal,
+    showProfileSetupModal,
     showPage,
     toggleMobileMenu,
     toggleMobileRoster,
