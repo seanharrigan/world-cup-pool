@@ -280,6 +280,7 @@ async function fetchStats() {
 
 function setupChat() {
     fetchMessages();
+    setupChatKeyboardSubmit();
 
     if (chatChannel) {
         return;
@@ -347,6 +348,24 @@ async function sendChatMessage() {
     input.value = '';
 }
 
+function setupChatKeyboardSubmit() {
+    const input = document.getElementById('chat-input');
+
+    if (!input || input.dataset.enterBound === 'true') {
+        return;
+    }
+
+    input.dataset.enterBound = 'true';
+    input.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' || event.shiftKey) {
+            return;
+        }
+
+        event.preventDefault();
+        sendChatMessage();
+    });
+}
+
 Object.assign(window, {
     setupAdminPage,
     fetchAdminHistory,
@@ -358,5 +377,6 @@ Object.assign(window, {
     setupChat,
     fetchMessages,
     renderMessage,
-    sendChatMessage
+    sendChatMessage,
+    setupChatKeyboardSubmit
 });

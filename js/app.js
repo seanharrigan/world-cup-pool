@@ -197,8 +197,26 @@ async function loadFromSupabase() {
     }
 }
 
+function setupLoginKeyboardSubmit() {
+    const emailInput = document.getElementById('email-input');
+
+    if (!emailInput) {
+        return;
+    }
+
+    emailInput.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') {
+            return;
+        }
+
+        event.preventDefault();
+        handleLogin();
+    });
+}
+
 window.addEventListener('DOMContentLoaded', () => {
     populateCountryFilter();
+    setupLoginKeyboardSubmit();
 
     const savedEmail = localStorage.getItem('wc_pool_user_email');
     if (savedEmail) {
@@ -214,5 +232,6 @@ Object.assign(window, {
     handleLogin,
     saveIdentityOnly,
     saveToSupabase,
-    loadFromSupabase
+    loadFromSupabase,
+    setupLoginKeyboardSubmit
 });
