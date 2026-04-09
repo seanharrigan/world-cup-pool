@@ -17,6 +17,8 @@ function setupAdminPage() {
 
         teamOneSelect.innerHTML = `<option value="">Select Home Team...</option>${options}`;
         teamTwoSelect.innerHTML = `<option value="">Select Away Team...</option>${options}`;
+        attachAlphaJumpToSelect(teamOneSelect);
+        attachAlphaJumpToSelect(teamTwoSelect);
     }
 
     fetchAdminHistory();

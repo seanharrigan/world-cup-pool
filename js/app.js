@@ -209,6 +209,8 @@ function populateCountryFilter() {
         option.innerText = team.name;
         select.appendChild(option);
     });
+
+    attachAlphaJumpToSelect(select);
 }
 
 function checkAdminStatus() {
