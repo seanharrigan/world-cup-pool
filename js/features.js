@@ -205,7 +205,7 @@ async function setupDashboard() {
                 ? liveSquad
                     .sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name))
                     .map((team) => `
-                        <div class="min-w-[54px] text-center">
+                        <div class="shrink-0 min-w-[58px] text-center">
                             <div class="text-3xl">${team.flag}</div>
                             <div class="mt-1 text-[9px] font-black uppercase tracking-[0.15em] text-white">T${team.tier} · $${team.cost}</div>
                         </div>
