@@ -189,16 +189,22 @@ async function setupDashboard() {
 
         const picks = allPicks || [];
         const matches = allMatches || [];
+        const teamPointsMap = buildTeamPointsMap(matches);
         const leaderboardData = buildLeaderboardData(picks, matches);
+        const currentUserRows = picks.filter((pick) => pick.user_email === userEmail);
         const myEntry = leaderboardData.find((entry) => entry.email === userEmail);
-        const savedSquad = myEntry?.squad || [];
+        const savedSquad = currentUserRows
+            .map((pick) => teams.find((team) => team.name === pick.team_name))
+            .filter(Boolean);
         const liveSquad = myPicks.length > 0 ? myPicks : savedSquad;
         const spent = liveSquad.reduce((sum, team) => sum + team.cost, 0);
         const tierThreeCount = liveSquad.filter((team) => team.tier === 3).length;
+        const myPoints = currentUserRows.reduce((sum, pick) => sum + (teamPointsMap[pick.team_name] || 0), 0);
+        const myRank = leaderboardData.findIndex((entry) => entry.email === userEmail);
         const hasUnsaved = typeof saveState !== 'undefined' && (saveState.picksDirty || saveState.identityDirty);
 
-        if (myPointsEl) myPointsEl.textContent = `${myEntry?.totalPoints || 0}`;
-        if (myRankEl) myRankEl.textContent = myEntry ? `#${leaderboardData.findIndex((entry) => entry.email === userEmail) + 1}` : '-';
+        if (myPointsEl) myPointsEl.textContent = `${myPoints}`;
+        if (myRankEl) myRankEl.textContent = myRank >= 0 ? `#${myRank + 1}` : '-';
         if (squadSizeEl) squadSizeEl.textContent = `${liveSquad.length}`;
         if (budgetLeftEl) budgetLeftEl.textContent = `$${150 - spent}`;
 
@@ -209,10 +215,12 @@ async function setupDashboard() {
         if (welcome) {
             if (!myEntry && liveSquad.length === 0) {
                 welcome.textContent = 'Start building your squad, save your picks, and track the pool from one place.';
+            } else if (!myEntry) {
+                welcome.textContent = 'Your current squad is local to this browser until you save it to the pool.';
             } else if (hasUnsaved) {
                 welcome.textContent = `${myEntry?.nickname || 'Manager'}, you have unsaved changes in your squad right now.`;
             } else {
-                welcome.textContent = `${myEntry.nickname}, you are currently ranked #${leaderboardData.findIndex((entry) => entry.email === userEmail) + 1} with ${myEntry.totalPoints} points.`;
+                welcome.textContent = `${myEntry?.nickname || 'Manager'}, you are currently ranked #${myRank + 1} with ${myPoints} points.`;
             }
         }
 
