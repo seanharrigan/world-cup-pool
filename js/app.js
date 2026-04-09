@@ -307,12 +307,43 @@ function populateCountryFilter() {
     attachAlphaJumpToSelect(select);
 }
 
-function checkAdminStatus() {
-    const admins = ['seanigan44@gmail.com', 'connorha@student.ubc.ca'];
+async function checkAdminStatus() {
+    const desktopAdminLink = document.getElementById('nav-admin');
+    const mobileAdminLink = document.getElementById('mobile-nav-admin');
 
-    if (admins.includes(userEmail)) {
-        document.getElementById('nav-admin').classList.remove('hidden');
-        document.getElementById('mobile-nav-admin').classList.remove('hidden');
+    if (desktopAdminLink) {
+        desktopAdminLink.classList.add('hidden');
+    }
+
+    if (mobileAdminLink) {
+        mobileAdminLink.classList.add('hidden');
+    }
+
+    if (!userEmail) {
+        return false;
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('admins')
+            .select('email')
+            .eq('email', userEmail)
+            .maybeSingle();
+
+        if (error) {
+            throw error;
+        }
+
+        const isAdmin = Boolean(data?.email);
+
+        if (isAdmin) {
+            desktopAdminLink?.classList.remove('hidden');
+            mobileAdminLink?.classList.remove('hidden');
+        }
+
+        return isAdmin;
+    } catch (error) {
+        return false;
     }
 }
 
@@ -527,7 +558,7 @@ function setupNotifications() {
 async function completeLogin(email, existingProfile = null) {
     userEmail = email;
     localStorage.setItem('wc_pool_user_email', userEmail);
-    checkAdminStatus();
+    await checkAdminStatus();
     await fetchAppSettings();
 
     document.getElementById('auth-overlay').classList.add('hidden');
