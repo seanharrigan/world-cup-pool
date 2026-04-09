@@ -119,6 +119,11 @@ function updateSaveStatusUI() {
         return;
     }
 
+    if (!saveState.lastSavedAt && !saveState.picksDirty && !saveState.identityDirty && userEmail && myPicks.length === 0) {
+        setContent('No team saved. Select a team.', { text: 'text-red-300', border: 'border-red-500/30', background: 'bg-red-500/10' });
+        return;
+    }
+
     if (saveState.lastSavedAt) {
         setContent(`Saved at ${formatSavedTime(saveState.lastSavedAt)}`, { text: 'text-green-300', border: 'border-green-500/30', background: 'bg-green-500/10' });
         return;
@@ -135,17 +140,30 @@ async function hydrateSavedTimestamp() {
     }
 
     try {
-        const { data, error } = await supabaseClient
-            .from('profiles')
-            .select('updated_at')
-            .eq('email', userEmail)
-            .maybeSingle();
+        const [
+            { data: profile, error: profileError },
+            { count, error: picksError }
+        ] = await Promise.all([
+            supabaseClient
+                .from('profiles')
+                .select('updated_at')
+                .eq('email', userEmail)
+                .maybeSingle(),
+            supabaseClient
+                .from('picks')
+                .select('team_name', { count: 'exact', head: true })
+                .eq('user_email', userEmail)
+        ]);
 
-        if (error) {
-            throw error;
+        if (profileError) {
+            throw profileError;
         }
 
-        saveState.lastSavedAt = data?.updated_at || null;
+        if (picksError) {
+            throw picksError;
+        }
+
+        saveState.lastSavedAt = count > 0 ? (profile?.updated_at || null) : null;
     } catch (error) {
         saveState.lastSavedAt = null;
     }
@@ -746,15 +764,32 @@ async function saveToSupabase() {
     button.classList.add('saving');
 
     try {
-        await supabaseClient.from('picks').delete().eq('user_email', userEmail);
-        await supabaseClient.from('picks').insert(
-            myPicks.map((team) => ({
-                user_email: userEmail,
-                team_name: team.name,
-                tier: team.tier,
-                cost: team.cost
-            }))
-        );
+        const { error: deleteError } = await supabaseClient
+            .from('picks')
+            .delete()
+            .eq('user_email', userEmail);
+
+        if (deleteError) {
+            throw deleteError;
+        }
+
+        const pickRows = myPicks.map((team) => ({
+            user_email: userEmail,
+            team_name: team.name,
+            tier: team.tier,
+            cost: team.cost
+        }));
+
+        if (pickRows.length > 0) {
+            const { error: insertError } = await supabaseClient
+                .from('picks')
+                .insert(pickRows);
+
+            if (insertError) {
+                throw insertError;
+            }
+        }
+
         const savedAt = await upsertProfile(userEmail, { nickname, realname, favoriteTeam, homeCountry });
 
         saveState.failed = false;
@@ -762,6 +797,7 @@ async function saveToSupabase() {
         saveState.identityDirty = false;
         saveState.lastSavedAt = savedAt;
         updateSaveStatusUI();
+        await loadFromSupabase();
         fetchLeaderboard();
         fetchStats();
         fetchAdminUsers();
@@ -772,7 +808,7 @@ async function saveToSupabase() {
         saveState.isSaving = false;
         saveState.failed = true;
         updateSaveStatusUI();
-        showToast(error.message);
+        showToast(error.message || 'Could not save picks to the database.');
     } finally {
         saveState.isSaving = false;
         updateSaveStatusUI();
@@ -783,7 +819,14 @@ async function saveToSupabase() {
 
 async function loadFromSupabase() {
     try {
-        const { data } = await supabaseClient.from('picks').select('*').eq('user_email', userEmail);
+        const { data, error } = await supabaseClient
+            .from('picks')
+            .select('*')
+            .eq('user_email', userEmail);
+
+        if (error) {
+            throw error;
+        }
 
         if (data?.length > 0) {
             myPicks = data
@@ -791,7 +834,11 @@ async function loadFromSupabase() {
                 .filter(Boolean);
 
             updateUI();
+            return;
         }
+
+        myPicks = [];
+        updateUI();
     } catch (error) {
         console.error(error);
     }
