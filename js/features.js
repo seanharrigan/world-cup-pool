@@ -424,6 +424,9 @@ async function setupDashboard() {
     const squadStripEl = document.getElementById('dashboard-squad-strip');
     const prizePotEl = document.getElementById('dashboard-prize-pot');
     const playerCountEl = document.getElementById('dashboard-player-count');
+    const prizeFirstEl = document.getElementById('dashboard-prize-1st');
+    const prizeSecondEl = document.getElementById('dashboard-prize-2nd');
+    const prizeThirdEl = document.getElementById('dashboard-prize-3rd');
     const ctaButton = document.getElementById('dashboard-primary-cta');
     const leaderboardEl = document.getElementById('dashboard-leaderboard');
     const resultsEl = document.getElementById('dashboard-latest-results');
@@ -502,6 +505,9 @@ async function setupDashboard() {
         const playerCount = leaderboardData.length;
         if (prizePotEl) prizePotEl.textContent = `$${(playerCount * 40).toLocaleString()}`;
         if (playerCountEl) playerCountEl.textContent = `${playerCount} ${playerCount === 1 ? 'entry' : 'entries'}`;
+        if (prizeFirstEl) prizeFirstEl.textContent = `$${Math.floor(playerCount * 40 * 0.65).toLocaleString()}`;
+        if (prizeSecondEl) prizeSecondEl.textContent = `$${Math.floor(playerCount * 40 * 0.25).toLocaleString()}`;
+        if (prizeThirdEl) prizeThirdEl.textContent = `$${Math.floor(playerCount * 40 * 0.10).toLocaleString()}`;
 
         if (welcome) {
             if (!myEntry && liveSquad.length === 0) {
