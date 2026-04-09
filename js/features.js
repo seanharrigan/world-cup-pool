@@ -24,6 +24,7 @@ function setupAdminPage() {
     fetchAdminHistory();
     fetchAdminUsers();
     fetchAdminPaidUsers();
+    fetchAdminNotifications();
     fetchAdminTeamResults();
     fetchStats();
     syncAdminToggleControls();
@@ -124,7 +125,7 @@ function downloadCsv(filename, rows) {
 
 async function exportAllTables() {
     const button = document.getElementById('admin-export-all-btn');
-    const tables = ['profiles', 'picks', 'matches', 'messages', 'app_settings'];
+    const tables = ['profiles', 'picks', 'matches', 'messages', 'notifications', 'app_settings'];
 
     if (button) {
         button.disabled = true;
@@ -157,6 +158,126 @@ async function exportAllTables() {
             button.disabled = false;
             button.textContent = 'Export All Tables';
         }
+    }
+}
+
+async function sendAdminNotification() {
+    const textarea = document.getElementById('admin-notification-message');
+    const button = document.getElementById('admin-send-notification-btn');
+    const message = textarea?.value.trim();
+
+    if (!message) {
+        showToast('Enter a message first.');
+        return;
+    }
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'Sending...';
+    }
+
+    try {
+        const { error } = await supabaseClient
+            .from('notifications')
+            .insert([{
+                message,
+                created_by: userEmail || 'commissioner'
+            }]);
+
+        if (error) {
+            throw error;
+        }
+
+        if (textarea) {
+            textarea.value = '';
+        }
+
+        fetchAdminNotifications();
+        showToast('Notification sent.', 'success');
+    } catch (error) {
+        showToast(error.message || 'Unable to send notification.');
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Send Notification';
+        }
+    }
+}
+
+function formatNotificationDate(timestamp) {
+    if (!timestamp) {
+        return '-';
+    }
+
+    return new Date(timestamp).toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+    });
+}
+
+async function fetchAdminNotifications() {
+    const body = document.getElementById('admin-notifications-body');
+    if (!body) {
+        return;
+    }
+
+    body.innerHTML = '<tr><td colspan="3" class="px-5 py-8 text-center text-gray-500 uppercase text-xs">Loading notifications...</td></tr>';
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('notifications')
+            .select('id, message, created_at')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            throw error;
+        }
+
+        body.innerHTML = (data || []).map((notification) => `
+            <tr class="border-t border-gray-800">
+                <td class="px-5 py-4 align-top whitespace-nowrap text-gray-300">${formatNotificationDate(notification.created_at)}</td>
+                <td class="px-5 py-4 align-top text-white">${notification.message}</td>
+                <td class="px-5 py-4 align-top text-right">
+                    <button onclick="deleteAdminNotification(${notification.id})" class="rounded-xl bg-red-600 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-colors hover:bg-red-500">X</button>
+                </td>
+            </tr>
+        `).join('') || '<tr><td colspan="3" class="px-5 py-8 text-center text-gray-500 uppercase text-xs">No notifications sent yet.</td></tr>';
+    } catch (error) {
+        body.innerHTML = '<tr><td colspan="3" class="px-5 py-8 text-center text-red-400 uppercase text-xs">Could not load notifications.</td></tr>';
+    }
+}
+
+async function deleteAdminNotification(id) {
+    const shouldDelete = await showConfirmModal({
+        label: 'Delete',
+        icon: '🗑️',
+        title: 'Delete Notification?',
+        message: 'This removes the popup from future delivery.',
+        detail: 'Players who already saw it will not be affected.',
+        confirmText: 'Delete',
+        cancelText: 'Cancel'
+    });
+
+    if (!shouldDelete) {
+        return;
+    }
+
+    try {
+        const { error } = await supabaseClient
+            .from('notifications')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            throw error;
+        }
+
+        fetchAdminNotifications();
+        showToast('Notification deleted.', 'success');
+    } catch (error) {
+        showToast(error.message || 'Unable to delete notification.');
     }
 }
 
@@ -892,21 +1013,44 @@ async function clearChatMessages() {
 
 async function deleteUserPicks(email) {
     const shouldDelete = await showConfirmModal({
-        title: 'Delete Player Picks?',
-        message: `Remove all picks for ${email}?`,
-        detail: 'This deletes their picks from the database.',
-        confirmText: 'Delete Player',
-        cancelText: 'Cancel'
+        label: 'Are You Sure?',
+        icon: '⚠️',
+        title: 'Delete Player Record?',
+        message: `This will delete all picks and the full profile for ${email}.`,
+        detail: 'It also removes their chat messages and any notifications they sent.',
+        confirmText: 'Yes, Delete',
+        cancelText: 'No, Keep'
     });
 
     if (!shouldDelete) {
         return;
     }
 
+    const finalDelete = await showConfirmModal({
+        label: 'Final Check',
+        icon: '🗑️',
+        title: 'One Last Time',
+        message: 'I will ask you one last time.',
+        detail: 'Are you absolutely sure you want to permanently remove this player record?',
+        confirmText: 'Delete Forever',
+        cancelText: 'Keep Player'
+    });
+
+    if (!finalDelete) {
+        return;
+    }
+
     try {
-        const [{ error: picksError }, { error: profileError }] = await Promise.all([
+        const [
+            { error: picksError },
+            { error: profileError },
+            { error: messagesError },
+            { error: notificationsError }
+        ] = await Promise.all([
             supabaseClient.from('picks').delete().eq('user_email', email),
-            supabaseClient.from('profiles').delete().eq('email', email)
+            supabaseClient.from('profiles').delete().eq('email', email),
+            supabaseClient.from('messages').delete().eq('user_email', email),
+            supabaseClient.from('notifications').delete().eq('created_by', email)
         ]);
 
         if (picksError) {
@@ -917,6 +1061,14 @@ async function deleteUserPicks(email) {
             throw profileError;
         }
 
+        if (messagesError) {
+            throw messagesError;
+        }
+
+        if (notificationsError) {
+            throw notificationsError;
+        }
+
         if (userEmail === email) {
             myPicks = [];
             updateUI();
@@ -924,11 +1076,13 @@ async function deleteUserPicks(email) {
 
         fetchAdminUsers();
         fetchAdminPaidUsers();
+        fetchAdminNotifications();
+        fetchMessages();
         fetchLeaderboard();
         fetchStats();
-        showToast('Player picks deleted.', 'success');
+        showToast('Player record deleted.', 'success');
     } catch (error) {
-        showToast(error.message || 'Unable to delete player picks.');
+        showToast(error.message || 'Unable to delete player record.');
     }
 }
 
@@ -1295,6 +1449,7 @@ Object.assign(window, {
     fetchAdminHistory,
     fetchAdminUsers,
     fetchAdminPaidUsers,
+    fetchAdminNotifications,
     fetchAdminTeamResults,
     fetchPublicTeamResults,
     clearChatMessages,
@@ -1312,6 +1467,8 @@ Object.assign(window, {
     setupChatKeyboardSubmit,
     syncAdminToggleControls,
     exportAllTables,
+    sendAdminNotification,
+    deleteAdminNotification,
     togglePicksLock,
     toggleAutoLock
     ,

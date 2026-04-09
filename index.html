@@ -442,6 +442,7 @@
                     <button onclick="showAdminTab('matches')" id="admin-tab-matches" class="admin-tab active rounded-2xl border border-blue-500/40 bg-blue-600/20 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-blue-300 transition-colors">Match Entry</button>
                     <button onclick="showAdminTab('manage')" id="admin-tab-manage" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Players & Chat</button>
                     <button onclick="showAdminTab('paid')" id="admin-tab-paid" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Paid</button>
+                    <button onclick="showAdminTab('notifications')" id="admin-tab-notifications" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Notifications</button>
                     <button onclick="showAdminTab('teams')" id="admin-tab-teams" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Team Results</button>
                     <button onclick="showAdminTab('stats')" id="admin-tab-stats" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Statistics</button>
                     <button onclick="showAdminTab('toggle')" id="admin-tab-toggle" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Toggle</button>
@@ -481,7 +482,7 @@
                     <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-6">
                         <div>
                             <h2 class="text-xl font-black uppercase tracking-tight text-white">Player Records</h2>
-                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Delete a user to remove all of their picks from the database</p>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Delete a user to remove their profile, picks, chat messages, and authored notifications</p>
                         </div>
                         <div class="rounded-3xl border border-gray-700 overflow-hidden">
                             <div class="overflow-x-auto">
@@ -519,6 +520,44 @@
                                         </tr>
                                     </thead>
                                     <tbody id="admin-paid-body" class="bg-gray-900 text-sm font-bold text-gray-100"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="admin-panel-notifications" class="admin-panel hidden space-y-8">
+                    <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-6">
+                        <div>
+                            <h2 class="text-xl font-black uppercase tracking-tight text-white">Send Popup Notification</h2>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Send a one-time popup message to every player the next time they open the site</p>
+                        </div>
+                        <div class="space-y-3">
+                            <label for="admin-notification-message" class="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Message</label>
+                            <textarea id="admin-notification-message" rows="5" placeholder="Type a message for everyone..." class="w-full rounded-2xl border border-gray-700 bg-gray-950 px-4 py-4 font-bold text-white outline-none focus:border-blue-500"></textarea>
+                        </div>
+                        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">Players already on the site will also see it live.</p>
+                            <button onclick="sendAdminNotification()" id="admin-send-notification-btn" class="rounded-2xl bg-blue-600 px-5 py-4 text-[10px] font-black uppercase tracking-[0.25em] text-white transition-colors hover:bg-blue-500">Send Notification</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-6">
+                        <div>
+                            <h2 class="text-xl font-black uppercase tracking-tight text-white">Notification History</h2>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Review sent popups and remove anything you do not want delivered</p>
+                        </div>
+                        <div class="rounded-3xl border border-gray-700 overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead class="bg-gray-950 text-white uppercase text-[10px] tracking-[0.2em] font-black">
+                                        <tr>
+                                            <th class="px-5 py-4">Date</th>
+                                            <th class="px-5 py-4">Message</th>
+                                            <th class="px-5 py-4 text-right">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-notifications-body" class="bg-gray-900 text-sm font-bold text-gray-100"></tbody>
                                 </table>
                             </div>
                         </div>
@@ -745,9 +784,9 @@
         </div>
     </div>
 
-    <script src="js/data.js?v=20260408b"></script>
-    <script src="js/ui.js?v=20260408b"></script>
-    <script src="js/features.js?v=20260408b"></script>
-    <script src="js/app.js?v=20260408b"></script>
+    <script src="js/data.js?v=20260409a"></script>
+    <script src="js/ui.js?v=20260409a"></script>
+    <script src="js/features.js?v=20260409a"></script>
+    <script src="js/app.js?v=20260409a"></script>
 </body>
 </html>

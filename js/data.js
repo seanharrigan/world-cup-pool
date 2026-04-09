@@ -12,8 +12,10 @@ let appSettings = {
 };
 let isLocked = false;
 let chatChannel = null;
+let notificationChannel = null;
 let countdownStarted = false;
 let kickoffLockSyncAttempted = false;
+let activeNotificationId = null;
 
 function refreshLockState() {
     isLocked = Boolean(appSettings.picksLocked) || (appSettings.autoLockAtKickoff !== false && new Date() >= LOCK_DATE);

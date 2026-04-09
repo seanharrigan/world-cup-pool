@@ -432,10 +432,29 @@ function startCountdown() {
 
     countdownStarted = true;
 
-    const updateCountdownDisplays = () => {
+    const updateCountdownDisplays = async () => {
         const distance = LOCK_DATE.getTime() - new Date().getTime();
 
         if (distance <= 0) {
+            if (!kickoffLockSyncAttempted) {
+                kickoffLockSyncAttempted = true;
+                if (appSettings.autoLockAtKickoff) {
+                    appSettings.picksLocked = true;
+                    try {
+                        await saveAppSettings({
+                            picksLocked: true,
+                            autoLockAtKickoff: appSettings.autoLockAtKickoff
+                        });
+                    } catch (error) {
+                        // Keep local lock even if remote persistence fails.
+                    }
+                }
+
+                refreshLockState();
+                renderPool();
+                updateUI();
+            }
+
             document.getElementById('countdown')?.remove();
             document.getElementById('dashboard-countdown')?.remove();
             return;

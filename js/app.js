@@ -10,6 +10,10 @@ function getProfileStorageKey(email = userEmail) {
     return email ? `wc_pool_profile_${email}` : null;
 }
 
+function getNotificationSeenKey(email = userEmail) {
+    return email ? `wc_pool_seen_notification_${email}` : null;
+}
+
 function saveProfileIdentityLocal(email, profile) {
     const storageKey = getProfileStorageKey(email);
     if (!storageKey || !profile) {
@@ -40,6 +44,24 @@ function getLocalProfileIdentity(email) {
     } catch (error) {
         return null;
     }
+}
+
+function getLastSeenNotificationId(email = userEmail) {
+    const key = getNotificationSeenKey(email);
+    if (!key) {
+        return 0;
+    }
+
+    return Number(localStorage.getItem(key) || 0);
+}
+
+function markNotificationSeen(notificationId, email = userEmail) {
+    const key = getNotificationSeenKey(email);
+    if (!key || !notificationId) {
+        return;
+    }
+
+    localStorage.setItem(key, String(notificationId));
 }
 
 function formatSavedTime(timestamp) {
@@ -388,6 +410,81 @@ function confirmNewProfileEmail(email) {
     });
 }
 
+function showPaymentReminderModal() {
+    return showConfirmModal({
+        label: 'Payment Due',
+        icon: '💸',
+        title: 'Still To Pay',
+        message: 'You have not paid yet.',
+        detail: 'Please contact Connor or Sean for payment.',
+        confirmText: 'Okay',
+        singleAction: true
+    });
+}
+
+async function showBroadcastNotification(notification) {
+    if (!notification?.id || !notification?.message || !userEmail) {
+        return;
+    }
+
+    if (activeNotificationId === notification.id || notification.id <= getLastSeenNotificationId()) {
+        return;
+    }
+
+    activeNotificationId = notification.id;
+
+    await showConfirmModal({
+        label: 'Notification',
+        icon: '📣',
+        title: 'Pool Update',
+        message: notification.message,
+        detail: 'Sent by the commissioner desk.',
+        confirmText: 'Okay',
+        singleAction: true
+    });
+
+    markNotificationSeen(notification.id);
+    activeNotificationId = null;
+}
+
+async function checkForBroadcastNotifications() {
+    if (!userEmail) {
+        return;
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('notifications')
+            .select('id, message, created_at')
+            .order('id', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (error) {
+            throw error;
+        }
+
+        if (data) {
+            await showBroadcastNotification(data);
+        }
+    } catch (error) {
+        // Fail quietly if notifications are unavailable.
+    }
+}
+
+function setupNotifications() {
+    if (notificationChannel) {
+        return;
+    }
+
+    notificationChannel = supabaseClient
+        .channel('notifications-channel')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, async (payload) => {
+            await showBroadcastNotification(payload.new);
+        })
+        .subscribe();
+}
+
 async function completeLogin(email, existingProfile = null) {
     userEmail = email;
     localStorage.setItem('wc_pool_user_email', userEmail);
@@ -424,6 +521,13 @@ async function completeLogin(email, existingProfile = null) {
     clearDirtyFlags();
     startCountdown();
     showPage('instructions');
+    setupNotifications();
+
+    if (existingProfile && existingProfile.has_paid === false) {
+        await showPaymentReminderModal();
+    }
+
+    await checkForBroadcastNotifications();
 }
 
 async function handleLogin(options = {}) {
