@@ -19,29 +19,74 @@ function showToast(message, type = 'error') {
     }, 2800);
 }
 
+function attachAlphaJumpToSelect(select) {
+    if (!select || select.dataset.alphaJumpBound === 'true') {
+        return;
+    }
+
+    select.addEventListener('keydown', (event) => {
+        if (event.ctrlKey || event.metaKey || event.altKey || event.key.length !== 1) {
+            return;
+        }
+
+        const letter = event.key.toLowerCase();
+        if (!/[a-z]/.test(letter)) {
+            return;
+        }
+
+        const options = Array.from(select.options);
+        const currentIndex = Math.max(select.selectedIndex, 0);
+        const matcher = (option) => (option.value || option.textContent || '').trim().toLowerCase().startsWith(letter);
+        const nextIndex = options.findIndex((option, index) => index > currentIndex && matcher(option));
+        const fallbackIndex = options.findIndex((option) => matcher(option));
+        const targetIndex = nextIndex >= 0 ? nextIndex : fallbackIndex;
+
+        if (targetIndex <= 0) {
+            return;
+        }
+
+        event.preventDefault();
+        select.selectedIndex = targetIndex;
+        select.dispatchEvent(new Event('input', { bubbles: true }));
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    select.dataset.alphaJumpBound = 'true';
+}
+
 function showConfirmModal({
+    label = 'Confirm Email',
+    icon = '✉️',
     title = 'Are you sure?',
     message = '',
     detail = '',
     confirmText = 'Confirm',
-    cancelText = 'Cancel'
+    cancelText = 'Cancel',
+    singleAction = false
 }) {
     const modal = document.getElementById('confirm-modal');
+    const iconEl = document.getElementById('confirm-modal-icon');
+    const labelEl = document.getElementById('confirm-modal-label');
     const titleEl = document.getElementById('confirm-modal-title');
     const messageEl = document.getElementById('confirm-modal-message');
     const detailEl = document.getElementById('confirm-modal-detail');
     const confirmButton = document.getElementById('confirm-modal-confirm');
     const cancelButton = document.getElementById('confirm-modal-cancel');
 
-    if (!modal || !titleEl || !messageEl || !detailEl || !confirmButton || !cancelButton) {
+    if (!modal || !iconEl || !labelEl || !titleEl || !messageEl || !detailEl || !confirmButton || !cancelButton) {
         return Promise.resolve(window.confirm(message));
     }
 
+    iconEl.textContent = icon;
+    labelEl.textContent = label;
     titleEl.textContent = title;
     messageEl.textContent = message;
     detailEl.textContent = detail;
     confirmButton.textContent = confirmText;
     cancelButton.textContent = cancelText;
+    cancelButton.classList.toggle('hidden', singleAction);
+    confirmButton.classList.toggle('flex-1', !singleAction);
+    confirmButton.classList.toggle('w-full', singleAction);
 
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -50,6 +95,9 @@ function showConfirmModal({
         const cleanup = (result) => {
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+            cancelButton.classList.remove('hidden');
+            confirmButton.classList.remove('w-full');
+            confirmButton.classList.add('flex-1');
             confirmButton.removeEventListener('click', handleConfirm);
             cancelButton.removeEventListener('click', handleCancel);
             modal.removeEventListener('click', handleBackdrop);
@@ -102,6 +150,9 @@ function showProfileSetupModal(email) {
         favoriteTeamInput.dataset.optionsLoaded = 'true';
         homeCountryInput.dataset.optionsLoaded = 'true';
     }
+
+    attachAlphaJumpToSelect(favoriteTeamInput);
+    attachAlphaJumpToSelect(homeCountryInput);
 
     messageEl.textContent = `You're creating a new profile for ${email}.`;
     nicknameInput.value = '';
@@ -215,7 +266,13 @@ function renderPool() {
     [1, 2, 3].forEach((tierNum) => {
         const tierTeams = teams
             .filter((team) => team.tier === tierNum)
-            .sort((a, b) => b.cost - a.cost);
+            .sort((a, b) => {
+                if (b.cost !== a.cost) {
+                    return b.cost - a.cost;
+                }
+
+                return a.name.localeCompare(b.name);
+            });
 
         const section = document.createElement('div');
         section.innerHTML = `
@@ -321,7 +378,7 @@ async function renderGroups() {
 
     ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'].forEach((group) => {
         const groupTeams = teams
-            .filter((team) => team.group === group)
+            .filter((team) => team.qualified !== false && team.group === group)
             .map((team) => {
                 const totalPoints = matches.reduce((sum, match) => {
                     if (match.team_home !== team.name && match.team_away !== team.name) {

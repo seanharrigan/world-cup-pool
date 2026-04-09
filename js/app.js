@@ -185,6 +185,9 @@ function populateProfileSelectOptions() {
         select.insertAdjacentHTML('beforeend', options);
         select.dataset.optionsLoaded = 'true';
     });
+
+    attachAlphaJumpToSelect(favoriteTeamSelect);
+    attachAlphaJumpToSelect(homeCountrySelect);
 }
 
 function setupProfile() {
@@ -196,7 +199,9 @@ function setupProfile() {
 
 function populateCountryFilter() {
     const select = document.getElementById('leaderboard-country-filter');
-    const sortedTeams = [...teams].sort((a, b) => a.name.localeCompare(b.name));
+    const sortedTeams = [...teams]
+        .filter((team) => team.qualified !== false)
+        .sort((a, b) => a.name.localeCompare(b.name));
 
     sortedTeams.forEach((team) => {
         const option = document.createElement('option');
@@ -221,6 +226,23 @@ function toggleTeam(name) {
     }
 
     const team = teams.find((entry) => entry.name === name);
+    if (!team) {
+        return;
+    }
+
+    if (team.qualified === false) {
+        showConfirmModal({
+            label: 'LOL',
+            icon: '🇮🇹',
+            title: 'Nice Try',
+            message: 'Pick a team that qualified.',
+            detail: 'Italy can still be your favourite team or home country.',
+            confirmText: 'Okay',
+            singleAction: true
+        });
+        return;
+    }
+
     const existingIndex = myPicks.findIndex((entry) => entry.name === name);
 
     if (existingIndex > -1) {

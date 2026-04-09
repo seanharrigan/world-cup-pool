@@ -57,5 +57,6 @@ const teams = [
     {"flag": "🇨🇼", "tier": 3, "group": "E", "name": "Curacao", "cost": 2},
     {"flag": "🇺🇿", "tier": 3, "group": "K", "name": "Uzbekistan", "cost": 2},
     {"flag": "🇯🇴", "tier": 3, "group": "J", "name": "Jordan", "cost": 2},
-    {"flag": "🇭🇹", "tier": 3, "group": "C", "name": "Haiti", "cost": 2}
+    {"flag": "🇭🇹", "tier": 3, "group": "C", "name": "Haiti", "cost": 2},
+    {"flag": "🇮🇹", "tier": 3, "group": "", "name": "Italy", "cost": 0, "qualified": false}
 ];

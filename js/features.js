@@ -10,6 +10,7 @@ function setupAdminPage() {
 
     if (teamOneSelect && teamTwoSelect) {
         const options = [...teams]
+            .filter((team) => team.qualified !== false)
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((team) => `<option value="${team.name}">${team.flag} ${team.name}</option>`)
             .join('');
@@ -574,6 +575,7 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
         };
 
         const rows = [...teams]
+            .filter((team) => team.qualified !== false)
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((team) => {
                 const teamMatches = (matches || [])
