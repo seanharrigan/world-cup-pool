@@ -92,7 +92,7 @@ function updatePublicTeamSortIndicators() {
             return;
         }
 
-        arrow.textContent = '↕';
+        arrow.textContent = '↑';
         arrow.classList.remove('text-blue-300');
         arrow.classList.add('text-gray-500');
     });
