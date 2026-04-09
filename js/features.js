@@ -26,6 +26,25 @@ function setupAdminPage() {
     fetchAdminPaidUsers();
     fetchAdminTeamResults();
     fetchStats();
+    syncAdminToggleControls();
+}
+
+function syncAdminToggleControls() {
+    const lockToggle = document.getElementById('admin-lock-picks-toggle');
+    const autoLockToggle = document.getElementById('admin-auto-lock-toggle');
+    const hideTeamSelectionToggle = document.getElementById('admin-hide-team-selection-toggle');
+
+    if (lockToggle) {
+        lockToggle.checked = Boolean(appSettings.picksLocked);
+    }
+
+    if (autoLockToggle) {
+        autoLockToggle.checked = appSettings.autoLockAtKickoff !== false;
+    }
+
+    if (hideTeamSelectionToggle) {
+        hideTeamSelectionToggle.checked = Boolean(appSettings.hideTeamSelection);
+    }
 }
 
 function showAdminTab(tabId) {
@@ -79,6 +98,115 @@ function setupResultsPage() {
     renderGroups();
     fetchPublicResults();
     fetchPublicTeamResults();
+}
+
+function escapeCsvValue(value) {
+    const stringValue = value == null ? '' : String(value);
+    if (/[",\n]/.test(stringValue)) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+    }
+
+    return stringValue;
+}
+
+function downloadCsv(filename, rows) {
+    const csv = rows.map((row) => row.map(escapeCsvValue).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
+async function exportAllTables() {
+    const button = document.getElementById('admin-export-all-btn');
+    const tables = ['profiles', 'picks', 'matches', 'messages', 'app_settings'];
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'Exporting...';
+    }
+
+    try {
+        for (const tableName of tables) {
+            const { data, error } = await supabaseClient.from(tableName).select('*');
+            if (error) {
+                throw error;
+            }
+
+            const rows = data || [];
+            const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
+            const csvRows = [headers];
+
+            rows.forEach((row) => {
+                csvRows.push(headers.map((header) => row[header]));
+            });
+
+            downloadCsv(`wc-pool-${tableName}.csv`, csvRows);
+        }
+
+        showToast('CSV exports downloaded.', 'success');
+    } catch (error) {
+        showToast(error.message || 'Unable to export data.');
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Export All Tables';
+        }
+    }
+}
+
+async function togglePicksLock(checked) {
+    try {
+        await saveAppSettings({
+            picksLocked: checked,
+            autoLockAtKickoff: appSettings.autoLockAtKickoff,
+            hideTeamSelection: appSettings.hideTeamSelection
+        });
+        syncAdminToggleControls();
+        renderPool();
+        updateUI();
+        showToast(checked ? 'Picks locked.' : 'Picks unlocked.', 'success');
+    } catch (error) {
+        syncAdminToggleControls();
+        showToast(error.message || 'Unable to update picks lock.');
+    }
+}
+
+async function toggleAutoLock(checked) {
+    try {
+        await saveAppSettings({
+            picksLocked: appSettings.picksLocked,
+            autoLockAtKickoff: checked,
+            hideTeamSelection: appSettings.hideTeamSelection
+        });
+        syncAdminToggleControls();
+        showToast(checked ? 'Auto-lock enabled.' : 'Auto-lock disabled.', 'success');
+    } catch (error) {
+        syncAdminToggleControls();
+        showToast(error.message || 'Unable to update auto-lock.');
+    }
+}
+
+async function toggleHideTeamSelection(checked) {
+    try {
+        await saveAppSettings({
+            picksLocked: appSettings.picksLocked,
+            autoLockAtKickoff: appSettings.autoLockAtKickoff,
+            hideTeamSelection: checked
+        });
+        syncAdminToggleControls();
+        setupDashboard();
+        fetchLeaderboard();
+        showToast(checked ? 'Team selection hidden.' : 'Team selection visible.', 'success');
+    } catch (error) {
+        syncAdminToggleControls();
+        showToast(error.message || 'Unable to update team visibility.');
+    }
 }
 
 function buildTeamPointsMap(matches = []) {
@@ -311,6 +439,18 @@ async function setupDashboard() {
         }
 
         if (mostPickedEl) {
+            if (appSettings.hideTeamSelection) {
+                mostPickedEl.innerHTML = `
+                    <div class="flex h-[382px] items-center justify-center rounded-2xl border border-gray-100 bg-gray-50 px-6 text-center">
+                        <div class="max-w-xs">
+                            <div class="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400">Hidden For Now</div>
+                            <div class="mt-3 text-sm font-black uppercase tracking-[0.08em] text-gray-500">Pick selection statistics will be displayed when the World Cup starts.</div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
             const countryCounts = {};
             picks.forEach((pick) => {
                 countryCounts[pick.team_name] = (countryCounts[pick.team_name] || 0) + 1;
@@ -951,7 +1091,13 @@ async function fetchLeaderboard() {
         let leaderboardData = buildLeaderboardData(allPicks || [], allMatches || [], profilesMap);
         const playerCount = leaderboardData.length;
         const search = document.getElementById('leaderboard-search').value.toLowerCase();
-        const filter = document.getElementById('leaderboard-country-filter').value;
+        const countryFilter = document.getElementById('leaderboard-country-filter');
+        const filter = countryFilter?.value || '';
+
+        if (countryFilter) {
+            countryFilter.disabled = Boolean(appSettings.hideTeamSelection);
+            countryFilter.classList.toggle('opacity-50', Boolean(appSettings.hideTeamSelection));
+        }
 
         if (search) {
             leaderboardData = leaderboardData.filter((user) => (
@@ -959,7 +1105,7 @@ async function fetchLeaderboard() {
             ));
         }
 
-        if (filter) {
+        if (!appSettings.hideTeamSelection && filter) {
             leaderboardData = leaderboardData.filter((user) => (
                 user.squad.some((squadTeam) => teams.find((team) => team.flag === squadTeam.flag).name === filter)
             ));
@@ -976,12 +1122,16 @@ async function fetchLeaderboard() {
         body.innerHTML = leaderboardData.map((user, index) => `
             <tr class="border-b border-gray-100 hover:bg-blue-50 transition-colors text-left text-gray-900">
                 <td class="px-6 py-4 text-center text-blue-600 italic">#${index + 1}</td>
+                <td class="px-6 py-4 text-center font-mono text-2xl font-black text-blue-600">${user.totalPoints}</td>
                 <td class="px-6 py-4 text-left">
                     <div class="text-sm font-black uppercase text-left text-gray-900">${user.nickname}</div>
                     <div class="text-[9px] text-gray-400 uppercase text-left">${user.realname}</div>
-                    <div class="flex gap-1 mt-2 text-left">${user.squad.sort((a, b) => b.cost - a.cost).map((team) => `<span class="text-lg">${team.flag}</span>`).join('')}</div>
+                    <div class="mt-2 text-left">
+                        ${appSettings.hideTeamSelection
+                            ? '<div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-400">Teams to be displayed when WC starts</div>'
+                            : `<div class="flex gap-1">${user.squad.sort((a, b) => b.cost - a.cost).map((team) => `<span class="text-lg">${team.flag}</span>`).join('')}</div>`}
+                    </div>
                 </td>
-                <td class="px-6 py-4 text-right font-mono text-2xl font-black text-blue-600 text-right">${user.totalPoints}</td>
             </tr>
         `).join('') || '<tr><td colspan="3" class="p-8 text-center text-gray-900">No players found</td></tr>';
     } catch (error) {
@@ -1159,5 +1309,11 @@ Object.assign(window, {
     fetchMessages,
     renderMessage,
     sendChatMessage,
-    setupChatKeyboardSubmit
+    setupChatKeyboardSubmit,
+    syncAdminToggleControls,
+    exportAllTables,
+    togglePicksLock,
+    toggleAutoLock
+    ,
+    toggleHideTeamSelection
 });

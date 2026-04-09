@@ -5,9 +5,22 @@ const LOCK_DATE = new Date('2026-06-11T12:00:00');
 
 let userEmail = '';
 let myPicks = [];
-let isLocked = new Date() > LOCK_DATE;
+let appSettings = {
+    picksLocked: false,
+    autoLockAtKickoff: true,
+    hideTeamSelection: false
+};
+let isLocked = false;
 let chatChannel = null;
 let countdownStarted = false;
+let kickoffLockSyncAttempted = false;
+
+function refreshLockState() {
+    isLocked = Boolean(appSettings.picksLocked) || (appSettings.autoLockAtKickoff !== false && new Date() >= LOCK_DATE);
+    return isLocked;
+}
+
+refreshLockState();
 
 const teams = [
     {"flag": "🇪🇸", "tier": 1, "group": "H", "name": "Spain", "cost": 50},

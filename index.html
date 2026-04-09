@@ -430,7 +430,7 @@
                     <div class="bg-gray-50 border-2 border-gray-100 p-6 rounded-3xl shadow-sm space-y-2 text-center text-gray-900"><div class="flex justify-between font-black uppercase text-xs text-gray-900"><span>1st</span><span id="prize-1st" class="text-green-600 font-bold">$0</span></div><div class="flex justify-between font-black uppercase text-xs text-gray-900 text-left text-gray-900"><span>2nd</span><span id="prize-2nd" class="font-bold text-gray-900 text-center">$0</span></div><div class="flex justify-between font-black uppercase text-xs text-gray-900 text-left text-gray-900"><span>3rd</span><span id="prize-3rd" class="font-bold text-gray-900 text-center">$0</span></div></div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-gray-900"><input type="text" id="leaderboard-search" placeholder="Search by name..." oninput="fetchLeaderboard()" class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-500 font-bold text-sm text-gray-900 text-left"><select id="leaderboard-country-filter" onchange="fetchLeaderboard()" class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-500 font-bold text-sm bg-white text-left"><option value="">All Countries</option></select></div>
-                <div class="bg-gray-50 rounded-3xl border border-gray-200 overflow-hidden text-left text-gray-900"><div class="overflow-x-auto text-left text-gray-900"><table class="w-full text-left text-gray-900 text-left"><thead class="bg-gray-900 text-white uppercase text-[10px] tracking-[0.2em] font-black text-left"><tr><th class="px-6 py-4 text-center">Rank</th><th class="px-6 py-4 text-left">Player & Squad</th><th class="px-6 py-4 text-right text-white">Points</th></tr></thead><tbody id="leaderboard-body" class="font-bold text-left text-gray-900 text-left text-gray-900 text-left"></tbody></table></div></div>
+                <div class="bg-gray-50 rounded-3xl border border-gray-200 overflow-hidden text-left text-gray-900"><div class="overflow-x-auto text-left text-gray-900"><table class="w-full text-left text-gray-900 text-left"><thead class="bg-gray-900 text-white uppercase text-[10px] tracking-[0.2em] font-black text-left"><tr><th class="px-6 py-4 text-center">Rank</th><th class="px-6 py-4 text-center text-white">Points</th><th class="px-6 py-4 text-left">Player & Squad</th></tr></thead><tbody id="leaderboard-body" class="font-bold text-left text-gray-900 text-left text-gray-900 text-left"></tbody></table></div></div>
             </div>
         </div>
 
@@ -444,6 +444,7 @@
                     <button onclick="showAdminTab('paid')" id="admin-tab-paid" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Paid</button>
                     <button onclick="showAdminTab('teams')" id="admin-tab-teams" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Team Results</button>
                     <button onclick="showAdminTab('stats')" id="admin-tab-stats" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Statistics</button>
+                    <button onclick="showAdminTab('toggle')" id="admin-tab-toggle" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Toggle</button>
                 </div>
 
                 <div id="admin-panel-matches" class="admin-panel space-y-10">
@@ -567,6 +568,61 @@
                         <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 text-gray-900">
                             <h2 class="text-xl font-black uppercase mb-6 border-b-4 border-gray-950 pb-2 text-gray-900">Top Countries Chosen</h2>
                             <div id="country-pick-stats" class="space-y-3 font-bold text-gray-700 text-gray-900"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="admin-panel-toggle" class="admin-panel hidden space-y-8">
+                    <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-6">
+                        <div>
+                            <h2 class="text-xl font-black uppercase tracking-tight text-white">Pool Controls</h2>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Lock picks globally and export safety copies of your data</p>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between gap-4 rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-4">
+                                <div>
+                                    <div class="text-sm font-black uppercase text-white">Lock Picks</div>
+                                    <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Prevent users from changing teams</div>
+                                </div>
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input id="admin-lock-picks-toggle" type="checkbox" class="peer sr-only" onchange="togglePicksLock(this.checked)">
+                                    <span class="h-8 w-14 rounded-full bg-gray-700 transition-colors peer-checked:bg-blue-600"></span>
+                                    <span class="absolute left-1 h-6 w-6 rounded-full bg-white transition-transform peer-checked:translate-x-6"></span>
+                                </label>
+                            </div>
+
+                            <div class="flex items-center justify-between gap-4 rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-4">
+                                <div>
+                                    <div class="text-sm font-black uppercase text-white">Auto Lock At Kickoff</div>
+                                    <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Automatically lock when the World Cup countdown hits zero</div>
+                                </div>
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input id="admin-auto-lock-toggle" type="checkbox" class="peer sr-only" onchange="toggleAutoLock(this.checked)">
+                                    <span class="h-8 w-14 rounded-full bg-gray-700 transition-colors peer-checked:bg-green-600"></span>
+                                    <span class="absolute left-1 h-6 w-6 rounded-full bg-white transition-transform peer-checked:translate-x-6"></span>
+                                </label>
+                            </div>
+
+                            <div class="flex items-center justify-between gap-4 rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-4">
+                                <div>
+                                    <div class="text-sm font-black uppercase text-white">Hide Team Selection From Public</div>
+                                    <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Hide squad flags and most-picked teams until you want them visible</div>
+                                </div>
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input id="admin-hide-team-selection-toggle" type="checkbox" class="peer sr-only" onchange="toggleHideTeamSelection(this.checked)">
+                                    <span class="h-8 w-14 rounded-full bg-gray-700 transition-colors peer-checked:bg-amber-500"></span>
+                                    <span class="absolute left-1 h-6 w-6 rounded-full bg-white transition-transform peer-checked:translate-x-6"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-700 pt-6 space-y-4">
+                            <div>
+                                <h3 class="text-sm font-black uppercase text-white">Data Export</h3>
+                                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Download the current database tables as CSV files for backup</p>
+                            </div>
+                            <button onclick="exportAllTables()" id="admin-export-all-btn" class="rounded-2xl bg-white px-5 py-4 text-[10px] font-black uppercase tracking-[0.25em] text-gray-900 transition-colors hover:bg-gray-100">Export All Tables</button>
                         </div>
                     </div>
                 </div>

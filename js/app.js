@@ -197,6 +197,56 @@ function setupProfile() {
     }
 }
 
+async function fetchAppSettings() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('app_settings')
+            .select('key, picks_locked, auto_lock_at_kickoff, hide_team_selection')
+            .eq('key', 'global')
+            .maybeSingle();
+
+        if (error) {
+            throw error;
+        }
+
+        if (data) {
+            appSettings.picksLocked = Boolean(data.picks_locked);
+            appSettings.autoLockAtKickoff = data.auto_lock_at_kickoff !== false;
+            appSettings.hideTeamSelection = Boolean(data.hide_team_selection);
+        }
+    } catch (error) {
+        appSettings.picksLocked = false;
+        appSettings.autoLockAtKickoff = true;
+        appSettings.hideTeamSelection = false;
+    }
+
+    refreshLockState();
+    return appSettings;
+}
+
+async function saveAppSettings(nextSettings = {}) {
+    const payload = {
+        key: 'global',
+        picks_locked: Boolean(nextSettings.picksLocked),
+        auto_lock_at_kickoff: nextSettings.autoLockAtKickoff !== false,
+        hide_team_selection: Boolean(nextSettings.hideTeamSelection)
+    };
+
+    const { error } = await supabaseClient
+        .from('app_settings')
+        .upsert(payload, { onConflict: 'key' });
+
+    if (error) {
+        throw error;
+    }
+
+    appSettings.picksLocked = payload.picks_locked;
+    appSettings.autoLockAtKickoff = payload.auto_lock_at_kickoff;
+    appSettings.hideTeamSelection = payload.hide_team_selection;
+    refreshLockState();
+    return appSettings;
+}
+
 function populateCountryFilter() {
     const select = document.getElementById('leaderboard-country-filter');
     const sortedTeams = [...teams]
@@ -224,6 +274,14 @@ function checkAdminStatus() {
 
 function toggleTeam(name) {
     if (isLocked) {
+        showConfirmModal({
+            label: 'Locked',
+            icon: '🔒',
+            title: 'Picks Locked',
+            message: 'The World Cup has started, the picks are locked. Good luck!',
+            confirmText: 'Okay',
+            singleAction: true
+        });
         return;
     }
 
@@ -334,6 +392,7 @@ async function completeLogin(email, existingProfile = null) {
     userEmail = email;
     localStorage.setItem('wc_pool_user_email', userEmail);
     checkAdminStatus();
+    await fetchAppSettings();
 
     document.getElementById('auth-overlay').classList.add('hidden');
     document.getElementById('top-nav').classList.remove('hidden');
@@ -438,6 +497,14 @@ async function saveIdentityOnly() {
 
 async function saveToSupabase() {
     if (isLocked) {
+        showConfirmModal({
+            label: 'Locked',
+            icon: '🔒',
+            title: 'Picks Locked',
+            message: 'The World Cup has started, the picks are locked. Good luck!',
+            confirmText: 'Okay',
+            singleAction: true
+        });
         return;
     }
 
@@ -542,6 +609,7 @@ window.addEventListener('DOMContentLoaded', () => {
     populateProfileSelectOptions();
     setupLoginKeyboardSubmit();
     setupIdentityChangeTracking();
+    fetchAppSettings();
 
     const savedEmail = localStorage.getItem('wc_pool_user_email');
     if (savedEmail) {
@@ -553,6 +621,8 @@ window.addEventListener('DOMContentLoaded', () => {
 Object.assign(window, {
     populateCountryFilter,
     populateProfileSelectOptions,
+    fetchAppSettings,
+    saveAppSettings,
     checkAdminStatus,
     setupProfile,
     toggleTeam,
