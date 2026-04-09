@@ -20,6 +20,7 @@ function setupAdminPage() {
 
     fetchAdminHistory();
     fetchAdminUsers();
+    fetchAdminPaidUsers();
     fetchAdminTeamResults();
     fetchStats();
 }
@@ -244,10 +245,14 @@ async function setupDashboard() {
             resultsEl.innerHTML = matches.slice(0, 3).map((match) => `
                 <div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
                     <div class="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">${match.match_date_manual || 'TBD'} | ${match.stage}</div>
-                    <div class="mt-2 flex items-center justify-between gap-3 text-sm font-black text-gray-900">
-                        <span class="truncate">${teams.find((team) => team.name === match.team_home)?.flag || ''} ${match.team_home}</span>
-                        <span class="rounded-xl bg-gray-900 px-3 py-1 font-mono text-white">${match.score_home}-${match.score_away}</span>
-                        <span class="truncate text-right">${match.team_away} ${teams.find((team) => team.name === match.team_away)?.flag || ''}</span>
+                    <div class="mt-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 text-sm font-black text-gray-900">
+                        <div class="min-w-0 text-left">
+                            <span class="truncate">${teams.find((team) => team.name === match.team_home)?.flag || ''} ${match.team_home}</span>
+                        </div>
+                        <div class="rounded-xl bg-gray-900 px-3 py-1 font-mono text-white text-center">${match.score_home}-${match.score_away}</div>
+                        <div class="min-w-0 text-right">
+                            <span class="truncate">${match.team_away} ${teams.find((team) => team.name === match.team_away)?.flag || ''}</span>
+                        </div>
                     </div>
                 </div>
             `).join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No results logged yet</div>';
@@ -376,6 +381,90 @@ async function fetchAdminUsers() {
     } catch (error) {
         body.innerHTML = '<tr><td colspan="4" class="px-5 py-8 text-center text-red-400 uppercase text-xs">Could not load player records.</td></tr>';
     }
+}
+
+function sortAdminUsers(a, b) {
+    const aName = (a.realname || a.nickname || a.email).toLowerCase();
+    const bName = (b.realname || b.nickname || b.email).toLowerCase();
+
+    if (aName !== bName) {
+        return aName.localeCompare(bName);
+    }
+
+    return a.email.localeCompare(b.email);
+}
+
+async function getAdminUserRecords() {
+    const { data, error } = await supabaseClient
+        .from('picks')
+        .select('*');
+
+    if (error) {
+        throw error;
+    }
+
+    const userMap = new Map();
+
+    data?.forEach((row) => {
+        if (!userMap.has(row.user_email)) {
+            userMap.set(row.user_email, {
+                email: row.user_email,
+                realname: row.team_realname || '',
+                nickname: row.team_nickname || '',
+                hasPaid: Boolean(row.has_paid)
+            });
+        }
+    });
+
+    return Array.from(userMap.values()).sort(sortAdminUsers);
+}
+
+async function fetchAdminPaidUsers() {
+    const body = document.getElementById('admin-paid-body');
+    if (!body) {
+        return;
+    }
+
+    body.innerHTML = '<tr><td colspan="4" class="px-5 py-8 text-center text-gray-500 uppercase text-xs">Loading payment statuses...</td></tr>';
+
+    try {
+        const users = await getAdminUserRecords();
+
+        body.innerHTML = users.map((user) => `
+            <tr class="border-t border-gray-800">
+                <td class="px-5 py-4 align-top">${user.realname || '<span class="text-gray-500">Unnamed</span>'}</td>
+                <td class="px-5 py-4 align-top">${user.nickname || '<span class="text-gray-500">-</span>'}</td>
+                <td class="px-5 py-4 align-top break-all">${user.email}</td>
+                <td class="px-5 py-4 text-right align-top">
+                    <button onclick="toggleUserPaidStatus('${user.email.replace(/'/g, "\\'")}', ${user.hasPaid ? 'true' : 'false'})" class="rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${user.hasPaid ? 'bg-green-600 text-white hover:bg-green-500' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}">
+                        ${user.hasPaid ? 'Paid' : 'Not Paid'}
+                    </button>
+                </td>
+            </tr>
+        `).join('') || '<tr><td colspan="4" class="px-5 py-8 text-center text-gray-500 uppercase text-xs">No player records found.</td></tr>';
+    } catch (error) {
+        body.innerHTML = '<tr><td colspan="4" class="px-5 py-8 text-center text-red-400 uppercase text-xs">Could not load payment statuses.</td></tr>';
+    }
+}
+
+async function toggleUserPaidStatus(email, currentValue) {
+    const nextValue = !currentValue;
+
+    try {
+        const { error } = await supabaseClient
+            .from('picks')
+            .update({ has_paid: nextValue })
+            .eq('user_email', email);
+
+        if (error) {
+            throw error;
+        }
+    } catch (error) {
+        showToast(error.message || 'Unable to update payment status.');
+        return;
+    }
+
+    fetchAdminPaidUsers();
 }
 
 function getMatchPointsForTeam(match, teamName) {
@@ -635,6 +724,7 @@ async function deleteUserPicks(email) {
         }
 
         fetchAdminUsers();
+        fetchAdminPaidUsers();
         fetchLeaderboard();
         fetchStats();
         showToast('Player picks deleted.', 'success');
@@ -1014,10 +1104,12 @@ Object.assign(window, {
     setTeamResultsSort,
     fetchAdminHistory,
     fetchAdminUsers,
+    fetchAdminPaidUsers,
     fetchAdminTeamResults,
     fetchPublicTeamResults,
     clearChatMessages,
     deleteUserPicks,
+    toggleUserPaidStatus,
     fetchPublicResults,
     deleteMatch,
     submitManualResult,

@@ -76,10 +76,10 @@
                 <span onclick="showPage('picks')" id="nav-picks" class="nav-link">My Picks</span>
                 <span onclick="showPage('results')" id="nav-results" class="nav-link">Results</span>
                 <span onclick="showPage('leaderboard')" id="nav-leaderboard" class="nav-link">Leaderboard</span>
-                <span onclick="showPage('admin')" id="nav-admin" class="nav-link hidden text-red-500">Admin</span>
                 <span onclick="showPage('chat')" id="nav-chat" class="nav-link">Chat</span>
                 <span onclick="showPage('profile')" id="nav-profile" class="nav-link">Profile</span>
                 <div id="user-display-nav" class="hidden lg:block text-[10px] font-bold text-blue-500 uppercase tracking-widest truncate max-w-[120px] ml-4 text-center"></div>
+                <span onclick="showPage('admin')" id="nav-admin" class="nav-link hidden text-red-500">Admin</span>
             </div>
 
             <button onclick="toggleMobileMenu()" class="md:hidden p-2 text-gray-400 focus:outline-none">
@@ -442,6 +442,7 @@
                 <div class="flex flex-wrap gap-3">
                     <button onclick="showAdminTab('matches')" id="admin-tab-matches" class="admin-tab active rounded-2xl border border-blue-500/40 bg-blue-600/20 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-blue-300 transition-colors">Match Entry</button>
                     <button onclick="showAdminTab('manage')" id="admin-tab-manage" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Players & Chat</button>
+                    <button onclick="showAdminTab('paid')" id="admin-tab-paid" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Paid</button>
                     <button onclick="showAdminTab('teams')" id="admin-tab-teams" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Team Results</button>
                     <button onclick="showAdminTab('stats')" id="admin-tab-stats" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Statistics</button>
                 </div>
@@ -494,6 +495,30 @@
                                         </tr>
                                     </thead>
                                     <tbody id="admin-users-body" class="bg-gray-900 text-sm font-bold text-gray-100"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="admin-panel-paid" class="admin-panel hidden space-y-8">
+                    <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-6">
+                        <div>
+                            <h2 class="text-xl font-black uppercase tracking-tight text-white">Payment Tracker</h2>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Mark each player as paid or unpaid</p>
+                        </div>
+                        <div class="rounded-3xl border border-gray-700 overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead class="bg-gray-950 text-white uppercase text-[10px] tracking-[0.2em] font-black">
+                                        <tr>
+                                            <th class="px-5 py-4">Name</th>
+                                            <th class="px-5 py-4">Nickname</th>
+                                            <th class="px-5 py-4">Email</th>
+                                            <th class="px-5 py-4 text-right">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-paid-body" class="bg-gray-900 text-sm font-bold text-gray-100"></tbody>
                                 </table>
                             </div>
                         </div>
