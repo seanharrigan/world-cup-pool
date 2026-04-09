@@ -1,20 +1,429 @@
+const teamResultsSortState = {
+    'public-team-results-body': { key: 'team', direction: 'asc' }
+};
+
 function setupAdminPage() {
     const teamOneSelect = document.getElementById('admin-team1');
     const teamTwoSelect = document.getElementById('admin-team2');
 
-    if (!teamOneSelect || !teamTwoSelect) {
+    showAdminTab('matches');
+
+    if (teamOneSelect && teamTwoSelect) {
+        const options = [...teams]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((team) => `<option value="${team.name}">${team.flag} ${team.name}</option>`)
+            .join('');
+
+        teamOneSelect.innerHTML = `<option value="">Select Home Team...</option>${options}`;
+        teamTwoSelect.innerHTML = `<option value="">Select Away Team...</option>${options}`;
+    }
+
+    fetchAdminHistory();
+    fetchAdminUsers();
+    fetchAdminTeamResults();
+}
+
+function showAdminTab(tabId) {
+    const panels = document.querySelectorAll('.admin-panel');
+    const tabs = document.querySelectorAll('.admin-tab');
+
+    panels.forEach((panel) => panel.classList.add('hidden'));
+    tabs.forEach((tab) => {
+        tab.classList.remove('active', 'border-blue-500/40', 'bg-blue-600/20', 'text-blue-300');
+        tab.classList.add('border-gray-700', 'bg-gray-800', 'text-gray-300');
+    });
+
+    const activePanel = document.getElementById(`admin-panel-${tabId}`);
+    const activeTab = document.getElementById(`admin-tab-${tabId}`);
+
+    if (activePanel) {
+        activePanel.classList.remove('hidden');
+    }
+
+    if (activeTab) {
+        activeTab.classList.add('active', 'border-blue-500/40', 'bg-blue-600/20', 'text-blue-300');
+        activeTab.classList.remove('border-gray-700', 'bg-gray-800', 'text-gray-300');
+    }
+}
+
+function showResultsTab(tabId) {
+    const panels = document.querySelectorAll('.results-panel');
+    const tabs = document.querySelectorAll('.results-tab');
+
+    panels.forEach((panel) => panel.classList.add('hidden'));
+    tabs.forEach((tab) => {
+        tab.classList.remove('active', 'border-blue-500/30', 'bg-blue-600/10', 'text-blue-700');
+        tab.classList.add('border-gray-300', 'bg-white', 'text-gray-500');
+    });
+
+    const activePanel = document.getElementById(`results-panel-${tabId}`);
+    const activeTab = document.getElementById(`results-tab-${tabId}`);
+
+    if (activePanel) {
+        activePanel.classList.remove('hidden');
+    }
+
+    if (activeTab) {
+        activeTab.classList.add('active', 'border-blue-500/30', 'bg-blue-600/10', 'text-blue-700');
+        activeTab.classList.remove('border-gray-300', 'bg-white', 'text-gray-500');
+    }
+}
+
+function setupResultsPage() {
+    showResultsTab('pool');
+    fetchPublicResults();
+    fetchPublicTeamResults();
+}
+
+function updatePublicTeamSortIndicators() {
+    const sortState = teamResultsSortState['public-team-results-body'];
+    const keys = ['team', 'total', 'G1', 'G2', 'G3', 'R32', 'R16', 'QF', 'SM', 'F'];
+
+    keys.forEach((key) => {
+        const arrow = document.getElementById(`sort-arrow-public-${key}`);
+        if (!arrow) {
+            return;
+        }
+
+        if (sortState.key === key) {
+            arrow.textContent = sortState.direction === 'asc' ? '↑' : '↓';
+            arrow.classList.remove('text-gray-500');
+            arrow.classList.add('text-blue-300');
+            return;
+        }
+
+        arrow.textContent = '↕';
+        arrow.classList.remove('text-blue-300');
+        arrow.classList.add('text-gray-500');
+    });
+}
+
+function setTeamResultsSort(targetId, key) {
+    if (!teamResultsSortState[targetId]) {
+        teamResultsSortState[targetId] = { key: 'team', direction: 'asc' };
+    }
+
+    const sortState = teamResultsSortState[targetId];
+
+    if (sortState.key === key) {
+        sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortState.key = key;
+        sortState.direction = key === 'team' ? 'asc' : 'desc';
+    }
+
+    if (targetId === 'public-team-results-body') {
+        fetchPublicTeamResults();
+    }
+}
+
+async function fetchAdminUsers() {
+    const body = document.getElementById('admin-users-body');
+    if (!body) {
         return;
     }
 
-    const options = [...teams]
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((team) => `<option value="${team.name}">${team.flag} ${team.name}</option>`)
-        .join('');
+    body.innerHTML = '<tr><td colspan="4" class="px-5 py-8 text-center text-gray-500 uppercase text-xs">Loading players...</td></tr>';
 
-    teamOneSelect.innerHTML = `<option value="">Select Home Team...</option>${options}`;
-    teamTwoSelect.innerHTML = `<option value="">Select Away Team...</option>${options}`;
+    try {
+        const { data, error } = await supabaseClient
+            .from('picks')
+            .select('user_email, team_realname, team_nickname');
 
-    fetchAdminHistory();
+        if (error) {
+            throw error;
+        }
+
+        const userMap = new Map();
+        data?.forEach((row) => {
+            if (!userMap.has(row.user_email)) {
+                userMap.set(row.user_email, {
+                    email: row.user_email,
+                    realname: row.team_realname || '',
+                    nickname: row.team_nickname || ''
+                });
+            }
+        });
+
+        const users = Array.from(userMap.values()).sort((a, b) => a.email.localeCompare(b.email));
+        body.innerHTML = users.map((user) => `
+            <tr class="border-t border-gray-800">
+                <td class="px-5 py-4 align-top break-all">${user.email}</td>
+                <td class="px-5 py-4 align-top">${user.realname || '<span class="text-gray-500">-</span>'}</td>
+                <td class="px-5 py-4 align-top">${user.nickname || '<span class="text-gray-500">-</span>'}</td>
+                <td class="px-5 py-4 text-right align-top">
+                    <button onclick="deleteUserPicks('${user.email.replace(/'/g, "\\'")}')" class="rounded-xl bg-red-600 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-red-500 transition-colors">Delete</button>
+                </td>
+            </tr>
+        `).join('') || '<tr><td colspan="4" class="px-5 py-8 text-center text-gray-500 uppercase text-xs">No player records found.</td></tr>';
+    } catch (error) {
+        body.innerHTML = '<tr><td colspan="4" class="px-5 py-8 text-center text-red-400 uppercase text-xs">Could not load player records.</td></tr>';
+    }
+}
+
+function getMatchPointsForTeam(match, teamName) {
+    const multipliers = { Group: 1, R32: 2, R16: 3, Quarters: 5, Semis: 8, Finals: 12 };
+    const multiplier = multipliers[match.stage] || 1;
+
+    if (match.score_home === match.score_away) {
+        return match.team_home === teamName || match.team_away === teamName ? 1 * multiplier : 0;
+    }
+
+    const winningTeam = match.score_home > match.score_away ? match.team_home : match.team_away;
+    return winningTeam === teamName ? 3 * multiplier : 0;
+}
+
+function formatTeamResultsCell(match, teamName, theme = 'dark') {
+    if (!match) {
+        return '<div class="text-gray-600 text-center text-xs font-black uppercase">-</div>';
+    }
+
+    const homeTeam = teams.find((team) => team.name === match.team_home);
+    const awayTeam = teams.find((team) => team.name === match.team_away);
+    const points = getMatchPointsForTeam(match, teamName);
+    const pointsClass = theme === 'dark' ? 'text-white' : 'text-gray-900';
+    const detailClass = theme === 'dark' ? 'text-gray-400' : 'text-gray-500';
+
+    return `
+        <div class="min-w-[92px] py-1 text-center">
+            <div class="text-2xl font-black ${pointsClass} leading-none">${points}</div>
+            <div class="mt-2 text-[10px] font-bold ${detailClass} whitespace-nowrap">
+                ${homeTeam?.flag || ''} ${match.score_home}-${match.score_away} ${awayTeam?.flag || ''}
+            </div>
+        </div>
+    `;
+}
+
+async function renderTeamResultsTable(targetId, theme = 'dark') {
+    const body = document.getElementById(targetId);
+    if (!body) {
+        return;
+    }
+
+    body.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-500 uppercase text-xs">Loading team results...</td></tr>';
+
+    try {
+        const { data: matches, error } = await supabaseClient
+            .from('matches')
+            .select('*')
+            .order('match_date_manual', { ascending: true });
+
+        if (error) {
+            throw error;
+        }
+
+        const knockoutStageMap = {
+            R32: 'R32',
+            R16: 'R16',
+            Quarters: 'QF',
+            Semis: 'SM',
+            Finals: 'F'
+        };
+
+        const rows = [...teams]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((team) => {
+                const teamMatches = (matches || [])
+                    .filter((match) => match.team_home === team.name || match.team_away === team.name)
+                    .sort((a, b) => {
+                        const dateCompare = (a.match_date_manual || '').localeCompare(b.match_date_manual || '');
+                        if (dateCompare !== 0) {
+                            return dateCompare;
+                        }
+
+                        return (a.id || 0) - (b.id || 0);
+                    });
+
+                const slots = {
+                    G1: null,
+                    G2: null,
+                    G3: null,
+                    R32: null,
+                    R16: null,
+                    QF: null,
+                    SM: null,
+                    F: null
+                };
+
+                let groupIndex = 0;
+                teamMatches.forEach((match) => {
+                    if (match.stage === 'Group') {
+                        groupIndex += 1;
+                        const slotKey = `G${groupIndex}`;
+
+                        if (slots[slotKey]) {
+                            return;
+                        }
+
+                        slots[slotKey] = match;
+                        return;
+                    }
+
+                    const slotKey = knockoutStageMap[match.stage];
+                    if (slotKey && !slots[slotKey]) {
+                        slots[slotKey] = match;
+                    }
+                });
+
+                const totalPoints = teamMatches.reduce(
+                    (sum, match) => sum + getMatchPointsForTeam(match, team.name),
+                    0
+                );
+
+                return {
+                    team,
+                    totalPoints,
+                    slotPoints: {
+                        G1: slots.G1 ? getMatchPointsForTeam(slots.G1, team.name) : 0,
+                        G2: slots.G2 ? getMatchPointsForTeam(slots.G2, team.name) : 0,
+                        G3: slots.G3 ? getMatchPointsForTeam(slots.G3, team.name) : 0,
+                        R32: slots.R32 ? getMatchPointsForTeam(slots.R32, team.name) : 0,
+                        R16: slots.R16 ? getMatchPointsForTeam(slots.R16, team.name) : 0,
+                        QF: slots.QF ? getMatchPointsForTeam(slots.QF, team.name) : 0,
+                        SM: slots.SM ? getMatchPointsForTeam(slots.SM, team.name) : 0,
+                        F: slots.F ? getMatchPointsForTeam(slots.F, team.name) : 0
+                    },
+                    html: `
+                    <tr class="border-t border-gray-800 align-top">
+                        <td class="px-4 py-4 min-w-[160px]">
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl">${team.flag}</span>
+                                <div>
+                                    <div class="font-black uppercase ${theme === 'dark' ? 'text-white' : 'text-gray-900'}">
+                                        ${team.name} <span class="text-gray-500">(${team.group})</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4">
+                            <div class="min-w-[72px] py-1 text-center">
+                                <div class="text-2xl font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'} leading-none">${totalPoints}</div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4">${formatTeamResultsCell(slots.G1, team.name, theme)}</td>
+                        <td class="px-4 py-4">${formatTeamResultsCell(slots.G2, team.name, theme)}</td>
+                        <td class="px-4 py-4">${formatTeamResultsCell(slots.G3, team.name, theme)}</td>
+                        <td class="px-4 py-4">${formatTeamResultsCell(slots.R32, team.name, theme)}</td>
+                        <td class="px-4 py-4">${formatTeamResultsCell(slots.R16, team.name, theme)}</td>
+                        <td class="px-4 py-4">${formatTeamResultsCell(slots.QF, team.name, theme)}</td>
+                        <td class="px-4 py-4">${formatTeamResultsCell(slots.SM, team.name, theme)}</td>
+                        <td class="px-4 py-4">${formatTeamResultsCell(slots.F, team.name, theme)}</td>
+                    </tr>
+                `
+                };
+            });
+
+        const sortState = teamResultsSortState[targetId];
+        if (sortState) {
+            rows.sort((a, b) => {
+                let comparison = 0;
+
+                if (sortState.key === 'team') {
+                    comparison = a.team.name.localeCompare(b.team.name);
+                } else if (sortState.key === 'total') {
+                    comparison = a.totalPoints - b.totalPoints;
+                } else {
+                    comparison = (a.slotPoints[sortState.key] || 0) - (b.slotPoints[sortState.key] || 0);
+                }
+
+                if (comparison === 0) {
+                    comparison = a.team.name.localeCompare(b.team.name);
+                }
+
+                return sortState.direction === 'asc' ? comparison : -comparison;
+            });
+        }
+
+        body.innerHTML = rows.map((row) => row.html).join('') || '<tr><td colspan="10" class="px-4 py-8 text-center text-gray-500 uppercase text-xs">No teams found.</td></tr>';
+
+        if (targetId === 'public-team-results-body') {
+            updatePublicTeamSortIndicators();
+        }
+    } catch (error) {
+        body.innerHTML = '<tr><td colspan="10" class="px-4 py-8 text-center text-red-400 uppercase text-xs">Could not load team results.</td></tr>';
+    }
+}
+
+async function fetchAdminTeamResults() {
+    return renderTeamResultsTable('admin-team-results-body', 'dark');
+}
+
+async function fetchPublicTeamResults() {
+    return renderTeamResultsTable('public-team-results-body', 'light');
+}
+
+async function clearChatMessages() {
+    const shouldClear = await showConfirmModal({
+        title: 'Clear Entire Chat?',
+        message: 'This will permanently delete all chat messages for everyone.',
+        detail: 'This action cannot be undone.',
+        confirmText: 'Clear Chat',
+        cancelText: 'Cancel'
+    });
+
+    if (!shouldClear) {
+        return;
+    }
+
+    const button = document.getElementById('admin-clear-chat-btn');
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'Clearing...';
+    }
+
+    try {
+        const { error } = await supabaseClient.from('messages').delete().neq('id', 0);
+        if (error) {
+            throw error;
+        }
+
+        const chatBox = document.getElementById('chat-box');
+        if (chatBox) {
+            chatBox.innerHTML = '';
+        }
+
+        showToast('Chat cleared.', 'success');
+    } catch (error) {
+        showToast(error.message || 'Unable to clear chat.');
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Clear Chat';
+        }
+    }
+}
+
+async function deleteUserPicks(email) {
+    const shouldDelete = await showConfirmModal({
+        title: 'Delete Player Picks?',
+        message: `Remove all picks for ${email}?`,
+        detail: 'This deletes their picks from the database.',
+        confirmText: 'Delete Player',
+        cancelText: 'Cancel'
+    });
+
+    if (!shouldDelete) {
+        return;
+    }
+
+    try {
+        const { error } = await supabaseClient.from('picks').delete().eq('user_email', email);
+        if (error) {
+            throw error;
+        }
+
+        if (userEmail === email) {
+            myPicks = [];
+            updateUI();
+        }
+
+        fetchAdminUsers();
+        fetchLeaderboard();
+        fetchStats();
+        showToast('Player picks deleted.', 'success');
+    } catch (error) {
+        showToast(error.message || 'Unable to delete player picks.');
+    }
 }
 
 async function fetchAdminHistory() {
@@ -80,6 +489,7 @@ async function deleteMatch(id) {
     await supabaseClient.from('matches').delete().eq('id', id);
     fetchAdminHistory();
     fetchLeaderboard();
+    fetchAdminTeamResults();
 }
 
 async function submitManualResult() {
@@ -124,6 +534,7 @@ async function submitManualResult() {
         document.getElementById('admin-score1').value = '';
         document.getElementById('admin-score2').value = '';
         fetchAdminHistory();
+        fetchAdminTeamResults();
     } catch (error) {
         showToast(error.message);
     } finally {
@@ -368,7 +779,16 @@ function setupChatKeyboardSubmit() {
 
 Object.assign(window, {
     setupAdminPage,
+    showAdminTab,
+    showResultsTab,
+    setupResultsPage,
+    setTeamResultsSort,
     fetchAdminHistory,
+    fetchAdminUsers,
+    fetchAdminTeamResults,
+    fetchPublicTeamResults,
+    clearChatMessages,
+    deleteUserPicks,
     fetchPublicResults,
     deleteMatch,
     submitManualResult,

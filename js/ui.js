@@ -95,7 +95,7 @@ function showPage(pageId) {
     if (pageId === 'stats') fetchStats();
     if (pageId === 'admin') setupAdminPage();
     if (pageId === 'chat') setupChat();
-    if (pageId === 'results') fetchPublicResults();
+    if (pageId === 'results') setupResultsPage();
 
     document.getElementById('mobile-menu').classList.remove('open');
 }

@@ -175,9 +175,121 @@
         </div>
 
         <div id="page-results" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-gray-50 text-gray-900 text-left">
-            <div class="max-w-4xl mx-auto space-y-10 text-left text-gray-900">
-                <header class="text-left border-b border-gray-200 pb-6"><h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter">Match Results</h1><p class="text-blue-600 font-bold uppercase tracking-widest text-[10px]">Verified Tournament Progress</p></header>
-                <div id="public-history-log" class="grid grid-cols-1 gap-4 text-left"></div>
+            <div class="max-w-6xl mx-auto space-y-10 text-left text-gray-900">
+                <header class="text-left border-b border-gray-200 pb-6"><h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter">Results Center</h1><p class="text-blue-600 font-bold uppercase tracking-widest text-[10px]">Verified Tournament Progress</p></header>
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="showResultsTab('pool')" id="results-tab-pool" class="results-tab active rounded-2xl border border-blue-500/30 bg-blue-600/10 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-blue-700 transition-colors">Pool Results</button>
+                    <button onclick="showResultsTab('matches')" id="results-tab-matches" class="results-tab rounded-2xl border border-gray-300 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Match Results</button>
+                </div>
+
+                <div id="results-panel-pool" class="results-panel space-y-6">
+                    <section class="space-y-4">
+                        <h2 class="text-xl font-black uppercase italic tracking-tight text-gray-900">Point Scoring</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-blue-50 border border-blue-100 rounded-2xl p-5 space-y-2">
+                                <h3 class="text-lg font-black uppercase italic text-gray-900">Group Phase</h3>
+                                <div class="text-lg font-black text-gray-800">Win: 3 pts | Tie: 1 pt</div>
+                                <div class="text-lg font-black text-blue-600">Advance to Knockouts: +1 pt</div>
+                            </div>
+                            <div class="bg-purple-50 border border-purple-100 rounded-2xl p-5 space-y-2">
+                                <h3 class="text-lg font-black uppercase italic text-gray-900">Knockout Phase</h3>
+                                <div class="text-lg font-black text-gray-800">Win: 3 pts</div>
+                                <div class="text-sm font-black uppercase text-purple-400">No points for bronze game</div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-100 rounded-2xl p-4 space-y-3">
+                            <h3 class="text-xl font-black uppercase italic text-center text-gray-900">Stage Multipliers</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+                                <div class="bg-white border border-gray-200 rounded-xl p-3 text-center">
+                                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Round 32</div>
+                                    <div class="mt-1 text-2xl font-black text-blue-600">x2</div>
+                                </div>
+                                <div class="bg-white border border-gray-200 rounded-xl p-3 text-center">
+                                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Round 16</div>
+                                    <div class="mt-1 text-2xl font-black text-blue-600">x3</div>
+                                </div>
+                                <div class="bg-white border border-gray-200 rounded-xl p-3 text-center">
+                                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Quarters</div>
+                                    <div class="mt-1 text-2xl font-black text-blue-600">x5</div>
+                                </div>
+                                <div class="bg-white border border-gray-200 rounded-xl p-3 text-center">
+                                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Semis</div>
+                                    <div class="mt-1 text-2xl font-black text-blue-600">x8</div>
+                                </div>
+                                <div class="bg-gray-900 rounded-xl p-3 text-center">
+                                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Finals</div>
+                                    <div class="mt-1 text-2xl font-black text-yellow-400">x12</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="bg-white rounded-3xl border border-gray-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-[1100px] w-full text-left">
+                                <thead class="bg-gray-900 text-white uppercase text-[10px] tracking-[0.2em] font-black">
+                                    <tr>
+                                        <th class="px-4 py-4">
+                                            <button onclick="setTeamResultsSort('public-team-results-body', 'team')" class="flex items-center gap-2 uppercase">
+                                                <span>Team</span><span id="sort-arrow-public-team" class="text-blue-300">↑</span>
+                                            </button>
+                                        </th>
+                                        <th class="px-4 py-4 text-center">
+                                            <button onclick="setTeamResultsSort('public-team-results-body', 'total')" class="inline-flex items-center gap-2 uppercase">
+                                                <span>Total</span><span id="sort-arrow-public-total" class="text-gray-500">↕</span>
+                                            </button>
+                                        </th>
+                                        <th class="px-4 py-4 text-center">
+                                            <button onclick="setTeamResultsSort('public-team-results-body', 'G1')" class="inline-flex items-center gap-2 uppercase">
+                                                <span>G1</span><span id="sort-arrow-public-G1" class="text-gray-500">↕</span>
+                                            </button>
+                                        </th>
+                                        <th class="px-4 py-4 text-center">
+                                            <button onclick="setTeamResultsSort('public-team-results-body', 'G2')" class="inline-flex items-center gap-2 uppercase">
+                                                <span>G2</span><span id="sort-arrow-public-G2" class="text-gray-500">↕</span>
+                                            </button>
+                                        </th>
+                                        <th class="px-4 py-4 text-center">
+                                            <button onclick="setTeamResultsSort('public-team-results-body', 'G3')" class="inline-flex items-center gap-2 uppercase">
+                                                <span>G3</span><span id="sort-arrow-public-G3" class="text-gray-500">↕</span>
+                                            </button>
+                                        </th>
+                                        <th class="px-4 py-4 text-center">
+                                            <button onclick="setTeamResultsSort('public-team-results-body', 'R32')" class="inline-flex items-center gap-2 uppercase">
+                                                <span>R32</span><span id="sort-arrow-public-R32" class="text-gray-500">↕</span>
+                                            </button>
+                                        </th>
+                                        <th class="px-4 py-4 text-center">
+                                            <button onclick="setTeamResultsSort('public-team-results-body', 'R16')" class="inline-flex items-center gap-2 uppercase">
+                                                <span>R16</span><span id="sort-arrow-public-R16" class="text-gray-500">↕</span>
+                                            </button>
+                                        </th>
+                                        <th class="px-4 py-4 text-center">
+                                            <button onclick="setTeamResultsSort('public-team-results-body', 'QF')" class="inline-flex items-center gap-2 uppercase">
+                                                <span>QF</span><span id="sort-arrow-public-QF" class="text-gray-500">↕</span>
+                                            </button>
+                                        </th>
+                                        <th class="px-4 py-4 text-center">
+                                            <button onclick="setTeamResultsSort('public-team-results-body', 'SM')" class="inline-flex items-center gap-2 uppercase">
+                                                <span>SM</span><span id="sort-arrow-public-SM" class="text-gray-500">↕</span>
+                                            </button>
+                                        </th>
+                                        <th class="px-4 py-4 text-center">
+                                            <button onclick="setTeamResultsSort('public-team-results-body', 'F')" class="inline-flex items-center gap-2 uppercase">
+                                                <span>F</span><span id="sort-arrow-public-F" class="text-gray-500">↕</span>
+                                            </button>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="public-team-results-body" class="bg-white text-sm font-bold text-gray-900"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="results-panel-matches" class="results-panel hidden">
+                    <div id="public-history-log" class="grid grid-cols-1 gap-4 text-left"></div>
+                </div>
             </div>
         </div>
 
@@ -198,22 +310,94 @@
             <div class="max-w-4xl mx-auto space-y-10 text-left">
                 <header class="text-left border-b border-gray-800 pb-6 text-left text-white text-left text-white text-left"><h1 class="text-4xl font-black uppercase italic mb-2 tracking-tighter text-left">Commissioner Desk</h1><p class="text-blue-500 font-bold uppercase tracking-widest text-xs text-left">Manual Entry & Match Log</p></header>
 
-                <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-8 text-left text-white text-left text-white text-left text-white text-left text-white text-left text-left">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left text-white text-left">
-                        <div class="space-y-2 text-left text-white"><label class="block text-[10px] font-black uppercase text-gray-400">Team 1 (Home)</label><select id="admin-team1" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none focus:border-blue-500 text-left text-white"></select><input type="number" id="admin-score1" placeholder="Score" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-center text-2xl text-white text-center"></div>
-                        <div class="space-y-2 text-white"><label class="block text-[10px] font-black uppercase text-gray-400">Team 2 (Away)</label><select id="admin-team2" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none focus:border-blue-500"></select><input type="number" id="admin-score2" placeholder="Score" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-center text-2xl text-white text-center"></div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-gray-700 text-left text-white text-left">
-                        <div class="space-y-2 text-left"><label class="block text-[10px] font-black uppercase text-gray-400 text-left">Date of Match</label><input type="date" id="admin-match-date" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none text-left"></div>
-                        <div class="space-y-2 text-left"><label class="block text-[10px] font-black uppercase text-gray-400 text-left">Tournament Stage</label><select id="admin-stage" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none text-left text-white"><option value="Group">Group Stage</option><option value="R32">Round of 32 (x2)</option><option value="R16">Round of 16 (x3)</option><option value="Quarters">Quarter-Finals (x5)</option><option value="Semis">Semi-Finals (x8)</option><option value="Finals">Grand Final (x12)</option></select></div>
-                        <div class="space-y-2 text-left"><label class="block text-[10px] font-black uppercase text-gray-400 text-left">Extra Time / Pens?</label><select id="admin-extratime" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none text-left text-white"><option value="false">No (Regular Time)</option><option value="true">Yes (Extra Time/Pens)</option></select></div>
-                    </div>
-                    <button onclick="submitManualResult()" id="admin-submit-btn" class="w-full bg-green-600 hover:bg-green-500 py-6 rounded-2xl font-black uppercase tracking-[0.2em] transition-all shadow-lg text-xl text-white text-center text-white text-center">Log Result</button>
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="showAdminTab('matches')" id="admin-tab-matches" class="admin-tab active rounded-2xl border border-blue-500/40 bg-blue-600/20 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-blue-300 transition-colors">Match Entry</button>
+                    <button onclick="showAdminTab('manage')" id="admin-tab-manage" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Players & Chat</button>
+                    <button onclick="showAdminTab('teams')" id="admin-tab-teams" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Team Results</button>
                 </div>
 
-                <div class="space-y-4 text-left text-white text-left text-white text-left text-white text-left text-white text-left">
-                    <h2 class="text-xl font-black uppercase tracking-tight text-gray-400 text-left">Recent Match History</h2>
-                    <div id="admin-history-log" class="space-y-4 text-left text-white text-left"></div>
+                <div id="admin-panel-matches" class="admin-panel space-y-10">
+                    <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-8 text-left text-white text-left text-white text-left text-white text-left text-white text-left text-left">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left text-white text-left">
+                            <div class="space-y-2 text-left text-white"><label class="block text-[10px] font-black uppercase text-gray-400">Team 1 (Home)</label><select id="admin-team1" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none focus:border-blue-500 text-left text-white"></select><input type="number" id="admin-score1" placeholder="Score" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-center text-2xl text-white text-center"></div>
+                            <div class="space-y-2 text-white"><label class="block text-[10px] font-black uppercase text-gray-400">Team 2 (Away)</label><select id="admin-team2" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none focus:border-blue-500"></select><input type="number" id="admin-score2" placeholder="Score" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-center text-2xl text-white text-center"></div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-gray-700 text-left text-white text-left">
+                            <div class="space-y-2 text-left"><label class="block text-[10px] font-black uppercase text-gray-400 text-left">Date of Match</label><input type="date" id="admin-match-date" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none text-left"></div>
+                            <div class="space-y-2 text-left"><label class="block text-[10px] font-black uppercase text-gray-400 text-left">Tournament Stage</label><select id="admin-stage" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none text-left text-white"><option value="Group">Group Stage</option><option value="R32">Round of 32 (x2)</option><option value="R16">Round of 16 (x3)</option><option value="Quarters">Quarter-Finals (x5)</option><option value="Semis">Semi-Finals (x8)</option><option value="Finals">Grand Final (x12)</option></select></div>
+                            <div class="space-y-2 text-left"><label class="block text-[10px] font-black uppercase text-gray-400 text-left">Extra Time / Pens?</label><select id="admin-extratime" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none text-left text-white"><option value="false">No (Regular Time)</option><option value="true">Yes (Extra Time/Pens)</option></select></div>
+                        </div>
+                        <button onclick="submitManualResult()" id="admin-submit-btn" class="w-full bg-green-600 hover:bg-green-500 py-6 rounded-2xl font-black uppercase tracking-[0.2em] transition-all shadow-lg text-xl text-white text-center text-white text-center">Log Result</button>
+                    </div>
+
+                    <div class="space-y-4 text-left text-white text-left text-white text-left text-white text-left text-white text-left">
+                        <h2 class="text-xl font-black uppercase tracking-tight text-gray-400 text-left">Recent Match History</h2>
+                        <div id="admin-history-log" class="space-y-4 text-left text-white text-left"></div>
+                    </div>
+                </div>
+
+                <div id="admin-panel-manage" class="admin-panel hidden space-y-8">
+                    <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-6">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div>
+                                <h2 class="text-xl font-black uppercase tracking-tight text-white">Chat Controls</h2>
+                                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Administrative actions for the live chat feed</p>
+                            </div>
+                            <button onclick="clearChatMessages()" id="admin-clear-chat-btn" class="rounded-2xl bg-red-600 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-red-500 transition-colors">Clear Chat</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-6">
+                        <div>
+                            <h2 class="text-xl font-black uppercase tracking-tight text-white">Player Records</h2>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Delete a user to remove all of their picks from the database</p>
+                        </div>
+                        <div class="rounded-3xl border border-gray-700 overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead class="bg-gray-950 text-white uppercase text-[10px] tracking-[0.2em] font-black">
+                                        <tr>
+                                            <th class="px-5 py-4">Email</th>
+                                            <th class="px-5 py-4">Real Name</th>
+                                            <th class="px-5 py-4">Nickname</th>
+                                            <th class="px-5 py-4 text-right">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-users-body" class="bg-gray-900 text-sm font-bold text-gray-100"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="admin-panel-teams" class="admin-panel hidden space-y-8">
+                    <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-6">
+                        <div>
+                            <h2 class="text-xl font-black uppercase tracking-tight text-white">Team Match Ledger</h2>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Points shown here match the scoring used in the leaderboard</p>
+                        </div>
+                        <div class="rounded-3xl border border-gray-700 overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-[1100px] w-full text-left">
+                                <thead class="bg-gray-950 text-white uppercase text-[10px] tracking-[0.2em] font-black">
+                                    <tr>
+                                        <th class="px-4 py-4">Team</th>
+                                        <th class="px-4 py-4 text-center">Total</th>
+                                        <th class="px-4 py-4 text-center">G1</th>
+                                        <th class="px-4 py-4 text-center">G2</th>
+                                        <th class="px-4 py-4 text-center">G3</th>
+                                            <th class="px-4 py-4 text-center">R32</th>
+                                            <th class="px-4 py-4 text-center">R16</th>
+                                            <th class="px-4 py-4 text-center">QF</th>
+                                            <th class="px-4 py-4 text-center">SM</th>
+                                            <th class="px-4 py-4 text-center">F</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-team-results-body" class="bg-gray-900 text-sm font-bold text-gray-100"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
