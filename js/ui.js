@@ -125,7 +125,7 @@ function showConfirmModal({
     });
 }
 
-function showProfileSetupModal(email) {
+function showProfileSetupModal(email, defaults = {}) {
     const modal = document.getElementById('profile-setup-modal');
     const messageEl = document.getElementById('profile-setup-message');
     const nicknameInput = document.getElementById('profile-setup-nickname');
@@ -155,10 +155,10 @@ function showProfileSetupModal(email) {
     attachAlphaJumpToSelect(homeCountryInput);
 
     messageEl.textContent = `You're creating a new profile for ${email}.`;
-    nicknameInput.value = '';
-    realnameInput.value = '';
-    favoriteTeamInput.value = '';
-    homeCountryInput.value = '';
+    nicknameInput.value = defaults.nickname || '';
+    realnameInput.value = defaults.realname || '';
+    favoriteTeamInput.value = defaults.favoriteTeam || '';
+    homeCountryInput.value = defaults.homeCountry || '';
 
     modal.classList.remove('hidden');
     modal.classList.add('flex');

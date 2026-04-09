@@ -58,8 +58,15 @@
         <div class="bg-gray-800 p-8 md:p-10 rounded-3xl border border-gray-700 max-w-md w-full text-center shadow-2xl">
             <div class="text-5xl md:text-6xl mb-6 text-center text-white">⚽</div>
             <h2 class="text-2xl md:text-3xl font-black mb-2 italic uppercase tracking-tighter text-white text-center">2026 World Cup Pool</h2>
+            <p class="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-gray-400">Google auth branch test</p>
+            <button onclick="startGoogleLogin()" id="google-login-btn" class="w-full rounded-2xl border border-gray-600 bg-white px-4 py-4 font-black uppercase tracking-[0.2em] text-gray-900 transition-colors hover:bg-gray-100">Continue with Google</button>
+            <div class="my-5 flex items-center gap-3">
+                <div class="h-px flex-1 bg-gray-700"></div>
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Legacy fallback</span>
+                <div class="h-px flex-1 bg-gray-700"></div>
+            </div>
             <input type="email" id="email-input" placeholder="Enter email..." class="w-full p-4 rounded-2xl bg-gray-900 border border-gray-700 mb-4 text-white focus:border-blue-500 outline-none font-bold text-center">
-            <button onclick="handleLogin()" id="login-btn" class="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-500 transition-all text-white">Enter</button>
+            <button onclick="handleLogin()" id="login-btn" class="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-500 transition-all text-white">Enter with Email</button>
         </div>
     </div>
 
@@ -712,7 +719,10 @@
                     </div>
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                         <p class="text-sm font-bold text-gray-500">This profile powers your leaderboard name, chat identity, and personal details.</p>
-                        <button onclick="saveIdentityOnly()" class="rounded-2xl bg-blue-600 px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-white transition-colors hover:bg-blue-500">Save Profile</button>
+                        <div class="flex flex-col gap-3 md:flex-row">
+                            <button onclick="signOutUser()" class="rounded-2xl border border-gray-300 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-700 transition-colors hover:bg-gray-100">Sign Out</button>
+                            <button onclick="saveIdentityOnly()" class="rounded-2xl bg-blue-600 px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-white transition-colors hover:bg-blue-500">Save Profile</button>
+                        </div>
                     </div>
                 </section>
             </div>
@@ -784,9 +794,9 @@
         </div>
     </div>
 
-    <script src="js/data.js?v=20260409a"></script>
-    <script src="js/ui.js?v=20260409a"></script>
-    <script src="js/features.js?v=20260409a"></script>
-    <script src="js/app.js?v=20260409a"></script>
+    <script src="js/data.js?v=20260409b"></script>
+    <script src="js/ui.js?v=20260409b"></script>
+    <script src="js/features.js?v=20260409b"></script>
+    <script src="js/app.js?v=20260409b"></script>
 </body>
 </html>

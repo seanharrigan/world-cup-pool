@@ -14,6 +14,10 @@ function getNotificationSeenKey(email = userEmail) {
     return email ? `wc_pool_seen_notification_${email}` : null;
 }
 
+function getAuthRedirectUrl() {
+    return `${window.location.origin}${window.location.pathname}`;
+}
+
 function saveProfileIdentityLocal(email, profile) {
     const storageKey = getProfileStorageKey(email);
     if (!storageKey || !profile) {
@@ -370,6 +374,23 @@ async function getExistingProfile(email) {
     };
 }
 
+async function startGoogleLogin() {
+    try {
+        const { error } = await supabaseClient.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: getAuthRedirectUrl()
+            }
+        });
+
+        if (error) {
+            throw error;
+        }
+    } catch (error) {
+        showToast(error.message || 'Unable to start Google sign-in right now.');
+    }
+}
+
 async function upsertProfile(email, profile = {}) {
     const updatedAt = new Date().toISOString();
     const payload = {
@@ -530,6 +551,78 @@ async function completeLogin(email, existingProfile = null) {
     await checkForBroadcastNotifications();
 }
 
+async function handleAuthenticatedUser(authUser) {
+    const email = authUser?.email?.toLowerCase().trim();
+    if (!email) {
+        return false;
+    }
+
+    const existingProfile = await getExistingProfile(email);
+
+    if (!existingProfile) {
+        const newProfile = await showProfileSetupModal(email, {
+            realname: authUser.user_metadata?.full_name || authUser.user_metadata?.name || ''
+        });
+
+        if (!newProfile) {
+            await supabaseClient.auth.signOut();
+            return false;
+        }
+
+        saveProfileIdentityLocal(email, newProfile);
+        await upsertProfile(email, {
+            ...newProfile,
+            avatar_url: authUser.user_metadata?.avatar_url || ''
+        });
+
+        await completeLogin(email, {
+            nickname: newProfile.nickname,
+            realname: newProfile.realname,
+            favorite_team: newProfile.favoriteTeam,
+            home_country: newProfile.homeCountry,
+            avatar_url: authUser.user_metadata?.avatar_url || ''
+        });
+        return true;
+    }
+
+    if (authUser.user_metadata?.avatar_url && !existingProfile.avatar_url) {
+        try {
+            await upsertProfile(email, {
+                nickname: existingProfile.nickname,
+                realname: existingProfile.realname,
+                favoriteTeam: existingProfile.favorite_team,
+                homeCountry: existingProfile.home_country,
+                has_paid: existingProfile.has_paid,
+                avatar_url: authUser.user_metadata.avatar_url
+            });
+            existingProfile.avatar_url = authUser.user_metadata.avatar_url;
+        } catch (error) {
+            // Non-blocking profile enrichment.
+        }
+    }
+
+    await completeLogin(email, existingProfile);
+    return true;
+}
+
+async function restoreAuthLogin() {
+    try {
+        const { data, error } = await supabaseClient.auth.getUser();
+
+        if (error) {
+            throw error;
+        }
+
+        if (!data?.user) {
+            return false;
+        }
+
+        return handleAuthenticatedUser(data.user);
+    } catch (error) {
+        return false;
+    }
+}
+
 async function handleLogin(options = {}) {
     const { skipNewProfileConfirm = false } = options;
     const input = document.getElementById('email-input').value.toLowerCase().trim();
@@ -567,6 +660,19 @@ async function handleLogin(options = {}) {
     } catch (error) {
         showToast(error.message || 'Unable to log in right now.');
     }
+}
+
+async function signOutUser() {
+    try {
+        await supabaseClient.auth.signOut();
+    } catch (error) {
+        // Fall through to local reset even if auth signout fails.
+    }
+
+    localStorage.removeItem('wc_pool_user_email');
+    userEmail = '';
+    myPicks = [];
+    window.location.reload();
 }
 
 async function saveIdentityOnly() {
@@ -708,12 +814,17 @@ function setupLoginKeyboardSubmit() {
     });
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
     populateCountryFilter();
     populateProfileSelectOptions();
     setupLoginKeyboardSubmit();
     setupIdentityChangeTracking();
     fetchAppSettings();
+
+    const restoredAuth = await restoreAuthLogin();
+    if (restoredAuth) {
+        return;
+    }
 
     const savedEmail = localStorage.getItem('wc_pool_user_email');
     if (savedEmail) {
@@ -730,7 +841,10 @@ Object.assign(window, {
     checkAdminStatus,
     setupProfile,
     toggleTeam,
+    startGoogleLogin,
+    restoreAuthLogin,
     handleLogin,
+    signOutUser,
     saveIdentityOnly,
     saveToSupabase,
     loadFromSupabase,
