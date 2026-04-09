@@ -147,6 +147,7 @@ async function setupDashboard() {
     const squadSizeEl = document.getElementById('dashboard-squad-size');
     const budgetLeftEl = document.getElementById('dashboard-budget-left');
     const saveStatusEl = document.getElementById('dashboard-save-status');
+    const squadStripEl = document.getElementById('dashboard-squad-strip');
     const prizePotEl = document.getElementById('dashboard-prize-pot');
     const playerCountEl = document.getElementById('dashboard-player-count');
     const ctaButton = document.getElementById('dashboard-primary-cta');
@@ -157,6 +158,7 @@ async function setupDashboard() {
     if (leaderboardEl) leaderboardEl.innerHTML = '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Loading leaderboard...</div>';
     if (resultsEl) resultsEl.innerHTML = '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Loading results...</div>';
     if (mostPickedEl) mostPickedEl.innerHTML = '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Loading picks...</div>';
+    if (squadStripEl) squadStripEl.innerHTML = '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Loading squad...</div>';
 
     if (saveStatusEl) {
         const sourceSaveStatus = document.getElementById('save-status');
@@ -197,6 +199,20 @@ async function setupDashboard() {
         if (myRankEl) myRankEl.textContent = myRank >= 0 ? `#${myRank + 1}` : '-';
         if (squadSizeEl) squadSizeEl.textContent = `${liveSquad.length}`;
         if (budgetLeftEl) budgetLeftEl.textContent = `$${150 - spent}`;
+
+        if (squadStripEl) {
+            squadStripEl.innerHTML = liveSquad.length > 0
+                ? liveSquad
+                    .sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name))
+                    .map((team) => `
+                        <div class="min-w-[54px] text-center">
+                            <div class="text-3xl">${team.flag}</div>
+                            <div class="mt-1 text-[9px] font-black uppercase tracking-[0.15em] text-white">T${team.tier} · $${team.cost}</div>
+                        </div>
+                    `)
+                    .join('')
+                : '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">No squad selected yet</div>';
+        }
 
         const playerCount = leaderboardData.length;
         if (prizePotEl) prizePotEl.textContent = `$${(playerCount * 40).toLocaleString()}`;
