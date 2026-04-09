@@ -601,8 +601,22 @@
                             <input type="text" id="realname-input" placeholder="Your Full Name" class="w-full p-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-gray-900 text-left">
                         </div>
                     </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-blue-600 mb-1">Favorite Team</label>
+                            <select id="favorite-team-input" class="w-full p-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-gray-900 bg-white">
+                                <option value="">Select a team</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-blue-600 mb-1">Home Country</label>
+                            <select id="home-country-input" class="w-full p-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-gray-900 bg-white">
+                                <option value="">Select a country</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                        <p class="text-sm font-bold text-gray-500">This name appears on the leaderboard and in chat.</p>
+                        <p class="text-sm font-bold text-gray-500">This profile powers your leaderboard name, chat identity, and personal details.</p>
                         <button onclick="saveIdentityOnly()" class="rounded-2xl bg-blue-600 px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-white transition-colors hover:bg-blue-500">Save Profile</button>
                     </div>
                 </section>

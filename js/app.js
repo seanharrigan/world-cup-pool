@@ -18,7 +18,9 @@ function saveProfileIdentityLocal(email, profile) {
 
     localStorage.setItem(storageKey, JSON.stringify({
         nickname: profile.nickname || '',
-        realname: profile.realname || ''
+        realname: profile.realname || '',
+        favoriteTeam: profile.favoriteTeam || '',
+        homeCountry: profile.homeCountry || ''
     }));
 }
 
@@ -147,8 +149,10 @@ function clearDirtyFlags() {
 function setupIdentityChangeTracking() {
     const nicknameInput = document.getElementById('nickname-input');
     const realnameInput = document.getElementById('realname-input');
+    const favoriteTeamInput = document.getElementById('favorite-team-input');
+    const homeCountryInput = document.getElementById('home-country-input');
 
-    [nicknameInput, realnameInput].forEach((input) => {
+    [nicknameInput, realnameInput, favoriteTeamInput, homeCountryInput].forEach((input) => {
         if (!input || input.dataset.saveTrackingBound === 'true') {
             return;
         }
@@ -161,6 +165,25 @@ function setupIdentityChangeTracking() {
             markIdentityDirty();
         });
         input.dataset.saveTrackingBound = 'true';
+    });
+}
+
+function populateProfileSelectOptions() {
+    const favoriteTeamSelect = document.getElementById('favorite-team-input');
+    const homeCountrySelect = document.getElementById('home-country-input');
+
+    [favoriteTeamSelect, homeCountrySelect].forEach((select) => {
+        if (!select || select.dataset.optionsLoaded === 'true') {
+            return;
+        }
+
+        const options = [...teams]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((team) => `<option value="${team.name}">${team.flag} ${team.name}</option>`)
+            .join('');
+
+        select.insertAdjacentHTML('beforeend', options);
+        select.dataset.optionsLoaded = 'true';
     });
 }
 
@@ -217,7 +240,7 @@ function toggleTeam(name) {
 async function getExistingProfile(email) {
     const { data, error } = await supabaseClient
         .from('profiles')
-        .select('nickname, realname, has_paid, avatar_url, updated_at')
+        .select('nickname, realname, favorite_team, home_country, has_paid, avatar_url, updated_at')
         .eq('email', email)
         .maybeSingle();
 
@@ -237,15 +260,21 @@ async function getExistingProfile(email) {
 
     return {
         nickname: localProfile.nickname || '',
-        realname: localProfile.realname || ''
+        realname: localProfile.realname || '',
+        favorite_team: localProfile.favoriteTeam || '',
+        home_country: localProfile.homeCountry || ''
     };
 }
 
 async function upsertProfile(email, profile = {}) {
+    const updatedAt = new Date().toISOString();
     const payload = {
         email,
         nickname: profile.nickname || '',
-        realname: profile.realname || ''
+        realname: profile.realname || '',
+        favorite_team: profile.favoriteTeam || '',
+        home_country: profile.homeCountry || '',
+        updated_at: updatedAt
     };
 
     if (typeof profile.has_paid === 'boolean') {
@@ -263,6 +292,8 @@ async function upsertProfile(email, profile = {}) {
     if (error) {
         throw error;
     }
+
+    return updatedAt;
 }
 
 function confirmNewProfileEmail(email) {
@@ -290,10 +321,18 @@ async function completeLogin(email, existingProfile = null) {
 
     document.getElementById('user-display-nav').innerText = userEmail;
     setupProfile();
+    populateProfileSelectOptions();
 
     if (existingProfile) {
         document.getElementById('nickname-input').value = existingProfile.nickname || '';
         document.getElementById('realname-input').value = existingProfile.realname || '';
+        document.getElementById('favorite-team-input').value = existingProfile.favorite_team || '';
+        document.getElementById('home-country-input').value = existingProfile.home_country || '';
+    } else {
+        document.getElementById('nickname-input').value = '';
+        document.getElementById('realname-input').value = '';
+        document.getElementById('favorite-team-input').value = '';
+        document.getElementById('home-country-input').value = '';
     }
 
     await hydrateSavedTimestamp();
@@ -344,19 +383,21 @@ async function handleLogin(options = {}) {
 async function saveIdentityOnly() {
     const nickname = document.getElementById('nickname-input').value.trim();
     const realname = document.getElementById('realname-input').value.trim();
+    const favoriteTeam = document.getElementById('favorite-team-input').value;
+    const homeCountry = document.getElementById('home-country-input').value;
 
     if (!nickname || !realname) {
         return showToast('Enter both names.');
     }
 
-    saveProfileIdentityLocal(userEmail, { nickname, realname });
+    saveProfileIdentityLocal(userEmail, { nickname, realname, favoriteTeam, homeCountry });
 
     try {
-        await upsertProfile(userEmail, { nickname, realname });
+        const savedAt = await upsertProfile(userEmail, { nickname, realname, favoriteTeam, homeCountry });
 
         saveState.failed = false;
         saveState.identityDirty = false;
-        await hydrateSavedTimestamp();
+        saveState.lastSavedAt = savedAt;
         updateSaveStatusUI();
         setupDashboard();
         fetchLeaderboard();
@@ -376,12 +417,14 @@ async function saveToSupabase() {
 
     const nickname = document.getElementById('nickname-input').value.trim();
     const realname = document.getElementById('realname-input').value.trim();
+    const favoriteTeam = document.getElementById('favorite-team-input').value;
+    const homeCountry = document.getElementById('home-country-input').value;
 
     if (!nickname || !realname) {
         return showToast('Set Nickname and Real Name.');
     }
 
-    saveProfileIdentityLocal(userEmail, { nickname, realname });
+    saveProfileIdentityLocal(userEmail, { nickname, realname, favoriteTeam, homeCountry });
 
     const spent = myPicks.reduce((sum, team) => sum + team.cost, 0);
     if (spent > 150) {
@@ -409,12 +452,12 @@ async function saveToSupabase() {
                 cost: team.cost
             }))
         );
-        await upsertProfile(userEmail, { nickname, realname });
+        const savedAt = await upsertProfile(userEmail, { nickname, realname, favoriteTeam, homeCountry });
 
         saveState.failed = false;
         saveState.picksDirty = false;
         saveState.identityDirty = false;
-        await hydrateSavedTimestamp();
+        saveState.lastSavedAt = savedAt;
         updateSaveStatusUI();
         fetchLeaderboard();
         fetchStats();
@@ -470,6 +513,7 @@ function setupLoginKeyboardSubmit() {
 
 window.addEventListener('DOMContentLoaded', () => {
     populateCountryFilter();
+    populateProfileSelectOptions();
     setupLoginKeyboardSubmit();
     setupIdentityChangeTracking();
 
@@ -482,6 +526,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 Object.assign(window, {
     populateCountryFilter,
+    populateProfileSelectOptions,
     checkAdminStatus,
     setupProfile,
     toggleTeam,
