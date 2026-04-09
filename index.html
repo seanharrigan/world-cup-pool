@@ -28,10 +28,10 @@
         .saving { animation: pulse-blue 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; pointer-events: none; }
 
         .nav-link { cursor: pointer; transition: all 0.3s; position: relative; white-space: nowrap; }
-        .nav-link.active { color: #3b82f6; }
+        .nav-link.active { color: var(--nav-accent, #3b82f6); }
         
         @media (min-width: 768px) {
-            .nav-link.active::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 100%; height: 2px; background: #3b82f6; }
+            .nav-link.active::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 100%; height: 2px; background: var(--nav-accent, #3b82f6); }
         }
 
         @keyframes bounce-in {
@@ -63,14 +63,15 @@
         </div>
     </div>
 
-    <nav id="top-nav" class="hidden bg-gray-950 border-b border-gray-800 px-4 md:px-8 py-3 z-50">
+    <nav id="top-nav" class="hidden bg-gray-950 border-b border-gray-800 px-4 md:px-8 py-3 z-50 transition-colors duration-500">
         <div class="flex justify-between items-center w-full">
             <div class="flex items-center gap-2">
-                <span class="text-xl md:text-2xl">🏆</span>
-                <span class="font-black italic uppercase tracking-tighter text-lg md:text-xl">WC2026</span>
+                <span id="top-nav-flag" class="hidden text-xl md:text-2xl"></span>
+                <span id="top-nav-icon" class="text-xl md:text-2xl">🏆</span>
+                <span id="top-nav-title" class="font-black italic uppercase tracking-tighter text-lg md:text-xl text-white">WC2026</span>
             </div>
 
-            <div class="hidden md:flex gap-6 font-black uppercase text-[10px] tracking-widest text-gray-500 items-center">
+            <div class="hidden md:flex gap-6 font-black uppercase text-[10px] tracking-widest text-white items-center">
                 <span onclick="showPage('instructions')" id="nav-instructions" class="nav-link active">Dashboard</span>
                 <span onclick="showPage('rules')" id="nav-rules" class="nav-link">Rules</span>
                 <span onclick="showPage('picks')" id="nav-picks" class="nav-link">My Picks</span>
@@ -79,7 +80,7 @@
                 <span onclick="showPage('chat')" id="nav-chat" class="nav-link">Chat</span>
                 <span onclick="showPage('profile')" id="nav-profile" class="nav-link">Profile</span>
                 <span onclick="showPage('admin')" id="nav-admin" class="nav-link hidden text-red-500">Admin</span>
-                <div id="user-display-nav" class="hidden lg:block text-[10px] font-bold text-blue-500 uppercase tracking-widest truncate max-w-[120px] ml-4 text-center"></div>
+                <div id="user-display-nav" class="hidden lg:block text-[10px] font-bold text-white uppercase tracking-widest truncate max-w-[120px] ml-4 text-center"></div>
             </div>
 
             <button onclick="toggleMobileMenu()" class="md:hidden p-2 text-gray-400 focus:outline-none">
@@ -87,14 +88,14 @@
             </button>
         </div>
 
-        <div id="mobile-menu" class="md:hidden flex flex-col font-black uppercase text-xs tracking-widest text-gray-500 bg-gray-950 text-center">
-            <span onclick="showPage('instructions')" class="py-4 border-b border-gray-900 text-center">Dashboard</span>
+        <div id="mobile-menu" class="md:hidden flex flex-col font-black uppercase text-xs tracking-widest text-white bg-gray-950 text-center">
+            <span onclick="showPage('instructions')" class="py-4 border-b border-gray-900 text-center text-white">Dashboard</span>
             <span onclick="showPage('rules')" class="py-4 border-b border-gray-900 text-center text-white">Rules</span>
-            <span onclick="showPage('picks')" class="py-4 border-b border-gray-900 text-center text-white text-center">My Picks</span>
-            <span onclick="showPage('results')" class="py-4 border-b border-gray-900 text-center text-white text-center text-center">Results</span>
+            <span onclick="showPage('picks')" class="py-4 border-b border-gray-900 text-center text-white">My Picks</span>
+            <span onclick="showPage('results')" class="py-4 border-b border-gray-900 text-center text-white">Results</span>
             <span onclick="showPage('leaderboard')" class="py-4 border-b border-gray-900 text-center text-white">Leaderboard</span>
-            <span onclick="showPage('chat')" class="py-4 border-b border-gray-900 text-center">Chat</span>
-            <span onclick="showPage('profile')" class="py-4 border-b border-gray-900 text-center">Profile</span>
+            <span onclick="showPage('chat')" class="py-4 border-b border-gray-900 text-center text-white">Chat</span>
+            <span onclick="showPage('profile')" class="py-4 border-b border-gray-900 text-center text-white">Profile</span>
             <span onclick="showPage('admin')" id="mobile-nav-admin" class="py-4 text-center text-red-500 hidden">Admin</span>
         </div>
     </nav>
@@ -119,6 +120,10 @@
                                 <div><div id="dashboard-minutes" class="text-lg font-black text-white">00</div><div class="text-[8px] font-bold uppercase text-gray-400">Min</div></div>
                             </div>
                         </div>
+                    </div>
+                    <div id="dashboard-favorite-banner" class="hidden rounded-3xl px-6 py-5 text-center shadow-sm">
+                        <div id="dashboard-favorite-banner-text" class="text-xl md:text-2xl font-black uppercase italic tracking-[0.08em]">WORLD CUP 2026</div>
+                        <div id="dashboard-favorite-banner-subtext" class="mt-2 text-[10px] font-black uppercase tracking-[0.25em] opacity-80">Supporter colours by your favourite team</div>
                     </div>
                     <div class="mx-auto grid max-w-6xl grid-cols-2 xl:grid-cols-4 gap-4">
                         <div class="rounded-3xl border border-blue-100 bg-blue-50 p-5 text-center">

@@ -133,7 +133,9 @@
             realname: profile?.realname || pickFallback.realname || 'Joined',
             hasPaid: typeof profile?.has_paid === 'boolean' ? profile.has_paid : Boolean(pickFallback.hasPaid),
             updatedAt: profile?.updated_at || null,
-            avatarUrl: profile?.avatar_url || null
+            avatarUrl: profile?.avatar_url || null,
+            favoriteTeam: profile?.favorite_team || '',
+            homeCountry: profile?.home_country || ''
         };
     }
 

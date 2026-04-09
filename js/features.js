@@ -11,6 +11,173 @@ const teamResultsSortState = {
     'public-team-results-body': { key: 'team', direction: 'asc' }
 };
 
+const FAVORITE_TEAM_BANNERS = {
+    Spain: { slogan: 'VAMOS ESPANA', gradient: 'linear-gradient(135deg, #9f1239 0%, #dc2626 26%, #facc15 52%, #dc2626 76%, #9f1239 100%)', textColor: '#ffffff', accentColor: '#facc15' },
+    England: { slogan: "IT'S COMING HOME", gradient: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 42%, #dc2626 47%, #dc2626 53%, #ffffff 58%, #f8fafc 100%)', textColor: '#0f172a', accentColor: '#dc2626' },
+    France: { slogan: 'ALLEZ LES BLEUS', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 44%, #ffffff 49%, #ffffff 51%, #ef4444 56%, #b91c1c 100%)', textColor: '#0f172a', accentColor: '#1d4ed8' },
+    Argentina: { slogan: 'VAMOS ARGENTINA', gradient: 'linear-gradient(135deg, #7dd3fc 0%, #bae6fd 45%, #ffffff 49%, #ffffff 51%, #bae6fd 55%, #7dd3fc 100%)', textColor: '#082f49', accentColor: '#0c4a6e' },
+    Brazil: { slogan: 'RUMO AO HEXA', gradient: 'linear-gradient(135deg, #15803d 0%, #16a34a 34%, #facc15 70%, #eab308 100%)', textColor: '#052e16', accentColor: '#facc15' },
+    Portugal: { slogan: 'FORCA PORTUGAL', gradient: 'linear-gradient(135deg, #15803d 0%, #16a34a 34%, #dc2626 66%, #991b1b 100%)', textColor: '#ffffff', accentColor: '#16a34a' },
+    Germany: { slogan: 'DEUTSCHLAND VOR', gradient: 'linear-gradient(135deg, #111827 0%, #1f2937 35%, #b91c1c 68%, #facc15 100%)', textColor: '#ffffff', accentColor: '#facc15' },
+    Netherlands: { slogan: 'HUP HOLLAND HUP', gradient: 'linear-gradient(135deg, #ea580c 0%, #f97316 46%, #ffffff 49%, #ffffff 51%, #2563eb 56%, #1d4ed8 100%)', textColor: '#0f172a', accentColor: '#ea580c' },
+    Norway: { slogan: 'HEIA NORGE', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 40%, #ffffff 49%, #ffffff 51%, #dc2626 58%, #991b1b 100%)', textColor: '#0f172a', accentColor: '#dc2626' },
+    Belgium: { slogan: 'ALLEZ LES DIABLES', gradient: 'linear-gradient(135deg, #111827 0%, #1f2937 34%, #facc15 62%, #dc2626 100%)', textColor: '#ffffff', accentColor: '#facc15' },
+    Colombia: { slogan: 'VAMOS COLOMBIA', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 20%, #facc15 52%, #dc2626 86%, #b91c1c 100%)', textColor: '#0f172a', accentColor: '#facc15' },
+    Morocco: { slogan: 'DIMA MAGHRIB', gradient: 'linear-gradient(135deg, #991b1b 0%, #dc2626 72%, #166534 100%)', textColor: '#ffffff', accentColor: '#166534' },
+    USA: { slogan: 'GO USA', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 42%, #ffffff 49%, #ffffff 51%, #ef4444 58%, #b91c1c 100%)', textColor: '#0f172a', accentColor: '#dc2626' },
+    Japan: { slogan: 'NIPPON GANBARE', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 46%, #ffffff 49%, #ffffff 51%, #e5e7eb 56%, #cbd5e1 100%)', textColor: '#0f172a', accentColor: '#1d4ed8' },
+    Mexico: { slogan: 'VAMOS MEXICO', gradient: 'linear-gradient(135deg, #166534 0%, #16a34a 44%, #ffffff 49%, #ffffff 51%, #ef4444 58%, #b91c1c 100%)', textColor: '#0f172a', accentColor: '#166534' },
+    Switzerland: { slogan: 'HOPP SCHWIIZ', gradient: 'linear-gradient(135deg, #b91c1c 0%, #dc2626 72%, #7f1d1d 100%)', textColor: '#ffffff', accentColor: '#dc2626' },
+    Uruguay: { slogan: 'VAMOS CELESTE', gradient: 'linear-gradient(135deg, #7dd3fc 0%, #bae6fd 46%, #ffffff 49%, #ffffff 51%, #e0f2fe 56%, #7dd3fc 100%)', textColor: '#0c4a6e', accentColor: '#0c4a6e' },
+    Ecuador: { slogan: 'VAMOS ECUADOR', gradient: 'linear-gradient(135deg, #facc15 0%, #fde047 46%, #2563eb 54%, #dc2626 100%)', textColor: '#0f172a', accentColor: '#2563eb' },
+    Croatia: { slogan: 'IDEMO VATRENI', gradient: 'linear-gradient(135deg, #dc2626 0%, #ef4444 44%, #ffffff 49%, #ffffff 51%, #2563eb 58%, #1d4ed8 100%)', textColor: '#0f172a', accentColor: '#2563eb' },
+    Austria: { slogan: 'AUF GEHTS OSTERREICH', gradient: 'linear-gradient(135deg, #dc2626 0%, #ef4444 46%, #ffffff 49%, #ffffff 51%, #f8fafc 56%, #e5e7eb 100%)', textColor: '#0f172a', accentColor: '#dc2626' },
+    Senegal: { slogan: 'ALLEZ LES LIONS', gradient: 'linear-gradient(135deg, #166534 0%, #16a34a 34%, #facc15 62%, #dc2626 100%)', textColor: '#052e16', accentColor: '#facc15' },
+    Turkiye: { slogan: 'HAYDI TURKIYE', gradient: 'linear-gradient(135deg, #b91c1c 0%, #dc2626 72%, #7f1d1d 100%)', textColor: '#ffffff', accentColor: '#dc2626' },
+    Sweden: { slogan: 'HEJA SVERIGE', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 34%, #facc15 100%)', textColor: '#082f49', accentColor: '#facc15' },
+    Canada: { slogan: 'ALLEZ LES ROUGES', gradient: 'linear-gradient(135deg, #dc2626 0%, #ef4444 28%, #ffffff 52%, #ef4444 76%, #dc2626 100%)', textColor: '#450a0a', accentColor: '#dc2626' },
+    Paraguay: { slogan: 'VAMOS PARAGUAY', gradient: 'linear-gradient(135deg, #dc2626 0%, #ef4444 44%, #ffffff 49%, #ffffff 51%, #2563eb 58%, #1d4ed8 100%)', textColor: '#0f172a', accentColor: '#2563eb' },
+    Scotland: { slogan: 'ALBA GU BRATH', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 46%, #ffffff 49%, #ffffff 51%, #e0f2fe 56%, #7dd3fc 100%)', textColor: '#082f49', accentColor: '#1d4ed8' },
+    Bosnia: { slogan: 'IDEMO BOSNO', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 54%, #facc15 100%)', textColor: '#082f49', accentColor: '#facc15' },
+    Egypt: { slogan: 'YALLA MASR', gradient: 'linear-gradient(135deg, #111827 0%, #1f2937 44%, #ffffff 49%, #ffffff 51%, #dc2626 58%, #b91c1c 100%)', textColor: '#0f172a', accentColor: '#dc2626' },
+    Czechia: { slogan: 'DO TOHO CESKO', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 44%, #ffffff 49%, #ffffff 51%, #ef4444 58%, #dc2626 100%)', textColor: '#0f172a', accentColor: '#ef4444' },
+    'Ivory Coast': { slogan: "ALLEZ LES ELEPHANTS", gradient: 'linear-gradient(135deg, #ea580c 0%, #f97316 44%, #ffffff 49%, #ffffff 51%, #16a34a 58%, #166534 100%)', textColor: '#0f172a', accentColor: '#ea580c' },
+    Algeria: { slogan: 'ONE TWO THREE VIVA LALGERIE', gradient: 'linear-gradient(135deg, #166534 0%, #16a34a 44%, #ffffff 49%, #ffffff 51%, #ef4444 58%, #dc2626 100%)', textColor: '#0f172a', accentColor: '#ef4444' },
+    Ghana: { slogan: 'GO BLACK STARS', gradient: 'linear-gradient(135deg, #b91c1c 0%, #ef4444 28%, #facc15 58%, #166534 100%)', textColor: '#052e16', accentColor: '#facc15' },
+    Australia: { slogan: 'AUSSIE AUSSIE AUSSIE', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 48%, #ffffff 70%, #ef4444 100%)', textColor: '#082f49', accentColor: '#ef4444' },
+    Tunisia: { slogan: 'YALLA TUNIS', gradient: 'linear-gradient(135deg, #b91c1c 0%, #dc2626 72%, #7f1d1d 100%)', textColor: '#ffffff', accentColor: '#dc2626' },
+    Iran: { slogan: 'IRAN PIRUZ BAD', gradient: 'linear-gradient(135deg, #166534 0%, #16a34a 44%, #ffffff 49%, #ffffff 51%, #dc2626 58%, #b91c1c 100%)', textColor: '#0f172a', accentColor: '#dc2626' },
+    'South Korea': { slogan: 'DAEHANMINGUK', gradient: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 46%, #2563eb 52%, #dc2626 100%)', textColor: '#0f172a', accentColor: '#dc2626' },
+    'DR Congo': { slogan: 'ALLEZ LES LEOPARDS', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 44%, #facc15 66%, #ef4444 100%)', textColor: '#082f49', accentColor: '#facc15' },
+    Qatar: { slogan: 'YALLA QATAR', gradient: 'linear-gradient(135deg, #7f1d1d 0%, #9f1239 60%, #fdf2f8 100%)', textColor: '#ffffff', accentColor: '#9f1239' },
+    'South Africa': { slogan: 'BAFANA BAFANA', gradient: 'linear-gradient(135deg, #166534 0%, #16a34a 32%, #facc15 54%, #1d4ed8 76%, #111827 100%)', textColor: '#052e16', accentColor: '#facc15' },
+    'Saudi Arabia': { slogan: 'YALLA SAUDI', gradient: 'linear-gradient(135deg, #166534 0%, #16a34a 72%, #14532d 100%)', textColor: '#ffffff', accentColor: '#16a34a' },
+    Panama: { slogan: 'VAMOS PANAMA', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 44%, #ffffff 49%, #ffffff 51%, #ef4444 58%, #dc2626 100%)', textColor: '#0f172a', accentColor: '#ef4444' },
+    'New Zealand': { slogan: 'GO ALL WHITES', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 46%, #111827 100%)', textColor: '#ffffff', accentColor: '#1d4ed8' },
+    Iraq: { slogan: 'YALLA IRAQ', gradient: 'linear-gradient(135deg, #111827 0%, #1f2937 42%, #ffffff 49%, #ffffff 51%, #16a34a 58%, #dc2626 100%)', textColor: '#0f172a', accentColor: '#dc2626' },
+    'Cape Verde': { slogan: 'FORCA TUBAROES AZUIS', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 52%, #facc15 78%, #ef4444 100%)', textColor: '#082f49', accentColor: '#facc15' },
+    Curacao: { slogan: 'BIBA KORASOU', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 58%, #facc15 84%, #ffffff 100%)', textColor: '#082f49', accentColor: '#facc15' },
+    Uzbekistan: { slogan: 'OLGA UZBEKISTON', gradient: 'linear-gradient(135deg, #7dd3fc 0%, #bae6fd 42%, #ffffff 49%, #ffffff 51%, #16a34a 58%, #0f766e 100%)', textColor: '#0c4a6e', accentColor: '#16a34a' },
+    Jordan: { slogan: 'YALLA AL NASHAMA', gradient: 'linear-gradient(135deg, #111827 0%, #1f2937 42%, #ffffff 49%, #ffffff 51%, #16a34a 58%, #dc2626 100%)', textColor: '#0f172a', accentColor: '#dc2626' },
+    Haiti: { slogan: 'ALE AYITI', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 46%, #dc2626 100%)', textColor: '#ffffff', accentColor: '#dc2626' },
+    Italy: { slogan: 'FORZA AZZURRI', gradient: 'linear-gradient(135deg, #16a34a 0%, #22c55e 44%, #ffffff 49%, #ffffff 51%, #ef4444 58%, #dc2626 100%)', textColor: '#0f172a', accentColor: '#ef4444' }
+};
+
+function getFavoriteTeamBannerConfig(teamName) {
+    if (!teamName) {
+        return {
+            slogan: 'WORLD CUP DREAMING',
+            gradient: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 48%, #60a5fa 100%)',
+            textColor: '#ffffff',
+            accentColor: '#facc15'
+        };
+    }
+
+    const team = teams.find((entry) => entry.name === teamName);
+    const preset = FAVORITE_TEAM_BANNERS[teamName];
+
+    if (preset) {
+        return {
+            ...preset,
+            team,
+            teamName
+        };
+    }
+
+    return {
+        slogan: `GO ${teamName.toUpperCase()}`,
+        gradient: 'linear-gradient(135deg, #1f2937 0%, #334155 52%, #64748b 100%)',
+        textColor: '#ffffff',
+        accentColor: '#facc15',
+        team,
+        teamName
+    };
+}
+
+function renderDashboardFavoriteBanner(currentProfile) {
+    const banner = document.getElementById('dashboard-favorite-banner');
+    const bannerText = document.getElementById('dashboard-favorite-banner-text');
+    const bannerSubtext = document.getElementById('dashboard-favorite-banner-subtext');
+
+    if (!banner || !bannerText || !bannerSubtext) {
+        return;
+    }
+
+    const favoriteTeam = currentProfile?.favoriteTeam || '';
+    const config = getFavoriteTeamBannerConfig(favoriteTeam);
+    const team = config.team || teams.find((entry) => entry.name === favoriteTeam);
+    const leftFlag = team?.flag || '🌍';
+    const rightFlag = team?.flag || '🌍';
+
+    banner.className = 'rounded-3xl px-6 py-5 text-center shadow-sm';
+    banner.classList.remove('hidden');
+    banner.style.background = `linear-gradient(rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.34)), ${config.gradient}`;
+    bannerText.className = 'text-xl md:text-2xl font-black uppercase italic tracking-[0.08em]';
+    bannerText.style.color = config.textColor;
+    bannerText.style.color = config.accentColor || config.textColor;
+    bannerText.textContent = `${leftFlag} ${config.slogan} ${rightFlag}`;
+    bannerSubtext.className = 'hidden';
+    bannerSubtext.textContent = '';
+}
+
+function renderTopNavFavoriteTheme(currentProfile) {
+    const topNav = document.getElementById('top-nav');
+    const topNavFlag = document.getElementById('top-nav-flag');
+    const topNavIcon = document.getElementById('top-nav-icon');
+    const topNavTitle = document.getElementById('top-nav-title');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const desktopNavLinks = document.querySelectorAll('#top-nav .nav-link:not(#nav-admin)');
+    const userDisplayNav = document.getElementById('user-display-nav');
+
+    if (!topNav || !topNavFlag || !topNavIcon || !topNavTitle) {
+        return;
+    }
+
+    const favoriteTeam = currentProfile?.favoriteTeam || '';
+    const config = getFavoriteTeamBannerConfig(favoriteTeam);
+    const team = config.team || teams.find((entry) => entry.name === favoriteTeam);
+    const gradientHexColors = (config.gradient.match(/#[0-9a-fA-F]{6}/g) || [])
+        .filter((color) => !['#ffffff', '#f8fafc', '#fdf2f8', '#e5e7eb', '#cbd5e1', '#e0f2fe', '#bae6fd'].includes(color.toLowerCase()));
+    const navBackgroundColor = gradientHexColors[0] || config.accentColor || config.textColor;
+
+    if (!favoriteTeam || !team) {
+        topNav.style.background = '';
+        topNav.style.borderBottomColor = '';
+        topNav.style.setProperty('--nav-accent', '');
+        if (mobileMenu) {
+            mobileMenu.style.background = '';
+        }
+        topNavFlag.classList.add('hidden');
+        topNavFlag.textContent = '';
+        topNavIcon.classList.remove('hidden');
+        topNavTitle.style.color = '';
+        desktopNavLinks.forEach((link) => {
+            link.style.color = '';
+        });
+        if (userDisplayNav) {
+            userDisplayNav.style.color = '';
+        }
+        return;
+    }
+
+    topNav.style.background = `linear-gradient(rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.46)), ${navBackgroundColor}`;
+    topNav.style.borderBottomColor = 'rgba(15, 23, 42, 0.18)';
+    topNav.style.setProperty('--nav-accent', config.accentColor || config.textColor);
+    if (mobileMenu) {
+        mobileMenu.style.background = `linear-gradient(rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.34)), ${navBackgroundColor}`;
+    }
+    topNavFlag.classList.remove('hidden');
+    topNavFlag.textContent = team.flag;
+    topNavIcon.classList.add('hidden');
+    topNavTitle.style.color = config.accentColor || config.textColor;
+    desktopNavLinks.forEach((link) => {
+        link.style.color = config.accentColor || config.textColor;
+    });
+    if (userDisplayNav) {
+        userDisplayNav.style.color = config.accentColor || config.textColor;
+    }
+}
+
 function setupAdminPage() {
     const teamOneSelect = document.getElementById('admin-team1');
     const teamTwoSelect = document.getElementById('admin-team2');
@@ -458,7 +625,7 @@ async function setupDashboard() {
         ] = await Promise.all([
             supabaseClient.from('picks').select('*'),
             supabaseClient.from('matches').select('*').order('match_date_manual', { ascending: false }),
-            supabaseClient.from('profiles').select('email, nickname, realname, has_paid, avatar_url, updated_at')
+            supabaseClient.from('profiles').select('email, nickname, realname, favorite_team, home_country, has_paid, avatar_url, updated_at')
         ]);
 
         if (picksError) {
@@ -481,6 +648,8 @@ async function setupDashboard() {
         const leaderboardData = buildLeaderboardData(picks, matches, profilesMap, teams, advancedTeams);
         const currentUserRows = picks.filter((pick) => pick.user_email === userEmail);
         const currentProfile = getDisplayProfile(userEmail, profilesMap);
+        renderDashboardFavoriteBanner(currentProfile);
+        renderTopNavFavoriteTheme(currentProfile);
         const myEntry = leaderboardData.find((entry) => entry.email === userEmail);
         const savedSquad = currentUserRows
             .map((pick) => teams.find((team) => team.name === pick.team_name))
