@@ -40,10 +40,6 @@ function getLocalProfileIdentity(email) {
     }
 }
 
-function getSaveStatusStorageKey() {
-    return userEmail ? `wc_pool_last_saved_${userEmail}` : null;
-}
-
 function formatSavedTime(timestamp) {
     return new Date(timestamp).toLocaleTimeString([], {
         hour: 'numeric',
@@ -103,18 +99,30 @@ function updateSaveStatusUI() {
     setContent('No changes yet', { text: 'text-gray-400', border: 'border-gray-800', background: 'bg-gray-900/70' });
 }
 
-function setLastSavedNow() {
-    saveState.lastSavedAt = new Date().toISOString();
-    const storageKey = getSaveStatusStorageKey();
-
-    if (storageKey) {
-        localStorage.setItem(storageKey, saveState.lastSavedAt);
+async function hydrateSavedTimestamp() {
+    if (!userEmail) {
+        saveState.lastSavedAt = null;
+        updateSaveStatusUI();
+        return;
     }
-}
 
-function hydrateSavedTimestamp() {
-    const storageKey = getSaveStatusStorageKey();
-    saveState.lastSavedAt = storageKey ? localStorage.getItem(storageKey) : null;
+    try {
+        const { data, error } = await supabaseClient
+            .from('picks')
+            .select('updated_at')
+            .eq('user_email', userEmail)
+            .order('updated_at', { ascending: false })
+            .limit(1);
+
+        if (error) {
+            throw error;
+        }
+
+        saveState.lastSavedAt = data?.[0]?.updated_at || null;
+    } catch (error) {
+        saveState.lastSavedAt = null;
+    }
+
     updateSaveStatusUI();
 }
 
@@ -265,7 +273,7 @@ async function completeLogin(email, existingProfile = null) {
         document.getElementById('realname-input').value = existingProfile.team_realname || '';
     }
 
-    hydrateSavedTimestamp();
+    await hydrateSavedTimestamp();
     renderPool();
     await loadFromSupabase();
     clearDirtyFlags();
@@ -327,7 +335,7 @@ async function saveIdentityOnly() {
 
         saveState.failed = false;
         saveState.identityDirty = false;
-        setLastSavedNow();
+        await hydrateSavedTimestamp();
         updateSaveStatusUI();
         setupDashboard();
         showToast('Identity updated!', 'success');
@@ -383,7 +391,7 @@ async function saveToSupabase() {
         saveState.failed = false;
         saveState.picksDirty = false;
         saveState.identityDirty = false;
-        setLastSavedNow();
+        await hydrateSavedTimestamp();
         updateSaveStatusUI();
         fetchLeaderboard();
         fetchStats();
