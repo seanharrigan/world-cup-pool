@@ -148,7 +148,6 @@ async function setupDashboard() {
     const saveStatusEl = document.getElementById('dashboard-save-status');
     const prizePotEl = document.getElementById('dashboard-prize-pot');
     const playerCountEl = document.getElementById('dashboard-player-count');
-    const lockBadgeEl = document.getElementById('dashboard-lock-badge');
     const ctaButton = document.getElementById('dashboard-primary-cta');
     const leaderboardEl = document.getElementById('dashboard-leaderboard');
     const resultsEl = document.getElementById('dashboard-latest-results');
@@ -157,16 +156,6 @@ async function setupDashboard() {
     if (leaderboardEl) leaderboardEl.innerHTML = '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Loading leaderboard...</div>';
     if (resultsEl) resultsEl.innerHTML = '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Loading results...</div>';
     if (mostPickedEl) mostPickedEl.innerHTML = '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Loading picks...</div>';
-
-    if (lockBadgeEl) {
-        if (isLocked) {
-            lockBadgeEl.className = 'rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-red-700';
-            lockBadgeEl.textContent = 'Selection Locked';
-        } else {
-            lockBadgeEl.className = 'rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-blue-700';
-            lockBadgeEl.textContent = `Lock ${LOCK_DATE.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
-        }
-    }
 
     if (saveStatusEl) {
         const sourceSaveStatus = document.getElementById('save-status');
