@@ -360,6 +360,8 @@ async function renderGroups() {
     let matches = [];
 
     try {
+        await fetchAdvancedTeams();
+
         const { data, error } = await supabaseClient
             .from('matches')
             .select('*')
@@ -376,21 +378,15 @@ async function renderGroups() {
 
     container.innerHTML = '';
 
+    const teamPointsMap = window.WorldCupScoring.buildTeamPointsMap(matches, teams, advancedTeams);
+
     ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'].forEach((group) => {
         const groupTeams = teams
             .filter((team) => team.qualified !== false && team.group === group)
             .map((team) => {
-                const totalPoints = matches.reduce((sum, match) => {
-                    if (match.team_home !== team.name && match.team_away !== team.name) {
-                        return sum;
-                    }
-
-                    return sum + getMatchPointsForTeam(match, team.name);
-                }, 0);
-
                 return {
                     ...team,
-                    totalPoints
+                    totalPoints: teamPointsMap[team.name] || 0
                 };
             })
             .sort((a, b) => {

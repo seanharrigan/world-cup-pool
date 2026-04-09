@@ -10,6 +10,7 @@ let appSettings = {
     autoLockAtKickoff: true,
     hideTeamSelection: false
 };
+let advancedTeams = new Set();
 let isLocked = false;
 let chatChannel = null;
 let notificationChannel = null;

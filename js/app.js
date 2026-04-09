@@ -125,7 +125,7 @@ function updateSaveStatusUI() {
     }
 
     if (saveState.lastSavedAt) {
-        setContent(`Saved at ${formatSavedTime(saveState.lastSavedAt)}`, { text: 'text-green-300', border: 'border-green-500/30', background: 'bg-green-500/10' });
+        setContent(`Saved at ${formatSavedTime(saveState.lastSavedAt)}`, { text: 'text-green-700', border: 'border-green-500/30', background: 'bg-green-500/10' });
         return;
     }
 
@@ -266,6 +266,28 @@ async function fetchAppSettings() {
 
     refreshLockState();
     return appSettings;
+}
+
+async function fetchAdvancedTeams() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('team_advancement')
+            .select('team_name, advanced_to_knockouts');
+
+        if (error) {
+            throw error;
+        }
+
+        advancedTeams = new Set(
+            (data || [])
+                .filter((row) => row.advanced_to_knockouts)
+                .map((row) => row.team_name)
+        );
+    } catch (error) {
+        advancedTeams = new Set();
+    }
+
+    return advancedTeams;
 }
 
 async function saveAppSettings(nextSettings = {}) {

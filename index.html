@@ -146,13 +146,11 @@
                         </div>
                     </div>
                     <div class="grid grid-cols-1 lg:grid-cols-[1.3fr_0.7fr] gap-6">
-                        <div class="rounded-3xl border border-gray-200 bg-gray-900 px-6 py-5 text-white">
-                            <div id="dashboard-squad-strip" class="mb-5 flex flex-wrap justify-center gap-4 border-b border-gray-800 pb-5"></div>
-                            <div class="flex items-center justify-between gap-4">
-                                <div>
-                                    <div id="dashboard-save-status" class="text-xl font-black uppercase italic">No changes yet</div>
-                                </div>
-                                <button onclick="showPage('picks')" class="rounded-2xl bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-900 transition-colors hover:bg-blue-100">Go To Picks</button>
+                        <div class="flex min-h-[270px] flex-col justify-between rounded-3xl border border-slate-300 bg-slate-200 px-6 py-8 text-gray-900">
+                            <div id="dashboard-squad-strip" class="flex flex-wrap justify-center gap-4 border-b border-slate-300 pb-6"></div>
+                            <div class="flex items-center justify-center gap-3 py-6">
+                                <div id="dashboard-save-status" class="text-xl font-black uppercase italic leading-none text-green-800">No changes yet</div>
+                                <button onclick="showPage('picks')" class="rounded-2xl bg-slate-700 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-white transition-colors hover:bg-slate-600">Go To Picks</button>
                             </div>
                         </div>
                         <div class="rounded-3xl border border-green-100 bg-green-50 px-6 py-5 text-center text-gray-900">
@@ -404,6 +402,11 @@
                                             </button>
                                         </th>
                                         <th class="px-4 py-4 text-center">
+                                            <button onclick="setTeamResultsSort('public-team-results-body', 'Bonus')" class="inline-flex items-center gap-2 uppercase">
+                                                <span>Bonus</span><span id="sort-arrow-public-Bonus" class="text-gray-500">↑</span>
+                                            </button>
+                                        </th>
+                                        <th class="px-4 py-4 text-center">
                                             <button onclick="setTeamResultsSort('public-team-results-body', 'R32')" class="inline-flex items-center gap-2 uppercase">
                                                 <span>R32</span><span id="sort-arrow-public-R32" class="text-gray-500">↑</span>
                                             </button>
@@ -451,7 +454,7 @@
                     <div class="bg-gray-50 border-2 border-gray-100 p-6 rounded-3xl shadow-sm space-y-2 text-center text-gray-900"><div class="flex justify-between font-black uppercase text-xs text-gray-900"><span>1st</span><span id="prize-1st" class="text-green-600 font-bold">$0</span></div><div class="flex justify-between font-black uppercase text-xs text-gray-900 text-left text-gray-900"><span>2nd</span><span id="prize-2nd" class="font-bold text-gray-900 text-center">$0</span></div><div class="flex justify-between font-black uppercase text-xs text-gray-900 text-left text-gray-900"><span>3rd</span><span id="prize-3rd" class="font-bold text-gray-900 text-center">$0</span></div></div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-gray-900"><input type="text" id="leaderboard-search" placeholder="Search by name..." oninput="fetchLeaderboard()" class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-500 font-bold text-sm text-gray-900 text-left"><select id="leaderboard-country-filter" onchange="fetchLeaderboard()" class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-500 font-bold text-sm bg-white text-left"><option value="">All Countries</option></select></div>
-                <div class="bg-gray-50 rounded-3xl border border-gray-200 overflow-hidden text-left text-gray-900"><div class="overflow-x-auto text-left text-gray-900"><table class="w-full text-left text-gray-900 text-left"><thead class="bg-gray-900 text-white uppercase text-[10px] tracking-[0.2em] font-black text-left"><tr><th class="px-6 py-4 text-center">Rank</th><th class="px-6 py-4 text-center text-white">Points</th><th class="px-6 py-4 text-left">Player & Squad</th></tr></thead><tbody id="leaderboard-body" class="font-bold text-left text-gray-900 text-left text-gray-900 text-left"></tbody></table></div></div>
+                <div class="bg-gray-50 rounded-3xl border border-gray-200 overflow-hidden text-left text-gray-900"><div class="overflow-x-auto text-left text-gray-900"><table class="min-w-[1200px] w-full text-left text-gray-900 text-left"><thead class="bg-gray-900 text-white uppercase text-[10px] tracking-[0.2em] font-black text-left"><tr><th class="px-6 py-4 text-center">Rank</th><th class="px-6 py-4 text-center text-white">Points</th><th class="px-6 py-4 text-left">Player & Squad</th><th class="px-4 py-4 text-center">G1</th><th class="px-4 py-4 text-center">G2</th><th class="px-4 py-4 text-center">G3</th><th class="px-4 py-4 text-center">Bonus</th><th class="px-4 py-4 text-center">R32</th><th class="px-4 py-4 text-center">R16</th><th class="px-4 py-4 text-center">QF</th><th class="px-4 py-4 text-center">SM</th><th class="px-4 py-4 text-center">F</th></tr></thead><tbody id="leaderboard-body" class="font-bold text-left text-gray-900 text-left text-gray-900 text-left"></tbody></table></div></div>
             </div>
         </div>
 
@@ -464,6 +467,7 @@
                     <button onclick="showAdminTab('manage')" id="admin-tab-manage" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Players & Chat</button>
                     <button onclick="showAdminTab('paid')" id="admin-tab-paid" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Paid</button>
                     <button onclick="showAdminTab('notifications')" id="admin-tab-notifications" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Notifications</button>
+                    <button onclick="showAdminTab('advancement')" id="admin-tab-advancement" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Advancement</button>
                     <button onclick="showAdminTab('teams')" id="admin-tab-teams" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Team Results</button>
                     <button onclick="showAdminTab('stats')" id="admin-tab-stats" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Statistics</button>
                     <button onclick="showAdminTab('toggle')" id="admin-tab-toggle" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Toggle</button>
@@ -585,6 +589,16 @@
                     </div>
                 </div>
 
+                <div id="admin-panel-advancement" class="admin-panel hidden space-y-8">
+                    <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-6">
+                        <div>
+                            <h2 class="text-xl font-black uppercase tracking-tight text-white">Group Advancement Bonus</h2>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Flip on the teams that advanced so the +1 knockout bonus appears immediately</p>
+                        </div>
+                        <div id="admin-advancement-groups" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+                    </div>
+                </div>
+
                 <div id="admin-panel-teams" class="admin-panel hidden space-y-8">
                     <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-6">
                         <div>
@@ -601,6 +615,7 @@
                                         <th class="px-4 py-4 text-center">G1</th>
                                         <th class="px-4 py-4 text-center">G2</th>
                                         <th class="px-4 py-4 text-center">G3</th>
+                                        <th class="px-4 py-4 text-center">Bonus</th>
                                             <th class="px-4 py-4 text-center">R32</th>
                                             <th class="px-4 py-4 text-center">R16</th>
                                             <th class="px-4 py-4 text-center">QF</th>
@@ -809,8 +824,9 @@
     </div>
 
     <script src="js/data.js?v=20260409b"></script>
-    <script src="js/ui.js?v=20260409b"></script>
-    <script src="js/features.js?v=20260409b"></script>
-    <script src="js/app.js?v=20260409b"></script>
+    <script src="js/ui.js?v=20260409c"></script>
+    <script src="js/scoring.js?v=20260409c"></script>
+    <script src="js/features.js?v=20260409c"></script>
+    <script src="js/app.js?v=20260409c"></script>
 </body>
 </html>

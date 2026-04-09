@@ -1,3 +1,12 @@
+const {
+    getMatchPointsForTeam,
+    buildTeamStageBreakdownMap,
+    buildTeamPointsMap,
+    buildProfilesMap,
+    getDisplayProfile,
+    buildLeaderboardData
+} = window.WorldCupScoring;
+
 const teamResultsSortState = {
     'public-team-results-body': { key: 'team', direction: 'asc' }
 };
@@ -25,6 +34,7 @@ function setupAdminPage() {
     fetchAdminUsers();
     fetchAdminPaidUsers();
     fetchAdminNotifications();
+    fetchAdminAdvancement();
     fetchAdminTeamResults();
     fetchStats();
     syncAdminToggleControls();
@@ -125,7 +135,7 @@ function downloadCsv(filename, rows) {
 
 async function exportAllTables() {
     const button = document.getElementById('admin-export-all-btn');
-    const tables = ['profiles', 'picks', 'matches', 'messages', 'notifications', 'app_settings'];
+    const tables = ['profiles', 'picks', 'matches', 'messages', 'notifications', 'app_settings', 'team_advancement'];
 
     if (button) {
         button.disabled = true;
@@ -330,82 +340,80 @@ async function toggleHideTeamSelection(checked) {
     }
 }
 
-function buildTeamPointsMap(matches = []) {
-    const teamPointsMap = {};
+function buildAdvancementGroupsMarkup() {
+    return ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'].map((group) => {
+        const groupTeams = teams
+            .filter((team) => team.qualified !== false && team.group === group)
+            .sort((a, b) => a.name.localeCompare(b.name));
 
-    teams.forEach((team) => {
-        teamPointsMap[team.name] = 0;
-    });
-
-    matches.forEach((match) => {
-        const homePoints = getMatchPointsForTeam(match, match.team_home);
-        const awayPoints = getMatchPointsForTeam(match, match.team_away);
-
-        teamPointsMap[match.team_home] = (teamPointsMap[match.team_home] || 0) + homePoints;
-        teamPointsMap[match.team_away] = (teamPointsMap[match.team_away] || 0) + awayPoints;
-    });
-
-    return teamPointsMap;
+        return `
+            <div class="rounded-2xl border border-gray-700 bg-gray-900/70 p-5">
+                <div class="mb-4 text-sm font-black uppercase text-white">Group ${group}</div>
+                <div class="space-y-3">
+                    ${groupTeams.map((team) => `
+                        <div class="flex items-center justify-between gap-4 rounded-2xl border border-gray-800 bg-gray-950/70 px-4 py-3">
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl">${team.flag}</span>
+                                <div>
+                                    <div class="text-sm font-black uppercase text-white">${team.name}</div>
+                                    <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">+1 Advance Bonus</div>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex cursor-pointer items-center">
+                                <input data-advancement-team="${team.name}" type="checkbox" class="peer sr-only" onchange="toggleTeamAdvancement('${team.name.replace(/'/g, "\\'")}', this.checked)">
+                                <span class="h-8 w-14 rounded-full bg-gray-700 transition-colors peer-checked:bg-emerald-600"></span>
+                                <span class="absolute left-1 h-6 w-6 rounded-full bg-white transition-transform peer-checked:translate-x-6"></span>
+                            </label>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
-function buildProfilesMap(profileRows = []) {
-    return new Map((profileRows || []).map((profile) => [profile.email, profile]));
+async function fetchAdminAdvancement() {
+    const container = document.getElementById('admin-advancement-groups');
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = '<div class="col-span-full rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-8 text-center text-xs font-black uppercase tracking-[0.25em] text-gray-400">Loading advancement controls...</div>';
+
+    await fetchAdvancedTeams();
+
+    container.innerHTML = buildAdvancementGroupsMarkup();
+
+    container.querySelectorAll('[data-advancement-team]').forEach((input) => {
+        input.checked = advancedTeams.has(input.dataset.advancementTeam);
+    });
 }
 
-function getDisplayProfile(email, profilesMap, pickFallback = {}) {
-    const profile = profilesMap.get(email);
+async function toggleTeamAdvancement(teamName, checked) {
+    try {
+        const { error } = await supabaseClient
+            .from('team_advancement')
+            .upsert({
+                team_name: teamName,
+                advanced_to_knockouts: checked
+            }, { onConflict: 'team_name' });
 
-    return {
-        email,
-        nickname: profile?.nickname || pickFallback.nickname || 'TBA',
-        realname: profile?.realname || pickFallback.realname || 'Joined',
-        hasPaid: typeof profile?.has_paid === 'boolean' ? profile.has_paid : Boolean(pickFallback.hasPaid),
-        updatedAt: profile?.updated_at || null,
-        avatarUrl: profile?.avatar_url || null
-    };
-}
-
-function buildLeaderboardData(allPicks = [], allMatches = [], profilesMap = new Map()) {
-    const teamPointsMap = buildTeamPointsMap(allMatches);
-    const userMap = new Map();
-
-    allPicks.forEach((pick) => {
-        if (!userMap.has(pick.user_email)) {
-            const displayProfile = getDisplayProfile(pick.user_email, profilesMap, {
-                nickname: pick.team_nickname,
-                realname: pick.team_realname
-            });
-
-            userMap.set(pick.user_email, {
-                email: pick.user_email,
-                nickname: displayProfile.nickname,
-                realname: displayProfile.realname,
-                totalPoints: 0,
-                squad: []
-            });
+        if (error) {
+            throw error;
         }
 
-        const user = userMap.get(pick.user_email);
-        user.totalPoints += teamPointsMap[pick.team_name] || 0;
-
-        const teamData = teams.find((team) => team.name === pick.team_name);
-        if (teamData) {
-            user.squad.push({
-                name: teamData.name,
-                flag: teamData.flag,
-                cost: teamData.cost,
-                tier: teamData.tier
-            });
-        }
-    });
-
-    return Array.from(userMap.values()).sort((a, b) => {
-        if (b.totalPoints !== a.totalPoints) {
-            return b.totalPoints - a.totalPoints;
-        }
-
-        return a.nickname.localeCompare(b.nickname);
-    });
+        await fetchAdvancedTeams();
+        fetchAdminAdvancement();
+        renderGroups();
+        fetchLeaderboard();
+        fetchAdminTeamResults();
+        fetchPublicTeamResults();
+        setupDashboard();
+        showToast(checked ? `${teamName} marked advanced.` : `${teamName} advancement removed.`, 'success');
+    } catch (error) {
+        showToast(error.message || 'Unable to update advancement.');
+        fetchAdminAdvancement();
+    }
 }
 
 async function setupDashboard() {
@@ -468,8 +476,9 @@ async function setupDashboard() {
         const picks = allPicks || [];
         const matches = allMatches || [];
         const profilesMap = buildProfilesMap(allProfiles);
-        const teamPointsMap = buildTeamPointsMap(matches);
-        const leaderboardData = buildLeaderboardData(picks, matches, profilesMap);
+        await fetchAdvancedTeams();
+        const teamPointsMap = buildTeamPointsMap(matches, teams, advancedTeams);
+        const leaderboardData = buildLeaderboardData(picks, matches, profilesMap, teams, advancedTeams);
         const currentUserRows = picks.filter((pick) => pick.user_email === userEmail);
         const currentProfile = getDisplayProfile(userEmail, profilesMap);
         const myEntry = leaderboardData.find((entry) => entry.email === userEmail);
@@ -495,7 +504,7 @@ async function setupDashboard() {
                     .map((team) => `
                         <div class="min-w-[58px] text-center">
                             <div class="text-3xl">${team.flag}</div>
-                            <div class="mt-1 text-[9px] font-black uppercase tracking-[0.15em] text-white">T${team.tier} · $${team.cost}</div>
+                            <div class="mt-1 text-[9px] font-black uppercase tracking-[0.15em] text-gray-900">T${team.tier} · $${team.cost}</div>
                         </div>
                     `)
                     .join('')
@@ -618,7 +627,7 @@ async function setupDashboard() {
 
 function updatePublicTeamSortIndicators() {
     const sortState = teamResultsSortState['public-team-results-body'];
-    const keys = ['team', 'total', 'G1', 'G2', 'G3', 'R32', 'R16', 'QF', 'SM', 'F'];
+    const keys = ['team', 'total', 'G1', 'G2', 'G3', 'Bonus', 'R32', 'R16', 'QF', 'SM', 'F'];
 
     keys.forEach((key) => {
         const arrow = document.getElementById(`sort-arrow-public-${key}`);
@@ -784,18 +793,6 @@ async function toggleUserPaidStatus(email, currentValue) {
     fetchAdminPaidUsers();
 }
 
-function getMatchPointsForTeam(match, teamName) {
-    const multipliers = { Group: 1, R32: 2, R16: 3, Quarters: 5, Semis: 8, Finals: 12 };
-    const multiplier = multipliers[match.stage] || 1;
-
-    if (match.score_home === match.score_away) {
-        return match.team_home === teamName || match.team_away === teamName ? 1 * multiplier : 0;
-    }
-
-    const winningTeam = match.score_home > match.score_away ? match.team_home : match.team_away;
-    return winningTeam === teamName ? 3 * multiplier : 0;
-}
-
 function formatTeamResultsCell(match, teamName, theme = 'dark') {
     if (!match) {
         return '<div class="text-gray-600 text-center text-xs font-black uppercase">-</div>';
@@ -823,9 +820,11 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
         return;
     }
 
-    body.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-500 uppercase text-xs">Loading team results...</td></tr>';
+    body.innerHTML = '<tr><td colspan="11" class="px-4 py-8 text-center text-gray-500 uppercase text-xs">Loading team results...</td></tr>';
 
     try {
+        await fetchAdvancedTeams();
+
         const { data: matches, error } = await supabaseClient
             .from('matches')
             .select('*')
@@ -835,13 +834,7 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
             throw error;
         }
 
-        const knockoutStageMap = {
-            R32: 'R32',
-            R16: 'R16',
-            Quarters: 'QF',
-            Semis: 'SM',
-            Finals: 'F'
-        };
+        const teamBreakdownMap = buildTeamStageBreakdownMap(matches || [], teams, advancedTeams);
 
         const rows = [...teams]
             .filter((team) => team.qualified !== false)
@@ -889,23 +882,33 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
                     }
                 });
 
-                const totalPoints = teamMatches.reduce(
-                    (sum, match) => sum + getMatchPointsForTeam(match, team.name),
-                    0
-                );
+                const stageBreakdown = teamBreakdownMap[team.name] || {
+                    G1: 0,
+                    G2: 0,
+                    G3: 0,
+                    Bonus: 0,
+                    R32: 0,
+                    R16: 0,
+                    QF: 0,
+                    SM: 0,
+                    F: 0,
+                    total: 0
+                };
+                const totalPoints = stageBreakdown.total;
 
                 return {
                     team,
                     totalPoints,
                     slotPoints: {
-                        G1: slots.G1 ? getMatchPointsForTeam(slots.G1, team.name) : 0,
-                        G2: slots.G2 ? getMatchPointsForTeam(slots.G2, team.name) : 0,
-                        G3: slots.G3 ? getMatchPointsForTeam(slots.G3, team.name) : 0,
-                        R32: slots.R32 ? getMatchPointsForTeam(slots.R32, team.name) : 0,
-                        R16: slots.R16 ? getMatchPointsForTeam(slots.R16, team.name) : 0,
-                        QF: slots.QF ? getMatchPointsForTeam(slots.QF, team.name) : 0,
-                        SM: slots.SM ? getMatchPointsForTeam(slots.SM, team.name) : 0,
-                        F: slots.F ? getMatchPointsForTeam(slots.F, team.name) : 0
+                        G1: stageBreakdown.G1,
+                        G2: stageBreakdown.G2,
+                        G3: stageBreakdown.G3,
+                        Bonus: stageBreakdown.Bonus,
+                        R32: stageBreakdown.R32,
+                        R16: stageBreakdown.R16,
+                        QF: stageBreakdown.QF,
+                        SM: stageBreakdown.SM,
+                        F: stageBreakdown.F
                     },
                     html: `
                     <tr class="border-t border-gray-800 align-top">
@@ -927,6 +930,11 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
                         <td class="px-4 py-4">${formatTeamResultsCell(slots.G1, team.name, theme)}</td>
                         <td class="px-4 py-4">${formatTeamResultsCell(slots.G2, team.name, theme)}</td>
                         <td class="px-4 py-4">${formatTeamResultsCell(slots.G3, team.name, theme)}</td>
+                        <td class="px-4 py-4">
+                            <div class="min-w-[72px] py-1 text-center">
+                                <div class="text-2xl font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'} leading-none">${stageBreakdown.Bonus || '-'}</div>
+                            </div>
+                        </td>
                         <td class="px-4 py-4">${formatTeamResultsCell(slots.R32, team.name, theme)}</td>
                         <td class="px-4 py-4">${formatTeamResultsCell(slots.R16, team.name, theme)}</td>
                         <td class="px-4 py-4">${formatTeamResultsCell(slots.QF, team.name, theme)}</td>
@@ -958,13 +966,13 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
             });
         }
 
-        body.innerHTML = rows.map((row) => row.html).join('') || '<tr><td colspan="10" class="px-4 py-8 text-center text-gray-500 uppercase text-xs">No teams found.</td></tr>';
+        body.innerHTML = rows.map((row) => row.html).join('') || '<tr><td colspan="11" class="px-4 py-8 text-center text-gray-500 uppercase text-xs">No teams found.</td></tr>';
 
         if (targetId === 'public-team-results-body') {
             updatePublicTeamSortIndicators();
         }
     } catch (error) {
-        body.innerHTML = '<tr><td colspan="10" class="px-4 py-8 text-center text-red-400 uppercase text-xs">Could not load team results.</td></tr>';
+        body.innerHTML = '<tr><td colspan="11" class="px-4 py-8 text-center text-red-400 uppercase text-xs">Could not load team results.</td></tr>';
     }
 }
 
@@ -1222,7 +1230,7 @@ async function submitManualResult() {
 
 async function fetchLeaderboard() {
     const body = document.getElementById('leaderboard-body');
-    body.innerHTML = '<tr><td colspan="3" class="p-8 text-center text-gray-500">Calculating Live Standings...</td></tr>';
+    body.innerHTML = '<tr><td colspan="12" class="p-8 text-center text-gray-500">Calculating Live Standings...</td></tr>';
 
     try {
         const [
@@ -1247,8 +1255,9 @@ async function fetchLeaderboard() {
             throw profilesError;
         }
 
+        await fetchAdvancedTeams();
         const profilesMap = buildProfilesMap(allProfiles);
-        let leaderboardData = buildLeaderboardData(allPicks || [], allMatches || [], profilesMap);
+        let leaderboardData = buildLeaderboardData(allPicks || [], allMatches || [], profilesMap, teams, advancedTeams);
         const playerCount = leaderboardData.length;
         const search = document.getElementById('leaderboard-search').value.toLowerCase();
         const countryFilter = document.getElementById('leaderboard-country-filter');
@@ -1292,10 +1301,19 @@ async function fetchLeaderboard() {
                             : `<div class="flex gap-1">${user.squad.sort((a, b) => b.cost - a.cost).map((team) => `<span class="text-lg">${team.flag}</span>`).join('')}</div>`}
                     </div>
                 </td>
+                <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.G1 || '-'}</td>
+                <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.G2 || '-'}</td>
+                <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.G3 || '-'}</td>
+                <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.Bonus || '-'}</td>
+                <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.R32 || '-'}</td>
+                <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.R16 || '-'}</td>
+                <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.QF || '-'}</td>
+                <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.SM || '-'}</td>
+                <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.F || '-'}</td>
             </tr>
-        `).join('') || '<tr><td colspan="3" class="p-8 text-center text-gray-900">No players found</td></tr>';
+        `).join('') || '<tr><td colspan="12" class="p-8 text-center text-gray-900">No players found</td></tr>';
     } catch (error) {
-        body.innerHTML = '<tr><td colspan="3" class="p-8 text-center text-red-500 text-gray-900">Error calculating scores</td></tr>';
+        body.innerHTML = '<tr><td colspan="12" class="p-8 text-center text-red-500 text-gray-900">Error calculating scores</td></tr>';
     }
 }
 
@@ -1456,6 +1474,7 @@ Object.assign(window, {
     fetchAdminUsers,
     fetchAdminPaidUsers,
     fetchAdminNotifications,
+    fetchAdminAdvancement,
     fetchAdminTeamResults,
     fetchPublicTeamResults,
     clearChatMessages,
@@ -1475,6 +1494,7 @@ Object.assign(window, {
     exportAllTables,
     sendAdminNotification,
     deleteAdminNotification,
+    toggleTeamAdvancement,
     togglePicksLock,
     toggleAutoLock
     ,
