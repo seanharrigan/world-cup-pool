@@ -125,7 +125,7 @@ function updateSaveStatusUI() {
     }
 
     if (saveState.lastSavedAt) {
-        setContent(`Saved at ${formatSavedTime(saveState.lastSavedAt)}`, { text: 'text-green-300', border: 'border-green-500/30', background: 'bg-green-500/10' });
+        setContent(`Picks saved at ${formatSavedTime(saveState.lastSavedAt)}`, { text: 'text-green-300', border: 'border-green-500/30', background: 'bg-green-500/10' });
         return;
     }
 
@@ -140,30 +140,18 @@ async function hydrateSavedTimestamp() {
     }
 
     try {
-        const [
-            { data: profile, error: profileError },
-            { count, error: picksError }
-        ] = await Promise.all([
-            supabaseClient
-                .from('profiles')
-                .select('updated_at')
-                .eq('email', userEmail)
-                .maybeSingle(),
-            supabaseClient
-                .from('picks')
-                .select('team_name', { count: 'exact', head: true })
-                .eq('user_email', userEmail)
-        ]);
+        const { data, count, error } = await supabaseClient
+            .from('picks')
+            .select('updated_at', { count: 'exact' })
+            .eq('user_email', userEmail)
+            .order('updated_at', { ascending: false })
+            .limit(1);
 
-        if (profileError) {
-            throw profileError;
+        if (error) {
+            throw error;
         }
 
-        if (picksError) {
-            throw picksError;
-        }
-
-        saveState.lastSavedAt = count > 0 ? (profile?.updated_at || null) : null;
+        saveState.lastSavedAt = count > 0 ? (data?.[0]?.updated_at || null) : null;
     } catch (error) {
         saveState.lastSavedAt = null;
     }
@@ -720,12 +708,11 @@ async function saveIdentityOnly() {
     saveProfileIdentityLocal(userEmail, { nickname, realname, favoriteTeam, homeCountry });
 
     try {
-        const savedAt = await upsertProfile(userEmail, { nickname, realname, favoriteTeam, homeCountry });
+        await upsertProfile(userEmail, { nickname, realname, favoriteTeam, homeCountry });
 
         saveState.failed = false;
         saveState.identityDirty = false;
-        saveState.lastSavedAt = savedAt;
-        updateSaveStatusUI();
+        await hydrateSavedTimestamp();
         setupDashboard();
         fetchLeaderboard();
         fetchAdminUsers();
@@ -804,14 +791,13 @@ async function saveToSupabase() {
             }
         }
 
-        const savedAt = await upsertProfile(userEmail, { nickname, realname, favoriteTeam, homeCountry });
+        await upsertProfile(userEmail, { nickname, realname, favoriteTeam, homeCountry });
 
         saveState.failed = false;
         saveState.picksDirty = false;
         saveState.identityDirty = false;
-        saveState.lastSavedAt = savedAt;
-        updateSaveStatusUI();
         await loadFromSupabase();
+        await hydrateSavedTimestamp();
         fetchLeaderboard();
         fetchStats();
         fetchAdminUsers();
