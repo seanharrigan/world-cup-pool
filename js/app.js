@@ -50,6 +50,21 @@ function getLocalProfileIdentity(email) {
     }
 }
 
+function getCurrentProfileIdentity() {
+    const localProfile = getLocalProfileIdentity(userEmail) || {};
+    const favoriteTeamInput = document.getElementById('favorite-team-input');
+    const homeCountryInput = document.getElementById('home-country-input');
+    const nicknameInput = document.getElementById('nickname-input');
+    const realnameInput = document.getElementById('realname-input');
+
+    return {
+        nickname: nicknameInput?.value || localProfile.nickname || '',
+        realname: realnameInput?.value || localProfile.realname || '',
+        favoriteTeam: favoriteTeamInput?.value || localProfile.favoriteTeam || '',
+        homeCountry: homeCountryInput?.value || localProfile.homeCountry || ''
+    };
+}
+
 function getLastSeenNotificationId(email = userEmail) {
     const key = getNotificationSeenKey(email);
     if (!key) {
@@ -105,7 +120,7 @@ function updateSaveStatusUI() {
     };
 
     if (saveState.isSaving) {
-        setContent('Saving changes...', { text: 'text-blue-300', border: 'border-blue-500/30', background: 'bg-blue-600/10' });
+        setContent('Saving changes...', { text: 'theme-accent-text', border: 'theme-status-border', background: 'theme-status-bg' });
         return;
     }
 
@@ -234,10 +249,17 @@ function setupProfile() {
         window.renderProfileFavoriteBanner();
     }
 
+    if (typeof window.applyPicksAccentTheme === 'function') {
+        window.applyPicksAccentTheme(getCurrentProfileIdentity());
+    }
+
     if (favoriteTeamInput && favoriteTeamInput.dataset.profileBannerBound !== 'true') {
         favoriteTeamInput.addEventListener('change', () => {
             if (typeof window.renderProfileFavoriteBanner === 'function') {
                 window.renderProfileFavoriteBanner();
+            }
+            if (typeof window.applyPicksAccentTheme === 'function') {
+                window.applyPicksAccentTheme(getCurrentProfileIdentity());
             }
         });
         favoriteTeamInput.dataset.profileBannerBound = 'true';
@@ -736,6 +758,9 @@ async function saveIdentityOnly() {
         if (typeof window.renderProfileFavoriteBanner === 'function') {
             window.renderProfileFavoriteBanner();
         }
+        if (typeof window.applyPicksAccentTheme === 'function') {
+            window.applyPicksAccentTheme(getCurrentProfileIdentity());
+        }
         setupDashboard();
         fetchLeaderboard();
         fetchAdminUsers();
@@ -882,6 +907,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 Object.assign(window, {
     populateCountryFilter,
     populateProfileSelectOptions,
+    getCurrentProfileIdentity,
     fetchAppSettings,
     saveAppSettings,
     checkAdminStatus,
