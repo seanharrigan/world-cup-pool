@@ -277,7 +277,7 @@ function renderPool() {
         const section = document.createElement('div');
         section.innerHTML = `
             <div class="flex items-center gap-4 mb-4 text-left">
-                <div class="bg-gray-900 text-white px-3 py-1 font-black italic text-xs tracking-widest uppercase text-left">
+                <div class="picks-tier-label px-3 py-1 font-black italic text-xs tracking-widest uppercase text-left">
                     Tier ${tierNum}
                 </div>
                 <div class="h-px bg-gray-200 flex-grow"></div>
@@ -291,7 +291,7 @@ function renderPool() {
                     >
                         <div class="flex justify-between items-start text-left mb-1 text-gray-900">
                             <span class="text-3xl text-left">${team.flag}</span>
-                            <span class="bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-xs text-left">$${team.cost}</span>
+                            <span class="picks-price-pill font-bold px-2 py-0.5 rounded text-xs text-left">$${team.cost}</span>
                         </div>
                         <div class="font-black uppercase text-[10px] tracking-tight truncate text-left text-gray-900">${team.name}</div>
                     </div>
@@ -300,6 +300,10 @@ function renderPool() {
         `;
         container.appendChild(section);
     });
+
+    if (typeof window.applyPicksAccentTheme === 'function') {
+        window.applyPicksAccentTheme(window.getCurrentProfileIdentity?.() || null);
+    }
 }
 
 function updateUI() {

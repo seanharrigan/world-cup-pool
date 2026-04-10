@@ -167,6 +167,78 @@ function getContrastingThemeTextColor(config, backgroundColor = '') {
     return contrastingColor || alternateColor || nonYellowAccent || nonYellowText || nonYellowColors[0] || nonWhiteColors[0] || config.textColor;
 }
 
+function hexToRgb(hex) {
+    const normalized = hex.replace('#', '');
+    return {
+        r: parseInt(normalized.slice(0, 2), 16),
+        g: parseInt(normalized.slice(2, 4), 16),
+        b: parseInt(normalized.slice(4, 6), 16)
+    };
+}
+
+function rgbToHex({ r, g, b }) {
+    return `#${[r, g, b].map((value) => value.toString(16).padStart(2, '0')).join('')}`;
+}
+
+function mixHexWithWhite(hex, ratio) {
+    const { r, g, b } = hexToRgb(hex);
+    return rgbToHex({
+        r: Math.round(r + (255 - r) * ratio),
+        g: Math.round(g + (255 - g) * ratio),
+        b: Math.round(b + (255 - b) * ratio)
+    });
+}
+
+function darkenHex(hex, ratio) {
+    const { r, g, b } = hexToRgb(hex);
+    return rgbToHex({
+        r: Math.round(r * (1 - ratio)),
+        g: Math.round(g * (1 - ratio)),
+        b: Math.round(b * (1 - ratio))
+    });
+}
+
+function getFavoriteTeamAccentTokens(favoriteTeam) {
+    const config = getFavoriteTeamBannerConfig(favoriteTeam);
+    const { nonWhiteColors } = getThemeColorContext(config);
+    const usableColors = nonWhiteColors.filter((color) => getColorFamily(color) !== 'yellow');
+    const nonYellowAccent = config.accentColor && getColorFamily(config.accentColor.toLowerCase()) !== 'yellow'
+        ? config.accentColor.toLowerCase()
+        : '';
+    const primary = nonYellowAccent || usableColors[0] || '#3b82f6';
+
+    return {
+        primary,
+        primaryRgb: hexToRgb(primary),
+        text: darkenHex(primary, 0.12),
+        soft: mixHexWithWhite(primary, 0.90),
+        softStrong: mixHexWithWhite(primary, 0.78),
+        pillBg: mixHexWithWhite(primary, 0.84),
+        pillText: darkenHex(primary, 0.18)
+    };
+}
+
+function applyPicksAccentTheme(currentProfile = null) {
+    const favoriteTeam = currentProfile?.favoriteTeam || '';
+    const tokens = getFavoriteTeamAccentTokens(favoriteTeam);
+    const root = document.documentElement;
+
+    root.style.setProperty('--picks-accent-primary', tokens.primary);
+    root.style.setProperty('--picks-accent-primary-rgb', `${tokens.primaryRgb.r}, ${tokens.primaryRgb.g}, ${tokens.primaryRgb.b}`);
+    root.style.setProperty('--picks-accent-text', tokens.text);
+    root.style.setProperty('--picks-accent-soft', tokens.soft);
+    root.style.setProperty('--picks-accent-soft-strong', tokens.softStrong);
+    root.style.setProperty('--picks-accent-pill-bg', tokens.pillBg);
+    root.style.setProperty('--picks-accent-pill-text', tokens.pillText);
+    root.style.setProperty('--theme-accent-primary', tokens.primary);
+    root.style.setProperty('--theme-accent-primary-rgb', `${tokens.primaryRgb.r}, ${tokens.primaryRgb.g}, ${tokens.primaryRgb.b}`);
+    root.style.setProperty('--theme-accent-text', tokens.text);
+    root.style.setProperty('--theme-accent-soft', tokens.soft);
+    root.style.setProperty('--theme-accent-soft-strong', tokens.softStrong);
+    root.style.setProperty('--theme-accent-button-hover', darkenHex(tokens.primary, 0.10));
+    root.style.setProperty('--theme-accent-chat-meta', mixHexWithWhite(tokens.primary, 0.72));
+}
+
 function applyFavoriteBanner(banner, bannerText, favoriteTeam) {
     if (!banner || !bannerText) {
         return;
@@ -229,6 +301,8 @@ function renderTopNavFavoriteTheme(currentProfile) {
     const topNavIcon = document.getElementById('top-nav-icon');
     const topNavTitle = document.getElementById('top-nav-title');
     const mobileMenu = document.getElementById('mobile-menu');
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenuLinks = document.querySelectorAll('#mobile-menu .mobile-menu-link');
     const desktopNavLinks = document.querySelectorAll('#top-nav .nav-link:not(#nav-admin)');
     const userDisplayNav = document.getElementById('user-display-nav');
 
@@ -249,6 +323,13 @@ function renderTopNavFavoriteTheme(currentProfile) {
         if (mobileMenu) {
             mobileMenu.style.background = '';
         }
+        if (mobileMenuButton) {
+            mobileMenuButton.style.color = '';
+        }
+        mobileMenuLinks.forEach((link) => {
+            link.style.color = '';
+            link.style.borderBottomColor = '';
+        });
         topNavFlag.classList.add('hidden');
         topNavFlag.textContent = '';
         topNavIcon.classList.remove('hidden');
@@ -268,6 +349,13 @@ function renderTopNavFavoriteTheme(currentProfile) {
     if (mobileMenu) {
         mobileMenu.style.background = `linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)), ${navBackgroundColor}`;
     }
+    if (mobileMenuButton) {
+        mobileMenuButton.style.setProperty('color', menuTextColor, 'important');
+    }
+    mobileMenuLinks.forEach((link) => {
+        link.style.setProperty('color', menuTextColor, 'important');
+        link.style.borderBottomColor = 'rgba(255, 255, 255, 0.95)';
+    });
     topNavFlag.classList.remove('hidden');
     topNavFlag.textContent = team.flag;
     topNavIcon.classList.add('hidden');
@@ -356,7 +444,7 @@ function showResultsTab(tabId) {
 
     panels.forEach((panel) => panel.classList.add('hidden'));
     tabs.forEach((tab) => {
-        tab.classList.remove('active', 'border-blue-500/30', 'bg-blue-600/10', 'text-blue-700');
+        tab.classList.remove('active', 'theme-tab-active');
         tab.classList.add('border-gray-300', 'bg-white', 'text-gray-500');
     });
 
@@ -368,7 +456,7 @@ function showResultsTab(tabId) {
     }
 
     if (activeTab) {
-        activeTab.classList.add('active', 'border-blue-500/30', 'bg-blue-600/10', 'text-blue-700');
+        activeTab.classList.add('active', 'theme-tab-active');
         activeTab.classList.remove('border-gray-300', 'bg-white', 'text-gray-500');
     }
 }
@@ -816,7 +904,7 @@ async function setupDashboard() {
             leaderboardEl.innerHTML = leaders.map((entry, index) => `
                 <div class="flex items-center justify-between gap-4 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
                     <div class="min-w-0">
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">#${index + 1}</div>
+                        <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.2em]">#${index + 1}</div>
                         <div class="truncate text-lg font-black uppercase italic text-gray-900">${entry.nickname}</div>
                         <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${entry.realname}</div>
                     </div>
@@ -831,7 +919,7 @@ async function setupDashboard() {
         if (resultsEl) {
             resultsEl.innerHTML = matches.slice(0, 3).map((match) => `
                 <div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
-                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">${match.match_date_manual || 'TBD'} | ${match.stage}</div>
+                    <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.2em]">${match.match_date_manual || 'TBD'} | ${match.stage}</div>
                     <div class="mt-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 text-sm font-black text-gray-900">
                         <div class="min-w-0 text-left">
                             <span class="truncate">${teams.find((team) => team.name === match.team_home)?.flag || ''} ${match.team_home}</span>
@@ -881,7 +969,7 @@ async function setupDashboard() {
                             <span class="text-2xl">${team?.flag || ''}</span>
                             <div class="truncate text-sm font-black uppercase text-gray-900">${name}</div>
                         </div>
-                        <div class="rounded-full bg-blue-600 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-white">${count}</div>
+                        <div class="theme-solid-badge rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]">${count}</div>
                     </div>
                 `;
             }).join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No picks saved yet</div>';
@@ -909,12 +997,12 @@ function updatePublicTeamSortIndicators() {
         if (sortState.key === key) {
             arrow.textContent = sortState.direction === 'asc' ? '↑' : '↓';
             arrow.classList.remove('text-gray-500');
-            arrow.classList.add('text-blue-300');
+            arrow.classList.add('theme-accent-text');
             return;
         }
 
         arrow.textContent = '↑';
-        arrow.classList.remove('text-blue-300');
+        arrow.classList.remove('theme-accent-text');
         arrow.classList.add('text-gray-500');
     });
 }
@@ -1386,7 +1474,7 @@ async function fetchAdminHistory() {
     container.innerHTML = data?.map((match) => `
         <div class="bg-gray-800 p-4 rounded-2xl border border-gray-700 flex justify-between items-center group">
             <div class="text-left text-white">
-                <div class="text-[9px] font-black uppercase text-blue-500 text-left">${match.match_date_manual} | ${match.stage}</div>
+                <div class="theme-accent-text text-[9px] font-black uppercase text-left">${match.match_date_manual} | ${match.stage}</div>
                 <div class="font-bold flex items-center gap-3 text-left">
                     <span>${match.team_home}</span>
                     <span class="bg-gray-950 px-2 py-1 rounded text-green-400 font-mono text-center">${match.score_home} - ${match.score_away}</span>
@@ -1414,7 +1502,7 @@ async function fetchPublicResults() {
     container.innerHTML = data?.map((match) => `
         <div class="bg-white p-2 md:p-6 rounded-3xl border-2 border-gray-100 flex flex-col md:flex-row justify-between items-center gap-2 md:gap-4 text-left">
             <div class="text-left flex-grow w-full md:w-auto">
-                <div class="text-[8px] md:text-[10px] text-blue-600 font-black uppercase mb-1">${match.match_date_manual} | ${match.stage}</div>
+                <div class="theme-accent-text text-[8px] md:text-[10px] font-black uppercase mb-1">${match.match_date_manual} | ${match.stage}</div>
                 <div class="flex items-center justify-between md:justify-start gap-2 md:gap-4 text-sm md:text-xl font-black">
                     <span class="flex-1 md:flex-none text-left">${teams.find((team) => team.name === match.team_home)?.flag} ${match.team_home}</span>
                     <span class="bg-gray-900 text-white px-2 md:px-3 py-0.5 md:py-1 rounded-lg md:rounded-xl font-mono text-center min-w-[50px] md:min-w-[70px]">${match.score_home} - ${match.score_away}</span>
@@ -1560,9 +1648,9 @@ async function fetchLeaderboard() {
         document.getElementById('prize-3rd').innerText = `$${Math.floor(totalPot * 0.10).toLocaleString()}`;
 
         body.innerHTML = leaderboardData.map((user, index) => `
-            <tr class="border-b border-gray-100 hover:bg-blue-50 transition-colors text-left text-gray-900">
-                <td class="px-6 py-4 text-center text-blue-600 italic">#${index + 1}</td>
-                <td class="px-6 py-4 text-center font-mono text-2xl font-black text-blue-600">${user.totalPoints}</td>
+            <tr class="theme-hover-row border-b border-gray-100 transition-colors text-left text-gray-900">
+                <td class="theme-accent-text px-6 py-4 text-center italic">#${index + 1}</td>
+                <td class="theme-accent-text px-6 py-4 text-center font-mono text-2xl font-black">${user.totalPoints}</td>
                 <td class="px-6 py-4 text-left">
                     <div class="text-sm font-black uppercase text-left text-gray-900">${user.nickname}</div>
                     <div class="text-[9px] text-gray-400 uppercase text-left">${user.realname}</div>
@@ -1618,7 +1706,7 @@ async function fetchStats() {
                         <span>${team.flag}</span>
                         <span class="text-sm uppercase tracking-tighter">${name}</span>
                     </div>
-                    <div class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-black">${count} PICKS</div>
+                    <div class="picks-price-pill px-3 py-1 rounded-full text-xs font-black">${count} PICKS</div>
                 </div>
             `;
         }).join('') || 'No picks yet.';
@@ -1685,9 +1773,9 @@ function renderMessage(message) {
 
     const isMe = message.user_email === userEmail;
     const messageElement = document.createElement('div');
-    messageElement.className = `max-w-[80%] p-4 rounded-2xl text-left ${isMe ? 'bg-blue-600 text-white self-end rounded-tr-none' : 'bg-gray-100 self-start rounded-tl-none text-black'}`;
+    messageElement.className = `max-w-[80%] p-4 rounded-2xl text-left ${isMe ? 'theme-chat-own self-end rounded-tr-none' : 'bg-gray-100 self-start rounded-tl-none text-black'}`;
     messageElement.innerHTML = `
-        <div class="text-[9px] font-black uppercase text-left ${isMe ? 'text-blue-100' : 'text-blue-600'}">
+        <div class="text-[9px] font-black uppercase text-left ${isMe ? 'theme-chat-own-meta' : 'theme-accent-text'}">
             ${message.nickname} <span class="opacity-50 text-left">(${message.realname})</span>
         </div>
         <div class="font-bold mt-1 text-sm text-left ${isMe ? 'text-white' : 'text-black'}">${message.content}</div>
@@ -1770,5 +1858,6 @@ Object.assign(window, {
     toggleAutoLock
     ,
     toggleHideTeamSelection,
-    renderProfileFavoriteBanner
+    renderProfileFavoriteBanner,
+    applyPicksAccentTheme
 });
