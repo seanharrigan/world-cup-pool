@@ -1179,6 +1179,14 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
         return;
     }
 
+    const knockoutStageMap = {
+        R32: 'R32',
+        R16: 'R16',
+        Quarters: 'QF',
+        Semis: 'SM',
+        Finals: 'F'
+    };
+
     body.innerHTML = '<tr><td colspan="11" class="px-4 py-8 text-center text-gray-500 uppercase text-xs">Loading team results...</td></tr>';
 
     try {
@@ -1660,9 +1668,7 @@ async function fetchLeaderboard() {
                             : `<div class="flex gap-1">${user.squad.sort((a, b) => b.cost - a.cost).map((team) => `<span class="text-lg">${team.flag}</span>`).join('')}</div>`}
                     </div>
                 </td>
-                <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.G1 || '-'}</td>
-                <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.G2 || '-'}</td>
-                <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.G3 || '-'}</td>
+                <td class="px-4 py-4 text-center font-black text-gray-900">${(user.stagePoints.G1 + user.stagePoints.G2 + user.stagePoints.G3) || '-'}</td>
                 <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.Bonus || '-'}</td>
                 <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.R32 || '-'}</td>
                 <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.R16 || '-'}</td>
@@ -1670,9 +1676,9 @@ async function fetchLeaderboard() {
                 <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.SM || '-'}</td>
                 <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.F || '-'}</td>
             </tr>
-        `).join('') || '<tr><td colspan="12" class="p-8 text-center text-gray-900">No players found</td></tr>';
+        `).join('') || '<tr><td colspan="10" class="p-8 text-center text-gray-900">No players found</td></tr>';
     } catch (error) {
-        body.innerHTML = '<tr><td colspan="12" class="p-8 text-center text-red-500 text-gray-900">Error calculating scores</td></tr>';
+        body.innerHTML = '<tr><td colspan="10" class="p-8 text-center text-red-500 text-gray-900">Error calculating scores</td></tr>';
     }
 }
 
