@@ -12,7 +12,7 @@ const teamResultsSortState = {
 };
 
 const FAVORITE_TEAM_BANNERS = {
-    Spain: { slogan: 'VAMOS ESPANA', gradient: 'linear-gradient(135deg, #9f1239 0%, #dc2626 26%, #facc15 52%, #dc2626 76%, #9f1239 100%)', textColor: '#ffffff', accentColor: '#facc15' },
+    Spain: { slogan: 'VAMOS ESPANA', gradient: 'linear-gradient(135deg, #9f1239 0%, #dc2626 26%, #facc15 52%, #dc2626 76%, #9f1239 100%)', textColor: '#ffffff', accentColor: '#dc2626' },
     England: { slogan: "IT'S COMING HOME", gradient: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 42%, #dc2626 47%, #dc2626 53%, #ffffff 58%, #f8fafc 100%)', textColor: '#0f172a', accentColor: '#dc2626' },
     France: { slogan: 'ALLEZ LES BLEUS', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 44%, #ffffff 49%, #ffffff 51%, #ef4444 56%, #b91c1c 100%)', textColor: '#0f172a', accentColor: '#1d4ed8' },
     Argentina: { slogan: 'VAMOS ARGENTINA', gradient: 'linear-gradient(135deg, #7dd3fc 0%, #bae6fd 45%, #ffffff 49%, #ffffff 51%, #bae6fd 55%, #7dd3fc 100%)', textColor: '#082f49', accentColor: '#0c4a6e' },
@@ -124,8 +124,8 @@ function getColorFamily(color) {
     }
 
     if (hue < 20 || hue >= 340) return 'red';
-    if (hue < 55) return 'orange';
-    if (hue < 75) return 'yellow';
+    if (hue < 42) return 'orange';
+    if (hue < 80) return 'yellow';
     if (hue < 170) return 'green';
     if (hue < 250) return 'blue';
     if (hue < 290) return 'purple';
@@ -137,7 +137,8 @@ function getThemeColorContext(config) {
     const hexColors = getThemeHexColors(config);
     const nonWhiteColors = hexColors.filter((color) => !whiteLikeColors.has(color));
     const colorFamilies = [...new Set(nonWhiteColors.map(getColorFamily).filter((family) => family !== 'white' && family !== 'neutral'))];
-    const backgroundColor = nonWhiteColors[0] || config.accentColor || config.textColor;
+    const yellowBackground = nonWhiteColors.find((color) => getColorFamily(color) === 'yellow');
+    const backgroundColor = yellowBackground || nonWhiteColors[0] || config.accentColor || config.textColor;
     const backgroundFamily = getColorFamily(backgroundColor);
 
     return { nonWhiteColors, colorFamilies, backgroundColor, backgroundFamily };
@@ -153,9 +154,17 @@ function getContrastingThemeTextColor(config, backgroundColor = '') {
         return nonWhiteColors[0];
     }
 
-    const contrastingColor = nonWhiteColors.find((color) => getColorFamily(color) !== backgroundFamily && color !== backgroundColor.toLowerCase());
-    const alternateColor = nonWhiteColors.find((color) => color !== backgroundColor.toLowerCase());
-    return contrastingColor || alternateColor || config.accentColor || nonWhiteColors[0] || config.textColor;
+    const nonYellowColors = nonWhiteColors.filter((color) => getColorFamily(color) !== 'yellow');
+    const contrastingColor = nonYellowColors.find((color) => getColorFamily(color) !== backgroundFamily && color !== backgroundColor.toLowerCase());
+    const alternateColor = nonYellowColors.find((color) => color !== backgroundColor.toLowerCase());
+    const nonYellowAccent = config.accentColor && getColorFamily(config.accentColor.toLowerCase()) !== 'yellow'
+        ? config.accentColor
+        : null;
+    const nonYellowText = config.textColor && getColorFamily(config.textColor.toLowerCase()) !== 'yellow'
+        ? config.textColor
+        : null;
+
+    return contrastingColor || alternateColor || nonYellowAccent || nonYellowText || nonYellowColors[0] || nonWhiteColors[0] || config.textColor;
 }
 
 function applyFavoriteBanner(banner, bannerText, favoriteTeam) {
