@@ -609,6 +609,8 @@ async function completeLogin(email, existingProfile = null) {
         document.getElementById('home-country-input').value = '';
     }
 
+    document.getElementById('favorite-team-input').dataset.savedValue = document.getElementById('favorite-team-input').value || '';
+
     await hydrateSavedTimestamp();
     renderPool();
     await loadFromSupabase();
@@ -726,7 +728,11 @@ async function saveIdentityOnly() {
 
         saveState.failed = false;
         saveState.identityDirty = false;
+        document.getElementById('favorite-team-input').dataset.savedValue = favoriteTeam || '';
         await hydrateSavedTimestamp();
+        if (typeof window.renderProfileFavoriteBanner === 'function') {
+            window.renderProfileFavoriteBanner();
+        }
         setupDashboard();
         fetchLeaderboard();
         fetchAdminUsers();
