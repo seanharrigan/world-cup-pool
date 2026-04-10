@@ -579,7 +579,6 @@ async function completeLogin(email, existingProfile = null) {
         document.getElementById('main-app').classList.remove('opacity-0');
     }, 50);
 
-    document.getElementById('user-display-nav').innerText = userEmail;
     setupProfile();
     populateProfileSelectOptions();
 

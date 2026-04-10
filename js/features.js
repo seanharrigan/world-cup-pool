@@ -13,7 +13,7 @@ const teamResultsSortState = {
 
 const FAVORITE_TEAM_BANNERS = {
     Spain: { slogan: 'VAMOS ESPANA', gradient: 'linear-gradient(135deg, #9f1239 0%, #dc2626 26%, #facc15 52%, #dc2626 76%, #9f1239 100%)', textColor: '#ffffff', accentColor: '#facc15' },
-    England: { slogan: "IT'S COMING HOME", gradient: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 42%, #dc2626 47%, #dc2626 53%, #ffffff 58%, #f8fafc 100%)', textColor: '#0f172a', accentColor: '#dc2626' },
+    England: { slogan: "IT'S COMING HOME", gradient: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 42%, #dc2626 47%, #dc2626 53%, #ffffff 58%, #f8fafc 100%)', textColor: '#0f172a', accentColor: '#dc2626', menuTextColor: '#ffffff' },
     France: { slogan: 'ALLEZ LES BLEUS', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 44%, #ffffff 49%, #ffffff 51%, #ef4444 56%, #b91c1c 100%)', textColor: '#0f172a', accentColor: '#1d4ed8' },
     Argentina: { slogan: 'VAMOS ARGENTINA', gradient: 'linear-gradient(135deg, #7dd3fc 0%, #bae6fd 45%, #ffffff 49%, #ffffff 51%, #bae6fd 55%, #7dd3fc 100%)', textColor: '#082f49', accentColor: '#0c4a6e' },
     Brazil: { slogan: 'RUMO AO HEXA', gradient: 'linear-gradient(135deg, #15803d 0%, #16a34a 34%, #facc15 70%, #eab308 100%)', textColor: '#052e16', accentColor: '#facc15' },
@@ -35,7 +35,7 @@ const FAVORITE_TEAM_BANNERS = {
     Senegal: { slogan: 'ALLEZ LES LIONS', gradient: 'linear-gradient(135deg, #166534 0%, #16a34a 34%, #facc15 62%, #dc2626 100%)', textColor: '#052e16', accentColor: '#facc15' },
     Turkiye: { slogan: 'HAYDI TURKIYE', gradient: 'linear-gradient(135deg, #b91c1c 0%, #dc2626 72%, #7f1d1d 100%)', textColor: '#ffffff', accentColor: '#dc2626' },
     Sweden: { slogan: 'HEJA SVERIGE', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 34%, #facc15 100%)', textColor: '#082f49', accentColor: '#facc15' },
-    Canada: { slogan: 'ALLEZ LES ROUGES', gradient: 'linear-gradient(135deg, #dc2626 0%, #ef4444 28%, #ffffff 52%, #ef4444 76%, #dc2626 100%)', textColor: '#450a0a', accentColor: '#dc2626' },
+    Canada: { slogan: 'ALLEZ LES ROUGES', gradient: 'linear-gradient(135deg, #dc2626 0%, #ef4444 28%, #ffffff 52%, #ef4444 76%, #dc2626 100%)', textColor: '#450a0a', accentColor: '#dc2626', menuTextColor: '#ffffff' },
     Paraguay: { slogan: 'VAMOS PARAGUAY', gradient: 'linear-gradient(135deg, #dc2626 0%, #ef4444 44%, #ffffff 49%, #ffffff 51%, #2563eb 58%, #1d4ed8 100%)', textColor: '#0f172a', accentColor: '#2563eb' },
     Scotland: { slogan: 'ALBA GU BRATH', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 46%, #ffffff 49%, #ffffff 51%, #e0f2fe 56%, #7dd3fc 100%)', textColor: '#082f49', accentColor: '#1d4ed8' },
     Bosnia: { slogan: 'IDEMO BOSNO', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 54%, #facc15 100%)', textColor: '#082f49', accentColor: '#facc15' },
@@ -94,6 +94,29 @@ function getFavoriteTeamBannerConfig(teamName) {
     };
 }
 
+function getThemeHexColors(config) {
+    return [...new Set(
+        (config.gradient.match(/#[0-9a-fA-F]{6}/g) || [])
+            .map((color) => color.toLowerCase())
+    )];
+}
+
+function getMenuThemeTextColor(config) {
+    if (config.menuTextColor) {
+        return config.menuTextColor;
+    }
+
+    const whiteLikeColors = new Set(['#ffffff', '#f8fafc', '#fdf2f8', '#e5e7eb', '#cbd5e1', '#e0f2fe', '#bae6fd']);
+    const hexColors = getThemeHexColors(config);
+    const nonWhiteColors = hexColors.filter((color) => !whiteLikeColors.has(color));
+
+    if (hexColors.length === 2 && nonWhiteColors.length === 1) {
+        return '#ffffff';
+    }
+
+    return config.accentColor || nonWhiteColors[0] || config.textColor;
+}
+
 function renderDashboardFavoriteBanner(currentProfile) {
     const banner = document.getElementById('dashboard-favorite-banner');
     const bannerText = document.getElementById('dashboard-favorite-banner-text');
@@ -136,9 +159,11 @@ function renderTopNavFavoriteTheme(currentProfile) {
     const favoriteTeam = currentProfile?.favoriteTeam || '';
     const config = getFavoriteTeamBannerConfig(favoriteTeam);
     const team = config.team || teams.find((entry) => entry.name === favoriteTeam);
-    const gradientHexColors = (config.gradient.match(/#[0-9a-fA-F]{6}/g) || [])
-        .filter((color) => !['#ffffff', '#f8fafc', '#fdf2f8', '#e5e7eb', '#cbd5e1', '#e0f2fe', '#bae6fd'].includes(color.toLowerCase()));
+    const whiteLikeColors = new Set(['#ffffff', '#f8fafc', '#fdf2f8', '#e5e7eb', '#cbd5e1', '#e0f2fe', '#bae6fd']);
+    const gradientHexColors = getThemeHexColors(config)
+        .filter((color) => !whiteLikeColors.has(color));
     const navBackgroundColor = gradientHexColors[0] || config.accentColor || config.textColor;
+    const menuTextColor = getMenuThemeTextColor(config);
 
     if (!favoriteTeam || !team) {
         topNav.style.background = '';
@@ -162,19 +187,19 @@ function renderTopNavFavoriteTheme(currentProfile) {
 
     topNav.style.background = `linear-gradient(rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.46)), ${navBackgroundColor}`;
     topNav.style.borderBottomColor = 'rgba(15, 23, 42, 0.18)';
-    topNav.style.setProperty('--nav-accent', config.accentColor || config.textColor);
+    topNav.style.setProperty('--nav-accent', menuTextColor);
     if (mobileMenu) {
         mobileMenu.style.background = `linear-gradient(rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.34)), ${navBackgroundColor}`;
     }
     topNavFlag.classList.remove('hidden');
     topNavFlag.textContent = team.flag;
     topNavIcon.classList.add('hidden');
-    topNavTitle.style.color = config.accentColor || config.textColor;
+    topNavTitle.style.setProperty('color', menuTextColor, 'important');
     desktopNavLinks.forEach((link) => {
-        link.style.color = config.accentColor || config.textColor;
+        link.style.setProperty('color', menuTextColor, 'important');
     });
     if (userDisplayNav) {
-        userDisplayNav.style.color = config.accentColor || config.textColor;
+        userDisplayNav.style.setProperty('color', menuTextColor, 'important');
     }
 }
 
