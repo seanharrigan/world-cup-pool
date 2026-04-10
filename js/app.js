@@ -610,6 +610,9 @@ async function completeLogin(email, existingProfile = null) {
     }
 
     document.getElementById('favorite-team-input').dataset.savedValue = document.getElementById('favorite-team-input').value || '';
+    if (typeof window.renderProfileFavoriteBanner === 'function') {
+        window.renderProfileFavoriteBanner();
+    }
 
     await hydrateSavedTimestamp();
     renderPool();
