@@ -224,8 +224,23 @@ function populateProfileSelectOptions() {
 
 function setupProfile() {
     const emailDisplay = document.getElementById('profile-email-display');
+    const favoriteTeamInput = document.getElementById('favorite-team-input');
+
     if (emailDisplay) {
         emailDisplay.textContent = userEmail || '-';
+    }
+
+    if (typeof window.renderProfileFavoriteBanner === 'function') {
+        window.renderProfileFavoriteBanner();
+    }
+
+    if (favoriteTeamInput && favoriteTeamInput.dataset.profileBannerBound !== 'true') {
+        favoriteTeamInput.addEventListener('change', () => {
+            if (typeof window.renderProfileFavoriteBanner === 'function') {
+                window.renderProfileFavoriteBanner();
+            }
+        });
+        favoriteTeamInput.dataset.profileBannerBound = 'true';
     }
 }
 

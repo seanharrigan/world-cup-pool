@@ -117,6 +117,24 @@ function getMenuThemeTextColor(config) {
     return config.accentColor || nonWhiteColors[0] || config.textColor;
 }
 
+function applyFavoriteBanner(banner, bannerText, favoriteTeam) {
+    if (!banner || !bannerText) {
+        return;
+    }
+
+    const config = getFavoriteTeamBannerConfig(favoriteTeam);
+    const team = config.team || teams.find((entry) => entry.name === favoriteTeam);
+    const leftFlag = team?.flag || '🌍';
+    const rightFlag = team?.flag || '🌍';
+
+    banner.className = 'rounded-3xl px-6 py-5 text-center shadow-sm';
+    banner.classList.remove('hidden');
+    banner.style.background = `linear-gradient(rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.34)), ${config.gradient}`;
+    bannerText.className = 'text-xl md:text-2xl font-black uppercase italic tracking-[0.08em]';
+    bannerText.style.color = config.accentColor || config.textColor;
+    bannerText.textContent = `${leftFlag} ${config.slogan} ${rightFlag}`;
+}
+
 function renderDashboardFavoriteBanner(currentProfile) {
     const banner = document.getElementById('dashboard-favorite-banner');
     const bannerText = document.getElementById('dashboard-favorite-banner-text');
@@ -127,20 +145,21 @@ function renderDashboardFavoriteBanner(currentProfile) {
     }
 
     const favoriteTeam = currentProfile?.favoriteTeam || '';
-    const config = getFavoriteTeamBannerConfig(favoriteTeam);
-    const team = config.team || teams.find((entry) => entry.name === favoriteTeam);
-    const leftFlag = team?.flag || '🌍';
-    const rightFlag = team?.flag || '🌍';
-
-    banner.className = 'rounded-3xl px-6 py-5 text-center shadow-sm';
-    banner.classList.remove('hidden');
-    banner.style.background = `linear-gradient(rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.34)), ${config.gradient}`;
-    bannerText.className = 'text-xl md:text-2xl font-black uppercase italic tracking-[0.08em]';
-    bannerText.style.color = config.textColor;
-    bannerText.style.color = config.accentColor || config.textColor;
-    bannerText.textContent = `${leftFlag} ${config.slogan} ${rightFlag}`;
+    applyFavoriteBanner(banner, bannerText, favoriteTeam);
     bannerSubtext.className = 'hidden';
     bannerSubtext.textContent = '';
+}
+
+function renderProfileFavoriteBanner() {
+    const banner = document.getElementById('profile-favorite-banner');
+    const bannerText = document.getElementById('profile-favorite-banner-text');
+    const favoriteTeamInput = document.getElementById('favorite-team-input');
+
+    if (!banner || !bannerText || !favoriteTeamInput) {
+        return;
+    }
+
+    applyFavoriteBanner(banner, bannerText, favoriteTeamInput.value || '');
 }
 
 function renderTopNavFavoriteTheme(currentProfile) {
@@ -1692,5 +1711,6 @@ Object.assign(window, {
     togglePicksLock,
     toggleAutoLock
     ,
-    toggleHideTeamSelection
+    toggleHideTeamSelection,
+    renderProfileFavoriteBanner
 });
