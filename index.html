@@ -764,9 +764,12 @@
                 </header>
 
                 <section class="theme-soft-card rounded-3xl border p-6 space-y-5">
-                    <div>
-                        <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.25em]">Account Email</div>
-                        <div id="profile-email-display" class="mt-2 text-2xl font-black italic text-gray-900 break-all">-</div>
+                    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                        <div>
+                            <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.25em]">Account Email</div>
+                            <div id="profile-email-display" class="mt-2 text-2xl font-black italic text-gray-900 break-all">-</div>
+                        </div>
+                        <button onclick="signOutUser()" class="self-start rounded-2xl border border-gray-300 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-700 transition-colors hover:bg-gray-100">Sign Out</button>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -794,10 +797,7 @@
                     </div>
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                         <p class="text-sm font-bold text-gray-500">This profile powers your leaderboard name, chat identity, and personal details.</p>
-                        <div class="flex flex-col gap-3 md:flex-row">
-                            <button onclick="signOutUser()" class="rounded-2xl border border-gray-300 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-700 transition-colors hover:bg-gray-100">Sign Out</button>
-                            <button onclick="saveIdentityOnly()" class="theme-primary-button rounded-2xl px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] transition-colors">Save Profile</button>
-                        </div>
+                        <button onclick="saveIdentityOnly()" class="theme-primary-button rounded-2xl px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] transition-colors self-start md:self-auto">Save Profile</button>
                     </div>
                 </section>
 
