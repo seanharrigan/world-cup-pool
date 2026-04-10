@@ -246,6 +246,19 @@ function showPage(pageId) {
     if (pageId === 'results') setupResultsPage();
 
     document.getElementById('mobile-menu').classList.remove('open');
+
+    if (section) {
+        requestAnimationFrame(() => {
+            section.scrollTop = 0;
+            section.querySelectorAll('*').forEach((node) => {
+                const element = node;
+                if (element instanceof HTMLElement && element.scrollTop > 0) {
+                    element.scrollTop = 0;
+                }
+            });
+            window.scrollTo(0, 0);
+        });
+    }
 }
 
 function toggleMobileMenu() {
