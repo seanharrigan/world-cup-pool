@@ -84,7 +84,9 @@ function markNotificationSeen(notificationId, email = userEmail) {
 }
 
 function formatSavedTime(timestamp) {
-    return new Date(timestamp).toLocaleTimeString([], {
+    return new Date(timestamp).toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
         hour: 'numeric',
         minute: '2-digit'
     });
@@ -443,7 +445,7 @@ function toggleTeam(name) {
 async function getExistingProfile(email) {
     const { data, error } = await supabaseClient
         .from('profiles')
-        .select('nickname, realname, favorite_team, home_country, has_paid, avatar_url, updated_at')
+        .select('nickname, realname, favorite_team, home_country, has_paid, avatar_url, updated_at, picks_save_count')
         .eq('email', email)
         .maybeSingle();
 
@@ -514,6 +516,30 @@ async function upsertProfile(email, profile = {}) {
     }
 
     return updatedAt;
+}
+
+async function incrementPicksSaveCount(email) {
+    const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('picks_save_count')
+        .eq('email', email)
+        .maybeSingle();
+
+    if (error) {
+        throw error;
+    }
+
+    const nextCount = Number(data?.picks_save_count || 0) + 1;
+    const { error: updateError } = await supabaseClient
+        .from('profiles')
+        .update({ picks_save_count: nextCount })
+        .eq('email', email);
+
+    if (updateError) {
+        throw updateError;
+    }
+
+    return nextCount;
 }
 
 function confirmNewProfileEmail(email) {
@@ -763,7 +789,6 @@ async function saveIdentityOnly() {
         setupDashboard();
         fetchLeaderboard();
         fetchAdminUsers();
-        fetchAdminPaidUsers();
         showToast('Identity updated!', 'success');
     } catch (error) {
         updateSaveStatusUI();
@@ -839,6 +864,7 @@ async function saveToSupabase() {
         }
 
         await upsertProfile(userEmail, { nickname, realname, favoriteTeam, homeCountry });
+        await incrementPicksSaveCount(userEmail);
 
         saveState.failed = false;
         saveState.picksDirty = false;
@@ -848,7 +874,6 @@ async function saveToSupabase() {
         fetchLeaderboard();
         fetchStats();
         fetchAdminUsers();
-        fetchAdminPaidUsers();
         setupDashboard();
         showToast('Saved!', 'success');
     } catch (error) {

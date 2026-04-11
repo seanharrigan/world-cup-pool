@@ -363,8 +363,8 @@
             <div class="max-w-6xl mx-auto space-y-10 text-left text-gray-900">
                 <header class="text-left border-b border-gray-200 pb-6"><h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter">Results Centre</h1><p class="theme-accent-text font-bold uppercase tracking-widest text-[10px]">Verified Tournament Progress</p></header>
                 <div class="flex flex-wrap gap-3">
-                    <button onclick="showResultsTab('groups')" id="results-tab-groups" class="results-tab theme-tab-active active rounded-2xl border px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] transition-colors">Group Results</button>
-                    <button onclick="showResultsTab('pool')" id="results-tab-pool" class="results-tab rounded-2xl border border-gray-300 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Pool Results</button>
+                    <button onclick="showResultsTab('groups')" id="results-tab-groups" class="results-tab theme-tab-active active rounded-2xl border px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] transition-colors">Results by Group</button>
+                    <button onclick="showResultsTab('pool')" id="results-tab-pool" class="results-tab rounded-2xl border border-gray-300 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Results Table</button>
                     <button onclick="showResultsTab('matches')" id="results-tab-matches" class="results-tab rounded-2xl border border-gray-300 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Match Results</button>
                 </div>
 
@@ -506,17 +506,15 @@
 
         <div id="page-admin" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-gray-900 text-white text-left">
             <div class="max-w-6xl mx-auto space-y-10 text-left">
-                <header class="text-left border-b border-gray-800 pb-6 text-left text-white text-left text-white text-left"><h1 class="text-4xl font-black uppercase italic mb-2 tracking-tighter text-left">Commissioner Desk</h1><p class="text-blue-500 font-bold uppercase tracking-widest text-xs text-left">Manual Entry & Match Log</p></header>
+                <header class="text-left border-b border-gray-800 pb-6 text-left text-white text-left text-white text-left"><h1 class="text-4xl font-black uppercase italic mb-2 tracking-tighter text-left">Commissioner Desk</h1><p class="text-blue-500 font-bold uppercase tracking-widest text-xs text-left">Match Results & Tournament Controls</p></header>
 
                 <div class="flex flex-wrap gap-3">
-                    <button onclick="showAdminTab('matches')" id="admin-tab-matches" class="admin-tab active rounded-2xl border border-blue-500/40 bg-blue-600/20 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-blue-300 transition-colors">Match Entry</button>
-                    <button onclick="showAdminTab('manage')" id="admin-tab-manage" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Players & Chat</button>
-                    <button onclick="showAdminTab('paid')" id="admin-tab-paid" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Paid</button>
+                    <button onclick="showAdminTab('matches')" id="admin-tab-matches" class="admin-tab active rounded-2xl border border-blue-500/40 bg-blue-600/20 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-blue-300 transition-colors">Match Results</button>
+                    <button onclick="showAdminTab('advancement')" id="admin-tab-advancement" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Tournament Status</button>
+                    <button onclick="showAdminTab('manage')" id="admin-tab-manage" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Players</button>
                     <button onclick="showAdminTab('notifications')" id="admin-tab-notifications" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Notifications</button>
-                    <button onclick="showAdminTab('advancement')" id="admin-tab-advancement" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Advancement</button>
-                    <button onclick="showAdminTab('teams')" id="admin-tab-teams" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Team Results</button>
                     <button onclick="showAdminTab('stats')" id="admin-tab-stats" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Statistics</button>
-                    <button onclick="showAdminTab('toggle')" id="admin-tab-toggle" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Toggle</button>
+                    <button onclick="showAdminTab('toggle')" id="admin-tab-toggle" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Pool Settings</button>
                 </div>
 
                 <div id="admin-panel-matches" class="admin-panel space-y-10">
@@ -541,43 +539,9 @@
 
                 <div id="admin-panel-manage" class="admin-panel hidden space-y-8">
                     <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-6">
-                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                            <div>
-                                <h2 class="text-xl font-black uppercase tracking-tight text-white">Chat Controls</h2>
-                                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Administrative actions for the live chat feed</p>
-                            </div>
-                            <button onclick="clearChatMessages()" id="admin-clear-chat-btn" class="rounded-2xl bg-red-600 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-red-500 transition-colors">Clear Chat</button>
-                        </div>
-                    </div>
-
-                    <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-6">
                         <div>
-                            <h2 class="text-xl font-black uppercase tracking-tight text-white">Player Records</h2>
-                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Delete a user to remove their profile, picks, chat messages, and authored notifications</p>
-                        </div>
-                        <div class="rounded-3xl border border-gray-700 overflow-hidden">
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left">
-                                    <thead class="bg-gray-950 text-white uppercase text-[10px] tracking-[0.2em] font-black">
-                                        <tr>
-                                            <th class="px-5 py-4">Email</th>
-                                            <th class="px-5 py-4">Real Name</th>
-                                            <th class="px-5 py-4">Nickname</th>
-                                            <th class="px-5 py-4 text-right">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="admin-users-body" class="bg-gray-900 text-sm font-bold text-gray-100"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="admin-panel-paid" class="admin-panel hidden space-y-8">
-                    <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-6">
-                        <div>
-                            <h2 class="text-xl font-black uppercase tracking-tight text-white">Payment Tracker</h2>
-                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Mark each player as paid or unpaid</p>
+                            <h2 class="text-xl font-black uppercase tracking-tight text-white">Players</h2>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Manage player info, team saves, payment status, and secure deletion in one place</p>
                         </div>
                         <div class="rounded-3xl border border-gray-700 overflow-hidden">
                             <div class="overflow-x-auto">
@@ -585,12 +549,14 @@
                                     <thead class="bg-gray-950 text-white uppercase text-[10px] tracking-[0.2em] font-black">
                                         <tr>
                                             <th class="px-5 py-4">Name</th>
-                                            <th class="px-5 py-4">Nickname</th>
                                             <th class="px-5 py-4">Email</th>
-                                            <th class="px-5 py-4 text-right">Status</th>
+                                            <th class="px-5 py-4">Team</th>
+                                            <th class="px-5 py-4">Last Saved</th>
+                                            <th class="px-5 py-4 text-center">Paid</th>
+                                            <th class="px-5 py-4 text-right">Delete</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="admin-paid-body" class="bg-gray-900 text-sm font-bold text-gray-100"></tbody>
+                                    <tbody id="admin-players-body" class="bg-gray-900 text-sm font-bold text-gray-100"></tbody>
                                 </table>
                             </div>
                         </div>
@@ -641,38 +607,7 @@
                             <h2 class="text-xl font-black uppercase tracking-tight text-white">Team Tournament Status</h2>
                             <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Mark teams that advanced for the +1 bonus, and mark teams eliminated so the leaderboard can show who still remains</p>
                         </div>
-                        <div id="admin-advancement-groups" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
-                    </div>
-                </div>
-
-                <div id="admin-panel-teams" class="admin-panel hidden space-y-8">
-                    <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-6">
-                        <div>
-                            <h2 class="text-xl font-black uppercase tracking-tight text-white">Team Match Ledger</h2>
-                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Points shown here match the scoring used in the leaderboard</p>
-                        </div>
-                        <div class="rounded-3xl border border-gray-700 overflow-hidden">
-                            <div class="overflow-x-auto">
-                                <table class="min-w-[1100px] w-full text-left">
-                                <thead class="bg-gray-950 text-white uppercase text-[10px] tracking-[0.2em] font-black">
-                                    <tr>
-                                        <th class="px-4 py-4">Team</th>
-                                        <th class="px-4 py-4 text-center">Total</th>
-                                        <th class="px-4 py-4 text-center">G1</th>
-                                        <th class="px-4 py-4 text-center">G2</th>
-                                        <th class="px-4 py-4 text-center">G3</th>
-                                        <th class="px-4 py-4 text-center">Bonus</th>
-                                            <th class="px-4 py-4 text-center">R32</th>
-                                            <th class="px-4 py-4 text-center">R16</th>
-                                            <th class="px-4 py-4 text-center">QF</th>
-                                            <th class="px-4 py-4 text-center">SM</th>
-                                            <th class="px-4 py-4 text-center">F</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="admin-team-results-body" class="bg-gray-900 text-sm font-bold text-gray-100"></tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <div id="admin-advancement-groups" class="grid grid-cols-1 gap-4"></div>
                     </div>
                 </div>
 
@@ -696,11 +631,15 @@
                 <div id="admin-panel-toggle" class="admin-panel hidden space-y-8">
                     <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-6">
                         <div>
-                            <h2 class="text-xl font-black uppercase tracking-tight text-white">Pool Controls</h2>
-                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Lock picks globally and export safety copies of your data</p>
+                            <h2 class="text-xl font-black uppercase tracking-tight text-white">Pool Settings</h2>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Lock picks globally, manage visibility, clear chat, and export safety copies of your data</p>
                         </div>
 
                         <div class="space-y-4">
+                            <div>
+                                <h3 class="text-sm font-black uppercase text-white">Tournament Access</h3>
+                                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Control when picks can be changed</p>
+                            </div>
                             <div class="flex items-center justify-between gap-4 rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-4">
                                 <div>
                                     <div class="text-sm font-black uppercase text-white">Lock Picks</div>
@@ -740,10 +679,30 @@
 
                         <div class="border-t border-gray-700 pt-6 space-y-4">
                             <div>
-                                <h3 class="text-sm font-black uppercase text-white">Data Export</h3>
-                                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Download the current database tables as CSV files for backup</p>
+                                <h3 class="text-sm font-black uppercase text-white">Moderation</h3>
+                                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Manage the live chat environment</p>
                             </div>
-                            <button onclick="exportAllTables()" id="admin-export-all-btn" class="rounded-2xl bg-white px-5 py-4 text-[10px] font-black uppercase tracking-[0.25em] text-gray-900 transition-colors hover:bg-gray-100">Export All Tables</button>
+                            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-4">
+                                <div>
+                                    <h3 class="text-sm font-black uppercase text-white">Chat Controls</h3>
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Clear the live chat feed for everyone</p>
+                                </div>
+                                <button onclick="clearChatMessages()" id="admin-clear-chat-btn" class="rounded-2xl bg-red-600 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-red-500 transition-colors">Clear Chat</button>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-700 pt-6 space-y-4">
+                            <div>
+                                <h3 class="text-sm font-black uppercase text-white">Safety & Backup</h3>
+                                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Keep a clean export of your current pool data</p>
+                            </div>
+                            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-4">
+                                <div>
+                                    <h3 class="text-sm font-black uppercase text-white">Export CSV Backup</h3>
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Download every current table as a backup set</p>
+                                </div>
+                                <button onclick="exportAllTables()" id="admin-export-all-btn" class="rounded-2xl bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-900 transition-colors hover:bg-gray-100">Export CSV Backup</button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -396,10 +396,8 @@ function setupAdminPage() {
 
     fetchAdminHistory();
     fetchAdminUsers();
-    fetchAdminPaidUsers();
     fetchAdminNotifications();
     fetchAdminAdvancement();
-    fetchAdminTeamResults();
     fetchStats();
     syncAdminToggleControls();
 }
@@ -713,28 +711,28 @@ function buildAdvancementGroupsMarkup() {
         return `
             <div class="rounded-2xl border border-gray-700 bg-gray-900/70 p-5">
                 <div class="mb-4 text-sm font-black uppercase text-white">Group ${group}</div>
-                <div class="space-y-3">
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
                     ${groupTeams.map((team) => `
-                        <div class="rounded-2xl border border-gray-800 bg-gray-950/70 px-4 py-4">
-                            <div class="mb-4 flex items-center gap-3">
-                                <span class="text-2xl">${team.flag}</span>
+                        <div class="rounded-2xl border border-gray-800 bg-gray-950/70 px-3 py-3">
+                            <div class="mb-3 flex items-center gap-2">
+                                <span class="text-xl">${team.flag}</span>
                                 <div class="text-sm font-black uppercase text-white">${team.name}</div>
                             </div>
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-2 gap-2">
                                 <div class="text-left">
-                                    <div class="mb-1 text-[9px] font-black uppercase tracking-[0.2em] text-emerald-300">Advanced</div>
+                                    <div class="mb-1 text-[8px] font-black uppercase tracking-[0.18em] text-emerald-300">Advanced</div>
                                     <label class="relative inline-flex cursor-pointer items-center">
                                         <input data-advancement-team="${team.name}" type="checkbox" class="peer sr-only" onchange="toggleTeamAdvancement('${team.name.replace(/'/g, "\\'")}', this.checked)">
-                                        <span class="h-8 w-14 rounded-full bg-gray-700 transition-colors peer-checked:bg-emerald-600"></span>
-                                        <span class="absolute left-1 h-6 w-6 rounded-full bg-white transition-transform peer-checked:translate-x-6"></span>
+                                        <span class="h-7 w-12 rounded-full bg-gray-700 transition-colors peer-checked:bg-emerald-600"></span>
+                                        <span class="absolute left-1 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span>
                                     </label>
                                 </div>
                                 <div class="text-right">
-                                    <div class="mb-1 text-[9px] font-black uppercase tracking-[0.2em] text-red-300">Eliminated</div>
+                                    <div class="mb-1 text-[8px] font-black uppercase tracking-[0.18em] text-red-300">Eliminated</div>
                                     <label class="relative inline-flex cursor-pointer items-center">
                                         <input data-eliminated-team="${team.name}" type="checkbox" class="peer sr-only" onchange="toggleTeamElimination('${team.name.replace(/'/g, "\\'")}', this.checked)">
-                                        <span class="h-8 w-14 rounded-full bg-gray-700 transition-colors peer-checked:bg-red-600"></span>
-                                        <span class="absolute left-1 h-6 w-6 rounded-full bg-white transition-transform peer-checked:translate-x-6"></span>
+                                        <span class="h-7 w-12 rounded-full bg-gray-700 transition-colors peer-checked:bg-red-600"></span>
+                                        <span class="absolute left-1 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span>
                                     </label>
                                 </div>
                             </div>
@@ -786,7 +784,6 @@ async function toggleTeamAdvancement(teamName, checked) {
         fetchAdminAdvancement();
         renderGroups();
         fetchLeaderboard();
-        fetchAdminTeamResults();
         fetchPublicTeamResults();
         setupDashboard();
         showToast(checked ? `${teamName} marked advanced.` : `${teamName} advancement removed.`, 'success');
@@ -1076,27 +1073,36 @@ function setTeamResultsSort(targetId, key) {
 }
 
 async function fetchAdminUsers() {
-    const body = document.getElementById('admin-users-body');
+    const body = document.getElementById('admin-players-body');
     if (!body) {
         return;
     }
 
-    body.innerHTML = '<tr><td colspan="4" class="px-5 py-8 text-center text-gray-500 uppercase text-xs">Loading players...</td></tr>';
+    body.innerHTML = '<tr><td colspan="6" class="px-5 py-8 text-center text-gray-500 uppercase text-xs">Loading players...</td></tr>';
 
     try {
         const users = await getAdminUserRecords();
         body.innerHTML = users.map((user) => `
             <tr class="border-t border-gray-800">
-                <td class="px-5 py-4 align-top break-all">${user.email}</td>
-                <td class="px-5 py-4 align-top">${user.realname || '<span class="text-gray-500">-</span>'}</td>
-                <td class="px-5 py-4 align-top">${user.nickname || '<span class="text-gray-500">-</span>'}</td>
+                <td class="px-5 py-4 align-top min-w-[180px]">
+                    <div class="text-white">${user.realname || user.nickname || user.email}</div>
+                    <div class="mt-1 text-xs italic text-gray-400">${user.nickname || '<span class="not-italic text-gray-500">No nickname</span>'}</div>
+                </td>
+                <td class="px-5 py-4 align-top break-all min-w-[220px]">${user.email}</td>
+                <td class="px-5 py-4 align-top min-w-[180px]">${renderAdminTeamFlagsByTier(user.teamGroups)}</td>
+                <td class="px-5 py-4 align-top min-w-[140px]">${formatAdminTeamSavedAt(user.lastTeamSavedAt, user.picksSaveCount)}</td>
+                <td class="px-5 py-4 align-top text-center">
+                    <button onclick="toggleUserPaidStatus('${user.email.replace(/'/g, "\\'")}', ${user.hasPaid ? 'true' : 'false'})" class="rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${user.hasPaid ? 'bg-green-600 text-white hover:bg-green-500' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}">
+                        ${user.hasPaid ? 'Paid' : 'Not Paid'}
+                    </button>
+                </td>
                 <td class="px-5 py-4 text-right align-top">
                     <button onclick="deleteUserPicks('${user.email.replace(/'/g, "\\'")}')" class="rounded-xl bg-red-600 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-red-500 transition-colors">Delete</button>
                 </td>
             </tr>
-        `).join('') || '<tr><td colspan="4" class="px-5 py-8 text-center text-gray-500 uppercase text-xs">No player records found.</td></tr>';
+        `).join('') || '<tr><td colspan="6" class="px-5 py-8 text-center text-gray-500 uppercase text-xs">No player records found.</td></tr>';
     } catch (error) {
-        body.innerHTML = '<tr><td colspan="4" class="px-5 py-8 text-center text-red-400 uppercase text-xs">Could not load player records.</td></tr>';
+        body.innerHTML = '<tr><td colspan="6" class="px-5 py-8 text-center text-red-400 uppercase text-xs">Could not load player records.</td></tr>';
     }
 }
 
@@ -1116,8 +1122,8 @@ async function getAdminUserRecords() {
         { data: profiles, error: profilesError },
         { data: picks, error: picksError }
     ] = await Promise.all([
-        supabaseClient.from('profiles').select('email, nickname, realname, has_paid, avatar_url, updated_at'),
-        supabaseClient.from('picks').select('user_email, team_nickname, team_realname')
+        supabaseClient.from('profiles').select('email, nickname, realname, has_paid, avatar_url, updated_at, picks_save_count'),
+        supabaseClient.from('picks').select('user_email, team_name, team_nickname, team_realname, updated_at, tier, cost')
     ]);
 
     if (profilesError) {
@@ -1135,50 +1141,93 @@ async function getAdminUserRecords() {
             email: profile.email,
             realname: profile.realname || '',
             nickname: profile.nickname || '',
-            hasPaid: Boolean(profile.has_paid)
+            hasPaid: Boolean(profile.has_paid),
+            teamGroups: { 1: [], 2: [], 3: [] },
+            lastTeamSavedAt: null,
+            picksSaveCount: Number(profile.picks_save_count || 0)
         });
     });
 
     picks?.forEach((row) => {
+        const teamMeta = teams.find((team) => team.name === row.team_name);
+        const tier = Number(row.tier ?? teamMeta?.tier ?? 0);
+
         if (!userMap.has(row.user_email)) {
             userMap.set(row.user_email, {
                 email: row.user_email,
                 realname: row.team_realname || '',
                 nickname: row.team_nickname || '',
-                hasPaid: false
+                hasPaid: false,
+                teamGroups: { 1: [], 2: [], 3: [] },
+                lastTeamSavedAt: null,
+                picksSaveCount: 0
             });
+        }
+
+        const user = userMap.get(row.user_email);
+
+        if (!user.realname && row.team_realname) {
+            user.realname = row.team_realname;
+        }
+
+        if (!user.nickname && row.team_nickname) {
+            user.nickname = row.team_nickname;
+        }
+
+        if (teamMeta && user.teamGroups[tier]) {
+            user.teamGroups[tier].push(teamMeta);
+        }
+
+        if (row.updated_at && (!user.lastTeamSavedAt || new Date(row.updated_at) > new Date(user.lastTeamSavedAt))) {
+            user.lastTeamSavedAt = row.updated_at;
         }
     });
 
     return Array.from(userMap.values()).sort(sortAdminUsers);
 }
 
-async function fetchAdminPaidUsers() {
-    const body = document.getElementById('admin-paid-body');
-    if (!body) {
-        return;
+function renderAdminTeamFlagsByTier(teamGroups) {
+    const segments = [1, 2, 3]
+        .map((tier) => {
+            const tierTeams = (teamGroups?.[tier] || [])
+                .slice()
+                .sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name));
+
+            if (tierTeams.length === 0) {
+                return '';
+            }
+
+            return `
+                <div class="flex items-center gap-2">
+                    <span class="min-w-[18px] text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">T${tier}</span>
+                    <div class="flex flex-wrap gap-1">${tierTeams.map((team) => `<span title="${team.name}" class="text-base">${team.flag}</span>`).join('')}</div>
+                </div>
+            `;
+        })
+        .filter(Boolean);
+
+    return segments.join('<div class="h-1"></div>') || '<span class="text-xs italic text-gray-500">No team saved</span>';
+}
+
+function formatAdminTeamSavedAt(timestamp, picksSaveCount = 0) {
+    if (!timestamp) {
+        return `
+            <div class="text-xs italic text-red-400">No team saved</div>
+            <div class="mt-1 text-[10px] font-bold uppercase tracking-[0.15em] text-gray-500">${picksSaveCount} ${picksSaveCount === 1 ? 'save' : 'saves'}</div>
+        `;
     }
 
-    body.innerHTML = '<tr><td colspan="4" class="px-5 py-8 text-center text-gray-500 uppercase text-xs">Loading payment statuses...</td></tr>';
+    const formattedTimestamp = new Date(timestamp).toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+    });
 
-    try {
-        const users = await getAdminUserRecords();
-
-        body.innerHTML = users.map((user) => `
-            <tr class="border-t border-gray-800">
-                <td class="px-5 py-4 align-top">${user.realname || '<span class="text-gray-500">Unnamed</span>'}</td>
-                <td class="px-5 py-4 align-top">${user.nickname || '<span class="text-gray-500">-</span>'}</td>
-                <td class="px-5 py-4 align-top break-all">${user.email}</td>
-                <td class="px-5 py-4 text-right align-top">
-                    <button onclick="toggleUserPaidStatus('${user.email.replace(/'/g, "\\'")}', ${user.hasPaid ? 'true' : 'false'})" class="rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${user.hasPaid ? 'bg-green-600 text-white hover:bg-green-500' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}">
-                        ${user.hasPaid ? 'Paid' : 'Not Paid'}
-                    </button>
-                </td>
-            </tr>
-        `).join('') || '<tr><td colspan="4" class="px-5 py-8 text-center text-gray-500 uppercase text-xs">No player records found.</td></tr>';
-    } catch (error) {
-        body.innerHTML = '<tr><td colspan="4" class="px-5 py-8 text-center text-red-400 uppercase text-xs">Could not load payment statuses.</td></tr>';
-    }
+    return `
+        <div>${formattedTimestamp}</div>
+        <div class="mt-1 text-[10px] font-bold uppercase tracking-[0.15em] text-gray-500">${picksSaveCount} ${picksSaveCount === 1 ? 'save' : 'saves'}</div>
+    `;
 }
 
 async function toggleUserPaidStatus(email, currentValue) {
@@ -1198,7 +1247,7 @@ async function toggleUserPaidStatus(email, currentValue) {
         return;
     }
 
-    fetchAdminPaidUsers();
+    fetchAdminUsers();
 }
 
 function formatTeamResultsCell(match, teamName, theme = 'dark') {
@@ -1505,7 +1554,6 @@ async function deleteUserPicks(email) {
         }
 
         fetchAdminUsers();
-        fetchAdminPaidUsers();
         fetchAdminNotifications();
         fetchMessages();
         fetchLeaderboard();
@@ -1579,7 +1627,6 @@ async function deleteMatch(id) {
     await supabaseClient.from('matches').delete().eq('id', id);
     fetchAdminHistory();
     fetchLeaderboard();
-    fetchAdminTeamResults();
     fetchPublicTeamResults();
     fetchPublicResults();
     renderGroups();
@@ -1629,7 +1676,6 @@ async function submitManualResult() {
         document.getElementById('admin-score1').value = '';
         document.getElementById('admin-score2').value = '';
         fetchAdminHistory();
-        fetchAdminTeamResults();
         fetchPublicTeamResults();
         fetchPublicResults();
         renderGroups();
@@ -1896,7 +1942,6 @@ Object.assign(window, {
     setTeamResultsSort,
     fetchAdminHistory,
     fetchAdminUsers,
-    fetchAdminPaidUsers,
     fetchAdminNotifications,
     fetchAdminAdvancement,
     fetchAdminTeamResults,
