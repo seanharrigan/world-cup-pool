@@ -377,12 +377,11 @@
                         <div><div id="minutes" class="text-lg font-black text-center text-white text-center">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center">Min</div></div>
                     </div>
                 </header>
-                <section class="picks-rules-card sticky top-0 z-20 mb-8 rounded-3xl border p-4 md:p-5 text-left text-gray-900 shadow-sm backdrop-blur-sm">
+                <section class="picks-rules-card sticky top-0 z-20 mb-8 rounded-3xl border bg-white p-4 md:p-5 text-left text-gray-900 shadow-sm">
                     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <div>
                             <div class="picks-rules-kicker text-[10px] font-black uppercase tracking-[0.25em]">Picking Rules</div>
                             <h2 class="mt-1 text-xl font-black uppercase italic tracking-tight text-gray-900">Build Within The Pool Limits</h2>
-                            <p class="mt-1 text-sm font-bold text-gray-500">Tier 1: 0-1 Teams, Tier 2: Unlimited, Tier 3: Minimum 3.</p>
                         </div>
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 text-[11px] font-black uppercase tracking-[0.15em]">
                             <div id="rule-chip-budget" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">$150 Max Budget</div>
@@ -396,7 +395,7 @@
             </div>
             <div id="roster-panel" class="w-full md:w-[350px] fixed bottom-0 md:relative bg-gray-950 p-4 md:p-6 flex flex-col border-t md:border-t-0 md:border-l border-gray-800 z-40 shadow-2xl text-left text-white">
                 <div onclick="toggleMobileRoster()" class="flex justify-between items-center mb-4 cursor-pointer md:cursor-default text-left"><h2 class="text-lg md:text-xl font-black italic uppercase text-white tracking-widest flex items-center gap-2 text-left text-white text-left text-white">My Squad <span id="roster-arrow" class="picks-roster-arrow md:hidden text-xs">▼</span></h2><span id="roster-count" class="picks-roster-count px-2 py-0.5 rounded-full text-[10px] font-bold text-center">0</span></div>
-                <div id="roster-list" class="max-h-[150px] md:max-h-none overflow-y-auto space-y-2 mb-4 md:mb-6 md:flex-grow text-white text-left"></div>
+                <div id="roster-list" class="grid grid-cols-2 gap-2 max-h-[170px] md:max-h-none overflow-y-auto mb-4 md:mb-6 md:flex-grow md:grid-cols-1 text-white text-left"></div>
                 <div class="w-full space-y-2 text-left">
                     <div class="flex flex-row md:flex-col items-center gap-3 text-left">
                         <div class="flex-grow md:w-full bg-gray-900 p-3 md:p-4 rounded-2xl border border-gray-800 text-white text-left">

@@ -295,7 +295,7 @@ function renderPool() {
                 </div>
                 <div class="h-px bg-gray-200 flex-grow"></div>
             </div>
-            <div class="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 text-left text-gray-900">
+            <div class="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-3 text-left text-gray-900">
                 ${tierTeams.map((team) => `
                     <div
                         onclick="toggleTeam('${team.name}')"
@@ -303,10 +303,10 @@ function renderPool() {
                         class="team-card bg-white border-2 border-gray-100 rounded-2xl p-2 shadow-sm ${isLocked ? 'locked-ui' : ''} text-gray-900 text-left"
                     >
                         <div class="flex justify-between items-start text-left mb-1 text-gray-900">
-                            <span class="text-2xl md:text-3xl text-left">${team.flag}</span>
-                            <span class="picks-price-pill font-bold px-2 py-0.5 rounded text-[10px] md:text-xs text-left">$${team.cost}</span>
+                            <span class="text-[22px] md:text-3xl text-left">${team.flag}</span>
+                            <span class="picks-price-pill font-bold px-1.5 py-0.5 rounded text-[9px] md:text-xs text-left">$${team.cost}</span>
                         </div>
-                        <div class="font-black uppercase text-[9px] md:text-[10px] tracking-tight truncate text-left text-gray-900">${team.name}</div>
+                        <div class="font-black uppercase text-[8px] md:text-[10px] tracking-tight truncate text-left text-gray-900">${team.name}</div>
                     </div>
                 `).join('')}
             </div>
@@ -342,14 +342,14 @@ function updateUI() {
             }
 
             const item = document.createElement('div');
-            item.className = 'flex items-center justify-between bg-gray-800 p-3 rounded-xl border border-gray-700 text-left text-white';
+            item.className = 'flex items-center justify-between bg-gray-800 p-2 md:p-3 rounded-xl border border-gray-700 text-left text-white min-w-0';
             item.innerHTML = `
-                <div class="flex items-center gap-2 text-left text-white">
-                    <span class="text-xl text-left text-white">${team.flag}</span>
-                    <div class="text-[9px] font-black uppercase tracking-widest truncate text-left text-white">${team.name}</div>
+                <div class="flex items-center gap-1.5 md:gap-2 text-left text-white min-w-0">
+                    <span class="text-lg md:text-xl text-left text-white">${team.flag}</span>
+                    <div class="text-[8px] md:text-[9px] font-black uppercase tracking-[0.12em] truncate text-left text-white">${team.name}</div>
                 </div>
-                <div class="flex items-center gap-2 text-white text-left">
-                    <span class="text-green-400 font-mono font-bold text-xs text-left">$${team.cost}</span>
+                <div class="flex items-center gap-1.5 md:gap-2 text-white text-left">
+                    <span class="text-green-400 font-mono font-bold text-[10px] md:text-xs text-left">$${team.cost}</span>
                     ${!isLocked ? `<button onclick="toggleTeam('${team.name}')" class="text-gray-500 hover:text-white text-lg font-bold text-left text-white text-center">×</button>` : ''}
                 </div>
             `;
