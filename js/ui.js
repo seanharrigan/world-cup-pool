@@ -238,7 +238,11 @@ function showPage(pageId) {
     navLinks.forEach((link) => link.classList.add('active'));
 
     if (pageId === 'instructions') setupDashboard();
-    if (pageId === 'picks') updateUI();
+    if (pageId === 'picks') {
+        updateUI();
+        syncMobileRosterState();
+        togglePicksRulesBar(false);
+    }
     if (pageId === 'leaderboard') fetchLeaderboard();
     if (pageId === 'admin') setupAdminPage();
     if (pageId === 'chat') setupChat();
@@ -268,8 +272,53 @@ function toggleMobileMenu() {
 function toggleMobileRoster() {
     const panel = document.getElementById('roster-panel');
     const arrow = document.getElementById('roster-arrow');
+    const helper = document.getElementById('roster-helper');
     const isMinimized = panel.classList.toggle('roster-minimized');
-    arrow.innerText = isMinimized ? '▲' : '▼';
+    arrow.innerText = isMinimized ? '▼' : '▲';
+    if (helper) {
+        helper.textContent = isMinimized ? 'Click to view' : 'Click to minimise';
+    }
+}
+
+function togglePicksRulesBar(forceExpanded = null) {
+    const chips = document.getElementById('picks-rules-help-panel');
+    const button = document.getElementById('picks-rules-toggle');
+
+    if (!chips || !button) {
+        return;
+    }
+
+    const shouldExpand = forceExpanded === null
+        ? chips.classList.contains('hidden')
+        : forceExpanded;
+
+    chips.classList.toggle('hidden', !shouldExpand);
+    button.innerText = shouldExpand ? '×' : '?';
+    button.setAttribute('aria-label', shouldExpand ? 'Hide rule status help' : 'Show rule status help');
+}
+
+function syncMobileRosterState() {
+    const panel = document.getElementById('roster-panel');
+    const arrow = document.getElementById('roster-arrow');
+    const helper = document.getElementById('roster-helper');
+
+    if (!panel || !arrow) {
+        return;
+    }
+
+    if (window.innerWidth < 768) {
+        panel.classList.add('roster-minimized');
+        arrow.innerText = '▼';
+        if (helper) {
+            helper.textContent = 'Click to view';
+        }
+    } else {
+        panel.classList.remove('roster-minimized');
+        arrow.innerText = '▼';
+        if (helper) {
+            helper.textContent = '';
+        }
+    }
 }
 
 function renderPool() {
@@ -317,6 +366,8 @@ function renderPool() {
     if (typeof window.applyPicksAccentTheme === 'function') {
         window.applyPicksAccentTheme(window.getCurrentProfileIdentity?.() || null);
     }
+
+    syncMobileRosterState();
 }
 
 function updateUI() {
@@ -342,7 +393,7 @@ function updateUI() {
             }
 
             const item = document.createElement('div');
-            item.className = 'flex items-center justify-between bg-gray-800 p-2 md:p-3 rounded-xl border border-gray-700 text-left text-white min-w-0';
+            item.className = 'flex items-center justify-between self-start bg-gray-800 p-2 md:p-3 rounded-xl border border-gray-700 text-left text-white min-w-0 md:w-full';
             item.innerHTML = `
                 <div class="flex items-center gap-1.5 md:gap-2 text-left text-white min-w-0">
                     <span class="text-lg md:text-xl text-left text-white">${team.flag}</span>
@@ -377,23 +428,34 @@ function updateUI() {
         }
 
         chip.className = 'picks-rules-chip rounded-2xl border px-4 py-3 transition-colors';
+        chip.style.borderColor = '';
+        chip.style.backgroundColor = '';
+        chip.style.color = '';
 
         if (state === 'success') {
-            chip.classList.add('border-green-200', 'bg-green-50', 'text-green-700');
+            chip.style.borderColor = '#bbf7d0';
+            chip.style.backgroundColor = '#f0fdf4';
+            chip.style.color = '#15803d';
             return;
         }
 
         if (state === 'warning') {
-            chip.classList.add('border-amber-200', 'bg-amber-50', 'text-amber-700');
+            chip.style.borderColor = '#fde68a';
+            chip.style.backgroundColor = '#fffbeb';
+            chip.style.color = '#b45309';
             return;
         }
 
         if (state === 'error') {
-            chip.classList.add('border-red-200', 'bg-red-50', 'text-red-700');
+            chip.style.borderColor = '#fecaca';
+            chip.style.backgroundColor = '#fef2f2';
+            chip.style.color = '#b91c1c';
             return;
         }
 
-        chip.classList.add('border-gray-200', 'bg-white', 'text-gray-900');
+        chip.style.borderColor = '#e5e7eb';
+        chip.style.backgroundColor = '#ffffff';
+        chip.style.color = '#111827';
     };
 
     let budgetState = 'neutral';
@@ -541,6 +603,10 @@ function startCountdown() {
     setInterval(updateCountdownDisplays, 1000);
 }
 
+window.addEventListener('resize', () => {
+    syncMobileRosterState();
+});
+
 Object.assign(window, {
     showToast,
     showConfirmModal,
@@ -548,6 +614,8 @@ Object.assign(window, {
     showPage,
     toggleMobileMenu,
     toggleMobileRoster,
+    togglePicksRulesBar,
+    syncMobileRosterState,
     renderPool,
     updateUI,
     renderGroups,

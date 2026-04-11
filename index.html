@@ -37,9 +37,16 @@
         .team-card:hover:not(.locked-ui) { transform: translateY(-2px); border-color: var(--picks-accent-primary); }
         .selected { border-color: var(--picks-accent-primary) !important; background-color: var(--picks-accent-soft) !important; box-shadow: 0 10px 15px -3px rgba(var(--picks-accent-primary-rgb), 0.12); }
         .locked-ui { opacity: 0.6; cursor: not-allowed !important; filter: grayscale(0.6); }
-        .picks-rules-card { border-color: var(--picks-accent-soft-strong); background-color: var(--picks-accent-soft); }
+        .picks-rules-card { border-color: #e5e7eb; background-color: #f8fafc; }
         .picks-rules-kicker, .picks-accent-text { color: var(--picks-accent-text); }
         .picks-rules-chip { border-color: var(--picks-accent-soft-strong); }
+        #picks-rules-help-panel.hidden { display: none; }
+        #picks-rules-toggle {
+            color: var(--picks-accent-text);
+            border-color: rgba(var(--picks-accent-primary-rgb), 0.22);
+            background-color: rgba(255, 255, 255, 0.98);
+        }
+        #picks-rules-toggle:hover { background-color: #ffffff; }
         .picks-tier-label { background-color: var(--picks-accent-primary); color: #ffffff; }
         .picks-price-pill { background-color: var(--picks-accent-pill-bg); color: var(--picks-accent-pill-text); }
         .picks-roster-count { background-color: var(--picks-accent-primary); color: #ffffff; }
@@ -367,7 +374,7 @@
 
         <div id="page-picks" class="page-content hidden h-full w-full flex flex-col md:flex-row text-left">
             <div class="flex-grow h-full overflow-y-auto p-4 md:p-10 bg-white text-gray-900 pb-[350px] md:pb-10 text-left">
-                <header class="mb-8 flex flex-col md:flex-row justify-between items-center border-b-4 border-gray-900 pb-6 gap-4 text-left">
+                <header class="mb-3 flex flex-col md:flex-row justify-between items-center border-b-4 border-gray-900 pb-6 gap-4 text-left">
                     <h1 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-left">Selection</h1>
                     <div id="countdown" class="flex gap-3 text-center bg-gray-900 text-white px-4 py-2 rounded-xl shadow-xl text-center text-white">
                         <div><div id="days" class="text-lg font-black text-center text-white text-center">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center">Days</div></div>
@@ -377,26 +384,48 @@
                         <div><div id="minutes" class="text-lg font-black text-center text-white text-center">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center">Min</div></div>
                     </div>
                 </header>
-                <section class="picks-rules-card sticky top-0 z-20 mb-8 rounded-3xl border bg-white p-4 md:p-5 text-left text-gray-900 shadow-sm">
-                    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <div class="picks-rules-kicker text-[10px] font-black uppercase tracking-[0.25em]">Picking Rules</div>
-                            <h2 class="mt-1 text-xl font-black uppercase italic tracking-tight text-gray-900">Build Within The Pool Limits</h2>
-                        </div>
-                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 text-[11px] font-black uppercase tracking-[0.15em]">
-                            <div id="rule-chip-budget" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">$150 Max Budget</div>
-                            <div id="rule-chip-tier1" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">Tier 1: 0-1</div>
-                            <div id="rule-chip-tier2" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">Tier 2: Unlimited</div>
-                            <div id="rule-chip-tier3" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">Tier 3: Minimum 3</div>
+                <div class="sticky top-3 z-30 h-0 pointer-events-none">
+                    <div class="flex justify-end px-4 md:px-10">
+                        <div class="pointer-events-auto w-full max-w-[900px] flex flex-col items-end">
+                            <button id="picks-rules-toggle" onclick="togglePicksRulesBar()" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-base font-black shadow-sm transition-colors" aria-label="Show rule status help">?</button>
+                            <div id="picks-rules-help-panel" class="hidden mt-3 rounded-3xl border border-gray-200 bg-white/95 p-4 shadow-lg backdrop-blur-sm">
+                                <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 text-[11px] font-black uppercase tracking-[0.15em]">
+                                    <div id="rule-chip-budget" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">$150 Max Budget</div>
+                                    <div id="rule-chip-tier1" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">Tier 1: 0-1 Teams</div>
+                                    <div id="rule-chip-tier2" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">Tier 2: Unlimited</div>
+                                    <div id="rule-chip-tier3" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">Tier 3: Minimum 3</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </section>
+                </div>
+                <div id="picks-rules-shelf" class="mb-8">
+                    <section id="picks-rules-card" class="picks-rules-card rounded-3xl border p-4 md:p-5 text-left text-gray-900 shadow-sm">
+                        <div class="min-w-0">
+                            <div class="picks-rules-kicker text-[10px] font-black uppercase tracking-[0.25em]">Selection Rules</div>
+                            <h2 class="mt-1 text-xl font-black uppercase italic tracking-tight text-gray-900">Build Your Squad.</h2>
+                            <div class="mt-3 grid gap-2 text-sm font-bold text-gray-600 md:grid-cols-2 xl:grid-cols-4">
+                                <div><span class="text-gray-900">Budget:</span> Stay within $150.</div>
+                                <div><span class="text-gray-900">Tier 1:</span> 0-1 teams allowed.</div>
+                                <div><span class="text-gray-900">Tier 2:</span> Unlimited selections.</div>
+                                <div><span class="text-gray-900">Tier 3:</span> Minimum 3 teams required.</div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
                 <div id="tiers-container" class="grid gap-12 text-left text-gray-900"></div>
             </div>
-            <div id="roster-panel" class="w-full md:w-[350px] fixed bottom-0 md:relative bg-gray-950 p-4 md:p-6 flex flex-col border-t md:border-t-0 md:border-l border-gray-800 z-40 shadow-2xl text-left text-white">
-                <div onclick="toggleMobileRoster()" class="flex justify-between items-center mb-4 cursor-pointer md:cursor-default text-left"><h2 class="text-lg md:text-xl font-black italic uppercase text-white tracking-widest flex items-center gap-2 text-left text-white text-left text-white">My Squad <span id="roster-arrow" class="picks-roster-arrow md:hidden text-xs">▼</span></h2><span id="roster-count" class="picks-roster-count px-2 py-0.5 rounded-full text-[10px] font-bold text-center">0</span></div>
-                <div id="roster-list" class="grid grid-cols-2 gap-2 max-h-[170px] md:max-h-none overflow-y-auto mb-4 md:mb-6 md:flex-grow md:grid-cols-1 text-white text-left"></div>
-                <div class="w-full space-y-2 text-left">
+            <div id="roster-panel" class="roster-minimized w-full md:w-[350px] fixed bottom-0 md:relative md:self-stretch md:h-full bg-gray-950 p-4 md:p-6 flex flex-col border-t md:border-t-0 md:border-l border-gray-800 z-40 shadow-2xl text-left text-white">
+                <div onclick="toggleMobileRoster()" class="flex justify-between items-center mb-4 cursor-pointer md:cursor-default text-left">
+                    <h2 class="text-lg md:text-xl font-black italic uppercase text-white tracking-widest flex items-center gap-2 text-left text-white text-left text-white">
+                        My Squad
+                        <span id="roster-arrow" class="picks-roster-arrow md:hidden text-xs">▼</span>
+                        <span id="roster-helper" class="md:hidden text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Click to view</span>
+                    </h2>
+                    <span id="roster-count" class="picks-roster-count px-2 py-0.5 rounded-full text-[10px] font-bold text-center">0</span>
+                </div>
+                <div id="roster-list" class="grid grid-cols-2 gap-2 max-h-[170px] overflow-y-auto mb-4 md:mb-6 md:flex md:flex-col md:gap-3 md:flex-1 md:min-h-0 md:max-h-none text-white text-left"></div>
+                <div class="mt-auto w-full space-y-2 text-left">
                     <div class="flex flex-row md:flex-col items-center gap-3 text-left">
                         <div class="flex-grow md:w-full bg-gray-900 p-3 md:p-4 rounded-2xl border border-gray-800 text-white text-left">
                             <div class="flex justify-between items-center text-left text-white">
