@@ -43,7 +43,7 @@
         .picks-tier-label { background-color: var(--picks-accent-primary); color: #ffffff; }
         .picks-price-pill { background-color: var(--picks-accent-pill-bg); color: var(--picks-accent-pill-text); }
         .picks-roster-count { background-color: var(--picks-accent-primary); color: #ffffff; }
-        .picks-roster-arrow { color: var(--picks-accent-text); }
+        .picks-roster-arrow { color: #ffffff; }
         .picks-action-link:hover { border-color: var(--picks-accent-primary); background-color: var(--picks-accent-soft); }
         .picks-action-kicker { color: var(--picks-accent-text); }
         .theme-accent-text { color: var(--theme-accent-text); }
@@ -286,11 +286,62 @@
         </div>
 
         <div id="page-rules" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-white text-gray-900 text-left">
-            <div class="max-w-4xl mx-auto space-y-10">
-                <header class="text-left"><h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter">The Official Rules</h1><p class="theme-accent-text font-bold uppercase tracking-widest text-xs">2026 World Cup Pool Selection & Scoring</p></header>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-gray-900 border-b-2 border-gray-100 pb-8 text-left">
-                    <section class="space-y-4"><h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2">Squad Building</h2><ul class="space-y-3 font-medium text-gray-700"><li><strong>$150 Budget:</strong> Build your squad without overspending.</li><li><strong>Tier 1:</strong> Maximum ONE team (optional).</li><li><strong>Tier 3:</strong> You MUST pick at least THREE teams.</li></ul></section>
-                    <section class="space-y-4 text-left"><h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2">Prizes</h2><div class="bg-gray-900 text-white p-6 rounded-3xl shadow-xl text-left"><div class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Entry Fee</div><div class="text-3xl font-black mb-4">$40</div><div class="space-y-1 text-xs font-bold border-t border-gray-800 pt-3"><div class="flex justify-between"><span>1st Place</span><span class="text-green-400 font-bold">65%</span></div><div class="flex justify-between text-gray-300"><span>2nd Place</span><span>25%</span></div><div class="flex justify-between text-gray-300"><span>3rd Place</span><span>10%</span></div></div></div></section>
+            <div class="max-w-5xl mx-auto space-y-10">
+                <header class="text-left">
+                    <h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter">The Official Rules</h1>
+                    <p class="theme-accent-text font-bold uppercase tracking-widest text-xs">2026 World Cup Pool Selection &amp; Scoring</p>
+                </header>
+                <div class="grid grid-cols-1 md:grid-cols-[1.15fr_0.85fr] gap-10 text-gray-900 border-b-2 border-gray-100 pb-8 text-left">
+                    <section class="space-y-5">
+                        <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2">Squad Building</h2>
+                        <p class="text-sm font-semibold text-gray-500">Pick your squad using the $150 budget, then build the best team possible within the tier limits below.</p>
+                        <div class="space-y-4">
+                            <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div>
+                                        <div class="text-lg font-black text-gray-900">$150 Budget Limit</div>
+                                        <div class="mt-1 text-sm font-semibold text-gray-500">Build your squad without overspending.</div>
+                                    </div>
+                                    <div class="theme-accent-text text-2xl font-black">$150</div>
+                                </div>
+                            </div>
+                            <div class="grid gap-3 sm:grid-cols-3">
+                                <div class="rounded-2xl border border-gray-200 bg-white px-4 py-4">
+                                    <div class="text-[10px] font-black uppercase tracking-[0.22em] text-gray-400">Tier 1</div>
+                                    <div class="mt-2 text-lg font-black text-gray-900">0-1 Teams</div>
+                                    <div class="mt-2 text-sm font-semibold text-gray-500">Optional premium slot.</div>
+                                </div>
+                                <div class="rounded-2xl border border-gray-200 bg-white px-4 py-4">
+                                    <div class="text-[10px] font-black uppercase tracking-[0.22em] text-gray-400">Tier 2</div>
+                                    <div class="mt-2 text-lg font-black text-gray-900">Unlimited</div>
+                                    <div class="mt-2 text-sm font-semibold text-gray-500">Use freely within budget.</div>
+                                </div>
+                                <div class="rounded-2xl border border-gray-200 bg-white px-4 py-4">
+                                    <div class="text-[10px] font-black uppercase tracking-[0.22em] text-gray-400">Tier 3</div>
+                                    <div class="mt-2 text-lg font-black text-gray-900">Minimum 3</div>
+                                    <div class="mt-2 text-sm font-semibold text-gray-500">Required for a valid squad.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="space-y-5 text-left">
+                        <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2">Prizes</h2>
+                        <div class="grid gap-4">
+                            <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4">
+                                <div class="text-[10px] font-black uppercase tracking-[0.22em] text-gray-400">Entry Fee</div>
+                                <div class="mt-2 text-sm font-semibold text-gray-500">E-transfer to Connor, reach out for details.</div>
+                                <div class="mt-2 text-3xl font-black text-gray-900">$40 CAD</div>
+                            </div>
+                            <div class="rounded-2xl bg-gray-900 text-white p-5 shadow-lg">
+                                <div class="text-[10px] font-black uppercase tracking-[0.22em] text-gray-400">Prize Split</div>
+                                <div class="mt-4 space-y-3 text-sm font-bold">
+                                    <div class="flex items-center justify-between"><span>1st Place</span><span class="text-green-400">65%</span></div>
+                                    <div class="flex items-center justify-between text-gray-300"><span>2nd Place</span><span>25%</span></div>
+                                    <div class="flex items-center justify-between text-gray-300"><span>3rd Place</span><span>10%</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                 </div>
                 
                 <section class="space-y-6 text-left">
@@ -326,16 +377,18 @@
                         <div><div id="minutes" class="text-lg font-black text-center text-white text-center">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center">Min</div></div>
                     </div>
                 </header>
-                <section class="picks-rules-card mb-8 rounded-3xl border p-5 text-left text-gray-900">
+                <section class="picks-rules-card sticky top-0 z-20 mb-8 rounded-3xl border p-4 md:p-5 text-left text-gray-900 shadow-sm backdrop-blur-sm">
                     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <div>
                             <div class="picks-rules-kicker text-[10px] font-black uppercase tracking-[0.25em]">Picking Rules</div>
                             <h2 class="mt-1 text-xl font-black uppercase italic tracking-tight text-gray-900">Build Within The Pool Limits</h2>
+                            <p class="mt-1 text-sm font-bold text-gray-500">Tier 1: 0-1 Teams, Tier 2: Unlimited, Tier 3: Minimum 3.</p>
                         </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] font-black uppercase tracking-[0.15em]">
-                            <div class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">$150 Max Budget</div>
-                            <div class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">Only 1 Tier 1</div>
-                            <div class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">At Least 3 Tier 3</div>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 text-[11px] font-black uppercase tracking-[0.15em]">
+                            <div id="rule-chip-budget" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">$150 Max Budget</div>
+                            <div id="rule-chip-tier1" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">Tier 1: 0-1</div>
+                            <div id="rule-chip-tier2" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">Tier 2: Unlimited</div>
+                            <div id="rule-chip-tier3" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">Tier 3: Minimum 3</div>
                         </div>
                     </div>
                 </section>

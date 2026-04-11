@@ -295,7 +295,7 @@ function renderPool() {
                 </div>
                 <div class="h-px bg-gray-200 flex-grow"></div>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 text-left text-gray-900">
+            <div class="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 text-left text-gray-900">
                 ${tierTeams.map((team) => `
                     <div
                         onclick="toggleTeam('${team.name}')"
@@ -303,10 +303,10 @@ function renderPool() {
                         class="team-card bg-white border-2 border-gray-100 rounded-2xl p-2 shadow-sm ${isLocked ? 'locked-ui' : ''} text-gray-900 text-left"
                     >
                         <div class="flex justify-between items-start text-left mb-1 text-gray-900">
-                            <span class="text-3xl text-left">${team.flag}</span>
-                            <span class="picks-price-pill font-bold px-2 py-0.5 rounded text-xs text-left">$${team.cost}</span>
+                            <span class="text-2xl md:text-3xl text-left">${team.flag}</span>
+                            <span class="picks-price-pill font-bold px-2 py-0.5 rounded text-[10px] md:text-xs text-left">$${team.cost}</span>
                         </div>
-                        <div class="font-black uppercase text-[10px] tracking-tight truncate text-left text-gray-900">${team.name}</div>
+                        <div class="font-black uppercase text-[9px] md:text-[10px] tracking-tight truncate text-left text-gray-900">${team.name}</div>
                     </div>
                 `).join('')}
             </div>
@@ -350,7 +350,7 @@ function updateUI() {
                 </div>
                 <div class="flex items-center gap-2 text-white text-left">
                     <span class="text-green-400 font-mono font-bold text-xs text-left">$${team.cost}</span>
-                    ${!isLocked ? `<button onclick="toggleTeam('${team.name}')" class="text-gray-500 hover:text-red-500 text-lg font-bold text-left text-white text-center">×</button>` : ''}
+                    ${!isLocked ? `<button onclick="toggleTeam('${team.name}')" class="text-gray-500 hover:text-white text-lg font-bold text-left text-white text-center">×</button>` : ''}
                 </div>
             `;
             list.appendChild(item);
@@ -364,6 +364,53 @@ function updateUI() {
         : 'text-xl md:text-2xl font-mono font-bold text-green-400 text-left';
 
     document.getElementById('roster-count').innerText = `${myPicks.length}`;
+
+    const hasStarted = myPicks.length > 0;
+    const tier1Count = myPicks.filter((team) => team.tier === 1).length;
+    const tier2Count = myPicks.filter((team) => team.tier === 2).length;
+    const tier3Count = myPicks.filter((team) => team.tier === 3).length;
+
+    const setRuleChipState = (id, state) => {
+        const chip = document.getElementById(id);
+        if (!chip) {
+            return;
+        }
+
+        chip.className = 'picks-rules-chip rounded-2xl border px-4 py-3 transition-colors';
+
+        if (state === 'success') {
+            chip.classList.add('border-green-200', 'bg-green-50', 'text-green-700');
+            return;
+        }
+
+        if (state === 'warning') {
+            chip.classList.add('border-amber-200', 'bg-amber-50', 'text-amber-700');
+            return;
+        }
+
+        if (state === 'error') {
+            chip.classList.add('border-red-200', 'bg-red-50', 'text-red-700');
+            return;
+        }
+
+        chip.classList.add('border-gray-200', 'bg-white', 'text-gray-900');
+    };
+
+    let budgetState = 'neutral';
+    if (hasStarted) {
+        if (remaining < 0) {
+            budgetState = 'error';
+        } else if (remaining < 2) {
+            budgetState = 'success';
+        } else {
+            budgetState = 'warning';
+        }
+    }
+
+    setRuleChipState('rule-chip-budget', budgetState);
+    setRuleChipState('rule-chip-tier1', hasStarted ? (tier1Count <= 1 ? 'success' : 'error') : 'neutral');
+    setRuleChipState('rule-chip-tier2', tier2Count > 0 ? 'success' : 'neutral');
+    setRuleChipState('rule-chip-tier3', hasStarted ? (tier3Count >= 3 ? 'success' : 'error') : 'neutral');
 }
 
 async function renderGroups() {
