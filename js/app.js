@@ -518,30 +518,6 @@ async function upsertProfile(email, profile = {}) {
     return updatedAt;
 }
 
-async function incrementPicksSaveCount(email) {
-    const { data, error } = await supabaseClient
-        .from('profiles')
-        .select('picks_save_count')
-        .eq('email', email)
-        .maybeSingle();
-
-    if (error) {
-        throw error;
-    }
-
-    const nextCount = Number(data?.picks_save_count || 0) + 1;
-    const { error: updateError } = await supabaseClient
-        .from('profiles')
-        .update({ picks_save_count: nextCount })
-        .eq('email', email);
-
-    if (updateError) {
-        throw updateError;
-    }
-
-    return nextCount;
-}
-
 function confirmNewProfileEmail(email) {
     return showConfirmModal({
         title: 'Create New Profile?',
@@ -837,34 +813,21 @@ async function saveToSupabase() {
     button.classList.add('saving');
 
     try {
-        const { error: deleteError } = await supabaseClient
-            .from('picks')
-            .delete()
-            .eq('user_email', userEmail);
-
-        if (deleteError) {
-            throw deleteError;
-        }
-
         const pickRows = myPicks.map((team) => ({
-            user_email: userEmail,
             team_name: team.name,
             tier: team.tier,
             cost: team.cost
         }));
 
-        if (pickRows.length > 0) {
-            const { error: insertError } = await supabaseClient
-                .from('picks')
-                .insert(pickRows);
-
-            if (insertError) {
-                throw insertError;
-            }
-        }
-
         await upsertProfile(userEmail, { nickname, realname, favoriteTeam, homeCountry });
-        await incrementPicksSaveCount(userEmail);
+        const { error: replaceError } = await supabaseClient.rpc('replace_user_picks_atomic', {
+            p_user_email: userEmail,
+            p_picks: pickRows
+        });
+
+        if (replaceError) {
+            throw replaceError;
+        }
 
         saveState.failed = false;
         saveState.picksDirty = false;
@@ -880,7 +843,7 @@ async function saveToSupabase() {
         saveState.isSaving = false;
         saveState.failed = true;
         updateSaveStatusUI();
-        showToast(error.message || 'Could not save picks to the database.');
+        showToast(error.message || 'Could not save picks. Your previous saved team is still intact.');
     } finally {
         saveState.isSaving = false;
         updateSaveStatusUI();
