@@ -199,3 +199,26 @@ test('leaderboard totals score each saved squad and break ties alphabetically by
         ['Spain', 'Canada']
     );
 });
+
+test('leaderboard squad carries eliminated status from team advancement rows', () => {
+    const picks = [
+        { user_email: 'amy@example.com', team_name: 'Spain' },
+        { user_email: 'amy@example.com', team_name: 'Canada' }
+    ];
+
+    const profilesMap = buildProfilesMap([
+        { email: 'amy@example.com', nickname: 'Amy', realname: 'Amy A' }
+    ]);
+
+    const leaderboard = buildLeaderboardData(
+        picks,
+        [],
+        profilesMap,
+        teams,
+        new Set(),
+        new Set(['Canada'])
+    );
+
+    assert.equal(leaderboard[0].squad.find((team) => team.name === 'Spain').eliminated, false);
+    assert.equal(leaderboard[0].squad.find((team) => team.name === 'Canada').eliminated, true);
+});

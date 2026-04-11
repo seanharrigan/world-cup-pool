@@ -11,6 +11,7 @@ let appSettings = {
     hideTeamSelection: false
 };
 let advancedTeams = new Set();
+let eliminatedTeams = new Set();
 let isLocked = false;
 let chatChannel = null;
 let notificationChannel = null;

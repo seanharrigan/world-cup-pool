@@ -297,19 +297,18 @@ async function fetchAdvancedTeams() {
     try {
         const { data, error } = await supabaseClient
             .from('team_advancement')
-            .select('team_name, advanced_to_knockouts');
+            .select('team_name, advanced_to_knockouts, eliminated');
 
         if (error) {
             throw error;
         }
 
-        advancedTeams = new Set(
-            (data || [])
-                .filter((row) => row.advanced_to_knockouts)
-                .map((row) => row.team_name)
-        );
+        const rows = data || [];
+        advancedTeams = new Set(rows.filter((row) => row.advanced_to_knockouts).map((row) => row.team_name));
+        eliminatedTeams = new Set(rows.filter((row) => row.eliminated).map((row) => row.team_name));
     } catch (error) {
         advancedTeams = new Set();
+        eliminatedTeams = new Set();
     }
 
     return advancedTeams;

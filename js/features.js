@@ -7,6 +7,13 @@ const {
     buildLeaderboardData
 } = window.WorldCupScoring;
 
+function getTeamStatus(teamName) {
+    return {
+        advanced: advancedTeams.has(teamName),
+        eliminated: eliminatedTeams.has(teamName)
+    };
+}
+
 const teamResultsSortState = {
     'public-team-results-body': { key: 'team', direction: 'asc' }
 };
@@ -708,19 +715,29 @@ function buildAdvancementGroupsMarkup() {
                 <div class="mb-4 text-sm font-black uppercase text-white">Group ${group}</div>
                 <div class="space-y-3">
                     ${groupTeams.map((team) => `
-                        <div class="flex items-center justify-between gap-4 rounded-2xl border border-gray-800 bg-gray-950/70 px-4 py-3">
-                            <div class="flex items-center gap-3">
+                        <div class="rounded-2xl border border-gray-800 bg-gray-950/70 px-4 py-4">
+                            <div class="mb-4 flex items-center gap-3">
                                 <span class="text-2xl">${team.flag}</span>
-                                <div>
-                                    <div class="text-sm font-black uppercase text-white">${team.name}</div>
-                                    <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">+1 Advance Bonus</div>
+                                <div class="text-sm font-black uppercase text-white">${team.name}</div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="text-left">
+                                    <div class="mb-1 text-[9px] font-black uppercase tracking-[0.2em] text-emerald-300">Advanced</div>
+                                    <label class="relative inline-flex cursor-pointer items-center">
+                                        <input data-advancement-team="${team.name}" type="checkbox" class="peer sr-only" onchange="toggleTeamAdvancement('${team.name.replace(/'/g, "\\'")}', this.checked)">
+                                        <span class="h-8 w-14 rounded-full bg-gray-700 transition-colors peer-checked:bg-emerald-600"></span>
+                                        <span class="absolute left-1 h-6 w-6 rounded-full bg-white transition-transform peer-checked:translate-x-6"></span>
+                                    </label>
+                                </div>
+                                <div class="text-right">
+                                    <div class="mb-1 text-[9px] font-black uppercase tracking-[0.2em] text-red-300">Eliminated</div>
+                                    <label class="relative inline-flex cursor-pointer items-center">
+                                        <input data-eliminated-team="${team.name}" type="checkbox" class="peer sr-only" onchange="toggleTeamElimination('${team.name.replace(/'/g, "\\'")}', this.checked)">
+                                        <span class="h-8 w-14 rounded-full bg-gray-700 transition-colors peer-checked:bg-red-600"></span>
+                                        <span class="absolute left-1 h-6 w-6 rounded-full bg-white transition-transform peer-checked:translate-x-6"></span>
+                                    </label>
                                 </div>
                             </div>
-                            <label class="relative inline-flex cursor-pointer items-center">
-                                <input data-advancement-team="${team.name}" type="checkbox" class="peer sr-only" onchange="toggleTeamAdvancement('${team.name.replace(/'/g, "\\'")}', this.checked)">
-                                <span class="h-8 w-14 rounded-full bg-gray-700 transition-colors peer-checked:bg-emerald-600"></span>
-                                <span class="absolute left-1 h-6 w-6 rounded-full bg-white transition-transform peer-checked:translate-x-6"></span>
-                            </label>
                         </div>
                     `).join('')}
                 </div>
@@ -744,15 +761,21 @@ async function fetchAdminAdvancement() {
     container.querySelectorAll('[data-advancement-team]').forEach((input) => {
         input.checked = advancedTeams.has(input.dataset.advancementTeam);
     });
+
+    container.querySelectorAll('[data-eliminated-team]').forEach((input) => {
+        input.checked = eliminatedTeams.has(input.dataset.eliminatedTeam);
+    });
 }
 
 async function toggleTeamAdvancement(teamName, checked) {
     try {
+        const currentStatus = getTeamStatus(teamName);
         const { error } = await supabaseClient
             .from('team_advancement')
             .upsert({
                 team_name: teamName,
-                advanced_to_knockouts: checked
+                advanced_to_knockouts: checked,
+                eliminated: currentStatus.eliminated
             }, { onConflict: 'team_name' });
 
         if (error) {
@@ -769,6 +792,32 @@ async function toggleTeamAdvancement(teamName, checked) {
         showToast(checked ? `${teamName} marked advanced.` : `${teamName} advancement removed.`, 'success');
     } catch (error) {
         showToast(error.message || 'Unable to update advancement.');
+        fetchAdminAdvancement();
+    }
+}
+
+async function toggleTeamElimination(teamName, checked) {
+    try {
+        const currentStatus = getTeamStatus(teamName);
+        const { error } = await supabaseClient
+            .from('team_advancement')
+            .upsert({
+                team_name: teamName,
+                advanced_to_knockouts: currentStatus.advanced,
+                eliminated: checked
+            }, { onConflict: 'team_name' });
+
+        if (error) {
+            throw error;
+        }
+
+        await fetchAdvancedTeams();
+        fetchAdminAdvancement();
+        fetchLeaderboard();
+        setupDashboard();
+        showToast(checked ? `${teamName} marked eliminated.` : `${teamName} moved back to remaining.`, 'success');
+    } catch (error) {
+        showToast(error.message || 'Unable to update elimination status.');
         fetchAdminAdvancement();
     }
 }
@@ -835,7 +884,7 @@ async function setupDashboard() {
         const profilesMap = buildProfilesMap(allProfiles);
         await fetchAdvancedTeams();
         const teamPointsMap = buildTeamPointsMap(matches, teams, advancedTeams);
-        const leaderboardData = buildLeaderboardData(picks, matches, profilesMap, teams, advancedTeams);
+        const leaderboardData = buildLeaderboardData(picks, matches, profilesMap, teams, advancedTeams, eliminatedTeams);
         const currentUserRows = picks.filter((pick) => pick.user_email === userEmail);
         const currentProfile = getDisplayProfile(userEmail, profilesMap);
         renderDashboardFavoriteBanner(currentProfile);
@@ -1624,7 +1673,7 @@ async function fetchLeaderboard() {
 
         await fetchAdvancedTeams();
         const profilesMap = buildProfilesMap(allProfiles);
-        let leaderboardData = buildLeaderboardData(allPicks || [], allMatches || [], profilesMap, teams, advancedTeams);
+        let leaderboardData = buildLeaderboardData(allPicks || [], allMatches || [], profilesMap, teams, advancedTeams, eliminatedTeams);
         const playerCount = leaderboardData.length;
         const search = document.getElementById('leaderboard-search').value.toLowerCase();
         const countryFilter = document.getElementById('leaderboard-country-filter');
@@ -1665,7 +1714,17 @@ async function fetchLeaderboard() {
                     <div class="mt-2 text-left">
                         ${appSettings.hideTeamSelection
                             ? '<div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-400">Teams to be displayed when WC starts</div>'
-                            : `<div class="flex gap-1">${user.squad.sort((a, b) => b.cost - a.cost).map((team) => `<span class="text-lg">${team.flag}</span>`).join('')}</div>`}
+                            : (() => {
+                                const sortedSquad = [...user.squad].sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name));
+                                const remainingFlags = sortedSquad.filter((team) => !team.eliminated).map((team) => `<span class="text-lg">${team.flag}</span>`).join('');
+                                const eliminatedFlags = sortedSquad.filter((team) => team.eliminated).map((team) => `<span class="text-lg opacity-70">${team.flag}</span>`).join('');
+                                return `
+                                    <div class="space-y-1 text-left">
+                                        <div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-500">Remaining: <span class="ml-1 inline-flex gap-1 align-middle">${remainingFlags || '<span class="text-gray-300">-</span>'}</span></div>
+                                        <div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-400">Eliminated: <span class="ml-1 inline-flex gap-1 align-middle">${eliminatedFlags || '<span class="text-gray-300">-</span>'}</span></div>
+                                    </div>
+                                `;
+                            })()}
                     </div>
                 </td>
                 <td class="px-4 py-4 text-center font-black text-gray-900">${(user.stagePoints.G1 + user.stagePoints.G2 + user.stagePoints.G3) || '-'}</td>
@@ -1860,6 +1919,7 @@ Object.assign(window, {
     sendAdminNotification,
     deleteAdminNotification,
     toggleTeamAdvancement,
+    toggleTeamElimination,
     togglePicksLock,
     toggleAutoLock
     ,

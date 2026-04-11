@@ -27,6 +27,14 @@
         );
     }
 
+    function buildEliminatedTeamsSet(advancementRows = []) {
+        return new Set(
+            (advancementRows || [])
+                .filter((row) => row.eliminated)
+                .map((row) => row.team_name)
+        );
+    }
+
     function buildTeamStageBreakdownMap(matches = [], teamsList = [], advancedTeamsSet = new Set()) {
         const knockoutStageMap = {
             R32: 'R32',
@@ -139,7 +147,7 @@
         };
     }
 
-    function buildLeaderboardData(allPicks = [], allMatches = [], profilesMap = new Map(), teamsList = [], advancedTeamsSet = new Set()) {
+    function buildLeaderboardData(allPicks = [], allMatches = [], profilesMap = new Map(), teamsList = [], advancedTeamsSet = new Set(), eliminatedTeamsSet = new Set()) {
         const teamPointsMap = buildTeamPointsMap(allMatches, teamsList, advancedTeamsSet);
         const teamBreakdownMap = buildTeamStageBreakdownMap(allMatches, teamsList, advancedTeamsSet);
         const userMap = new Map();
@@ -192,7 +200,8 @@
                     name: teamData.name,
                     flag: teamData.flag,
                     cost: teamData.cost,
-                    tier: teamData.tier
+                    tier: teamData.tier,
+                    eliminated: eliminatedTeamsSet.has(teamData.name)
                 });
             }
         });
@@ -210,6 +219,7 @@
         STAGE_MULTIPLIERS,
         getMatchPointsForTeam,
         buildAdvancedTeamsSet,
+        buildEliminatedTeamsSet,
         buildTeamStageBreakdownMap,
         buildTeamPointsMap,
         buildProfilesMap,
