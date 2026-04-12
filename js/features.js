@@ -1085,31 +1085,50 @@ async function fetchAdminUsers() {
         const users = await getAdminUserRecords();
         body.innerHTML = users.map((user) => `
             <tr class="border-t border-gray-800">
-                <td class="px-5 py-4 align-top min-w-[180px]">
-                    <div class="text-white">${user.realname || user.nickname || user.email}</div>
-                    <div class="mt-1 text-xs italic text-gray-400">${user.nickname || '<span class="not-italic text-gray-500">No nickname</span>'}</div>
+                <td class="px-3.5 py-3 align-top min-w-[165px]">
+                    <div class="text-[12px] text-white">${user.realname || user.nickname || user.email}</div>
+                    <div class="mt-1 text-[9px] italic text-gray-400">${user.nickname || '<span class="not-italic text-gray-500">No nickname</span>'}</div>
                 </td>
-                <td class="px-5 py-4 align-top break-all min-w-[220px]">${user.email}</td>
-                <td class="px-5 py-4 align-top min-w-[180px]">${renderAdminTeamFlagsByTier(user.teamGroups)}</td>
-                <td class="px-5 py-4 align-top min-w-[140px]">${formatAdminTeamSavedAt(user.lastTeamSavedAt, user.picksSaveCount)}</td>
-                <td class="px-5 py-4 align-top text-center">
-                    <button onclick="toggleUserPaidStatus('${user.email.replace(/'/g, "\\'")}', ${user.hasPaid ? 'true' : 'false'})" class="rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${user.hasPaid ? 'bg-green-600 text-white hover:bg-green-500' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}">
-                        ${user.hasPaid ? 'Paid' : 'Not Paid'}
+                <td class="px-3.5 py-3 align-top break-all min-w-[195px] text-[12px]">${user.email}</td>
+                <td class="px-3.5 py-3 align-top min-w-[165px]">${renderAdminTeamFlagsByTier(user.teamGroups)}</td>
+                <td class="px-3.5 py-3 align-top min-w-[125px]">${formatAdminTeamSavedAt(user.lastTeamSavedAt, user.picksSaveCount)}</td>
+                <td class="px-3.5 py-3 align-top text-center">
+                    <button aria-label="${user.hasPaid ? 'Set unpaid' : 'Set paid'}" onclick="toggleUserPaidStatus('${user.email.replace(/'/g, "\\'")}', ${user.hasPaid ? 'true' : 'false'})" class="inline-flex h-8 w-[72px] items-center rounded-full border border-gray-600 px-1 transition-colors ${user.hasPaid ? 'bg-green-600/90 border-green-500 justify-end' : 'bg-gray-700 justify-start'}">
+                        <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-[7px] font-black uppercase tracking-[0.1em] ${user.hasPaid ? 'text-green-700' : 'text-gray-500'}">${user.hasPaid ? 'Paid' : ''}</span>
                     </button>
                 </td>
-                <td class="px-5 py-4 align-top text-center">
-                    <button onclick="toggleUserBlockedStatus('${user.email.replace(/'/g, "\\'")}', ${user.blocked ? 'true' : 'false'})" class="rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${user.blocked ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}">
-                        ${user.blocked ? 'Blocked' : 'Active'}
+                <td class="px-3.5 py-3 align-top text-center">
+                    <button aria-label="${isProtectedAdminEmail(user.email) ? 'Admin account protected' : user.blocked ? 'Set active' : 'Set blocked'}" onclick="${isProtectedAdminEmail(user.email) ? '' : `toggleUserBlockedStatus('${user.email.replace(/'/g, "\\'")}', ${user.blocked ? 'true' : 'false'})`}" class="inline-flex h-8 w-[72px] items-center rounded-full border border-gray-600 px-1 transition-colors ${isProtectedAdminEmail(user.email) ? 'bg-gray-800 border-gray-700 justify-start cursor-not-allowed opacity-70' : user.blocked ? 'bg-red-600/90 border-red-500 justify-end' : 'bg-gray-700 justify-start'}">
+                        <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-[7px] font-black uppercase tracking-[0.1em] ${isProtectedAdminEmail(user.email) ? 'text-gray-500' : user.blocked ? 'text-red-700' : 'text-gray-500'}">${isProtectedAdminEmail(user.email) ? 'Adm' : user.blocked ? 'Blk' : ''}</span>
                     </button>
                 </td>
-                <td class="px-5 py-4 text-right align-top">
-                    <button onclick="deleteUserPicks('${user.email.replace(/'/g, "\\'")}')" class="rounded-xl bg-red-600 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-red-500 transition-colors">Delete Picks</button>
+                <td class="px-3.5 py-3 text-center align-top">
+                    <button onclick="deleteUserPicks('${user.email.replace(/'/g, "\\'")}')" class="rounded-xl bg-red-600 px-3.5 py-2 text-[8px] font-black uppercase tracking-[0.16em] text-white hover:bg-red-500 transition-colors">Delete</button>
                 </td>
             </tr>
         `).join('') || '<tr><td colspan="7" class="px-5 py-8 text-center text-gray-500 uppercase text-xs">No player records found.</td></tr>';
     } catch (error) {
         body.innerHTML = '<tr><td colspan="7" class="px-5 py-8 text-center text-red-400 uppercase text-xs">Could not load player records.</td></tr>';
     }
+}
+
+function isProtectedAdminEmail(email) {
+    const normalizedEmail = (email || '').trim().toLowerCase();
+    return normalizedEmail === 'seanigan44@gmail.com' || normalizedEmail === 'harrigan.j.connor@gmail.com';
+}
+
+function refreshAdminUsersPreservingScroll() {
+    const adminPage = document.getElementById('page-admin');
+    const currentScrollTop = adminPage ? adminPage.scrollTop : window.scrollY;
+    fetchAdminUsers().finally(() => {
+        requestAnimationFrame(() => {
+            if (adminPage) {
+                adminPage.scrollTop = currentScrollTop;
+                return;
+            }
+            window.scrollTo(0, currentScrollTop);
+        });
+    });
 }
 
 function sortAdminUsers(a, b) {
@@ -1255,10 +1274,15 @@ async function toggleUserPaidStatus(email, currentValue) {
         return;
     }
 
-    fetchAdminUsers();
+    refreshAdminUsersPreservingScroll();
 }
 
 async function toggleUserBlockedStatus(email, currentValue) {
+    if (isProtectedAdminEmail(email)) {
+        showToast('Admin accounts cannot be blocked.');
+        return;
+    }
+
     const nextValue = !currentValue;
 
     try {
@@ -1275,7 +1299,7 @@ async function toggleUserBlockedStatus(email, currentValue) {
         return;
     }
 
-    fetchAdminUsers();
+    refreshAdminUsersPreservingScroll();
 }
 
 function formatTeamResultsCell(match, teamName, theme = 'dark') {

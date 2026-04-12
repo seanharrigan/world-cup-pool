@@ -9,6 +9,7 @@ const POOL_JOIN_PASSWORD = 'fifafifa26';
 let profileStatusChannel = null;
 let blockedStatusPollInterval = null;
 let blockedVisibilityListenerAttached = false;
+let blockedEnforcementArmed = false;
 
 function getProfileStorageKey(email = userEmail) {
     return email ? `wc_pool_profile_${email}` : null;
@@ -646,6 +647,14 @@ async function enforceBlockedStatusIfNeeded() {
     return false;
 }
 
+async function guardBlockedAccess() {
+    if (!blockedEnforcementArmed) {
+        return false;
+    }
+
+    return enforceBlockedStatusIfNeeded();
+}
+
 function handleBlockedVisibilityRefresh() {
     if (document.visibilityState === 'visible') {
         enforceBlockedStatusIfNeeded();
@@ -684,6 +693,7 @@ function setupProfileStatusWatcher() {
         blockedVisibilityListenerAttached = true;
     }
 
+    blockedEnforcementArmed = true;
     enforceBlockedStatusIfNeeded();
 }
 
@@ -746,6 +756,7 @@ async function completeLogin(email, existingProfile = null, options = {}) {
 function showBlockedAccessOverlay(email) {
     userEmail = email;
     localStorage.setItem('wc_pool_user_email', userEmail);
+    blockedEnforcementArmed = false;
 
     document.getElementById('auth-overlay')?.classList.add('hidden');
     document.getElementById('top-nav')?.classList.add('hidden');
@@ -842,6 +853,8 @@ async function restoreAuthLogin() {
 }
 
 async function signOutUser() {
+    blockedEnforcementArmed = false;
+
     try {
         await supabaseClient.auth.signOut();
     } catch (error) {
@@ -855,6 +868,10 @@ async function signOutUser() {
 }
 
 async function saveIdentityOnly() {
+    if (await guardBlockedAccess()) {
+        return;
+    }
+
     const nickname = document.getElementById('nickname-input').value.trim();
     const realname = document.getElementById('realname-input').value.trim();
     const favoriteTeam = document.getElementById('favorite-team-input').value;
@@ -890,6 +907,10 @@ async function saveIdentityOnly() {
 }
 
 async function saveToSupabase() {
+    if (await guardBlockedAccess()) {
+        return;
+    }
+
     if (isLocked) {
         showConfirmModal({
             label: 'Locked',
@@ -970,6 +991,10 @@ async function saveToSupabase() {
 }
 
 async function loadFromSupabase() {
+    if (await guardBlockedAccess()) {
+        return;
+    }
+
     try {
         const { data, error } = await supabaseClient
             .from('picks')
