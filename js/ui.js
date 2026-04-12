@@ -130,6 +130,8 @@ function showConfirmModal({
 function showProfileSetupModal(email, defaults = {}) {
     const modal = document.getElementById('profile-setup-modal');
     const messageEl = document.getElementById('profile-setup-message');
+    const submessageEl = document.getElementById('profile-setup-submessage');
+    const poolPasswordInput = document.getElementById('profile-setup-pool-password');
     const nicknameInput = document.getElementById('profile-setup-nickname');
     const realnameInput = document.getElementById('profile-setup-realname');
     const favoriteTeamInput = document.getElementById('profile-setup-favorite-team');
@@ -137,7 +139,7 @@ function showProfileSetupModal(email, defaults = {}) {
     const confirmButton = document.getElementById('profile-setup-confirm');
     const cancelButton = document.getElementById('profile-setup-cancel');
 
-    if (!modal || !messageEl || !nicknameInput || !realnameInput || !favoriteTeamInput || !homeCountryInput || !confirmButton || !cancelButton) {
+    if (!modal || !messageEl || !submessageEl || !poolPasswordInput || !nicknameInput || !realnameInput || !favoriteTeamInput || !homeCountryInput || !confirmButton || !cancelButton) {
         return Promise.resolve(null);
     }
 
@@ -157,6 +159,8 @@ function showProfileSetupModal(email, defaults = {}) {
     attachAlphaJumpToSelect(homeCountryInput);
 
     messageEl.textContent = `You're creating a new profile for ${email}.`;
+    submessageEl.textContent = 'Enter the shared pool password once, then set your pool identity.';
+    poolPasswordInput.value = '';
     nicknameInput.value = defaults.nickname || '';
     realnameInput.value = defaults.realname || '';
     favoriteTeamInput.value = defaults.favoriteTeam || '';
@@ -177,21 +181,28 @@ function showProfileSetupModal(email, defaults = {}) {
             realnameInput.removeEventListener('keydown', handleEnter);
             favoriteTeamInput.removeEventListener('keydown', handleEnter);
             homeCountryInput.removeEventListener('keydown', handleEnter);
+            poolPasswordInput.removeEventListener('keydown', handleEnter);
             resolve(result);
         };
 
         const submitIfValid = () => {
+            const poolPassword = poolPasswordInput.value.trim();
             const nickname = nicknameInput.value.trim();
             const realname = realnameInput.value.trim();
             const favoriteTeam = favoriteTeamInput.value;
             const homeCountry = homeCountryInput.value;
+
+            if (!poolPassword) {
+                showToast('Enter the pool password.');
+                return;
+            }
 
             if (!nickname || !realname) {
                 showToast('Enter nickname and real name.');
                 return;
             }
 
-            cleanup({ nickname, realname, favoriteTeam, homeCountry });
+            cleanup({ poolPassword, nickname, realname, favoriteTeam, homeCountry });
         };
 
         const handleConfirm = () => submitIfValid();
@@ -223,7 +234,8 @@ function showProfileSetupModal(email, defaults = {}) {
         realnameInput.addEventListener('keydown', handleEnter);
         favoriteTeamInput.addEventListener('keydown', handleEnter);
         homeCountryInput.addEventListener('keydown', handleEnter);
-        setTimeout(() => nicknameInput.focus(), 0);
+        poolPasswordInput.addEventListener('keydown', handleEnter);
+        setTimeout(() => poolPasswordInput.focus(), 0);
     });
 }
 

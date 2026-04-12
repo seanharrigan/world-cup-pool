@@ -160,12 +160,30 @@
 </head>
 <body class="bg-gray-950 text-white h-screen overflow-hidden font-sans flex flex-col text-left">
 
-    <div id="auth-overlay" class="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4">
-        <div class="bg-gray-800 p-8 md:p-10 rounded-3xl border border-gray-700 max-w-md w-full text-center shadow-2xl">
+    <div id="auth-overlay" class="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-[#07121f] p-4">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.16),_transparent_34%),linear-gradient(135deg,_rgba(11,78,46,0.95)_0%,_rgba(8,23,39,0.98)_55%,_rgba(80,12,20,0.92)_100%)]"></div>
+        <div class="absolute inset-x-[-10%] top-[12%] h-px bg-white/25"></div>
+        <div class="absolute inset-x-[-10%] bottom-[12%] h-px bg-white/18"></div>
+        <div class="absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10"></div>
+        <div class="absolute left-1/2 top-1/2 h-[220px] w-[220px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10"></div>
+        <div class="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-white/10"></div>
+        <div class="absolute top-10 left-10 h-28 w-28 rounded-full border border-white/8"></div>
+        <div class="absolute bottom-12 right-12 h-36 w-36 rounded-full border border-white/8"></div>
+        <div class="absolute inset-0 bg-black/35"></div>
+        <div class="relative bg-gray-900/86 p-8 md:p-10 rounded-3xl border border-white/10 max-w-md w-full text-center shadow-[0_25px_80px_rgba(0,0,0,0.45)] backdrop-blur-md">
             <div class="text-5xl md:text-6xl mb-6 text-center text-white">⚽</div>
             <h2 class="text-2xl md:text-3xl font-black mb-2 italic uppercase tracking-tighter text-white text-center">2026 World Cup Pool</h2>
-            <p class="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-gray-400">Sign in with your Google account to enter the pool</p>
-            <button onclick="startGoogleLogin()" id="google-login-btn" class="w-full rounded-2xl border border-gray-600 bg-white px-4 py-4 font-black uppercase tracking-[0.2em] text-gray-900 transition-colors hover:bg-gray-100">Continue with Google</button>
+            <p class="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-gray-300">Sign in with your Google account to enter the pool</p>
+            <button onclick="startGoogleLogin()" id="google-login-btn" class="w-full rounded-2xl border border-white/20 bg-white px-4 py-4 font-black uppercase tracking-[0.2em] text-gray-900 transition-colors hover:bg-gray-100">Continue with Google</button>
+        </div>
+    </div>
+
+    <div id="blocked-overlay" class="hidden fixed inset-0 z-[120] bg-black/95 backdrop-blur-sm items-center justify-center p-4">
+        <div class="w-full max-w-md rounded-3xl border border-red-900/60 bg-gray-900 p-8 text-center shadow-2xl">
+            <div class="mb-5 text-5xl text-red-500">⛔</div>
+            <div class="mb-2 text-[10px] font-black uppercase tracking-[0.25em] text-red-400">Account Blocked</div>
+            <h2 class="mb-3 text-2xl font-black uppercase italic tracking-tight text-white">Pool Access Disabled</h2>
+            <p class="text-sm font-bold leading-relaxed text-gray-300">This account has been blocked from the pool. Contact the commissioner if you think this is a mistake.</p>
         </div>
     </div>
 
@@ -750,7 +768,8 @@
                                             <th class="px-5 py-4">Team</th>
                                             <th class="px-5 py-4">Last Saved</th>
                                             <th class="px-5 py-4 text-center">Paid</th>
-                                            <th class="px-5 py-4 text-right">Delete</th>
+                                            <th class="px-5 py-4 text-center">Blocked</th>
+                                            <th class="px-5 py-4 text-right">Delete Picks</th>
                                         </tr>
                                     </thead>
                                     <tbody id="admin-players-body" class="bg-gray-900 text-sm font-bold text-gray-100"></tbody>
@@ -1000,9 +1019,13 @@
                 </div>
                 <div class="space-y-2">
                     <p id="profile-setup-message" class="text-sm md:text-base font-bold text-gray-100 leading-relaxed text-left">Before you enter the pool, choose the name people will see.</p>
-                    <p class="text-xs uppercase tracking-wider text-gray-400 text-left">This keeps every new entry named from the start.</p>
+                    <p id="profile-setup-submessage" class="text-xs uppercase tracking-wider text-gray-400 text-left">This keeps every new entry named from the start.</p>
                 </div>
                 <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="theme-accent-text mb-1 block text-[10px] font-black uppercase tracking-[0.2em]">Pool Password</label>
+                        <input id="profile-setup-pool-password" type="password" placeholder="Enter the shared pool password" class="theme-input w-full rounded-2xl border border-gray-700 bg-gray-950 px-4 py-3 font-bold text-white outline-none">
+                    </div>
                     <div>
                         <label class="theme-accent-text mb-1 block text-[10px] font-black uppercase tracking-[0.2em]">Nickname</label>
                         <input id="profile-setup-nickname" type="text" placeholder="e.g. Goal Diggers" class="theme-input w-full rounded-2xl border border-gray-700 bg-gray-950 px-4 py-3 font-bold text-white outline-none">

@@ -1079,7 +1079,7 @@ async function fetchAdminUsers() {
         return;
     }
 
-    body.innerHTML = '<tr><td colspan="6" class="px-5 py-8 text-center text-gray-500 uppercase text-xs">Loading players...</td></tr>';
+    body.innerHTML = '<tr><td colspan="7" class="px-5 py-8 text-center text-gray-500 uppercase text-xs">Loading players...</td></tr>';
 
     try {
         const users = await getAdminUserRecords();
@@ -1097,13 +1097,18 @@ async function fetchAdminUsers() {
                         ${user.hasPaid ? 'Paid' : 'Not Paid'}
                     </button>
                 </td>
+                <td class="px-5 py-4 align-top text-center">
+                    <button onclick="toggleUserBlockedStatus('${user.email.replace(/'/g, "\\'")}', ${user.blocked ? 'true' : 'false'})" class="rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${user.blocked ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}">
+                        ${user.blocked ? 'Blocked' : 'Active'}
+                    </button>
+                </td>
                 <td class="px-5 py-4 text-right align-top">
-                    <button onclick="deleteUserPicks('${user.email.replace(/'/g, "\\'")}')" class="rounded-xl bg-red-600 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-red-500 transition-colors">Delete</button>
+                    <button onclick="deleteUserPicks('${user.email.replace(/'/g, "\\'")}')" class="rounded-xl bg-red-600 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-red-500 transition-colors">Delete Picks</button>
                 </td>
             </tr>
-        `).join('') || '<tr><td colspan="6" class="px-5 py-8 text-center text-gray-500 uppercase text-xs">No player records found.</td></tr>';
+        `).join('') || '<tr><td colspan="7" class="px-5 py-8 text-center text-gray-500 uppercase text-xs">No player records found.</td></tr>';
     } catch (error) {
-        body.innerHTML = '<tr><td colspan="6" class="px-5 py-8 text-center text-red-400 uppercase text-xs">Could not load player records.</td></tr>';
+        body.innerHTML = '<tr><td colspan="7" class="px-5 py-8 text-center text-red-400 uppercase text-xs">Could not load player records.</td></tr>';
     }
 }
 
@@ -1123,7 +1128,7 @@ async function getAdminUserRecords() {
         { data: profiles, error: profilesError },
         { data: picks, error: picksError }
     ] = await Promise.all([
-        supabaseClient.from('profiles').select('email, nickname, realname, has_paid, avatar_url, updated_at, picks_save_count'),
+        supabaseClient.from('profiles').select('email, nickname, realname, has_paid, blocked, avatar_url, updated_at, picks_save_count'),
         supabaseClient.from('picks').select('user_email, team_name, team_nickname, team_realname, updated_at, tier, cost')
     ]);
 
@@ -1143,6 +1148,7 @@ async function getAdminUserRecords() {
             realname: profile.realname || '',
             nickname: profile.nickname || '',
             hasPaid: Boolean(profile.has_paid),
+            blocked: Boolean(profile.blocked),
             teamGroups: { 1: [], 2: [], 3: [] },
             lastTeamSavedAt: null,
             picksSaveCount: Number(profile.picks_save_count || 0)
@@ -1159,6 +1165,7 @@ async function getAdminUserRecords() {
                 realname: row.team_realname || '',
                 nickname: row.team_nickname || '',
                 hasPaid: false,
+                blocked: false,
                 teamGroups: { 1: [], 2: [], 3: [] },
                 lastTeamSavedAt: null,
                 picksSaveCount: 0
@@ -1245,6 +1252,26 @@ async function toggleUserPaidStatus(email, currentValue) {
         }
     } catch (error) {
         showToast(error.message || 'Unable to update payment status.');
+        return;
+    }
+
+    fetchAdminUsers();
+}
+
+async function toggleUserBlockedStatus(email, currentValue) {
+    const nextValue = !currentValue;
+
+    try {
+        const { error } = await supabaseClient
+            .from('profiles')
+            .update({ blocked: nextValue })
+            .eq('email', email);
+
+        if (error) {
+            throw error;
+        }
+    } catch (error) {
+        showToast(error.message || 'Unable to update blocked status.');
         return;
     }
 
@@ -1498,10 +1525,10 @@ async function deleteUserPicks(email) {
     const shouldDelete = await showConfirmModal({
         label: 'Are You Sure?',
         icon: '⚠️',
-        title: 'Delete Player Record?',
-        message: `This will delete all picks and the full profile for ${email}.`,
-        detail: 'It also removes their chat messages and any notifications they sent.',
-        confirmText: 'Yes, Delete',
+        title: 'Delete Saved Picks?',
+        message: `This will delete only the saved team picks for ${email}.`,
+        detail: 'Their account, profile, chat history, and payment status will stay intact.',
+        confirmText: 'Yes, Delete Picks',
         cancelText: 'No, Keep'
     });
 
@@ -1514,9 +1541,9 @@ async function deleteUserPicks(email) {
         icon: '🗑️',
         title: 'One Last Time',
         message: 'I will ask you one last time.',
-        detail: 'Are you absolutely sure you want to permanently remove this player record?',
-        confirmText: 'Delete Forever',
-        cancelText: 'Keep Player'
+        detail: 'Are you absolutely sure you want to permanently remove this player’s saved picks?',
+        confirmText: 'Delete Picks',
+        cancelText: 'Keep Picks'
     });
 
     if (!finalDelete) {
@@ -1524,32 +1551,13 @@ async function deleteUserPicks(email) {
     }
 
     try {
-        const [
-            { error: picksError },
-            { error: profileError },
-            { error: messagesError },
-            { error: notificationsError }
-        ] = await Promise.all([
-            supabaseClient.from('picks').delete().eq('user_email', email),
-            supabaseClient.from('profiles').delete().eq('email', email),
-            supabaseClient.from('messages').delete().eq('user_email', email),
-            supabaseClient.from('notifications').delete().eq('created_by', email)
-        ]);
+        const { error: picksError } = await supabaseClient
+            .from('picks')
+            .delete()
+            .eq('user_email', email);
 
         if (picksError) {
             throw picksError;
-        }
-
-        if (profileError) {
-            throw profileError;
-        }
-
-        if (messagesError) {
-            throw messagesError;
-        }
-
-        if (notificationsError) {
-            throw notificationsError;
         }
 
         if (userEmail === email) {
@@ -1558,13 +1566,11 @@ async function deleteUserPicks(email) {
         }
 
         fetchAdminUsers();
-        fetchAdminNotifications();
-        fetchMessages();
         fetchLeaderboard();
         fetchStats();
-        showToast('Player record deleted.', 'success');
+        showToast('Saved picks deleted.', 'success');
     } catch (error) {
-        showToast(error.message || 'Unable to delete player record.');
+        showToast(error.message || 'Unable to delete saved picks.');
     }
 }
 
@@ -2069,6 +2075,7 @@ Object.assign(window, {
     clearChatMessages,
     deleteUserPicks,
     toggleUserPaidStatus,
+    toggleUserBlockedStatus,
     fetchPublicResults,
     deleteMatch,
     submitManualResult,

@@ -5,6 +5,10 @@ const saveState = {
     lastSavedAt: null,
     failed: false
 };
+const POOL_JOIN_PASSWORD = 'fifafifa26';
+let profileStatusChannel = null;
+let blockedStatusPollInterval = null;
+let blockedVisibilityListenerAttached = false;
 
 function getProfileStorageKey(email = userEmail) {
     return email ? `wc_pool_profile_${email}` : null;
@@ -445,7 +449,7 @@ function toggleTeam(name) {
 async function getExistingProfile(email) {
     const { data, error } = await supabaseClient
         .from('profiles')
-        .select('nickname, realname, favorite_team, home_country, has_paid, avatar_url, updated_at, picks_save_count')
+        .select('nickname, realname, favorite_team, home_country, has_paid, avatar_url, updated_at, picks_save_count, blocked')
         .eq('email', email)
         .maybeSingle();
 
@@ -540,6 +544,18 @@ function showPaymentReminderModal() {
     });
 }
 
+function showWelcomeModal() {
+    return showConfirmModal({
+        label: 'Welcome',
+        icon: '🎉',
+        title: 'You Are In The Pool',
+        message: 'Your account has been created successfully.',
+        detail: 'Good luck building your squad.',
+        confirmText: 'Let’s Go',
+        singleAction: true
+    });
+}
+
 async function showBroadcastNotification(notification) {
     if (!notification?.id || !notification?.message || !userEmail) {
         return;
@@ -603,7 +619,77 @@ function setupNotifications() {
         .subscribe();
 }
 
-async function completeLogin(email, existingProfile = null) {
+async function enforceBlockedStatusIfNeeded() {
+    if (!userEmail) {
+        return false;
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('profiles')
+            .select('blocked')
+            .eq('email', userEmail)
+            .maybeSingle();
+
+        if (error) {
+            throw error;
+        }
+
+        if (data?.blocked === true) {
+            showBlockedAccessOverlay(userEmail);
+            return true;
+        }
+    } catch (error) {
+        // Fail quietly if this check is unavailable.
+    }
+
+    return false;
+}
+
+function handleBlockedVisibilityRefresh() {
+    if (document.visibilityState === 'visible') {
+        enforceBlockedStatusIfNeeded();
+    }
+}
+
+function setupProfileStatusWatcher() {
+    if (!userEmail) {
+        return;
+    }
+
+    if (!profileStatusChannel) {
+        profileStatusChannel = supabaseClient
+            .channel(`profile-status-${userEmail}`)
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'profiles',
+                filter: `email=eq.${userEmail}`
+            }, (payload) => {
+                if (payload.new?.blocked === true) {
+                    showBlockedAccessOverlay(userEmail);
+                }
+            })
+            .subscribe();
+    }
+
+    if (!blockedStatusPollInterval) {
+        blockedStatusPollInterval = window.setInterval(() => {
+            enforceBlockedStatusIfNeeded();
+        }, 3000);
+    }
+
+    if (!blockedVisibilityListenerAttached) {
+        document.addEventListener('visibilitychange', handleBlockedVisibilityRefresh);
+        blockedVisibilityListenerAttached = true;
+    }
+
+    enforceBlockedStatusIfNeeded();
+}
+
+async function completeLogin(email, existingProfile = null, options = {}) {
+    const { showWelcome = false } = options;
+
     userEmail = email;
     localStorage.setItem('wc_pool_user_email', userEmail);
     await checkAdminStatus();
@@ -644,12 +730,29 @@ async function completeLogin(email, existingProfile = null) {
     startCountdown();
     showPage('instructions');
     setupNotifications();
+    setupProfileStatusWatcher();
+
+    if (showWelcome) {
+        await showWelcomeModal();
+    }
+
+    await checkForBroadcastNotifications();
 
     if (existingProfile && existingProfile.has_paid === false) {
         await showPaymentReminderModal();
     }
+}
 
-    await checkForBroadcastNotifications();
+function showBlockedAccessOverlay(email) {
+    userEmail = email;
+    localStorage.setItem('wc_pool_user_email', userEmail);
+
+    document.getElementById('auth-overlay')?.classList.add('hidden');
+    document.getElementById('top-nav')?.classList.add('hidden');
+    document.getElementById('main-app')?.classList.add('hidden');
+    const blockedOverlay = document.getElementById('blocked-overlay');
+    blockedOverlay?.classList.remove('hidden');
+    blockedOverlay?.classList.add('flex');
 }
 
 async function handleAuthenticatedUser(authUser) {
@@ -670,6 +773,12 @@ async function handleAuthenticatedUser(authUser) {
             return false;
         }
 
+        if (newProfile.poolPassword !== POOL_JOIN_PASSWORD) {
+            showToast('That pool password is not correct.');
+            await supabaseClient.auth.signOut();
+            return false;
+        }
+
         saveProfileIdentityLocal(email, newProfile);
         await upsertProfile(email, {
             ...newProfile,
@@ -681,8 +790,16 @@ async function handleAuthenticatedUser(authUser) {
             realname: newProfile.realname,
             favorite_team: newProfile.favoriteTeam,
             home_country: newProfile.homeCountry,
-            avatar_url: authUser.user_metadata?.avatar_url || ''
+            avatar_url: authUser.user_metadata?.avatar_url || '',
+            has_paid: false
+        }, {
+            showWelcome: true
         });
+        return true;
+    }
+
+    if (existingProfile.blocked === true) {
+        showBlockedAccessOverlay(email);
         return true;
     }
 
