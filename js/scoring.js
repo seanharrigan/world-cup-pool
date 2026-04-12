@@ -215,6 +215,132 @@
         });
     }
 
+    function compareBestCandidates(nextCandidate, currentCandidate) {
+        if (!currentCandidate) {
+            return true;
+        }
+
+        if (nextCandidate.totalPoints !== currentCandidate.totalPoints) {
+            return nextCandidate.totalPoints > currentCandidate.totalPoints;
+        }
+
+        if (nextCandidate.totalCost !== currentCandidate.totalCost) {
+            return nextCandidate.totalCost < currentCandidate.totalCost;
+        }
+
+        const nextNames = nextCandidate.squad.map((team) => team.name).sort().join('|');
+        const currentNames = currentCandidate.squad.map((team) => team.name).sort().join('|');
+        return nextNames < currentNames;
+    }
+
+    function buildBestAvailableTeamData(allMatches = [], teamsList = [], advancedTeamsSet = new Set(), eliminatedTeamsSet = new Set()) {
+        const teamPointsMap = buildTeamPointsMap(allMatches, teamsList, advancedTeamsSet);
+        const teamBreakdownMap = buildTeamStageBreakdownMap(allMatches, teamsList, advancedTeamsSet);
+        const emptyStagePoints = () => ({
+            G1: 0,
+            G2: 0,
+            G3: 0,
+            Bonus: 0,
+            R32: 0,
+            R16: 0,
+            QF: 0,
+            SM: 0,
+            F: 0
+        });
+
+        let states = new Map([
+            ['0|0|0|0', {
+                totalPoints: 0,
+                totalCost: 0,
+                squad: [],
+                stagePoints: emptyStagePoints()
+            }]
+        ]);
+
+        teamsList.forEach((team) => {
+            const nextStates = new Map(states);
+            const teamPoints = teamPointsMap[team.name] || 0;
+            const teamBreakdown = teamBreakdownMap[team.name] || emptyStagePoints();
+            const teamTierOneIncrement = team.tier === 1 ? 1 : 0;
+            const teamTierThreeIncrement = team.tier === 3 ? 1 : 0;
+
+            states.forEach((state, key) => {
+                const [count, cost, tierOneCount, tierThreeBucket] = key.split('|').map(Number);
+                if (count >= 8) {
+                    return;
+                }
+
+                const nextCost = cost + team.cost;
+                if (nextCost > 150) {
+                    return;
+                }
+
+                const nextTierOneCount = tierOneCount + teamTierOneIncrement;
+                if (nextTierOneCount > 1) {
+                    return;
+                }
+
+                const nextCount = count + 1;
+                const nextTierThreeBucket = Math.min(3, tierThreeBucket + teamTierThreeIncrement);
+                const nextKey = `${nextCount}|${nextCost}|${nextTierOneCount}|${nextTierThreeBucket}`;
+                const nextCandidate = {
+                    totalPoints: state.totalPoints + teamPoints,
+                    totalCost: nextCost,
+                    squad: [...state.squad, {
+                        name: team.name,
+                        flag: team.flag,
+                        cost: team.cost,
+                        tier: team.tier,
+                        eliminated: eliminatedTeamsSet.has(team.name)
+                    }],
+                    stagePoints: {
+                        G1: state.stagePoints.G1 + teamBreakdown.G1,
+                        G2: state.stagePoints.G2 + teamBreakdown.G2,
+                        G3: state.stagePoints.G3 + teamBreakdown.G3,
+                        Bonus: state.stagePoints.Bonus + teamBreakdown.Bonus,
+                        R32: state.stagePoints.R32 + teamBreakdown.R32,
+                        R16: state.stagePoints.R16 + teamBreakdown.R16,
+                        QF: state.stagePoints.QF + teamBreakdown.QF,
+                        SM: state.stagePoints.SM + teamBreakdown.SM,
+                        F: state.stagePoints.F + teamBreakdown.F
+                    }
+                };
+
+                const existingCandidate = nextStates.get(nextKey);
+                if (compareBestCandidates(nextCandidate, existingCandidate)) {
+                    nextStates.set(nextKey, nextCandidate);
+                }
+            });
+
+            states = nextStates;
+        });
+
+        let bestCandidate = null;
+        states.forEach((candidate, key) => {
+            const [count, , tierOneCount, tierThreeBucket] = key.split('|').map(Number);
+            if (count !== 8 || tierOneCount > 1 || tierThreeBucket < 3) {
+                return;
+            }
+
+            if (compareBestCandidates(candidate, bestCandidate)) {
+                bestCandidate = candidate;
+            }
+        });
+
+        if (!bestCandidate) {
+            return null;
+        }
+
+        return {
+            email: 'best-available-team',
+            nickname: 'Best Available Team to Date',
+            realname: 'Highest-scoring legal squad so far',
+            totalPoints: bestCandidate.totalPoints,
+            stagePoints: bestCandidate.stagePoints,
+            squad: bestCandidate.squad
+        };
+    }
+
     const api = {
         STAGE_MULTIPLIERS,
         getMatchPointsForTeam,
@@ -224,7 +350,8 @@
         buildTeamPointsMap,
         buildProfilesMap,
         getDisplayProfile,
-        buildLeaderboardData
+        buildLeaderboardData,
+        buildBestAvailableTeamData
     };
 
     if (typeof module !== 'undefined' && module.exports) {

@@ -4,7 +4,8 @@ const {
     buildTeamPointsMap,
     buildProfilesMap,
     getDisplayProfile,
-    buildLeaderboardData
+    buildLeaderboardData,
+    buildBestAvailableTeamData
 } = window.WorldCupScoring;
 
 function getTeamStatus(teamName) {
@@ -1377,34 +1378,37 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
                     },
                     html: `
                     <tr class="border-t border-gray-800 align-top">
-                        <td class="px-4 py-4 min-w-[160px]">
+                        <td class="px-3 py-3 min-w-[150px]">
                             <div class="flex items-center gap-3">
                                 <span class="text-2xl">${team.flag}</span>
                                 <div>
-                                    <div class="font-black uppercase ${theme === 'dark' ? 'text-white' : 'text-gray-900'}">
-                                        ${team.name} <span class="text-gray-500">(${team.group})</span>
+                                    <div class="text-sm font-black uppercase ${theme === 'dark' ? 'text-white' : 'text-gray-900'}">
+                                        ${team.name}
                                     </div>
                                 </div>
                             </div>
                         </td>
-                        <td class="px-4 py-4">
-                            <div class="min-w-[72px] py-1 text-center">
-                                <div class="text-2xl font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'} leading-none">${totalPoints}</div>
+                        <td class="px-3 py-3 text-center">
+                            <div class="min-w-[44px] text-xs font-black uppercase tracking-[0.15em] ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}">${team.group}</div>
+                        </td>
+                        <td class="px-3 py-3">
+                            <div class="min-w-[64px] py-1 text-center">
+                                <div class="text-xl font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'} leading-none">${totalPoints}</div>
                             </div>
                         </td>
-                        <td class="px-4 py-4">${formatTeamResultsCell(slots.G1, team.name, theme)}</td>
-                        <td class="px-4 py-4">${formatTeamResultsCell(slots.G2, team.name, theme)}</td>
-                        <td class="px-4 py-4">${formatTeamResultsCell(slots.G3, team.name, theme)}</td>
-                        <td class="px-4 py-4">
-                            <div class="min-w-[72px] py-1 text-center">
-                                <div class="text-2xl font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'} leading-none">${stageBreakdown.Bonus || '-'}</div>
+                        <td class="px-3 py-3">${formatTeamResultsCell(slots.G1, team.name, theme)}</td>
+                        <td class="px-3 py-3">${formatTeamResultsCell(slots.G2, team.name, theme)}</td>
+                        <td class="px-3 py-3">${formatTeamResultsCell(slots.G3, team.name, theme)}</td>
+                        <td class="px-3 py-3">
+                            <div class="min-w-[64px] py-1 text-center">
+                                <div class="text-xl font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'} leading-none">${stageBreakdown.Bonus || '-'}</div>
                             </div>
                         </td>
-                        <td class="px-4 py-4">${formatTeamResultsCell(slots.R32, team.name, theme)}</td>
-                        <td class="px-4 py-4">${formatTeamResultsCell(slots.R16, team.name, theme)}</td>
-                        <td class="px-4 py-4">${formatTeamResultsCell(slots.QF, team.name, theme)}</td>
-                        <td class="px-4 py-4">${formatTeamResultsCell(slots.SM, team.name, theme)}</td>
-                        <td class="px-4 py-4">${formatTeamResultsCell(slots.F, team.name, theme)}</td>
+                        <td class="px-3 py-3">${formatTeamResultsCell(slots.R32, team.name, theme)}</td>
+                        <td class="px-3 py-3">${formatTeamResultsCell(slots.R16, team.name, theme)}</td>
+                        <td class="px-3 py-3">${formatTeamResultsCell(slots.QF, team.name, theme)}</td>
+                        <td class="px-3 py-3">${formatTeamResultsCell(slots.SM, team.name, theme)}</td>
+                        <td class="px-3 py-3">${formatTeamResultsCell(slots.F, team.name, theme)}</td>
                     </tr>
                 `
                 };
@@ -1598,25 +1602,101 @@ async function fetchPublicResults() {
         return;
     }
 
-    const { data } = await supabaseClient
-        .from('matches')
-        .select('*')
-        .order('match_date_manual', { ascending: false })
-        .limit(50);
+    const [
+        { data: matches, error: matchesError },
+        { data: picks, error: picksError },
+        { data: profiles, error: profilesError }
+    ] = await Promise.all([
+        supabaseClient
+            .from('matches')
+            .select('*')
+            .order('match_date_manual', { ascending: false })
+            .limit(50),
+        supabaseClient
+            .from('picks')
+            .select('user_email, team_name'),
+        supabaseClient
+            .from('profiles')
+            .select('email')
+    ]);
 
-    container.innerHTML = data?.map((match) => `
-        <div class="bg-white p-2 md:p-6 rounded-3xl border-2 border-gray-100 flex flex-col md:flex-row justify-between items-center gap-2 md:gap-4 text-left">
-            <div class="text-left flex-grow w-full md:w-auto">
-                <div class="theme-accent-text text-[8px] md:text-[10px] font-black uppercase mb-1">${match.match_date_manual} | ${match.stage}</div>
-                <div class="flex items-center justify-between md:justify-start gap-2 md:gap-4 text-sm md:text-xl font-black">
-                    <span class="flex-1 md:flex-none text-left">${teams.find((team) => team.name === match.team_home)?.flag} ${match.team_home}</span>
-                    <span class="bg-gray-900 text-white px-2 md:px-3 py-0.5 md:py-1 rounded-lg md:rounded-xl font-mono text-center min-w-[50px] md:min-w-[70px]">${match.score_home} - ${match.score_away}</span>
-                    <span class="flex-1 md:flex-none text-right md:text-left">${match.team_away} ${teams.find((team) => team.name === match.team_away)?.flag}</span>
-                </div>
+    if (matchesError) {
+        throw matchesError;
+    }
+
+    if (picksError) {
+        throw picksError;
+    }
+
+    if (profilesError) {
+        throw profilesError;
+    }
+
+    const playersInPool = new Set((profiles || []).map((profile) => profile.email).filter(Boolean));
+    const teamOwnership = new Map();
+
+    (picks || []).forEach((pick) => {
+        if (!pick.team_name || !pick.user_email) {
+            return;
+        }
+
+        if (!teamOwnership.has(pick.team_name)) {
+            teamOwnership.set(pick.team_name, new Set());
+        }
+
+        teamOwnership.get(pick.team_name).add(pick.user_email);
+    });
+
+    const totalPlayers = playersInPool.size || new Set((picks || []).map((pick) => pick.user_email).filter(Boolean)).size;
+    const ownershipMarkup = (teamName) => {
+        const pickedCount = teamOwnership.get(teamName)?.size || 0;
+        const percentage = totalPlayers > 0 ? Math.round((pickedCount / totalPlayers) * 100) : 0;
+        return `
+            <div class="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">
+                ${pickedCount} picked${totalPlayers > 0 ? ` · ${percentage}%` : ''}
             </div>
-            ${match.was_extra_time ? '<span class="text-[8px] md:text-[10px] font-black uppercase text-red-500 italic">ET/Pens Result</span>' : ''}
-        </div>
-    `).join('') || '<div class="text-center py-20 text-gray-400 font-bold uppercase text-xs text-center">Tournament results will appear here once matches begin.</div>';
+        `;
+    };
+    const buildPointsAwardedLabel = (match) => {
+        if (match.score_home === match.score_away) {
+            const drawPoints = getMatchPointsForTeam(match, match.team_home);
+            return `${drawPoints} pt${drawPoints === 1 ? '' : 's'} each`;
+        }
+
+        const winningTeam = match.score_home > match.score_away ? match.team_home : match.team_away;
+        const awardedPoints = getMatchPointsForTeam(match, winningTeam);
+        return `${awardedPoints} pts awarded`;
+    };
+
+    container.innerHTML = matches?.map((match) => {
+        const homeTeam = teams.find((team) => team.name === match.team_home);
+        const awayTeam = teams.find((team) => team.name === match.team_away);
+
+        return `
+            <div class="bg-white p-3 md:p-6 rounded-3xl border-2 border-gray-100 text-left">
+                <div class="theme-accent-text text-[8px] md:text-[10px] font-black uppercase mb-3">${match.match_date_manual} | ${match.stage}</div>
+                <div class="grid grid-cols-[minmax(0,1fr)_108px_minmax(0,1fr)] items-center gap-3 md:grid-cols-[minmax(220px,1fr)_160px_minmax(220px,1fr)] md:gap-6">
+                    <div class="min-w-0 text-left">
+                        <div class="text-sm md:text-xl font-black truncate">${homeTeam?.flag || ''} ${match.team_home}</div>
+                        ${ownershipMarkup(match.team_home)}
+                    </div>
+                    <div class="text-center">
+                        <div class="mb-1 text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">
+                            ${buildPointsAwardedLabel(match)}
+                        </div>
+                        <div class="bg-gray-900 text-white px-3 md:px-4 py-2 md:py-3 rounded-lg md:rounded-xl font-mono text-center text-base md:text-[1.7rem] font-black tabular-nums min-w-[108px] md:min-w-[160px]">
+                            ${match.score_home} - ${match.score_away}
+                        </div>
+                    </div>
+                    <div class="min-w-0 text-right">
+                        <div class="text-sm md:text-xl font-black truncate">${match.team_away} ${awayTeam?.flag || ''}</div>
+                        ${ownershipMarkup(match.team_away)}
+                    </div>
+                </div>
+                ${match.was_extra_time ? '<div class="mt-3 text-[8px] md:text-[10px] font-black uppercase text-red-500 italic text-right">ET/Pens Result</div>' : ''}
+            </div>
+        `;
+    }).join('') || '<div class="text-center py-20 text-gray-400 font-bold uppercase text-xs text-center">Tournament results will appear here once matches begin.</div>';
 }
 
 async function deleteMatch(id) {
@@ -1720,6 +1800,7 @@ async function fetchLeaderboard() {
         await fetchAdvancedTeams();
         const profilesMap = buildProfilesMap(allProfiles);
         let leaderboardData = buildLeaderboardData(allPicks || [], allMatches || [], profilesMap, teams, advancedTeams, eliminatedTeams);
+        const bestAvailableTeam = buildBestAvailableTeamData(allMatches || [], teams, advancedTeams, eliminatedTeams);
         const playerCount = leaderboardData.length;
         const search = document.getElementById('leaderboard-search').value.toLowerCase();
         const countryFilter = document.getElementById('leaderboard-country-filter');
@@ -1750,27 +1831,65 @@ async function fetchLeaderboard() {
         document.getElementById('prize-2nd').innerText = `$${Math.floor(totalPot * 0.25).toLocaleString()}`;
         document.getElementById('prize-3rd').innerText = `$${Math.floor(totalPot * 0.10).toLocaleString()}`;
 
-        body.innerHTML = leaderboardData.map((user, index) => `
-            <tr class="theme-hover-row border-b border-gray-100 transition-colors text-left text-gray-900">
-                <td class="theme-accent-text px-6 py-4 text-center italic">#${index + 1}</td>
-                <td class="theme-accent-text px-6 py-4 text-center font-mono text-2xl font-black">${user.totalPoints}</td>
+        const renderSquadSummary = (user, muted = false) => {
+            if (appSettings.hideTeamSelection) {
+                return '<div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-400">Teams to be displayed when WC starts</div>';
+            }
+
+            const sortedSquad = [...user.squad].sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name));
+            const remainingFlags = sortedSquad.filter((team) => !team.eliminated).map((team) => `<span class="text-lg">${team.flag}</span>`).join('');
+            const eliminatedFlags = sortedSquad.filter((team) => team.eliminated).map((team) => `<span class="text-lg opacity-70">${team.flag}</span>`).join('');
+            const remainingTone = muted ? 'text-gray-400' : 'text-gray-500';
+            const eliminatedTone = muted ? 'text-gray-300' : 'text-gray-400';
+
+            return `
+                <div class="space-y-1 text-left">
+                    <div class="text-[8px] font-black uppercase tracking-[0.18em] ${remainingTone}">Remaining: <span class="ml-1 inline-flex gap-1 align-middle">${remainingFlags || '<span class="text-gray-300">-</span>'}</span></div>
+                    <div class="text-[8px] font-black uppercase tracking-[0.18em] ${eliminatedTone}">Eliminated: <span class="ml-1 inline-flex gap-1 align-middle">${eliminatedFlags || '<span class="text-gray-300">-</span>'}</span></div>
+                </div>
+            `;
+        };
+
+        const bestRowMarkup = bestAvailableTeam ? `
+            <tr class="border-b border-gray-100 bg-gray-50 text-left text-gray-700">
+                <td class="px-6 py-4 text-center text-[1.65rem] font-black italic text-gray-400">-</td>
+                <td class="px-6 py-4 text-center font-mono text-[1.65rem] font-black text-gray-500">${bestAvailableTeam.totalPoints}</td>
                 <td class="px-6 py-4 text-left">
-                    <div class="text-sm font-black uppercase text-left text-gray-900">${user.nickname}</div>
-                    <div class="text-[9px] text-gray-400 uppercase text-left">${user.realname}</div>
+                    <div class="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400 text-left">${bestAvailableTeam.nickname}</div>
                     <div class="mt-2 text-left">
-                        ${appSettings.hideTeamSelection
-                            ? '<div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-400">Teams to be displayed when WC starts</div>'
-                            : (() => {
-                                const sortedSquad = [...user.squad].sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name));
-                                const remainingFlags = sortedSquad.filter((team) => !team.eliminated).map((team) => `<span class="text-lg">${team.flag}</span>`).join('');
-                                const eliminatedFlags = sortedSquad.filter((team) => team.eliminated).map((team) => `<span class="text-lg opacity-70">${team.flag}</span>`).join('');
-                                return `
-                                    <div class="space-y-1 text-left">
-                                        <div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-500">Remaining: <span class="ml-1 inline-flex gap-1 align-middle">${remainingFlags || '<span class="text-gray-300">-</span>'}</span></div>
-                                        <div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-400">Eliminated: <span class="ml-1 inline-flex gap-1 align-middle">${eliminatedFlags || '<span class="text-gray-300">-</span>'}</span></div>
-                                    </div>
-                                `;
-                            })()}
+                        ${renderSquadSummary(bestAvailableTeam, true)}
+                    </div>
+                </td>
+                <td class="px-4 py-4 text-center font-black text-gray-500">${(bestAvailableTeam.stagePoints.G1 + bestAvailableTeam.stagePoints.G2 + bestAvailableTeam.stagePoints.G3) || '-'}</td>
+                <td class="px-4 py-4 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.Bonus || '-'}</td>
+                <td class="px-4 py-4 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.R32 || '-'}</td>
+                <td class="px-4 py-4 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.R16 || '-'}</td>
+                <td class="px-4 py-4 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.QF || '-'}</td>
+                <td class="px-4 py-4 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.SM || '-'}</td>
+                <td class="px-4 py-4 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.F || '-'}</td>
+            </tr>
+        ` : '';
+
+        let displayRank = 0;
+        let previousPoints = null;
+
+        body.innerHTML = bestRowMarkup + (leaderboardData.map((user, index) => {
+            if (user.totalPoints !== previousPoints) {
+                displayRank = index + 1;
+                previousPoints = user.totalPoints;
+            }
+
+            const rowTone = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+
+            return `
+            <tr class="theme-hover-row ${rowTone} border-b border-gray-100 transition-colors text-left text-gray-900">
+                <td class="theme-accent-text px-6 py-4 text-center text-[1.65rem] font-black italic">#${displayRank}</td>
+                <td class="theme-accent-text px-6 py-4 text-center font-mono text-[1.65rem] font-black">${user.totalPoints}</td>
+                <td class="px-6 py-4 text-left">
+                    <div class="text-lg font-black uppercase text-left text-gray-900">${user.nickname}</div>
+                    <div class="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400 text-left">${user.realname}</div>
+                    <div class="mt-2 text-left">
+                        ${renderSquadSummary(user)}
                     </div>
                 </td>
                 <td class="px-4 py-4 text-center font-black text-gray-900">${(user.stagePoints.G1 + user.stagePoints.G2 + user.stagePoints.G3) || '-'}</td>
@@ -1781,7 +1900,8 @@ async function fetchLeaderboard() {
                 <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.SM || '-'}</td>
                 <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.F || '-'}</td>
             </tr>
-        `).join('') || '<tr><td colspan="10" class="p-8 text-center text-gray-900">No players found</td></tr>';
+        `;
+        }).join('') || '<tr><td colspan="10" class="p-8 text-center text-gray-900">No players found</td></tr>');
     } catch (error) {
         body.innerHTML = '<tr><td colspan="10" class="p-8 text-center text-red-500 text-gray-900">Error calculating scores</td></tr>';
     }

@@ -10,7 +10,8 @@ const {
     buildAdvancedTeamsSet,
     buildTeamStageBreakdownMap,
     buildProfilesMap,
-    buildLeaderboardData
+    buildLeaderboardData,
+    buildBestAvailableTeamData
 } = require('../js/scoring.js');
 
 const teams = [
@@ -221,4 +222,34 @@ test('leaderboard squad carries eliminated status from team advancement rows', (
 
     assert.equal(leaderboard[0].squad.find((team) => team.name === 'Spain').eliminated, false);
     assert.equal(leaderboard[0].squad.find((team) => team.name === 'Canada').eliminated, true);
+});
+
+test('best available team respects budget and tier rules', () => {
+    const expandedTeams = [
+        { name: 'Spain', flag: '🇪🇸', cost: 50, tier: 1 },
+        { name: 'France', flag: '🇫🇷', cost: 45, tier: 1 },
+        { name: 'Morocco', flag: '🇲🇦', cost: 25, tier: 2 },
+        { name: 'Canada', flag: '🇨🇦', cost: 10, tier: 2 },
+        { name: 'Mexico', flag: '🇲🇽', cost: 25, tier: 2 },
+        { name: 'Iraq', flag: '🇮🇶', cost: 4, tier: 3 },
+        { name: 'Jordan', flag: '🇯🇴', cost: 2, tier: 3 },
+        { name: 'Haiti', flag: '🇭🇹', cost: 2, tier: 3 },
+        { name: 'Qatar', flag: '🇶🇦', cost: 4, tier: 3 }
+    ];
+
+    const matches = [
+        { stage: 'Finals', team_home: 'Spain', team_away: 'France', score_home: 1, score_away: 0 },
+        { stage: 'R16', team_home: 'Morocco', team_away: 'Canada', score_home: 1, score_away: 0 },
+        { stage: 'Group', team_home: 'Mexico', team_away: 'Iraq', score_home: 1, score_away: 0 },
+        { stage: 'Group', team_home: 'Jordan', team_away: 'Haiti', score_home: 1, score_away: 1 },
+        { stage: 'Group', team_home: 'Qatar', team_away: 'Canada', score_home: 0, score_away: 0 }
+    ];
+
+    const bestTeam = buildBestAvailableTeamData(matches, expandedTeams, new Set(['Canada']), new Set(['France']));
+
+    assert.equal(bestTeam.nickname, 'Best Available Team to Date');
+    assert.equal(bestTeam.squad.length, 8);
+    assert.ok(bestTeam.squad.filter((team) => team.tier === 1).length <= 1);
+    assert.ok(bestTeam.squad.filter((team) => team.tier === 3).length >= 3);
+    assert.ok(bestTeam.squad.reduce((sum, team) => sum + team.cost, 0) <= 150);
 });
