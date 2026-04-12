@@ -285,6 +285,7 @@ function togglePicksRulesBar(forceExpanded = null) {
     const chips = document.getElementById('picks-rules-help-panel');
     const button = document.getElementById('picks-rules-toggle');
     const wrap = document.getElementById('picks-rules-help-wrap');
+    const expandedButton = document.getElementById('picks-rules-toggle-expanded');
 
     if (!chips || !button || !wrap) {
         return;
@@ -296,19 +297,39 @@ function togglePicksRulesBar(forceExpanded = null) {
 
     chips.classList.toggle('hidden', !shouldExpand);
     wrap.classList.toggle('open', shouldExpand);
-    button.innerText = shouldExpand ? '×' : '?';
+    button.innerText = '?';
+    button.classList.toggle('hidden', shouldExpand);
+    if (expandedButton) {
+        expandedButton.classList.toggle('hidden', !shouldExpand);
+    }
     button.setAttribute('aria-label', shouldExpand ? 'Hide rule status help' : 'Show rule status help');
 }
 
 function updatePicksRulesHelpAnchor() {
     const wrap = document.getElementById('picks-rules-help-wrap');
     const scrollContainer = document.getElementById('picks-main-scroll');
+    const rulesCard = document.getElementById('picks-rules-card');
+    const toggle = document.getElementById('picks-rules-toggle');
 
-    if (!wrap || !scrollContainer) {
+    if (!wrap || !scrollContainer || !rulesCard || !toggle) {
         return;
     }
 
-    wrap.classList.toggle('scrolled', scrollContainer.scrollTop > 80);
+    const rect = rulesCard.getBoundingClientRect();
+    const viewportPadding = window.innerWidth < 768 ? 10 : 16;
+    const anchorTop = Math.max(viewportPadding, Math.round(rect.top + 12));
+    const anchorLeft = Math.round(rect.right - toggle.offsetWidth - 12);
+
+    if (scrollContainer.scrollTop <= 80 || !wrap.dataset.fixedTop || !wrap.dataset.fixedLeft) {
+        wrap.dataset.fixedTop = `${anchorTop}`;
+        wrap.dataset.fixedLeft = `${anchorLeft}`;
+    }
+
+    const fixedTop = Number(wrap.dataset.fixedTop || anchorTop);
+    const fixedLeft = Number(wrap.dataset.fixedLeft || anchorLeft);
+    wrap.style.top = `${fixedTop}px`;
+    wrap.style.left = `${fixedLeft}px`;
+    wrap.style.right = 'auto';
 }
 
 function syncMobileRosterState() {
