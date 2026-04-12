@@ -42,6 +42,7 @@
         .picks-rules-chip { border-color: var(--picks-accent-soft-strong); }
         #picks-rules-help-wrap {
             position: relative;
+            margin-top: 4rem;
         }
         #picks-rules-help-panel.hidden { display: none; }
         #picks-rules-toggle {
@@ -68,10 +69,24 @@
             padding-right: 4.25rem;
         }
         @media (max-width: 767px) {
+            #picks-rules-help-wrap {
+                margin-top: 1rem;
+            }
+            #picks-rules-help-wrap.scrolled {
+                margin-top: 0.35rem;
+            }
             #picks-rules-help-wrap.open #picks-rules-help-panel {
                 margin-top: 0;
                 padding-top: 1.25rem;
                 padding-right: 4rem;
+            }
+        }
+        @media (min-width: 768px) {
+            #picks-rules-help-wrap {
+                margin-top: 5.5rem;
+            }
+            #picks-rules-help-wrap.scrolled {
+                margin-top: 0.75rem;
             }
         }
         .picks-tier-label { background-color: var(--picks-accent-primary); color: #ffffff; }
@@ -400,7 +415,7 @@
         </div>
 
         <div id="page-picks" class="page-content hidden h-full w-full flex flex-col md:flex-row text-left">
-            <div class="flex-grow h-full overflow-y-auto p-4 md:p-10 bg-white text-gray-900 pb-[350px] md:pb-10 text-left">
+            <div id="picks-main-scroll" class="flex-grow h-full overflow-y-auto p-4 md:p-10 bg-white text-gray-900 pb-[350px] md:pb-10 text-left">
                 <header class="mb-3 flex flex-col md:flex-row justify-between items-center border-b-4 border-gray-900 pb-6 gap-4 text-left">
                     <h1 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-left">Selection</h1>
                     <div id="countdown" class="flex gap-3 text-center bg-gray-900 text-white px-4 py-2 rounded-xl shadow-xl text-center text-white">
@@ -413,7 +428,7 @@
                 </header>
                 <div class="sticky top-3 z-30 h-0 pointer-events-none">
                     <div class="flex justify-end px-4 md:px-10">
-                        <div id="picks-rules-help-wrap" class="pointer-events-auto relative mt-16 flex w-full max-w-[920px] min-h-[56px] flex-col items-end md:mt-24 md:w-auto">
+                        <div id="picks-rules-help-wrap" class="pointer-events-auto relative flex w-full max-w-[920px] min-h-[56px] flex-col items-end md:w-auto">
                             <button id="picks-rules-toggle" onclick="togglePicksRulesBar()" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-base font-black shadow-sm transition-colors" aria-label="Show rule status help">?</button>
                             <div id="picks-rules-help-panel" class="hidden w-full rounded-2xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur-sm md:w-auto md:min-w-[620px] md:max-w-[920px]">
                                 <div class="grid grid-cols-2 gap-2 xl:grid-cols-4">

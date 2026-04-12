@@ -242,6 +242,7 @@ function showPage(pageId) {
         updateUI();
         syncMobileRosterState();
         togglePicksRulesBar(false);
+        updatePicksRulesHelpAnchor();
     }
     if (pageId === 'leaderboard') fetchLeaderboard();
     if (pageId === 'admin') setupAdminPage();
@@ -299,6 +300,17 @@ function togglePicksRulesBar(forceExpanded = null) {
     button.setAttribute('aria-label', shouldExpand ? 'Hide rule status help' : 'Show rule status help');
 }
 
+function updatePicksRulesHelpAnchor() {
+    const wrap = document.getElementById('picks-rules-help-wrap');
+    const scrollContainer = document.getElementById('picks-main-scroll');
+
+    if (!wrap || !scrollContainer) {
+        return;
+    }
+
+    wrap.classList.toggle('scrolled', scrollContainer.scrollTop > 80);
+}
+
 function syncMobileRosterState() {
     const panel = document.getElementById('roster-panel');
     const arrow = document.getElementById('roster-arrow');
@@ -321,6 +333,8 @@ function syncMobileRosterState() {
             helper.textContent = '';
         }
     }
+
+    updatePicksRulesHelpAnchor();
 }
 
 function renderPool() {
@@ -635,6 +649,15 @@ window.addEventListener('resize', () => {
     syncMobileRosterState();
 });
 
+document.addEventListener('DOMContentLoaded', () => {
+    const picksScroll = document.getElementById('picks-main-scroll');
+    if (picksScroll) {
+        picksScroll.addEventListener('scroll', updatePicksRulesHelpAnchor, { passive: true });
+    }
+
+    updatePicksRulesHelpAnchor();
+});
+
 Object.assign(window, {
     showToast,
     showConfirmModal,
@@ -643,6 +666,7 @@ Object.assign(window, {
     toggleMobileMenu,
     toggleMobileRoster,
     togglePicksRulesBar,
+    updatePicksRulesHelpAnchor,
     syncMobileRosterState,
     renderPool,
     updateUI,
