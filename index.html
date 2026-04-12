@@ -54,6 +54,11 @@
             background-color: rgba(255, 255, 255, 0.98);
         }
         #picks-rules-toggle:hover { background-color: #ffffff; }
+        #picks-rules-toggle:focus,
+        #picks-rules-toggle:focus-visible {
+            outline: none;
+            box-shadow: none;
+        }
         #picks-rules-help-panel {
             position: relative;
         }
@@ -408,7 +413,7 @@
                 </header>
                 <div class="sticky top-3 z-30 h-0 pointer-events-none">
                     <div class="flex justify-end px-4 md:px-10">
-                        <div id="picks-rules-help-wrap" class="pointer-events-auto relative flex w-full max-w-[920px] min-h-[56px] flex-col items-end md:w-auto">
+                        <div id="picks-rules-help-wrap" class="pointer-events-auto relative mt-16 flex w-full max-w-[920px] min-h-[56px] flex-col items-end md:mt-24 md:w-auto">
                             <button id="picks-rules-toggle" onclick="togglePicksRulesBar()" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-base font-black shadow-sm transition-colors" aria-label="Show rule status help">?</button>
                             <div id="picks-rules-help-panel" class="hidden w-full rounded-2xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur-sm md:w-auto md:min-w-[620px] md:max-w-[920px]">
                                 <div class="grid grid-cols-2 gap-2 xl:grid-cols-4">
