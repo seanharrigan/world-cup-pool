@@ -19,6 +19,8 @@ function showToast(message, type = 'error') {
     }, 2800);
 }
 
+let mobilePicksHelperAnchorTimeout = null;
+
 function attachAlphaJumpToSelect(select) {
     if (!select || select.dataset.alphaJumpBound === 'true') {
         return;
@@ -228,6 +230,9 @@ function showProfileSetupModal(email, defaults = {}) {
 function showPage(pageId) {
     document.querySelectorAll('.page-content').forEach((page) => page.classList.add('hidden'));
     document.querySelectorAll('.nav-link').forEach((link) => link.classList.remove('active'));
+    const mobileMenu = document.getElementById('mobile-menu');
+    const wasMobileMenuOpen = mobileMenu?.classList.contains('open');
+    mobileMenu?.classList.remove('open');
 
     const section = document.getElementById(`page-${pageId}`);
     if (section) {
@@ -239,18 +244,30 @@ function showPage(pageId) {
 
     if (pageId === 'instructions') setupDashboard();
     if (pageId === 'picks') {
+        const wrap = document.getElementById('picks-rules-help-wrap');
+        if (wrap) {
+            delete wrap.dataset.fixedTop;
+            delete wrap.dataset.fixedRight;
+        }
         updateUI();
         syncMobileRosterState();
         togglePicksRulesBar(false);
-        updatePicksRulesHelpAnchor();
+        updatePicksRulesHelpAnchor(true);
+        if (window.innerWidth < 768 && wasMobileMenuOpen) {
+            if (mobilePicksHelperAnchorTimeout) {
+                clearTimeout(mobilePicksHelperAnchorTimeout);
+            }
+            mobilePicksHelperAnchorTimeout = setTimeout(() => {
+                updatePicksRulesHelpAnchor(true);
+                mobilePicksHelperAnchorTimeout = null;
+            }, 340);
+        }
     }
     if (pageId === 'leaderboard') fetchLeaderboard();
     if (pageId === 'admin') setupAdminPage();
     if (pageId === 'chat') setupChat();
     if (pageId === 'profile') setupProfile();
     if (pageId === 'results') setupResultsPage();
-
-    document.getElementById('mobile-menu').classList.remove('open');
 
     if (section) {
         requestAnimationFrame(() => {
@@ -262,6 +279,21 @@ function showPage(pageId) {
                 }
             });
             window.scrollTo(0, 0);
+
+            if (pageId === 'picks') {
+                requestAnimationFrame(() => {
+                    updatePicksRulesHelpAnchor(true);
+                    if (window.innerWidth < 768 && wasMobileMenuOpen) {
+                        if (mobilePicksHelperAnchorTimeout) {
+                            clearTimeout(mobilePicksHelperAnchorTimeout);
+                        }
+                        mobilePicksHelperAnchorTimeout = setTimeout(() => {
+                            updatePicksRulesHelpAnchor(true);
+                            mobilePicksHelperAnchorTimeout = null;
+                        }, 340);
+                    }
+                });
+            }
         });
     }
 }
@@ -305,7 +337,7 @@ function togglePicksRulesBar(forceExpanded = null) {
     button.setAttribute('aria-label', shouldExpand ? 'Hide rule status help' : 'Show rule status help');
 }
 
-function updatePicksRulesHelpAnchor() {
+function updatePicksRulesHelpAnchor(forceReanchor = false) {
     const wrap = document.getElementById('picks-rules-help-wrap');
     const scrollContainer = document.getElementById('picks-main-scroll');
     const rulesCard = document.getElementById('picks-rules-card');
@@ -318,18 +350,35 @@ function updatePicksRulesHelpAnchor() {
     const rect = rulesCard.getBoundingClientRect();
     const viewportPadding = window.innerWidth < 768 ? 10 : 16;
     const anchorTop = Math.max(viewportPadding, Math.round(rect.top + 12));
-    const anchorLeft = Math.round(rect.right - toggle.offsetWidth - 12);
+    const anchorRight = Math.max(
+        viewportPadding,
+        Math.round(window.innerWidth - rect.right + 12)
+    );
 
-    if (scrollContainer.scrollTop <= 80 || !wrap.dataset.fixedTop || !wrap.dataset.fixedLeft) {
+    if (forceReanchor || !wrap.dataset.fixedTop || !wrap.dataset.fixedRight) {
         wrap.dataset.fixedTop = `${anchorTop}`;
-        wrap.dataset.fixedLeft = `${anchorLeft}`;
+        wrap.dataset.fixedRight = `${anchorRight}`;
     }
 
     const fixedTop = Number(wrap.dataset.fixedTop || anchorTop);
-    const fixedLeft = Number(wrap.dataset.fixedLeft || anchorLeft);
+    const fixedRight = Number(wrap.dataset.fixedRight || anchorRight);
     wrap.style.top = `${fixedTop}px`;
-    wrap.style.left = `${fixedLeft}px`;
-    wrap.style.right = 'auto';
+    wrap.style.right = `${fixedRight}px`;
+    wrap.style.left = 'auto';
+}
+
+function resetMobilePicksRulesHelpAnchor() {
+    if (window.innerWidth >= 768) {
+        return;
+    }
+
+    const wrap = document.getElementById('picks-rules-help-wrap');
+    if (wrap) {
+        delete wrap.dataset.fixedTop;
+        delete wrap.dataset.fixedRight;
+    }
+
+    updatePicksRulesHelpAnchor(true);
 }
 
 function syncMobileRosterState() {
@@ -355,7 +404,7 @@ function syncMobileRosterState() {
         }
     }
 
-    updatePicksRulesHelpAnchor();
+    updatePicksRulesHelpAnchor(true);
 }
 
 function renderPool() {
@@ -529,12 +578,12 @@ function updateUI() {
     const tier2State = tier2Count > 0 ? 'success' : 'neutral';
     const tier3Needed = Math.max(0, 3 - tier3Count);
     const tier3State = !hasStarted ? 'neutral' : tier3Count >= 3 ? 'success' : tier3Count === 2 ? 'warning' : 'error';
-    const tier3Helper = tier3Count >= 3 ? 'Requirement met' : `Pick ${tier3Needed} more`;
+    const tier3Helper = tier3Count >= 3 ? 'Complete' : `Pick ${tier3Needed} more`;
     const tier3Icon = tier3Count >= 3 ? '✓' : tier3Count === 2 ? '~' : '✕';
 
     setRuleChipState('rule-chip-budget', budgetState, budgetHelper, budgetIcon);
-    setRuleChipState('rule-chip-tier1', tier1State, 'Requirement met', '✓');
-    setRuleChipState('rule-chip-tier2', tier2State, 'Requirement met', '✓');
+    setRuleChipState('rule-chip-tier1', tier1State, 'Complete', '✓');
+    setRuleChipState('rule-chip-tier2', tier2State, 'Complete', '✓');
     setRuleChipState('rule-chip-tier3', tier3State, tier3Helper, tier3Icon);
 }
 
@@ -673,10 +722,10 @@ window.addEventListener('resize', () => {
 document.addEventListener('DOMContentLoaded', () => {
     const picksScroll = document.getElementById('picks-main-scroll');
     if (picksScroll) {
-        picksScroll.addEventListener('scroll', updatePicksRulesHelpAnchor, { passive: true });
+        picksScroll.addEventListener('scroll', () => updatePicksRulesHelpAnchor(false), { passive: true });
     }
 
-    updatePicksRulesHelpAnchor();
+    updatePicksRulesHelpAnchor(true);
 });
 
 Object.assign(window, {
