@@ -274,17 +274,18 @@ function toggleMobileRoster() {
     const arrow = document.getElementById('roster-arrow');
     const helper = document.getElementById('roster-helper');
     const isMinimized = panel.classList.toggle('roster-minimized');
-    arrow.innerText = isMinimized ? '▼' : '▲';
+    arrow.innerText = isMinimized ? '▲' : '▼';
     if (helper) {
-        helper.textContent = isMinimized ? 'Click to view' : 'Click to minimise';
+        helper.textContent = isMinimized ? 'Click to view' : 'Click to close';
     }
 }
 
 function togglePicksRulesBar(forceExpanded = null) {
     const chips = document.getElementById('picks-rules-help-panel');
     const button = document.getElementById('picks-rules-toggle');
+    const wrap = document.getElementById('picks-rules-help-wrap');
 
-    if (!chips || !button) {
+    if (!chips || !button || !wrap) {
         return;
     }
 
@@ -293,6 +294,7 @@ function togglePicksRulesBar(forceExpanded = null) {
         : forceExpanded;
 
     chips.classList.toggle('hidden', !shouldExpand);
+    wrap.classList.toggle('open', shouldExpand);
     button.innerText = shouldExpand ? '×' : '?';
     button.setAttribute('aria-label', shouldExpand ? 'Hide rule status help' : 'Show rule status help');
 }
@@ -308,7 +310,7 @@ function syncMobileRosterState() {
 
     if (window.innerWidth < 768) {
         panel.classList.add('roster-minimized');
-        arrow.innerText = '▼';
+        arrow.innerText = '▲';
         if (helper) {
             helper.textContent = 'Click to view';
         }
@@ -421,8 +423,10 @@ function updateUI() {
     const tier2Count = myPicks.filter((team) => team.tier === 2).length;
     const tier3Count = myPicks.filter((team) => team.tier === 3).length;
 
-    const setRuleChipState = (id, state) => {
+    const setRuleChipState = (id, state, helperText, iconText) => {
         const chip = document.getElementById(id);
+        const helper = document.getElementById(`${id}-helper`);
+        const icon = document.getElementById(`${id}-icon`);
         if (!chip) {
             return;
         }
@@ -431,11 +435,21 @@ function updateUI() {
         chip.style.borderColor = '';
         chip.style.backgroundColor = '';
         chip.style.color = '';
+        if (helper) {
+            helper.textContent = helperText;
+            helper.style.color = '#6b7280';
+        }
+        if (icon) {
+            icon.textContent = iconText;
+            icon.style.color = '#9ca3af';
+        }
 
         if (state === 'success') {
             chip.style.borderColor = '#bbf7d0';
             chip.style.backgroundColor = '#f0fdf4';
             chip.style.color = '#15803d';
+            if (helper) helper.style.color = '#4b5563';
+            if (icon) icon.style.color = '#15803d';
             return;
         }
 
@@ -443,6 +457,8 @@ function updateUI() {
             chip.style.borderColor = '#fde68a';
             chip.style.backgroundColor = '#fffbeb';
             chip.style.color = '#b45309';
+            if (helper) helper.style.color = '#4b5563';
+            if (icon) icon.style.color = '#b45309';
             return;
         }
 
@@ -450,6 +466,8 @@ function updateUI() {
             chip.style.borderColor = '#fecaca';
             chip.style.backgroundColor = '#fef2f2';
             chip.style.color = '#b91c1c';
+            if (helper) helper.style.color = '#4b5563';
+            if (icon) icon.style.color = '#b91c1c';
             return;
         }
 
@@ -469,10 +487,20 @@ function updateUI() {
         }
     }
 
-    setRuleChipState('rule-chip-budget', budgetState);
-    setRuleChipState('rule-chip-tier1', hasStarted ? (tier1Count <= 1 ? 'success' : 'error') : 'neutral');
-    setRuleChipState('rule-chip-tier2', tier2Count > 0 ? 'success' : 'neutral');
-    setRuleChipState('rule-chip-tier3', hasStarted ? (tier3Count >= 3 ? 'success' : 'error') : 'neutral');
+    const budgetHelper = remaining < 0 ? 'Over budget' : remaining === 0 ? 'At budget' : 'Under budget';
+    const budgetIcon = remaining < 0 ? '✕' : remaining === 0 ? '✓' : '~';
+
+    const tier1State = hasStarted ? 'success' : 'neutral';
+    const tier2State = tier2Count > 0 ? 'success' : 'neutral';
+    const tier3Needed = Math.max(0, 3 - tier3Count);
+    const tier3State = !hasStarted ? 'neutral' : tier3Count >= 3 ? 'success' : tier3Count === 2 ? 'warning' : 'error';
+    const tier3Helper = tier3Count >= 3 ? 'Requirement met' : `Pick ${tier3Needed} more`;
+    const tier3Icon = tier3Count >= 3 ? '✓' : tier3Count === 2 ? '~' : '✕';
+
+    setRuleChipState('rule-chip-budget', budgetState, budgetHelper, budgetIcon);
+    setRuleChipState('rule-chip-tier1', tier1State, 'Requirement met', '✓');
+    setRuleChipState('rule-chip-tier2', tier2State, 'Requirement met', '✓');
+    setRuleChipState('rule-chip-tier3', tier3State, tier3Helper, tier3Icon);
 }
 
 async function renderGroups() {

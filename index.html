@@ -40,13 +40,35 @@
         .picks-rules-card { border-color: #e5e7eb; background-color: #f8fafc; }
         .picks-rules-kicker, .picks-accent-text { color: var(--picks-accent-text); }
         .picks-rules-chip { border-color: var(--picks-accent-soft-strong); }
+        #picks-rules-help-wrap {
+            position: relative;
+        }
         #picks-rules-help-panel.hidden { display: none; }
         #picks-rules-toggle {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            z-index: 2;
             color: var(--picks-accent-text);
             border-color: rgba(var(--picks-accent-primary-rgb), 0.22);
             background-color: rgba(255, 255, 255, 0.98);
         }
         #picks-rules-toggle:hover { background-color: #ffffff; }
+        #picks-rules-help-panel {
+            position: relative;
+        }
+        #picks-rules-help-wrap.open #picks-rules-help-panel {
+            margin-top: 0;
+            padding-top: 1rem;
+            padding-right: 4.25rem;
+        }
+        @media (max-width: 767px) {
+            #picks-rules-help-wrap.open #picks-rules-help-panel {
+                margin-top: 0;
+                padding-top: 1.25rem;
+                padding-right: 4rem;
+            }
+        }
         .picks-tier-label { background-color: var(--picks-accent-primary); color: #ffffff; }
         .picks-price-pill { background-color: var(--picks-accent-pill-bg); color: var(--picks-accent-pill-text); }
         .picks-roster-count { background-color: var(--picks-accent-primary); color: #ffffff; }
@@ -386,20 +408,44 @@
                 </header>
                 <div class="sticky top-3 z-30 h-0 pointer-events-none">
                     <div class="flex justify-end px-4 md:px-10">
-                        <div class="pointer-events-auto w-full max-w-[900px] flex flex-col items-end">
+                        <div id="picks-rules-help-wrap" class="pointer-events-auto relative flex w-full max-w-[920px] min-h-[56px] flex-col items-end md:w-auto">
                             <button id="picks-rules-toggle" onclick="togglePicksRulesBar()" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-base font-black shadow-sm transition-colors" aria-label="Show rule status help">?</button>
-                            <div id="picks-rules-help-panel" class="hidden mt-3 rounded-3xl border border-gray-200 bg-white/95 p-4 shadow-lg backdrop-blur-sm">
-                                <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 text-[11px] font-black uppercase tracking-[0.15em]">
-                                    <div id="rule-chip-budget" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">$150 Max Budget</div>
-                                    <div id="rule-chip-tier1" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">Tier 1: 0-1 Teams</div>
-                                    <div id="rule-chip-tier2" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">Tier 2: Unlimited</div>
-                                    <div id="rule-chip-tier3" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">Tier 3: Minimum 3</div>
+                            <div id="picks-rules-help-panel" class="hidden w-full rounded-2xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur-sm md:w-auto md:min-w-[620px] md:max-w-[920px]">
+                                <div class="grid grid-cols-2 gap-2 xl:grid-cols-4">
+                                    <div id="rule-chip-budget" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">
+                                        <div class="text-[11px] font-black uppercase tracking-[0.15em]">$150 Budget</div>
+                                        <div class="mt-1 flex items-center justify-between gap-2">
+                                            <span id="rule-chip-budget-helper" class="text-[11px] font-bold normal-case tracking-normal text-gray-500">Under budget</span>
+                                            <span id="rule-chip-budget-icon" class="text-sm font-black text-gray-400">~</span>
+                                        </div>
+                                    </div>
+                                    <div id="rule-chip-tier1" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">
+                                        <div class="text-[11px] font-black uppercase tracking-[0.15em]">Tier 1: 0-1</div>
+                                        <div class="mt-1 flex items-center justify-between gap-2">
+                                            <span id="rule-chip-tier1-helper" class="text-[11px] font-bold normal-case tracking-normal text-gray-500">Requirement met</span>
+                                            <span id="rule-chip-tier1-icon" class="text-sm font-black text-gray-400">✓</span>
+                                        </div>
+                                    </div>
+                                    <div id="rule-chip-tier2" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">
+                                        <div class="text-[11px] font-black uppercase tracking-[0.15em]">Tier 2: ∞</div>
+                                        <div class="mt-1 flex items-center justify-between gap-2">
+                                            <span id="rule-chip-tier2-helper" class="text-[11px] font-bold normal-case tracking-normal text-gray-500">Requirement met</span>
+                                            <span id="rule-chip-tier2-icon" class="text-sm font-black text-gray-400">✓</span>
+                                        </div>
+                                    </div>
+                                    <div id="rule-chip-tier3" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">
+                                        <div class="text-[11px] font-black uppercase tracking-[0.15em]">Tier 3: &gt;3</div>
+                                        <div class="mt-1 flex items-center justify-between gap-2">
+                                            <span id="rule-chip-tier3-helper" class="text-[11px] font-bold normal-case tracking-normal text-gray-500">Pick 3 more</span>
+                                            <span id="rule-chip-tier3-icon" class="text-sm font-black text-gray-400">✕</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div id="picks-rules-shelf" class="mb-8">
+                <div id="picks-rules-shelf" class="mb-8 md:pt-2">
                     <section id="picks-rules-card" class="picks-rules-card rounded-3xl border p-4 md:p-5 text-left text-gray-900 shadow-sm">
                         <div class="min-w-0">
                             <div class="picks-rules-kicker text-[10px] font-black uppercase tracking-[0.25em]">Selection Rules</div>
