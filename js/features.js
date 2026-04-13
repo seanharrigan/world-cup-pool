@@ -19,6 +19,15 @@ const teamResultsSortState = {
     'public-team-results-body': { key: 'team', direction: 'asc' }
 };
 
+const stageMultiplierLabels = {
+    Group: 'x1',
+    R32: 'x2',
+    R16: 'x3',
+    Quarters: 'x5',
+    Semis: 'x8',
+    Finals: 'x12'
+};
+
 const FAVORITE_TEAM_BANNERS = {
     Spain: { slogan: 'VAMOS ESPANA', gradient: 'linear-gradient(135deg, #9f1239 0%, #dc2626 26%, #facc15 52%, #dc2626 76%, #9f1239 100%)', textColor: '#ffffff', accentColor: '#dc2626' },
     England: { slogan: "IT'S COMING HOME", gradient: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 42%, #dc2626 47%, #dc2626 53%, #ffffff 58%, #f8fafc 100%)', textColor: '#0f172a', accentColor: '#dc2626' },
@@ -224,6 +233,29 @@ function getFavoriteTeamAccentTokens(favoriteTeam) {
         pillBg: mixHexWithWhite(primary, 0.84),
         pillText: darkenHex(primary, 0.18)
     };
+}
+
+function rgbaFromHex(hex, alpha) {
+    const { r, g, b } = hexToRgb(hex);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function getActiveThemeAccentTokens() {
+    const rootStyles = getComputedStyle(document.documentElement);
+    const cssPrimary = rootStyles.getPropertyValue('--theme-accent-primary').trim();
+    if (cssPrimary && cssPrimary.startsWith('#')) {
+        return {
+            primary: cssPrimary,
+            primaryRgb: hexToRgb(cssPrimary),
+            text: darkenHex(cssPrimary, 0.12),
+            soft: mixHexWithWhite(cssPrimary, 0.90),
+            softStrong: mixHexWithWhite(cssPrimary, 0.78),
+            pillBg: mixHexWithWhite(cssPrimary, 0.84),
+            pillText: darkenHex(cssPrimary, 0.18)
+        };
+    }
+
+    return getFavoriteTeamAccentTokens('');
 }
 
 function applyPicksAccentTheme(currentProfile = null) {
@@ -468,10 +500,12 @@ function showResultsTab(tabId) {
 }
 
 function setupResultsPage() {
+    updateResultsSelectionVisibility();
     showResultsTab('groups');
     renderGroups();
     fetchPublicResults();
     fetchPublicTeamResults();
+    fetchPublicSelectionStats();
 }
 
 function escapeCsvValue(value) {
@@ -696,10 +730,317 @@ async function toggleHideTeamSelection(checked) {
         syncAdminToggleControls();
         setupDashboard();
         fetchLeaderboard();
+        updateResultsSelectionVisibility();
+        fetchPublicResults();
+        fetchPublicTeamResults();
+        fetchPublicSelectionStats();
         showToast(checked ? 'Team selection hidden.' : 'Team selection visible.', 'success');
     } catch (error) {
         syncAdminToggleControls();
         showToast(error.message || 'Unable to update team visibility.');
+    }
+}
+
+function updateResultsSelectionVisibility() {
+    const selectionTab = document.getElementById('results-tab-selection');
+    const selectionColumns = document.querySelectorAll('.results-selection-column');
+    const selectionLocked = document.getElementById('results-selection-locked');
+    const selectionContent = document.getElementById('results-selection-content');
+
+    if (selectionTab) {
+        selectionTab.classList.remove('hidden');
+    }
+
+    selectionColumns.forEach((column) => {
+        column.classList.toggle('hidden', Boolean(appSettings.hideTeamSelection));
+    });
+
+    if (selectionLocked) {
+        selectionLocked.classList.toggle('hidden', !appSettings.hideTeamSelection);
+    }
+
+    if (selectionContent) {
+        selectionContent.classList.toggle('hidden', Boolean(appSettings.hideTeamSelection));
+    }
+
+    const sortState = teamResultsSortState['public-team-results-body'];
+    if (appSettings.hideTeamSelection && sortState?.key === 'pickedPct') {
+        sortState.key = 'team';
+        sortState.direction = 'asc';
+    }
+}
+
+function buildSelectionStatsSnapshot(picks = [], profiles = []) {
+    const playersInPool = new Set((profiles || []).map((profile) => profile.email).filter(Boolean));
+    const uniquePickUsers = new Set();
+    const countryCounts = {};
+    const userRosterSizes = {};
+    const groupCounts = {};
+    const pickedUsersByTeam = new Map();
+
+    (picks || []).forEach((pick) => {
+        if (!pick?.team_name || !pick?.user_email) {
+            return;
+        }
+
+        uniquePickUsers.add(pick.user_email);
+        countryCounts[pick.team_name] = (countryCounts[pick.team_name] || 0) + 1;
+        userRosterSizes[pick.user_email] = (userRosterSizes[pick.user_email] || 0) + 1;
+
+        if (!pickedUsersByTeam.has(pick.team_name)) {
+            pickedUsersByTeam.set(pick.team_name, new Set());
+        }
+        pickedUsersByTeam.get(pick.team_name).add(pick.user_email);
+
+        const teamData = teams.find((team) => team.name === pick.team_name);
+        if (teamData?.group) {
+            groupCounts[teamData.group] = (groupCounts[teamData.group] || 0) + 1;
+        }
+    });
+
+    const totalPlayers = playersInPool.size || uniquePickUsers.size;
+    const sortedCountryCounts = Object.entries(countryCounts)
+        .map(([teamName, count]) => {
+            const teamData = teams.find((team) => team.name === teamName);
+            const pickedCount = pickedUsersByTeam.get(teamName)?.size || 0;
+            const percentage = totalPlayers > 0 ? Math.round((pickedCount / totalPlayers) * 100) : 0;
+
+            return {
+                teamName,
+                count,
+                pickedCount,
+                percentage,
+                teamData
+            };
+        })
+        .sort((a, b) => b.count - a.count || a.teamName.localeCompare(b.teamName));
+
+    const densityMap = {};
+    Object.values(userRosterSizes).forEach((size) => {
+        densityMap[size] = (densityMap[size] || 0) + 1;
+    });
+
+    const rosterDensityEntries = Object.entries(densityMap)
+        .map(([size, count]) => ({ size: Number(size), count }))
+        .sort((a, b) => b.size - a.size);
+
+    const groupLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+    const groupDensityEntries = groupLetters
+        .map((group) => ({
+            group,
+            count: groupCounts[group] || 0
+        }))
+        .sort((a, b) => b.count - a.count || a.group.localeCompare(b.group));
+    const maxGroupCount = Math.max(1, ...groupDensityEntries.map((entry) => entry.count));
+
+    return {
+        totalPlayers,
+        sortedCountryCounts,
+        rosterDensityEntries,
+        groupDensityEntries,
+        maxGroupCount
+    };
+}
+
+const selectionMapPositions = {
+    Canada: { x: 16, y: 19 },
+    USA: { x: 18, y: 31 },
+    Mexico: { x: 15, y: 41 },
+    Panama: { x: 22, y: 49 },
+    Curacao: { x: 26, y: 44 },
+    Colombia: { x: 28, y: 55 },
+    Ecuador: { x: 25, y: 63 },
+    Paraguay: { x: 31, y: 71 },
+    Uruguay: { x: 34, y: 78 },
+    Argentina: { x: 31, y: 86 },
+    Brazil: { x: 37, y: 65 },
+    Morocco: { x: 48, y: 32 },
+    Algeria: { x: 50, y: 29 },
+    Tunisia: { x: 53, y: 30 },
+    Egypt: { x: 58, y: 31 },
+    Senegal: { x: 46, y: 43 },
+    'Ivory Coast': { x: 48, y: 46 },
+    Ghana: { x: 50, y: 49 },
+    'Cape Verde': { x: 40, y: 41 },
+    England: { x: 47, y: 18 },
+    Scotland: { x: 46, y: 13 },
+    Ireland: { x: 43, y: 18 },
+    France: { x: 49, y: 22 },
+    Belgium: { x: 50, y: 19 },
+    Netherlands: { x: 50, y: 16 },
+    Germany: { x: 54, y: 18 },
+    Switzerland: { x: 52, y: 23 },
+    Austria: { x: 55, y: 22 },
+    Croatia: { x: 56, y: 25 },
+    Bosnia: { x: 57, y: 24 },
+    Czechia: { x: 55, y: 19 },
+    Sweden: { x: 54, y: 10 },
+    Norway: { x: 52, y: 6 },
+    Portugal: { x: 43, y: 25 },
+    Spain: { x: 45, y: 24 },
+    Italy: { x: 54, y: 27 },
+    'South Africa': { x: 53, y: 83 },
+    'Saudi Arabia': { x: 64, y: 35 },
+    Qatar: { x: 66, y: 38 },
+    Iraq: { x: 66, y: 32 },
+    Iran: { x: 70, y: 30 },
+    Turkiye: { x: 60, y: 24 },
+    Jordan: { x: 63, y: 33 },
+    'DR Congo': { x: 56, y: 58 },
+    Uzbekistan: { x: 76, y: 24 },
+    India: { x: 76, y: 43 },
+    Japan: { x: 88, y: 31 },
+    'South Korea': { x: 85, y: 28 },
+    Australia: { x: 84, y: 78 },
+    'New Zealand': { x: 92, y: 87 },
+    Haiti: { x: 24, y: 38 }
+};
+
+function escapeSvgText(value = '') {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function renderSelectionBarRows(entries, options = {}) {
+    const {
+        emptyMessage = 'No selection data yet.',
+        valueFormatter = (entry) => String(entry.value ?? 0),
+        subFormatter = () => '',
+        labelFormatter = (entry) => entry.label,
+        iconFormatter = () => '',
+        maxValue = 1,
+        theme = 'percent'
+    } = options;
+
+    if (!entries.length) {
+        return `<div class="px-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${emptyMessage}</div>`;
+    }
+
+    const accentTokens = getActiveThemeAccentTokens();
+    const safeMax = Math.max(1, maxValue);
+    const fillOpacity = theme === 'volume' ? 0.94 : 0.9;
+    const barFill = `linear-gradient(90deg, ${rgbaFromHex(accentTokens.primary, fillOpacity)} 0%, ${rgbaFromHex(accentTokens.primary, Math.max(0.72, fillOpacity - 0.12))} 100%)`;
+
+    return `
+        <div class="space-y-3">
+            ${entries.map((entry) => {
+                const widthPercent = Math.max(8, Math.round(((entry.value ?? 0) / safeMax) * 100));
+                const label = escapeSvgText(labelFormatter(entry));
+                const sub = escapeSvgText(subFormatter(entry));
+                const value = escapeSvgText(valueFormatter(entry));
+                const icon = escapeSvgText(iconFormatter(entry));
+
+                return `
+                    <div class="space-y-2">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2">
+                                    ${icon ? `<span class="text-base leading-none">${icon}</span>` : ''}
+                                    <div class="truncate text-[15px] font-black uppercase tracking-[0.05em] text-gray-900">${label}</div>
+                                </div>
+                                <div class="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-gray-400">${sub}</div>
+                            </div>
+                            <div class="shrink-0 text-right text-[15px] font-black uppercase leading-none tracking-[0.05em] text-gray-900">${value}</div>
+                        </div>
+                        <div class="h-2 rounded-full bg-gray-100">
+                            <div class="h-2 rounded-full" style="width:${widthPercent}%; background:${barFill}"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+}
+
+function renderSelectionBarChart(entries, options = {}) {
+    return renderSelectionBarRows(entries, options);
+}
+
+async function fetchPublicSelectionStats() {
+    const lockedState = document.getElementById('results-selection-locked');
+    const content = document.getElementById('results-selection-content');
+    const entryCount = document.getElementById('public-selection-entry-count');
+    const countryBox = document.getElementById('public-country-pick-stats');
+    const rosterBox = document.getElementById('public-roster-size-stats');
+    const groupBox = document.getElementById('public-group-density-stats');
+    if (!countryBox || !rosterBox || !groupBox || !entryCount) {
+        return;
+    }
+
+    if (appSettings.hideTeamSelection) {
+        if (lockedState) lockedState.classList.remove('hidden');
+        if (content) content.classList.add('hidden');
+        return;
+    }
+
+    if (lockedState) lockedState.classList.add('hidden');
+    if (content) content.classList.remove('hidden');
+
+    entryCount.textContent = '...';
+    countryBox.innerHTML = '<div class="px-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Loading selection leaders...</div>';
+    rosterBox.innerHTML = '<div class="px-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Loading roster density...</div>';
+    groupBox.innerHTML = '<div class="px-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Loading group density...</div>';
+
+    try {
+        const [
+            { data: picks, error: picksError },
+            { data: profiles, error: profilesError }
+        ] = await Promise.all([
+            supabaseClient.from('picks').select('team_name, user_email'),
+            supabaseClient.from('profiles').select('email')
+        ]);
+
+        if (picksError) throw picksError;
+        if (profilesError) throw profilesError;
+
+        const stats = buildSelectionStatsSnapshot(picks || [], profiles || []);
+        entryCount.textContent = stats.totalPlayers;
+
+        countryBox.innerHTML = renderSelectionBarRows(stats.sortedCountryCounts.slice(0, 8).map((entry) => ({
+            ...entry,
+            label: entry.teamName,
+            value: entry.percentage
+        })), {
+            emptyMessage: 'No saved picks yet.',
+            maxValue: Math.max(1, ...stats.sortedCountryCounts.slice(0, 8).map((entry) => entry.percentage)),
+            valueFormatter: (entry) => `${entry.percentage}%`,
+            subFormatter: (entry) => `${entry.pickedCount} ${entry.pickedCount === 1 ? 'picked' : 'picked'} · ${entry.count} total picks`,
+            labelFormatter: (entry) => entry.teamName,
+            iconFormatter: (entry) => entry.teamData?.flag || ''
+        });
+
+        rosterBox.innerHTML = renderSelectionBarRows(stats.rosterDensityEntries.map((entry) => ({
+            ...entry,
+            label: `${entry.size} Teams`,
+            value: entry.count
+        })), {
+            emptyMessage: 'No roster density yet.',
+            maxValue: Math.max(1, ...stats.rosterDensityEntries.map((entry) => entry.count)),
+            valueFormatter: (entry) => `${entry.count}`,
+            subFormatter: (entry) => `${entry.count === 1 ? '1 player' : `${entry.count} players`}`,
+            labelFormatter: (entry) => `${entry.size} Teams`
+        });
+
+        groupBox.innerHTML = renderSelectionBarRows(stats.groupDensityEntries.map((entry) => ({
+            ...entry,
+            label: `Group ${entry.group}`,
+            value: entry.count
+        })), {
+            emptyMessage: 'No group density yet.',
+            maxValue: stats.maxGroupCount,
+            valueFormatter: (entry) => `${entry.count}`,
+            subFormatter: (entry) => `${entry.count === 1 ? '1 selection' : `${entry.count} selections`}`,
+            labelFormatter: (entry) => `Group ${entry.group}`
+        });
+    } catch (error) {
+        countryBox.innerHTML = '<div class="px-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Could not load selection stats.</div>';
+        rosterBox.innerHTML = '<div class="px-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Could not load roster density.</div>';
+        groupBox.innerHTML = '<div class="px-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Could not load group density.</div>';
+        entryCount.textContent = '0';
     }
 }
 
@@ -1033,7 +1374,7 @@ async function setupDashboard() {
 
 function updatePublicTeamSortIndicators() {
     const sortState = teamResultsSortState['public-team-results-body'];
-    const keys = ['team', 'total', 'G1', 'G2', 'G3', 'Bonus', 'R32', 'R16', 'QF', 'SM', 'F'];
+    const keys = ['team', 'group', 'pickedPct', 'total', 'G1', 'G2', 'G3', 'Bonus', 'R32', 'R16', 'QF', 'SM', 'F'];
 
     keys.forEach((key) => {
         const arrow = document.getElementById(`sort-arrow-public-${key}`);
@@ -1065,7 +1406,7 @@ function setTeamResultsSort(targetId, key) {
         sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
     } else {
         sortState.key = key;
-        sortState.direction = key === 'team' ? 'asc' : 'desc';
+        sortState.direction = key === 'team' || key === 'group' ? 'asc' : 'desc';
     }
 
     if (targetId === 'public-team-results-body') {
@@ -1315,7 +1656,7 @@ function formatTeamResultsCell(match, teamName, theme = 'dark') {
 
     return `
         <div class="min-w-[92px] py-1 text-center">
-            <div class="text-2xl font-black ${pointsClass} leading-none">${points}</div>
+            <div class="text-[15px] font-black ${pointsClass} leading-none">${points}</div>
             <div class="mt-2 text-[10px] font-bold ${detailClass} whitespace-nowrap">
                 ${homeTeam?.flag || ''} ${match.score_home}-${match.score_away} ${awayTeam?.flag || ''}
             </div>
@@ -1337,19 +1678,55 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
         Finals: 'F'
     };
 
-    body.innerHTML = '<tr><td colspan="11" class="px-4 py-8 text-center text-gray-500 uppercase text-xs">Loading team results...</td></tr>';
+    body.innerHTML = '<tr><td colspan="13" class="px-4 py-8 text-center text-gray-500 uppercase text-xs">Loading team results...</td></tr>';
 
     try {
         await fetchAdvancedTeams();
 
-        const { data: matches, error } = await supabaseClient
-            .from('matches')
-            .select('*')
-            .order('match_date_manual', { ascending: true });
+        const [
+            { data: matches, error: matchesError },
+            { data: picks, error: picksError },
+            { data: profiles, error: profilesError }
+        ] = await Promise.all([
+            supabaseClient
+                .from('matches')
+                .select('*')
+                .order('match_date_manual', { ascending: true }),
+            supabaseClient
+                .from('picks')
+                .select('user_email, team_name'),
+            supabaseClient
+                .from('profiles')
+                .select('email')
+        ]);
 
-        if (error) {
-            throw error;
+        if (matchesError) {
+            throw matchesError;
         }
+
+        if (picksError) {
+            throw picksError;
+        }
+
+        if (profilesError) {
+            throw profilesError;
+        }
+
+        const playersInPool = new Set((profiles || []).map((profile) => profile.email).filter(Boolean));
+        const totalPlayers = playersInPool.size || new Set((picks || []).map((pick) => pick.user_email).filter(Boolean)).size;
+        const pickedUsersByTeam = new Map();
+
+        (picks || []).forEach((pick) => {
+            if (!pick.team_name || !pick.user_email) {
+                return;
+            }
+
+            if (!pickedUsersByTeam.has(pick.team_name)) {
+                pickedUsersByTeam.set(pick.team_name, new Set());
+            }
+
+            pickedUsersByTeam.get(pick.team_name).add(pick.user_email);
+        });
 
         const teamBreakdownMap = buildTeamStageBreakdownMap(matches || [], teams, advancedTeams);
 
@@ -1412,10 +1789,13 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
                     total: 0
                 };
                 const totalPoints = stageBreakdown.total;
+                const pickedCount = pickedUsersByTeam.get(team.name)?.size || 0;
+                const pickedPct = totalPlayers > 0 ? Math.round((pickedCount / totalPlayers) * 100) : 0;
 
                 return {
                     team,
                     totalPoints,
+                    pickedPct,
                     slotPoints: {
                         G1: stageBreakdown.G1,
                         G2: stageBreakdown.G2,
@@ -1433,7 +1813,7 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
                             <div class="flex items-center gap-3">
                                 <span class="text-2xl">${team.flag}</span>
                                 <div>
-                                    <div class="text-sm font-black uppercase ${theme === 'dark' ? 'text-white' : 'text-gray-900'}">
+                                    <div class="text-[12px] font-black uppercase ${theme === 'dark' ? 'text-white' : 'text-gray-900'}">
                                         ${team.name}
                                     </div>
                                 </div>
@@ -1442,9 +1822,15 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
                         <td class="px-3 py-3 text-center">
                             <div class="min-w-[44px] text-xs font-black uppercase tracking-[0.15em] ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}">${team.group}</div>
                         </td>
+                        <td class="results-selection-column px-3 py-3 text-center">
+                            <div class="min-w-[64px] py-1 text-center">
+                                <div class="text-[15px] font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'} leading-none">${pickedPct}%</div>
+                                <div class="mt-1 text-[9px] font-black uppercase tracking-[0.14em] ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}">${pickedCount} picked</div>
+                            </div>
+                        </td>
                         <td class="px-3 py-3">
                             <div class="min-w-[64px] py-1 text-center">
-                                <div class="text-xl font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'} leading-none">${totalPoints}</div>
+                                <div class="text-[15px] font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'} leading-none">${totalPoints}</div>
                             </div>
                         </td>
                         <td class="px-3 py-3">${formatTeamResultsCell(slots.G1, team.name, theme)}</td>
@@ -1452,7 +1838,7 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
                         <td class="px-3 py-3">${formatTeamResultsCell(slots.G3, team.name, theme)}</td>
                         <td class="px-3 py-3">
                             <div class="min-w-[64px] py-1 text-center">
-                                <div class="text-xl font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'} leading-none">${stageBreakdown.Bonus || '-'}</div>
+                                <div class="text-[15px] font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'} leading-none">${stageBreakdown.Bonus || '-'}</div>
                             </div>
                         </td>
                         <td class="px-3 py-3">${formatTeamResultsCell(slots.R32, team.name, theme)}</td>
@@ -1472,6 +1858,10 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
 
                 if (sortState.key === 'team') {
                     comparison = a.team.name.localeCompare(b.team.name);
+                } else if (sortState.key === 'group') {
+                    comparison = a.team.group.localeCompare(b.team.group);
+                } else if (sortState.key === 'pickedPct') {
+                    comparison = a.pickedPct - b.pickedPct;
                 } else if (sortState.key === 'total') {
                     comparison = a.totalPoints - b.totalPoints;
                 } else {
@@ -1486,13 +1876,14 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
             });
         }
 
-        body.innerHTML = rows.map((row) => row.html).join('') || '<tr><td colspan="11" class="px-4 py-8 text-center text-gray-500 uppercase text-xs">No teams found.</td></tr>';
+        body.innerHTML = rows.map((row) => row.html).join('') || '<tr><td colspan="13" class="px-4 py-8 text-center text-gray-500 uppercase text-xs">No teams found.</td></tr>';
 
         if (targetId === 'public-team-results-body') {
+            updateResultsSelectionVisibility();
             updatePublicTeamSortIndicators();
         }
     } catch (error) {
-        body.innerHTML = '<tr><td colspan="11" class="px-4 py-8 text-center text-red-400 uppercase text-xs">Could not load team results.</td></tr>';
+        body.innerHTML = '<tr><td colspan="13" class="px-4 py-8 text-center text-red-400 uppercase text-xs">Could not load team results.</td></tr>';
     }
 }
 
@@ -1662,28 +2053,25 @@ async function fetchPublicResults() {
         throw profilesError;
     }
 
-    const playersInPool = new Set((profiles || []).map((profile) => profile.email).filter(Boolean));
+    const selectionStats = buildSelectionStatsSnapshot(picks || [], profiles || []);
     const teamOwnership = new Map();
-
-    (picks || []).forEach((pick) => {
-        if (!pick.team_name || !pick.user_email) {
-            return;
-        }
-
-        if (!teamOwnership.has(pick.team_name)) {
-            teamOwnership.set(pick.team_name, new Set());
-        }
-
-        teamOwnership.get(pick.team_name).add(pick.user_email);
+    selectionStats.sortedCountryCounts.forEach((entry) => {
+        teamOwnership.set(entry.teamName, {
+            pickedCount: entry.pickedCount,
+            percentage: entry.percentage
+        });
     });
 
-    const totalPlayers = playersInPool.size || new Set((picks || []).map((pick) => pick.user_email).filter(Boolean)).size;
     const ownershipMarkup = (teamName) => {
-        const pickedCount = teamOwnership.get(teamName)?.size || 0;
-        const percentage = totalPlayers > 0 ? Math.round((pickedCount / totalPlayers) * 100) : 0;
+        if (appSettings.hideTeamSelection) {
+            return '';
+        }
+
+        const pickedCount = teamOwnership.get(teamName)?.pickedCount || 0;
+        const percentage = teamOwnership.get(teamName)?.percentage || 0;
         return `
             <div class="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">
-                ${pickedCount} picked${totalPlayers > 0 ? ` · ${percentage}%` : ''}
+                ${pickedCount} picked${selectionStats.totalPlayers > 0 ? ` · ${percentage}%` : ''}
             </div>
         `;
     };
@@ -1945,47 +2333,45 @@ async function fetchStats() {
     rosterBox.innerHTML = '<div class="animate-pulse text-gray-500 text-left">Calculating...</div>';
 
     try {
-        const { data } = await supabaseClient.from('picks').select('team_name, user_email');
-        if (!data) {
-            return;
+        const [
+            { data: picksData, error: picksError },
+            { data: profilesData, error: profilesError }
+        ] = await Promise.all([
+            supabaseClient.from('picks').select('team_name, user_email'),
+            supabaseClient.from('profiles').select('email')
+        ]);
+
+        if (picksError) {
+            throw picksError;
         }
 
-        const countryCounts = {};
-        const userRosterSizes = {};
+        if (profilesError) {
+            throw profilesError;
+        }
 
-        data.forEach((pick) => {
-            countryCounts[pick.team_name] = (countryCounts[pick.team_name] || 0) + 1;
-            userRosterSizes[pick.user_email] = (userRosterSizes[pick.user_email] || 0) + 1;
-        });
+        const stats = buildSelectionStatsSnapshot(picksData || [], profilesData || []);
 
-        const sortedPicks = Object.entries(countryCounts).sort((a, b) => b[1] - a[1]);
-        countryBox.innerHTML = sortedPicks.map(([name, count]) => {
-            const team = teams.find((entry) => entry.name === name);
+        countryBox.innerHTML = stats.sortedCountryCounts.map((entry) => {
+            const team = teams.find((teamEntry) => teamEntry.name === entry.teamName);
             return `
                 <div class="flex justify-between items-center py-2 border-b border-gray-50 last:border-0 text-gray-900 text-left">
                     <div class="flex items-center gap-3">
                         <span>${team.flag}</span>
-                        <span class="text-sm uppercase tracking-tighter">${name}</span>
+                        <span class="text-sm uppercase tracking-tighter">${entry.teamName}</span>
                     </div>
-                    <div class="picks-price-pill px-3 py-1 rounded-full text-xs font-black">${count} PICKS</div>
+                    <div class="picks-price-pill px-3 py-1 rounded-full text-xs font-black">${entry.count} PICKS</div>
                 </div>
             `;
         }).join('') || 'No picks yet.';
 
-        const densityMap = {};
-        Object.values(userRosterSizes).forEach((size) => {
-            densityMap[size] = (densityMap[size] || 0) + 1;
-        });
-
-        const sortedDensities = Object.entries(densityMap).sort((a, b) => b[0] - a[0]);
-        rosterBox.innerHTML = sortedDensities.map(([size, count]) => `
+        rosterBox.innerHTML = stats.rosterDensityEntries.map((entry) => `
             <div class="flex justify-between items-center py-4 border-b border-gray-50 last:border-0 text-gray-900 text-left">
                 <div>
-                    <span class="text-3xl font-black text-gray-900">${size}</span>
+                    <span class="text-3xl font-black text-gray-900">${entry.size}</span>
                     <span class="text-[10px] text-gray-400 uppercase ml-2 text-gray-900 text-left">Teams</span>
                 </div>
                 <div class="text-right text-gray-900 text-right">
-                    <div class="text-lg">${count}</div>
+                    <div class="text-lg">${entry.count}</div>
                     <div class="text-[8px] text-gray-400 uppercase text-left">Players</div>
                 </div>
             </div>

@@ -147,7 +147,7 @@ function updateSaveStatusUI() {
     }
 
     if (saveState.lastSavedAt) {
-        setContent(`Picks saved at ${formatSavedTime(saveState.lastSavedAt)}`, { text: 'text-green-300', border: 'border-green-500/30', background: 'bg-green-500/10' });
+        setContent(`Saved: ${formatSavedTime(saveState.lastSavedAt)}`, { text: 'text-green-300', border: 'border-green-500/30', background: 'bg-green-500/10' });
         return;
     }
 
