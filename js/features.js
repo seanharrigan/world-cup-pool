@@ -2726,11 +2726,12 @@ function escapeHtml(str) {
         .replace(/"/g, '&quot;');
 }
 
-// Replace @[Nickname] tokens with a highlighted blue span.
+// Replace @[Nickname] tokens with a clickable highlighted span that opens the player profile.
 function parseMentions(content) {
-    return escapeHtml(content).replace(/@\[([^\]]+)\]/g, (_, name) =>
-        `<span class="font-black text-blue-400">@${escapeHtml(name)}</span>`
-    );
+    return escapeHtml(content).replace(/@\[([^\]]+)\]/g, (_, name) => {
+        const safe = escapeHtml(name).replace(/'/g, '&#39;');
+        return `<span class="font-black text-blue-400 cursor-pointer hover:underline" onclick="showProfileByNickname('${safe}')">@${escapeHtml(name)}</span>`;
+    });
 }
 
 // ── @mention autocomplete ────────────────────────────────────────────────────
@@ -2741,10 +2742,16 @@ async function getMentionProfiles() {
     if (mentionProfilesCache) return mentionProfilesCache;
     const { data } = await supabaseClient
         .from('profiles')
-        .select('nickname, realname')
+        .select('email, nickname, realname')
         .not('nickname', 'is', null);
     mentionProfilesCache = (data || []).filter((p) => p.nickname);
     return mentionProfilesCache;
+}
+
+async function showProfileByNickname(nickname) {
+    const profiles = await getMentionProfiles();
+    const profile = profiles.find((p) => p.nickname === nickname);
+    if (profile?.email) showPlayerProfile(profile.email);
 }
 
 // Returns info about an active @-mention being typed at the cursor, or null.
@@ -3622,6 +3629,7 @@ Object.assign(window, {
     toggleReaction,
     setupLeaderboardRealtime,
     showPlayerProfile,
+    showProfileByNickname,
     closePlayerProfile,
     clearChatBadge,
     postSystemMessage,

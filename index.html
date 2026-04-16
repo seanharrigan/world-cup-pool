@@ -543,8 +543,11 @@
 
         <div id="page-picks" class="page-content hidden h-full w-full flex flex-col md:flex-row text-left">
             <div id="picks-main-scroll" class="flex-grow h-full overflow-y-auto p-4 md:p-10 bg-white text-gray-900 pb-[350px] md:pb-10 text-left">
-                <header class="mb-3 flex flex-col md:flex-row justify-between items-center border-b-4 border-gray-900 pb-6 gap-4 text-left">
-                    <h1 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-left">Selection</h1>
+                <header class="mb-3 flex flex-col md:flex-row justify-between items-center border-b border-gray-200 pb-6 gap-4 text-left">
+                    <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                        <h1 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter">Selection</h1>
+                        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Build your squad within budget and tier limits</p>
+                    </div>
                     <div id="countdown" class="flex gap-3 text-center bg-gray-900 text-white px-4 py-2 rounded-xl shadow-xl text-center text-white">
                         <div><div id="days" class="text-lg font-black text-center text-white text-center">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center">Days</div></div>
                         <div class="picks-accent-text font-bold">:</div>
@@ -554,7 +557,8 @@
                     </div>
                 </header>
                 <div id="picks-rules-shelf" class="mb-8 md:pt-2">
-                    <section id="picks-rules-card" class="relative picks-rules-card rounded-3xl border p-4 md:p-5 text-left text-gray-900 shadow-sm">
+                    <section id="picks-rules-card" class="relative picks-rules-card rounded-3xl border p-4 md:p-5 text-left text-gray-900 shadow-sm overflow-hidden">
+                        <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl" style="background-color: var(--theme-accent-primary);"></div>
                         <div class="min-w-0">
                             <div class="picks-rules-kicker text-[10px] font-black uppercase tracking-[0.25em]">Selection Rules</div>
                             <h2 class="mt-1 text-xl font-black uppercase italic tracking-tight text-gray-900">Build Your Squad.</h2>
@@ -635,7 +639,12 @@
 
         <div id="page-results" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-gray-50 text-gray-900 text-left">
             <div class="max-w-6xl mx-auto space-y-10 text-left text-gray-900">
-                <header class="text-left border-b border-gray-200 pb-6"><h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter">Results Centre</h1><p class="theme-accent-text font-bold uppercase tracking-widest text-[10px]">Verified Tournament Progress</p></header>
+                <header class="text-left">
+                    <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                        <h1 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter">Results Centre</h1>
+                        <p class="theme-accent-text font-black uppercase tracking-[0.2em] text-[10px]">Verified Tournament Progress</p>
+                    </div>
+                </header>
                 <div class="flex flex-wrap gap-3">
                     <button onclick="showResultsTab('groups')" id="results-tab-groups" class="results-tab theme-tab-active active rounded-2xl border px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] transition-colors">Results by Group</button>
                     <button onclick="showResultsTab('pool')" id="results-tab-pool" class="results-tab rounded-2xl border border-gray-300 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Results Table</button>
@@ -645,7 +654,10 @@
 
                 <div id="results-panel-groups" class="results-panel space-y-6">
                     <section class="space-y-4">
-                        <h2 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-gray-900">Group Standings</h2>
+                        <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                            <h2 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-gray-900">Group Standings</h2>
+                            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Current standings across all groups</p>
+                        </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 text-left text-gray-900" id="groups-grid"></div>
                     </section>
                 </div>
@@ -752,12 +764,12 @@
                         </div>
                     </div>
                     <div id="results-selection-content" class="space-y-6">
-                        <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
+                        <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm relative overflow-hidden">
+                            <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl" style="background-color: var(--theme-accent-primary);"></div>
                             <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                                <div>
-                                    <div class="text-[10px] font-black uppercase tracking-[0.24em] text-gray-400">Selection Snapshot</div>
-                                    <h2 class="mt-3 text-3xl font-black uppercase italic tracking-tight text-gray-900">Selection Stats</h2>
-                                    <p class="mt-2 text-sm font-bold text-gray-500">Live ownership, squad shape, and group concentration across the pool.</p>
+                                <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                                    <h2 class="text-3xl font-black uppercase italic tracking-tight text-gray-900">Selection Stats</h2>
+                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Live ownership, squad shape &amp; group lean</p>
                                 </div>
                                 <div class="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4 text-left lg:text-right">
                                     <div class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Entries</div>
@@ -767,25 +779,31 @@
                         </section>
 
                         <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                            <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
-                                <div class="text-[10px] font-black uppercase tracking-[0.24em] text-gray-400">Most Picked Teams</div>
-                                <h2 class="mt-3 text-3xl font-black uppercase italic tracking-tight text-gray-900">Ownership</h2>
-                                <p class="mt-2 text-sm font-bold text-gray-500">Most popular teams across all current entries.</p>
-                                <div id="public-country-pick-stats" class="mt-6"></div>
+                            <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm relative overflow-hidden">
+                                <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl" style="background-color: var(--theme-accent-primary);"></div>
+                                <div class="border-l-[3px] pl-3 mb-6" style="border-color: var(--theme-accent-primary);">
+                                    <h2 class="text-3xl font-black uppercase italic tracking-tight text-gray-900">Ownership</h2>
+                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Most popular teams across all entries</p>
+                                </div>
+                                <div id="public-country-pick-stats"></div>
                             </section>
 
-                            <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
-                                <div class="text-[10px] font-black uppercase tracking-[0.24em] text-gray-400">Roster Density</div>
-                                <h2 class="mt-3 text-3xl font-black uppercase italic tracking-tight text-gray-900">Squad Sizes</h2>
-                                <p class="mt-2 text-sm font-bold text-gray-500">How many teams each player is currently carrying.</p>
-                                <div id="public-roster-size-stats" class="mt-6"></div>
+                            <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm relative overflow-hidden">
+                                <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl" style="background-color: var(--theme-accent-primary);"></div>
+                                <div class="border-l-[3px] pl-3 mb-6" style="border-color: var(--theme-accent-primary);">
+                                    <h2 class="text-3xl font-black uppercase italic tracking-tight text-gray-900">Squad Sizes</h2>
+                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">How many teams each player is carrying</p>
+                                </div>
+                                <div id="public-roster-size-stats"></div>
                             </section>
 
-                            <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
-                                <div class="text-[10px] font-black uppercase tracking-[0.24em] text-gray-400">Group Density</div>
-                                <h2 class="mt-3 text-3xl font-black uppercase italic tracking-tight text-gray-900">Group Lean</h2>
-                                <p class="mt-2 text-sm font-bold text-gray-500">Which groups the pool is leaning on the heaviest right now.</p>
-                                <div id="public-group-density-stats" class="mt-6"></div>
+                            <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm relative overflow-hidden">
+                                <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl" style="background-color: var(--theme-accent-primary);"></div>
+                                <div class="border-l-[3px] pl-3 mb-6" style="border-color: var(--theme-accent-primary);">
+                                    <h2 class="text-3xl font-black uppercase italic tracking-tight text-gray-900">Group Lean</h2>
+                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Which groups the pool is leaning on hardest</p>
+                                </div>
+                                <div id="public-group-density-stats"></div>
                             </section>
                         </div>
                     </div>
@@ -799,8 +817,14 @@
 
         <div id="page-leaderboard" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-white text-gray-900 text-left">
             <div class="max-w-5xl mx-auto text-left text-gray-900">
-                <header class="mb-8 text-center text-gray-900 text-center"><h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter text-center text-gray-900 text-center text-gray-900 text-center">Leaderboard</h1><p class="theme-accent-text font-bold uppercase tracking-widest text-xs italic text-center text-gray-900 text-center">Live Standings</p></header>
+                <header class="mb-8">
+                    <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                        <h1 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter text-gray-900">Leaderboard</h1>
+                        <p class="theme-accent-text font-black uppercase tracking-[0.2em] text-[10px]">Live Standings</p>
+                    </div>
+                </header>
                 <div class="relative mb-10 overflow-hidden rounded-[2rem] border border-gray-200 bg-gray-50 px-8 py-8 shadow-sm text-gray-900">
+                    <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-[2rem]" style="background-color: var(--theme-accent-primary);"></div>
                     <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_34%,rgba(255,255,255,0.9),transparent_26%),radial-gradient(circle_at_30%_58%,rgba(255,255,255,0.7),transparent_24%)]"></div>
                     <div class="relative flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
                         <div class="relative text-left pr-24 md:pr-0 md:grid md:grid-cols-[auto_170px] md:items-center md:gap-6">
@@ -1093,12 +1117,15 @@
 
         <div id="page-profile" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-gray-50 text-gray-900 text-left">
             <div class="max-w-3xl mx-auto space-y-8">
-                <header class="text-left border-b border-gray-200 pb-6">
-                    <h1 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter">Profile</h1>
-                    <p class="theme-accent-text font-bold uppercase tracking-widest text-[10px]">Your identity across leaderboard and chat</p>
+                <header class="text-left">
+                    <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                        <h1 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter">Profile</h1>
+                        <p class="theme-accent-text font-black uppercase tracking-[0.2em] text-[10px]">Your identity across leaderboard and chat</p>
+                    </div>
                 </header>
 
-                <section class="theme-soft-card rounded-3xl border p-6 space-y-5">
+                <section class="theme-soft-card rounded-3xl border p-6 space-y-5 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl" style="background-color: var(--theme-accent-primary);"></div>
                     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
                             <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.25em]">Account Email</div>
