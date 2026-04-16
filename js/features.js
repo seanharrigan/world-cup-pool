@@ -1302,10 +1302,21 @@ async function setupDashboard() {
 
         if (leaderboardEl) {
             const leaders = leaderboardData.slice(0, 3);
-            leaderboardEl.innerHTML = leaders.map((entry, index) => `
-                <div class="flex items-center justify-between gap-4 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
-                    <div class="min-w-0">
-                        <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.2em]">#${index + 1}</div>
+            const rankStyles = [
+                { border: 'border-yellow-200', bg: '#fffbeb', bar: '#f59e0b', rankColor: '#b45309', medal: '🥇' },
+                { border: 'border-gray-200',   bg: '#f8fafc', bar: '#94a3b8', rankColor: '#475569', medal: '🥈' },
+                { border: 'border-orange-100', bg: '#fff7f0', bar: '#f97316', rankColor: '#c2410c', medal: '🥉' },
+            ];
+            leaderboardEl.innerHTML = leaders.map((entry, index) => {
+                const s = rankStyles[index] || rankStyles[2];
+                return `
+                <div class="relative flex items-center justify-between gap-4 rounded-2xl border ${s.border} overflow-hidden px-4 py-4" style="background-color: ${s.bg};">
+                    <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color: ${s.bar};"></div>
+                    <div class="min-w-0 pl-2">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-base leading-none">${s.medal}</span>
+                            <span class="text-[10px] font-black uppercase tracking-[0.2em]" style="color: ${s.rankColor};">#${index + 1}</span>
+                        </div>
                         <div class="truncate text-lg font-black uppercase italic text-gray-900">${entry.nickname}</div>
                         <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${entry.realname}</div>
                     </div>
@@ -1313,8 +1324,8 @@ async function setupDashboard() {
                         <div class="text-2xl font-black text-gray-900">${entry.totalPoints}</div>
                         <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Pts</div>
                     </div>
-                </div>
-            `).join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No leaderboard data yet</div>';
+                </div>`;
+            }).join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No leaderboard data yet</div>';
         }
 
         if (resultsEl) {
@@ -1362,17 +1373,27 @@ async function setupDashboard() {
                 })
                 .slice(0, 5);
 
-            mostPickedEl.innerHTML = topTeams.map(([name, count]) => {
+            const maxCount = topTeams[0]?.[1] || 1;
+            const totalPicks = picks.length || 1;
+            mostPickedEl.innerHTML = topTeams.map(([name, count], i) => {
                 const team = teams.find((entry) => entry.name === name);
+                const barPct = Math.round((count / maxCount) * 100);
+                const ownPct = Math.round((count / totalPicks) * 100);
+                const barOpacity = i === 0 ? '0.12' : '0.07';
                 return `
-                    <div class="flex items-center justify-between gap-4 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
-                        <div class="flex min-w-0 items-center gap-3">
-                            <span class="text-2xl">${team?.flag || ''}</span>
-                            <div class="truncate text-sm font-black uppercase text-gray-900">${name}</div>
+                    <div class="relative rounded-2xl border border-gray-100 overflow-hidden px-4 py-3.5" style="background-color: #f9fafb;">
+                        <div class="absolute inset-0 rounded-2xl" style="width: ${barPct}%; background-color: rgba(var(--theme-accent-primary-rgb), ${barOpacity});"></div>
+                        <div class="relative flex items-center justify-between gap-3">
+                            <div class="flex min-w-0 items-center gap-3">
+                                <span class="text-2xl">${team?.flag || ''}</span>
+                                <div class="truncate text-sm font-black uppercase text-gray-900">${name}</div>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">${ownPct}%</span>
+                                <div class="theme-solid-badge rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]">${count}</div>
+                            </div>
                         </div>
-                        <div class="theme-solid-badge rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]">${count}</div>
-                    </div>
-                `;
+                    </div>`;
             }).join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No picks saved yet</div>';
         }
     } catch (error) {
