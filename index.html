@@ -219,7 +219,7 @@
                 <span onclick="showPage('picks')" id="nav-picks" class="nav-link">My Picks</span>
                 <span onclick="showPage('results')" id="nav-results" class="nav-link">Results</span>
                 <span onclick="showPage('leaderboard')" id="nav-leaderboard" class="nav-link">Leaderboard</span>
-                <span onclick="showPage('chat')" id="nav-chat" class="nav-link">Chat</span>
+                <span onclick="showPage('chat')" id="nav-chat" class="nav-link relative">Chat<span id="chat-unread-badge" class="hidden absolute -top-1.5 -right-2.5 h-4 min-w-[16px] px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center leading-none"></span></span>
                 <span onclick="showPage('profile')" id="nav-profile" class="nav-link">Profile</span>
                 <span onclick="showPage('admin')" id="nav-admin" class="nav-link hidden text-red-500">Admin</span>
             </div>
@@ -235,7 +235,7 @@
             <span onclick="showPage('picks')" class="mobile-menu-link py-4 border-b border-gray-900 text-center text-white">My Picks</span>
             <span onclick="showPage('results')" class="mobile-menu-link py-4 border-b border-gray-900 text-center text-white">Results</span>
             <span onclick="showPage('leaderboard')" class="mobile-menu-link py-4 border-b border-gray-900 text-center text-white">Leaderboard</span>
-            <span onclick="showPage('chat')" class="mobile-menu-link py-4 border-b border-gray-900 text-center text-white">Chat</span>
+            <span onclick="showPage('chat')" class="mobile-menu-link py-4 border-b border-gray-900 text-center text-white relative">Chat<span id="chat-unread-badge-mobile" class="hidden ml-2 inline-flex h-4 min-w-[16px] px-1 rounded-full bg-red-500 text-white text-[9px] font-black items-center justify-center leading-none"></span></span>
             <span onclick="showPage('profile')" class="mobile-menu-link py-4 border-b border-gray-900 text-center text-white">Profile</span>
             <span onclick="showPage('admin')" id="mobile-nav-admin" class="py-4 text-center text-red-500 hidden">Admin</span>
         </div>
@@ -354,6 +354,14 @@
                     </div>
                 </header>
 
+                <div id="dashboard-teams-today-section" class="hidden rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <div class="mb-4 border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                        <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Your Teams Today</h2>
+                        <p id="dashboard-teams-today-label" class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Today's fixtures for your squad</p>
+                    </div>
+                    <div id="dashboard-teams-today" class="space-y-3"></div>
+                </div>
+
                 <section class="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-8">
                     <div class="space-y-8">
                         <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -430,31 +438,38 @@
                     <p class="theme-accent-text font-bold uppercase tracking-widest text-xs">2026 World Cup Pool Selection &amp; Scoring</p>
                 </header>
                 <div class="grid grid-cols-1 md:grid-cols-[1.15fr_0.85fr] gap-10 text-gray-900 border-b-2 border-gray-100 pb-8 text-left">
-                    <section class="space-y-5">
-                        <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2">Squad Building</h2>
-                        <p class="text-sm font-semibold text-gray-500">Pick your squad using the $150 budget, then build the best team possible within the tier limits below.</p>
-                        <div class="space-y-4">
-                            <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4">
+                    <section class="flex flex-col gap-5">
+                        <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                            <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Squad Building</h2>
+                            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Pick within budget and tier limits</p>
+                        </div>
+                        <div class="flex flex-col gap-4 flex-1">
+                            <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4 relative overflow-hidden flex-1 flex flex-col justify-between">
+                                <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl" style="background-color: var(--theme-accent-primary);"></div>
                                 <div class="flex items-start justify-between gap-4">
                                     <div>
                                         <div class="text-lg font-black text-gray-900">Budget Limit</div>
                                         <div class="mt-1 text-sm font-semibold text-gray-500">Build your squad without overspending.</div>
+                                        <div class="mt-2 text-xs font-semibold text-gray-400">Team prices reflect tournament odds — stronger favourites cost more.</div>
                                     </div>
-                                    <div class="theme-accent-text text-2xl font-black">$150</div>
+                                    <div class="theme-accent-text text-4xl font-black">$150</div>
                                 </div>
                             </div>
                             <div class="grid gap-3 sm:grid-cols-3">
-                                <div class="rounded-2xl border border-gray-200 bg-white px-4 py-4">
+                                <div class="rounded-2xl border border-gray-200 bg-white px-4 py-4 relative overflow-hidden">
+                                    <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl bg-gray-200"></div>
                                     <div class="text-[10px] font-black uppercase tracking-[0.22em] text-gray-400">Tier 1</div>
                                     <div class="mt-2 text-lg font-black text-gray-900">0-1 Teams</div>
                                     <div class="mt-2 text-sm font-semibold text-gray-500">Optional premium slot.</div>
                                 </div>
-                                <div class="rounded-2xl border border-gray-200 bg-white px-4 py-4">
+                                <div class="rounded-2xl border border-gray-200 bg-white px-4 py-4 relative overflow-hidden">
+                                    <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl bg-gray-200"></div>
                                     <div class="text-[10px] font-black uppercase tracking-[0.22em] text-gray-400">Tier 2</div>
                                     <div class="mt-2 text-lg font-black text-gray-900">Unlimited</div>
                                     <div class="mt-2 text-sm font-semibold text-gray-500">Use freely within budget.</div>
                                 </div>
-                                <div class="rounded-2xl border border-gray-200 bg-white px-4 py-4">
+                                <div class="rounded-2xl border border-gray-200 bg-white px-4 py-4 relative overflow-hidden">
+                                    <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl bg-gray-200"></div>
                                     <div class="text-[10px] font-black uppercase tracking-[0.22em] text-gray-400">Tier 3</div>
                                     <div class="mt-2 text-lg font-black text-gray-900">Minimum 3</div>
                                     <div class="mt-2 text-sm font-semibold text-gray-500">Required for a valid squad.</div>
@@ -462,15 +477,19 @@
                             </div>
                         </div>
                     </section>
-                    <section class="space-y-5 text-left">
-                        <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2">Prizes</h2>
-                        <div class="grid gap-4">
-                            <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4">
+                    <section class="flex flex-col gap-5 text-left">
+                        <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                            <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Prizes</h2>
+                            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Pool pot split across top three</p>
+                        </div>
+                        <div class="flex flex-col gap-4 flex-1">
+                            <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4 relative overflow-hidden">
+                                <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl" style="background-color: var(--theme-accent-primary);"></div>
                                 <div class="text-[10px] font-black uppercase tracking-[0.22em] text-gray-400">Entry Fee</div>
                                 <div class="mt-2 text-sm font-semibold text-gray-500">E-transfer to Connor, reach out for details.</div>
                                 <div class="mt-2 text-3xl font-black text-gray-900">$40 CAD</div>
                             </div>
-                            <div class="relative overflow-hidden rounded-2xl bg-gray-900 text-white p-5 shadow-lg">
+                            <div class="relative overflow-hidden rounded-2xl bg-gray-900 text-white p-5 shadow-lg flex-1">
                                 <div class="pointer-events-none absolute inset-0">
                                     <div class="absolute inset-4 rounded-[20px]" style="border: 1.5px solid rgba(var(--theme-accent-primary-rgb), 0.28);"></div>
                                     <div class="absolute left-1/2 top-4 h-[calc(100%-2rem)] w-[1.5px] -translate-x-1/2" style="background-color: rgba(var(--theme-accent-primary-rgb), 0.24);"></div>
@@ -490,19 +509,31 @@
                 </div>
                 
                 <section class="space-y-6 text-left">
-                    <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2 text-left">Point Scoring</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 font-bold text-gray-800">
-                        <div class="theme-soft-card p-6 rounded-2xl border-2"><h3 class="uppercase mb-2 italic">Group Phase</h3><p>Win: 3 pts | Tie: 1 pt</p><p class="theme-accent-text">Advance to Knockouts: +1 pt</p></div>
-                        <div style="background-color: color-mix(in srgb, var(--theme-accent-primary) 75%, white); border-color: var(--theme-accent-primary);" class="p-6 rounded-2xl border-2 text-white"><h3 class="uppercase mb-2 italic text-white">Knockout Phase</h3><p>Win: 3 pts</p><p class="text-xs font-normal uppercase mt-2 text-left opacity-70">* No points for bronze game</p></div>
+                    <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                        <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Point Scoring</h2>
+                        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">How points are earned each stage</p>
                     </div>
-                    <div class="bg-gray-100 p-6 rounded-2xl text-gray-900 text-center">
-                        <h3 class="font-black uppercase mb-4 italic">Stage Multipliers</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 font-bold text-gray-800">
+                        <div class="theme-soft-card p-6 rounded-2xl border-2 relative overflow-hidden">
+                            <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl" style="background-color: var(--theme-accent-primary);"></div>
+                            <h3 class="uppercase mb-2 italic">Group Phase</h3><p>Win: 3 pts | Tie: 1 pt</p><p class="theme-accent-text">Advance to Knockouts: +1 pt</p>
+                        </div>
+                        <div style="background-color: color-mix(in srgb, var(--theme-accent-primary) 75%, white); border-color: var(--theme-accent-primary);" class="p-6 rounded-2xl border-2 text-white relative overflow-hidden">
+                            <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl bg-white/30"></div>
+                            <h3 class="uppercase mb-2 italic text-white">Knockout Phase</h3><p>Win: 3 pts</p><p class="text-xs font-normal uppercase mt-2 text-left opacity-70">* No points for bronze game</p>
+                        </div>
+                    </div>
+                    <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                        <div class="border-l-[3px] pl-3 mb-5" style="border-color: var(--theme-accent-primary);">
+                            <h3 class="text-lg font-black uppercase italic tracking-tight text-gray-900">Stage Multipliers</h3>
+                            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Points × multiplier per knockout round</p>
+                        </div>
                         <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
-                            <div class="bg-white p-3 rounded-xl border border-gray-200 text-gray-900"><div class="text-[8px] font-black text-gray-400 uppercase">Round 32</div><div class="theme-accent-text text-xl font-black">x2</div></div>
-                            <div class="bg-white p-3 rounded-xl border border-gray-200 text-gray-900"><div class="text-[8px] font-black text-gray-400 uppercase">Round 16</div><div class="theme-accent-text text-xl font-black">x3</div></div>
-                            <div class="bg-white p-3 rounded-xl border border-gray-200 text-gray-900"><div class="text-[8px] font-black text-gray-400 uppercase">Quarters</div><div class="theme-accent-text text-xl font-black">x5</div></div>
-                            <div class="bg-white p-3 rounded-xl border border-gray-200 text-gray-900"><div class="text-[8px] font-black text-gray-400 uppercase">Semis</div><div class="theme-accent-text text-xl font-black">x8</div></div>
-                            <div class="bg-gray-900 p-3 rounded-xl text-white"><div class="text-[8px] font-black uppercase text-white">Finals</div><div class="text-xl font-black text-white">x12</div></div>
+                            <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 text-gray-900 relative overflow-hidden text-center"><div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-xl bg-gray-200"></div><div class="text-[8px] font-black text-gray-400 uppercase">Round 32</div><div class="theme-accent-text text-xl font-black">x2</div></div>
+                            <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 text-gray-900 relative overflow-hidden text-center"><div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-xl bg-gray-200"></div><div class="text-[8px] font-black text-gray-400 uppercase">Round 16</div><div class="theme-accent-text text-xl font-black">x3</div></div>
+                            <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 text-gray-900 relative overflow-hidden text-center"><div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-xl bg-gray-200"></div><div class="text-[8px] font-black text-gray-400 uppercase">Quarters</div><div class="theme-accent-text text-xl font-black">x5</div></div>
+                            <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 text-gray-900 relative overflow-hidden text-center"><div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-xl bg-gray-200"></div><div class="text-[8px] font-black text-gray-400 uppercase">Semis</div><div class="theme-accent-text text-xl font-black">x8</div></div>
+                            <div class="bg-gray-900 p-3 rounded-xl text-white relative overflow-hidden text-center"><div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-xl" style="background-color: var(--theme-accent-primary);"></div><div class="text-[8px] font-black uppercase text-white">Finals</div><div class="text-xl font-black text-white">x12</div></div>
                         </div>
                     </div>
                 </section>
@@ -1132,6 +1163,15 @@
             <div class="border-t border-gray-800 bg-gray-950/70 p-4 flex gap-3">
                 <button id="confirm-modal-cancel" class="flex-1 rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-gray-300 hover:bg-gray-700 transition-colors">Cancel</button>
                 <button id="confirm-modal-confirm" class="theme-primary-button flex-1 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-white transition-colors">Create Profile</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="player-profile-modal" class="hidden fixed inset-0 z-[115] bg-black/80 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closePlayerProfile()">
+        <div class="w-full max-w-lg rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div id="player-profile-modal-content" class="overflow-y-auto flex-1"></div>
+            <div class="border-t border-gray-800 bg-gray-950/70 p-4 shrink-0">
+                <button onclick="closePlayerProfile()" class="w-full rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-gray-300 hover:bg-gray-700 transition-colors">Close</button>
             </div>
         </div>
     </div>

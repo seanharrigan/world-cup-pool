@@ -1246,6 +1246,70 @@ async function setupDashboard() {
             .map((pick) => teams.find((team) => team.name === pick.team_name))
             .filter(Boolean);
         const liveSquad = myPicks.length > 0 ? myPicks : savedSquad;
+
+        // ── My Teams Today ────────────────────────────────────────────────────
+        const teamsTodaySection = document.getElementById('dashboard-teams-today-section');
+        const teamsTodayEl = document.getElementById('dashboard-teams-today');
+        const teamsTodayLabel = document.getElementById('dashboard-teams-today-label');
+        if (teamsTodayEl && liveSquad.length > 0) {
+            const today = new Date().toISOString().slice(0, 10);
+            const squadNames = new Set(liveSquad.map((t) => t.name));
+            let myTodayMatches = matches.filter((m) =>
+                m.match_date_manual === today && (squadNames.has(m.team_home) || squadNames.has(m.team_away))
+            );
+
+            // If no matches today, fall back to the most recent date that had any squad team
+            let isFallback = false;
+            if (myTodayMatches.length === 0) {
+                const recentMatch = matches.find((m) => squadNames.has(m.team_home) || squadNames.has(m.team_away));
+                if (recentMatch) {
+                    isFallback = true;
+                    const recentDate = recentMatch.match_date_manual;
+                    myTodayMatches = matches.filter((m) =>
+                        m.match_date_manual === recentDate && (squadNames.has(m.team_home) || squadNames.has(m.team_away))
+                    );
+                    if (teamsTodayLabel) teamsTodayLabel.textContent = `Most recent — ${recentDate}`;
+                }
+            }
+
+            if (teamsTodaySection) teamsTodaySection.classList.remove('hidden');
+
+            if (myTodayMatches.length === 0) {
+                teamsTodayEl.innerHTML = '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No matches found for your squad</div>';
+            } else {
+                teamsTodayEl.innerHTML = myTodayMatches.map((match) => {
+                    const isMyHome = squadNames.has(match.team_home);
+                    const homeTeam = teams.find((t) => t.name === match.team_home);
+                    const awayTeam = teams.find((t) => t.name === match.team_away);
+
+                    let centerEl;
+                    if (match.is_finished) {
+                        centerEl = `<div class="rounded-xl bg-gray-900 px-3 py-1 font-mono text-white text-sm font-black text-center shrink-0">${match.score_home}-${match.score_away}</div>`;
+                    } else if (!isFallback) {
+                        centerEl = `<div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.2em] shrink-0">Today</div>`;
+                    } else {
+                        centerEl = `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 shrink-0">${match.match_date_manual || 'TBD'}</div>`;
+                    }
+
+                    return `
+                    <div class="rounded-2xl border border-gray-100 px-4 py-3.5 flex items-center gap-3 overflow-hidden relative" style="border-left: 3px solid ${isMyHome ? 'var(--theme-accent-primary)' : 'transparent'}; border-right: 3px solid ${!isMyHome ? 'var(--theme-accent-primary)' : 'transparent'};">
+                        <div class="flex-1 min-w-0 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                            <div class="min-w-0 text-left ${isMyHome ? 'font-black text-gray-900' : 'font-bold text-gray-400'}">
+                                <span class="text-xl">${homeTeam?.flag || ''}</span>
+                                <span class="text-sm ml-1 truncate">${match.team_home}</span>
+                            </div>
+                            ${centerEl}
+                            <div class="min-w-0 text-right ${!isMyHome ? 'font-black text-gray-900' : 'font-bold text-gray-400'}">
+                                <span class="text-sm mr-1 truncate">${match.team_away}</span>
+                                <span class="text-xl">${awayTeam?.flag || ''}</span>
+                            </div>
+                        </div>
+                        <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 shrink-0">${match.stage}</div>
+                    </div>`;
+                }).join('');
+            }
+        }
+
         const spent = liveSquad.reduce((sum, team) => sum + team.cost, 0);
         const tierThreeCount = liveSquad.filter((team) => team.tier === 3).length;
         const myPoints = currentUserRows.reduce((sum, pick) => sum + (teamPointsMap[pick.team_name] || 0), 0);
@@ -2522,17 +2586,40 @@ async function fetchLeaderboard() {
         let displayRank = 0;
         let previousPoints = null;
 
+        // Load previous rank snapshot from localStorage for change arrows
+        const previousRanks = JSON.parse(localStorage.getItem('wc_pool_lb_ranks') || '{}');
+        const newRanks = {};
+
         body.innerHTML = bestRowMarkup + (leaderboardData.map((user, index) => {
             if (user.totalPoints !== previousPoints) {
                 displayRank = index + 1;
                 previousPoints = user.totalPoints;
             }
 
+            newRanks[user.email] = displayRank;
+
+            // Compute rank change indicator
+            const prevRank = previousRanks[user.email];
+            let rankIndicator;
+            if (prevRank === undefined || prevRank === null) {
+                rankIndicator = '';
+            } else {
+                const delta = prevRank - displayRank;
+                if (delta > 0) rankIndicator = `<span class="text-green-500 text-xs font-black">↑${delta}</span>`;
+                else if (delta < 0) rankIndicator = `<span class="text-red-400 text-xs font-black">↓${Math.abs(delta)}</span>`;
+                else rankIndicator = '';
+            }
+
             const rowTone = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
 
             return `
-            <tr class="theme-hover-row ${rowTone} border-b border-gray-100 transition-colors text-left text-gray-900">
-                <td class="theme-accent-text px-6 py-4 text-center text-[1.65rem] font-black italic">#${displayRank}</td>
+            <tr class="theme-hover-row ${rowTone} border-b border-gray-100 transition-colors text-left text-gray-900 cursor-pointer" onclick="showPlayerProfile('${user.email}')">
+                <td class="theme-accent-text px-6 py-4 text-center">
+                    <div class="flex items-center justify-center gap-3">
+                        <div class="w-6 text-right">${rankIndicator}</div>
+                        <div class="text-[1.65rem] font-black italic">#${displayRank}</div>
+                    </div>
+                </td>
                 <td class="theme-accent-text px-6 py-4 text-center font-mono text-[1.65rem] font-black">${user.totalPoints}</td>
                 <td class="px-6 py-4 text-left">
                     <div class="text-lg font-black uppercase text-left text-gray-900">${user.nickname}</div>
@@ -2551,6 +2638,10 @@ async function fetchLeaderboard() {
             </tr>
         `;
         }).join('') || '<tr><td colspan="10" class="p-8 text-center text-gray-900">No players found</td></tr>');
+
+        // Persist ranks for next page load comparison, cache data for player profile modal
+        localStorage.setItem('wc_pool_lb_ranks', JSON.stringify(newRanks));
+        window._leaderboardData = leaderboardData;
     } catch (error) {
         body.innerHTML = '<tr><td colspan="10" class="p-8 text-center text-red-500 text-gray-900">Error calculating scores</td></tr>';
     }
@@ -2977,7 +3068,30 @@ async function undoSendMessage(messageId) {
     if (wrapper) wrapper.remove();
 }
 
+// ── Chat Unread Badge ─────────────────────────────────────────────────────────
+let chatUnreadCount = 0;
+
+function updateChatBadge() {
+    const display = chatUnreadCount > 9 ? '9+' : String(chatUnreadCount);
+    ['chat-unread-badge', 'chat-unread-badge-mobile'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = display;
+        el.classList.toggle('hidden', chatUnreadCount === 0);
+        // Mobile badge uses inline-flex; desktop badge uses flex — sync display value
+        if (chatUnreadCount > 0) {
+            el.style.display = id === 'chat-unread-badge-mobile' ? 'inline-flex' : 'flex';
+        }
+    });
+}
+
+function clearChatBadge() {
+    chatUnreadCount = 0;
+    updateChatBadge();
+}
+
 function setupChat() {
+    clearChatBadge();
     fetchMessages();
     setupChatKeyboardSubmit();
     setupMentionAutocomplete();
@@ -3013,6 +3127,14 @@ function setupChat() {
                 box.innerHTML = '';
             }
             renderMessage(payload.new);
+            // Badge: only for real user messages from others, not system messages
+            if (payload.new.type && payload.new.type !== 'user') return; // system msgs don't count
+            if (payload.new.user_email === userEmail) return; // own messages don't count
+            const chatPage = document.getElementById('page-chat');
+            if (!chatPage || chatPage.classList.contains('hidden')) {
+                chatUnreadCount++;
+                updateChatBadge();
+            }
         })
         .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, (payload) => {
             const el = document.querySelector(`[data-message-id="${payload.old.id}"]`);
@@ -3118,7 +3240,10 @@ function renderMessage(message) {
     const bubble = `
         <div data-bubble class="p-4 rounded-2xl text-left ${isMe ? 'theme-chat-own rounded-tr-none' : 'bg-gray-100 rounded-tl-none'}">
             <div class="text-[9px] font-black uppercase text-left ${isMe ? 'theme-chat-own-meta' : 'theme-accent-text'}">
-                ${escapeHtml(message.nickname)} <span class="opacity-50">(${escapeHtml(message.realname)})</span>
+                ${isMe
+                    ? `${escapeHtml(message.nickname)} <span class="opacity-50">(${escapeHtml(message.realname)})</span>`
+                    : `<span class="cursor-pointer hover:underline" onclick="showPlayerProfile('${message.user_email}')">${escapeHtml(message.nickname)}</span> <span class="opacity-50">(${escapeHtml(message.realname)})</span>`
+                }
             </div>
             <div class="message-content font-bold mt-1 text-sm text-left ${isMe ? 'text-white' : 'text-black'}"
                  data-raw-content="${escapeHtml(message.content)}">${parseMentions(message.content)}</div>
@@ -3296,6 +3421,132 @@ async function loadAllReactions(messageIds) {
     messageIds.forEach((id) => updateReactionDisplay(id, byMessage[id] || []));
 }
 
+// ── Player Profile Modal ──────────────────────────────────────────────────────
+
+async function showPlayerProfile(email) {
+    const modal = document.getElementById('player-profile-modal');
+    const content = document.getElementById('player-profile-modal-content');
+    if (!modal || !content) return;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    // Close on Escape key
+    const onEscape = (e) => { if (e.key === 'Escape') { closePlayerProfile(); document.removeEventListener('keydown', onEscape); } };
+    document.addEventListener('keydown', onEscape);
+    content.innerHTML = '<div class="p-8 text-center text-gray-400 font-black uppercase tracking-[0.2em] text-[10px] animate-pulse">Loading...</div>';
+
+    // Pull from cached leaderboard data (set after each fetchLeaderboard render)
+    const lb = window._leaderboardData || [];
+    const playerEntry = lb.find((u) => u.email === email);
+
+    // Fetch profile details not in leaderboard data
+    const { data: profile } = await supabaseClient
+        .from('profiles')
+        .select('nickname, realname, favorite_team, home_country, avatar_url')
+        .eq('email', email)
+        .single();
+
+    const nickname = profile?.nickname || playerEntry?.nickname || email.split('@')[0];
+    const realname = profile?.realname || playerEntry?.realname || '';
+    const favTeam = teams.find((t) => t.name === profile?.favorite_team);
+    const favFlag = favTeam?.flag || '';
+
+    // Squad section
+    let squadHtml = '';
+    let budgetUsed = 0;
+    if (playerEntry?.squad?.length > 0) {
+        budgetUsed = playerEntry.squad.reduce((sum, t) => sum + (t.cost || 0), 0);
+        squadHtml = playerEntry.squad
+            .sort((a, b) => (b.cost || 0) - (a.cost || 0) || a.name.localeCompare(b.name))
+            .map((t) => `
+                <div class="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 flex items-center gap-2 ${t.eliminated ? 'opacity-40' : ''}">
+                    <span class="text-xl">${t.flag || ''}</span>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-black uppercase text-white truncate">${escapeHtml(t.name)}</div>
+                        <div class="text-[10px] font-bold text-gray-400">T${t.tier} · $${t.cost}${t.eliminated ? ' · out' : ''}</div>
+                    </div>
+                </div>
+            `).join('');
+    } else {
+        squadHtml = '<div class="col-span-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 py-2">No squad saved yet</div>';
+    }
+
+    // Points stage breakdown
+    let stageBreakdownHtml = '';
+    if (playerEntry) {
+        const sp = playerEntry.stagePoints || {};
+        const groupPts = (sp.G1 || 0) + (sp.G2 || 0) + (sp.G3 || 0);
+        [
+            { label: 'Group', pts: groupPts },
+            { label: 'Bonus', pts: sp.Bonus || 0 },
+            { label: 'R32', pts: sp.R32 || 0 },
+            { label: 'R16', pts: sp.R16 || 0 },
+            { label: 'QF', pts: sp.QF || 0 },
+            { label: 'Semi', pts: sp.SM || 0 },
+            { label: 'Final', pts: sp.F || 0 },
+        ].forEach(({ label, pts }) => {
+            stageBreakdownHtml += `
+                <div class="text-center">
+                    <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">${label}</div>
+                    <div class="text-sm font-black text-white">${pts || '—'}</div>
+                </div>`;
+        });
+    }
+
+    const budgetBarHtml = budgetUsed > 0 ? `
+        <div class="px-6 pb-5">
+            <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Budget Used</span>
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">$${budgetUsed} / $150</span>
+            </div>
+            <div class="h-2 rounded-full bg-gray-800 overflow-hidden">
+                <div class="h-full rounded-full" style="width: ${Math.round(budgetUsed / 150 * 100)}%; background-color: var(--theme-accent-primary);"></div>
+            </div>
+        </div>` : '';
+
+    content.innerHTML = `
+        <div class="p-6 space-y-5">
+            <div class="flex items-center gap-4">
+                <div class="h-14 w-14 rounded-2xl flex items-center justify-center text-3xl shrink-0" style="background-color: rgba(var(--theme-accent-primary-rgb), 0.15);">
+                    ${favFlag || '👤'}
+                </div>
+                <div class="min-w-0 flex-1">
+                    <div class="text-2xl font-black uppercase italic tracking-tight text-white truncate">${escapeHtml(nickname)}</div>
+                    ${realname ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${escapeHtml(realname)}</div>` : ''}
+                    <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                        ${profile?.favorite_team ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300">${favFlag} ${escapeHtml(profile.favorite_team)}</span>` : ''}
+                        ${profile?.home_country ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-500">${escapeHtml(profile.home_country)}</span>` : ''}
+                    </div>
+                </div>
+                ${playerEntry ? `<div class="ml-auto text-right shrink-0">
+                    <div class="theme-accent-text text-3xl font-black">${playerEntry.totalPoints}</div>
+                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
+                </div>` : ''}
+            </div>
+
+            ${playerEntry && stageBreakdownHtml ? `
+            <div class="rounded-2xl border border-gray-700 bg-gray-800/50 px-4 py-3">
+                <div class="text-[9px] font-black uppercase tracking-[0.25em] text-gray-500 mb-3">Points by Stage</div>
+                <div class="grid grid-cols-7 gap-1">${stageBreakdownHtml}</div>
+            </div>` : ''}
+
+            <div>
+                <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Squad</div>
+                <div class="grid grid-cols-2 gap-2">${squadHtml}</div>
+            </div>
+        </div>
+        ${budgetBarHtml}
+    `;
+}
+
+function closePlayerProfile() {
+    const modal = document.getElementById('player-profile-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
 // ── Real-time Leaderboard ─────────────────────────────────────────────────────
 // Subscribes to match and team_advancement changes so the leaderboard updates
 // automatically when the admin logs a result — no manual reload needed.
@@ -3370,6 +3621,9 @@ Object.assign(window, {
     handleEmojiReaction,
     toggleReaction,
     setupLeaderboardRealtime,
+    showPlayerProfile,
+    closePlayerProfile,
+    clearChatBadge,
     postSystemMessage,
     insertMention,
     saveEditMessage,
