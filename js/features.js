@@ -276,7 +276,7 @@ function applyPicksAccentTheme(currentProfile = null) {
     root.style.setProperty('--theme-accent-soft', tokens.soft);
     root.style.setProperty('--theme-accent-soft-strong', tokens.softStrong);
     root.style.setProperty('--theme-accent-button-hover', darkenHex(tokens.primary, 0.10));
-    root.style.setProperty('--theme-accent-chat-meta', mixHexWithWhite(tokens.primary, 0.72));
+    root.style.setProperty('--theme-accent-chat-meta', 'rgba(255,255,255,0.82)');
 }
 
 function applyFavoriteBanner(banner, bannerText, favoriteTeam) {
@@ -2727,24 +2727,36 @@ function escapeHtml(str) {
 }
 
 // Replace @[Nickname] tokens with a clickable highlighted span that opens the player profile.
-function parseMentions(content) {
+function parseMentions(content, isOwnMessage = false) {
     return escapeHtml(content).replace(/@\[([^\]]+)\]/g, (_, name) => {
         const safe = escapeHtml(name).replace(/'/g, '&#39;');
-        return `<span class="font-black text-blue-400 cursor-pointer hover:underline" onclick="showProfileByNickname('${safe}')">@${escapeHtml(name)}</span>`;
+        if (isOwnMessage) {
+            return `<span class="font-black text-white cursor-pointer hover:opacity-80" onclick="showProfileByNickname('${safe}')">@${escapeHtml(name)}</span>`;
+        }
+        const color = mentionColorMap[name] || '#60a5fa';
+        return `<span class="font-black cursor-pointer hover:underline" style="color:${color}" onclick="showProfileByNickname('${safe}')">@${escapeHtml(name)}</span>`;
     });
 }
 
 // ── @mention autocomplete ────────────────────────────────────────────────────
 
 let mentionProfilesCache = null;
+let mentionColorMap = {}; // nickname → team accent hex
 
 async function getMentionProfiles() {
     if (mentionProfilesCache) return mentionProfilesCache;
     const { data } = await supabaseClient
         .from('profiles')
-        .select('email, nickname, realname')
+        .select('email, nickname, realname, favorite_team')
         .not('nickname', 'is', null);
     mentionProfilesCache = (data || []).filter((p) => p.nickname);
+    mentionColorMap = {};
+    mentionProfilesCache.forEach((p) => {
+        if (p.favorite_team) {
+            const tokens = getFavoriteTeamAccentTokens(p.favorite_team);
+            mentionColorMap[p.nickname] = tokens.primary;
+        }
+    });
     return mentionProfilesCache;
 }
 
@@ -3245,16 +3257,16 @@ function renderMessage(message) {
         </div>`;
 
     const bubble = `
-        <div data-bubble class="p-4 rounded-2xl text-left ${isMe ? 'theme-chat-own rounded-tr-none' : 'bg-gray-100 rounded-tl-none'}">
+        <div data-bubble class="px-3 py-2.5 rounded-2xl text-left ${isMe ? 'theme-chat-own rounded-tr-none' : 'bg-gray-100 rounded-tl-none'}">
             <div class="text-[9px] font-black uppercase text-left ${isMe ? 'theme-chat-own-meta' : 'theme-accent-text'}">
                 ${isMe
-                    ? `${escapeHtml(message.nickname)} <span class="opacity-50">(${escapeHtml(message.realname)})</span>`
+                    ? `${escapeHtml(message.nickname)} <span class="opacity-60">(${escapeHtml(message.realname)})</span>`
                     : `<span class="cursor-pointer hover:underline" onclick="showPlayerProfile('${message.user_email}')">${escapeHtml(message.nickname)}</span> <span class="opacity-50">(${escapeHtml(message.realname)})</span>`
                 }
             </div>
-            <div class="message-content font-bold mt-1 text-sm text-left ${isMe ? 'text-white' : 'text-black'}"
-                 data-raw-content="${escapeHtml(message.content)}">${parseMentions(message.content)}</div>
-            <div class="text-[9px] mt-1.5 opacity-40 text-left font-medium">${formatMessageTime(message.created_at)}</div>
+            <div class="message-content font-bold mt-0.5 text-sm text-left ${isMe ? 'text-white' : 'text-black'}"
+                 data-raw-content="${escapeHtml(message.content)}">${parseMentions(message.content, isMe)}</div>
+            <div class="text-[9px] mt-1 text-left font-medium ${isMe ? 'opacity-60' : 'opacity-40'}">${formatMessageTime(message.created_at)}</div>
         </div>`;
 
     wrapper.innerHTML = `
