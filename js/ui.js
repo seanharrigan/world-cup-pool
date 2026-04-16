@@ -1,3 +1,61 @@
+// Tracks the ? button state so we know when to re-flash on regression
+let _picksHelperState = 'neutral'; // 'neutral' | 'warn' | 'success'
+
+// Always keep an inner <span> for the label so we can fade text independently
+function _phSpan(btn) {
+    let span = btn.querySelector('span.ph-label');
+    if (!span) {
+        const current = btn.textContent;
+        btn.textContent = '';
+        span = document.createElement('span');
+        span.className = 'ph-label';
+        span.style.cssText = 'display:inline-block; transition: opacity 0.28s ease; pointer-events:none;';
+        span.textContent = current;
+        btn.appendChild(span);
+    }
+    return span;
+}
+
+function _phSetText(btn, text) {
+    _phSpan(btn).textContent = text;
+}
+
+function _phFadeText(btn, newText, callback) {
+    const span = _phSpan(btn);
+    span.style.opacity = '0';
+    setTimeout(() => {
+        span.textContent = newText;
+        span.style.opacity = '1';
+        if (callback) setTimeout(callback, 300);
+    }, 290);
+}
+
+function triggerPicksHelperFlash(btn) {
+    _phSetText(btn, '?');
+    btn.classList.remove('picks-helper-warn', 'picks-helper-success', 'picks-helper-success-flash', 'picks-helper-flash');
+    void btn.offsetWidth; // reflow to restart animation
+    btn.classList.add('picks-helper-flash');
+    btn.addEventListener('animationend', function onEnd() {
+        btn.classList.remove('picks-helper-flash');
+        if (_picksHelperState === 'warn') btn.classList.add('picks-helper-warn');
+        else if (_picksHelperState === 'success') btn.classList.add('picks-helper-success');
+    }, { once: true });
+}
+
+function triggerPicksHelperSuccess(btn) {
+    _phSetText(btn, '✓');
+    btn.classList.remove('picks-helper-warn', 'picks-helper-success', 'picks-helper-flash', 'picks-helper-success-flash');
+    void btn.offsetWidth;
+    btn.classList.add('picks-helper-success-flash');
+    btn.addEventListener('animationend', function onEnd() {
+        btn.classList.remove('picks-helper-success-flash');
+        // Fade only the label ✓ → ? while the circle stays fully visible
+        _phFadeText(btn, '?', () => {
+            btn.classList.add('picks-helper-success');
+        });
+    }, { once: true });
+}
+
 function showToast(message, type = 'error') {
     const container = document.getElementById('toast-container');
 
@@ -255,25 +313,18 @@ function showPage(pageId) {
     navLinks.forEach((link) => link.classList.add('active'));
 
     if (pageId === 'instructions') setupDashboard();
+    if (pageId !== 'picks') {
+        togglePicksRulesBar(false); // close modal if open when leaving picks page
+    }
+
     if (pageId === 'picks') {
-        const wrap = document.getElementById('picks-rules-help-wrap');
-        if (wrap) {
-            delete wrap.dataset.fixedTop;
-            delete wrap.dataset.fixedRight;
-        }
+        // Reset so updateUI picks the right entry animation fresh
+        _picksHelperState = 'neutral';
         updateUI();
         syncMobileRosterState();
-        togglePicksRulesBar(false);
-        updatePicksRulesHelpAnchor(true);
-        if (window.innerWidth < 768 && wasMobileMenuOpen) {
-            if (mobilePicksHelperAnchorTimeout) {
-                clearTimeout(mobilePicksHelperAnchorTimeout);
-            }
-            mobilePicksHelperAnchorTimeout = setTimeout(() => {
-                updatePicksRulesHelpAnchor(true);
-                mobilePicksHelperAnchorTimeout = null;
-            }, 340);
-        }
+        // If squad is incomplete, fire the yellow entry flash (success path is handled by updateUI)
+        const helperBtn = document.getElementById('picks-rules-toggle');
+        if (helperBtn && _picksHelperState === 'warn') triggerPicksHelperFlash(helperBtn);
     }
     if (pageId === 'leaderboard') fetchLeaderboard();
     if (pageId === 'admin') setupAdminPage();
@@ -292,20 +343,6 @@ function showPage(pageId) {
             });
             window.scrollTo(0, 0);
 
-            if (pageId === 'picks') {
-                requestAnimationFrame(() => {
-                    updatePicksRulesHelpAnchor(true);
-                    if (window.innerWidth < 768 && wasMobileMenuOpen) {
-                        if (mobilePicksHelperAnchorTimeout) {
-                            clearTimeout(mobilePicksHelperAnchorTimeout);
-                        }
-                        mobilePicksHelperAnchorTimeout = setTimeout(() => {
-                            updatePicksRulesHelpAnchor(true);
-                            mobilePicksHelperAnchorTimeout = null;
-                        }, 340);
-                    }
-                });
-            }
         });
     }
 }
@@ -330,72 +367,29 @@ function toggleMobileRoster() {
 }
 
 function togglePicksRulesBar(forceExpanded = null) {
-    const chips = document.getElementById('picks-rules-help-panel');
-    const button = document.getElementById('picks-rules-toggle');
-    const wrap = document.getElementById('picks-rules-help-wrap');
-    const expandedButton = document.getElementById('picks-rules-toggle-expanded');
+    const modal = document.getElementById('picks-helper-modal');
+    if (!modal) return;
 
-    if (!chips || !button || !wrap) {
-        return;
+    const isHidden = modal.classList.contains('hidden');
+    const shouldExpand = forceExpanded === null ? isHidden : forceExpanded;
+
+    if (shouldExpand) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        // Close on Escape
+        const onEscape = (e) => {
+            if (e.key === 'Escape') { togglePicksRulesBar(false); document.removeEventListener('keydown', onEscape); }
+        };
+        document.addEventListener('keydown', onEscape);
+    } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
     }
-
-    const shouldExpand = forceExpanded === null
-        ? chips.classList.contains('hidden')
-        : forceExpanded;
-
-    chips.classList.toggle('hidden', !shouldExpand);
-    wrap.classList.toggle('open', shouldExpand);
-    button.innerText = '?';
-    button.classList.toggle('hidden', shouldExpand);
-    if (expandedButton) {
-        expandedButton.classList.toggle('hidden', !shouldExpand);
-    }
-    button.setAttribute('aria-label', shouldExpand ? 'Hide rule status help' : 'Show rule status help');
 }
 
-function updatePicksRulesHelpAnchor(forceReanchor = false) {
-    const wrap = document.getElementById('picks-rules-help-wrap');
-    const scrollContainer = document.getElementById('picks-main-scroll');
-    const rulesCard = document.getElementById('picks-rules-card');
-    const toggle = document.getElementById('picks-rules-toggle');
-
-    if (!wrap || !scrollContainer || !rulesCard || !toggle) {
-        return;
-    }
-
-    const rect = rulesCard.getBoundingClientRect();
-    const viewportPadding = window.innerWidth < 768 ? 10 : 16;
-    const anchorTop = Math.max(viewportPadding, Math.round(rect.top + 12));
-    const anchorRight = Math.max(
-        viewportPadding,
-        Math.round(window.innerWidth - rect.right + 12)
-    );
-
-    if (forceReanchor || !wrap.dataset.fixedTop || !wrap.dataset.fixedRight) {
-        wrap.dataset.fixedTop = `${anchorTop}`;
-        wrap.dataset.fixedRight = `${anchorRight}`;
-    }
-
-    const fixedTop = Number(wrap.dataset.fixedTop || anchorTop);
-    const fixedRight = Number(wrap.dataset.fixedRight || anchorRight);
-    wrap.style.top = `${fixedTop}px`;
-    wrap.style.right = `${fixedRight}px`;
-    wrap.style.left = 'auto';
-}
-
-function resetMobilePicksRulesHelpAnchor() {
-    if (window.innerWidth >= 768) {
-        return;
-    }
-
-    const wrap = document.getElementById('picks-rules-help-wrap');
-    if (wrap) {
-        delete wrap.dataset.fixedTop;
-        delete wrap.dataset.fixedRight;
-    }
-
-    updatePicksRulesHelpAnchor(true);
-}
+// No-ops kept for any lingering call sites — anchor logic replaced by fixed-position button
+function updatePicksRulesHelpAnchor() {}
+function resetMobilePicksRulesHelpAnchor() {}
 
 function syncMobileRosterState() {
     const panel = document.getElementById('roster-panel');
@@ -457,7 +451,10 @@ function renderPool() {
                             <span class="text-[22px] md:text-3xl text-left">${team.flag}</span>
                             <span class="picks-price-pill font-bold px-1.5 py-0.5 rounded text-[9px] md:text-xs text-left">$${team.cost}</span>
                         </div>
-                        <div class="font-black uppercase text-[8px] md:text-[10px] tracking-tight truncate text-left text-gray-900">${team.name}</div>
+                        <div class="flex justify-between items-baseline gap-1">
+                            <div class="font-black uppercase text-[8px] md:text-[10px] tracking-tight truncate text-gray-900">${team.name}</div>
+                            ${team.group ? `<div class="text-[8px] italic text-gray-400 shrink-0">Grp ${team.group}</div>` : ''}
+                        </div>
                     </div>
                 `).join('')}
             </div>
@@ -527,54 +524,56 @@ function updateUI() {
         const chip = document.getElementById(id);
         const helper = document.getElementById(`${id}-helper`);
         const icon = document.getElementById(`${id}-icon`);
-        if (!chip) {
-            return;
-        }
+        if (!chip) return;
 
-        chip.className = 'picks-rules-chip rounded-2xl border px-4 py-3 transition-colors';
-        chip.style.borderColor = '';
-        chip.style.backgroundColor = '';
-        chip.style.color = '';
-        if (helper) {
-            helper.textContent = helperText;
-            helper.style.color = '#6b7280';
-        }
-        if (icon) {
-            icon.textContent = iconText;
-            icon.style.color = '#9ca3af';
-        }
+        // Reset to dark-card neutral
+        chip.style.borderColor = '#374151';
+        chip.style.backgroundColor = '#1f2937';
+
+        if (helper) { helper.textContent = helperText; helper.style.color = '#9ca3af'; }
+        if (icon) { icon.textContent = iconText; icon.style.color = '#9ca3af'; }
 
         if (state === 'success') {
-            chip.style.borderColor = '#bbf7d0';
-            chip.style.backgroundColor = '#f0fdf4';
-            chip.style.color = '#15803d';
-            if (helper) helper.style.color = '#4b5563';
-            if (icon) icon.style.color = '#15803d';
+            chip.style.borderColor = '#166534';
+            chip.style.backgroundColor = '#14532d22';
+            if (icon) icon.style.color = '#4ade80';
             return;
         }
-
         if (state === 'warning') {
-            chip.style.borderColor = '#fde68a';
-            chip.style.backgroundColor = '#fffbeb';
-            chip.style.color = '#b45309';
-            if (helper) helper.style.color = '#4b5563';
-            if (icon) icon.style.color = '#b45309';
+            chip.style.borderColor = '#92400e';
+            chip.style.backgroundColor = '#78350f22';
+            if (icon) icon.style.color = '#fbbf24';
             return;
         }
-
         if (state === 'error') {
-            chip.style.borderColor = '#fecaca';
-            chip.style.backgroundColor = '#fef2f2';
-            chip.style.color = '#b91c1c';
-            if (helper) helper.style.color = '#4b5563';
-            if (icon) icon.style.color = '#b91c1c';
+            chip.style.borderColor = '#991b1b';
+            chip.style.backgroundColor = '#7f1d1d22';
+            if (icon) icon.style.color = '#f87171';
             return;
         }
-
-        chip.style.borderColor = '#e5e7eb';
-        chip.style.backgroundColor = '#ffffff';
-        chip.style.color = '#111827';
     };
+
+    // Update budget progress bar and spent amount
+    const budgetBar = document.getElementById('rule-chip-budget-bar');
+    const budgetSpent = document.getElementById('rule-chip-budget-spent');
+    const squadCountEl = document.getElementById('rule-chip-squad-count');
+    const squadChip = document.getElementById('rule-chip-squad');
+    if (budgetBar) {
+        const pct = Math.min(100, Math.round((spent / 150) * 100));
+        budgetBar.style.width = `${pct}%`;
+        const barColor = remaining < 0 ? '#f87171' : remaining < 10 ? '#4ade80' : 'var(--theme-accent-primary)';
+        budgetBar.style.backgroundColor = barColor;
+    }
+    if (budgetSpent) budgetSpent.textContent = `$${spent}`;
+    if (squadCountEl) {
+        squadCountEl.textContent = myPicks.length;
+        squadCountEl.style.color = myPicks.length === 8 ? '#4ade80' : myPicks.length > 8 ? '#f87171' : '#ffffff';
+    }
+    if (squadChip) {
+        const squadOk = myPicks.length === 8;
+        squadChip.style.borderColor = !hasStarted ? '#374151' : squadOk ? '#166534' : '#992b2b';
+        squadChip.style.backgroundColor = !hasStarted ? '#1f2937' : squadOk ? '#14532d22' : '#7f1d1d22';
+    }
 
     let budgetState = 'neutral';
     if (hasStarted) {
@@ -601,6 +600,38 @@ function updateUI() {
     setRuleChipState('rule-chip-tier1', tier1State, 'Complete', '✓');
     setRuleChipState('rule-chip-tier2', tier2State, 'Complete', '✓');
     setRuleChipState('rule-chip-tier3', tier3State, tier3Helper, tier3Icon);
+
+    // Update ? button state: neutral → warn (yellow pulse) → success (green bounce + pulse)
+    const helperToggle = document.getElementById('picks-rules-toggle');
+    const flashInProgress = helperToggle && (
+        helperToggle.classList.contains('picks-helper-flash') ||
+        helperToggle.classList.contains('picks-helper-success-flash')
+    );
+    if (helperToggle && !flashInProgress) {
+        const allMet = myPicks.length === 8 && remaining >= 0 && tier1Count <= 1 && tier3Count >= 3;
+        const hasAny = myPicks.length > 0;
+        const newState = allMet ? 'success' : hasAny ? 'warn' : 'neutral';
+
+        if (newState !== _picksHelperState) {
+            if (newState === 'success') {
+                // Green bounce × 3 → settle to green glow with ?
+                triggerPicksHelperSuccess(helperToggle);
+            } else if (newState === 'warn') {
+                // Flash yellow on regression from success, otherwise just add the class
+                if (_picksHelperState === 'success') {
+                    triggerPicksHelperFlash(helperToggle);
+                } else {
+                    helperToggle.classList.remove('picks-helper-success');
+                    helperToggle.classList.add('picks-helper-warn');
+                }
+            } else {
+                // neutral — no picks
+                helperToggle.classList.remove('picks-helper-warn', 'picks-helper-success');
+                helperToggle.textContent = '?';
+            }
+            _picksHelperState = newState;
+        }
+    }
 }
 
 async function renderGroups() {

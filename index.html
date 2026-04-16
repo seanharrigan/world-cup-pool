@@ -50,30 +50,48 @@
             overflow: visible;
         }
         #picks-rules-help-panel.hidden { display: none; }
-        #picks-rules-toggle {
-            position: absolute;
-            top: 0;
-            right: 0;
-            color: var(--picks-accent-text);
-            border-color: rgba(var(--picks-accent-primary-rgb), 0.22);
-            background-color: rgba(255, 255, 255, 0.98);
+        #picks-rules-toggle { transition: border-color 0.4s ease; }
+        @keyframes picks-helper-flash {
+            0%   { box-shadow: 0 0 0 0 rgba(251,191,36,0.8); transform: scale(1); }
+            35%  { box-shadow: 0 0 0 8px rgba(251,191,36,0); transform: scale(1.1); }
+            55%  { transform: scale(0.97); }
+            75%  { box-shadow: 0 0 0 4px rgba(251,191,36,0); transform: scale(1.05); }
+            100% { box-shadow: 0 0 0 0 rgba(251,191,36,0); transform: scale(1); }
         }
-        #picks-rules-toggle-expanded {
-            position: absolute;
-            top: 0.75rem;
-            right: 0.75rem;
-            color: var(--picks-accent-text);
-            border-color: rgba(var(--picks-accent-primary-rgb), 0.22);
-            background-color: rgba(255, 255, 255, 0.98);
+        @keyframes picks-helper-warn-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(251,191,36,0.75); }
+            50%       { box-shadow: 0 0 0 7px rgba(251,191,36,0); }
         }
-        #picks-rules-toggle:hover { background-color: #ffffff; }
-        #picks-rules-toggle-expanded:hover { background-color: #ffffff; }
-        #picks-rules-toggle:focus,
-        #picks-rules-toggle:focus-visible,
-        #picks-rules-toggle-expanded:focus,
-        #picks-rules-toggle-expanded:focus-visible {
-            outline: none;
-            box-shadow: none;
+        @keyframes picks-helper-green-flash {
+            0%   { box-shadow: 0 0 0 0 rgba(22,163,74,0.8); transform: scale(1); }
+            35%  { box-shadow: 0 0 0 8px rgba(22,163,74,0); transform: scale(1.1); }
+            55%  { transform: scale(0.97); }
+            75%  { box-shadow: 0 0 0 4px rgba(22,163,74,0); transform: scale(1.05); }
+            100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); transform: scale(1); }
+        }
+        @keyframes picks-helper-success-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.7); }
+            50%       { box-shadow: 0 0 0 7px rgba(22,163,74,0); }
+        }
+        .picks-helper-flash {
+            animation: picks-helper-flash 0.9s ease-out 3 !important;
+            border-color: #f59e0b !important;
+            color: #fbbf24 !important;
+        }
+        .picks-helper-warn {
+            border-color: #f59e0b !important;
+            color: #fbbf24 !important;
+            animation: picks-helper-warn-pulse 2.2s ease-in-out infinite;
+        }
+        .picks-helper-success-flash {
+            animation: picks-helper-green-flash 0.9s ease-out 3 !important;
+            border-color: #16a34a !important;
+            color: #4ade80 !important;
+        }
+        .picks-helper-success {
+            border-color: #16a34a !important;
+            color: #4ade80 !important;
+            animation: picks-helper-success-pulse 2.2s ease-in-out infinite;
         }
         #picks-rules-help-panel {
             position: absolute;
@@ -99,7 +117,7 @@
         }
         .picks-tier-label { background-color: var(--picks-accent-primary); color: #ffffff; }
         .picks-price-pill { background-color: var(--picks-accent-pill-bg); color: var(--picks-accent-pill-text); }
-        .picks-roster-count { background-color: var(--picks-accent-primary); color: #ffffff; }
+        .picks-roster-count { background-color: #374151; color: #9ca3af; }
         .picks-roster-arrow { color: #ffffff; }
         .picks-action-link:hover { border-color: var(--picks-accent-primary); background-color: var(--picks-accent-soft); }
         .picks-action-kicker { color: var(--picks-accent-text); }
@@ -543,17 +561,17 @@
 
         <div id="page-picks" class="page-content hidden h-full w-full flex flex-col md:flex-row text-left">
             <div id="picks-main-scroll" class="flex-grow h-full overflow-y-auto p-4 md:p-10 bg-white text-gray-900 pb-[350px] md:pb-10 text-left">
-                <header class="mb-3 flex flex-col md:flex-row justify-between items-center border-b border-gray-200 pb-6 gap-4 text-left">
+                <header class="mb-3 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-200 pb-6 gap-4 text-left">
                     <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
                         <h1 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter">Selection</h1>
                         <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Build your squad within budget and tier limits</p>
                     </div>
-                    <div id="countdown" class="flex gap-3 text-center bg-gray-900 text-white px-4 py-2 rounded-xl shadow-xl text-center text-white">
-                        <div><div id="days" class="text-lg font-black text-center text-white text-center">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center">Days</div></div>
+                    <div id="countdown" class="flex gap-3 text-center bg-gray-900 text-white px-4 py-2 rounded-xl shadow-xl">
+                        <div><div id="days" class="text-lg font-black text-center text-white">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center">Days</div></div>
                         <div class="picks-accent-text font-bold">:</div>
-                        <div><div id="hours" class="text-lg font-black text-center text-white text-center">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center">Hrs</div></div>
+                        <div><div id="hours" class="text-lg font-black text-center text-white">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center">Hrs</div></div>
                         <div class="picks-accent-text font-bold">:</div>
-                        <div><div id="minutes" class="text-lg font-black text-center text-white text-center">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center">Min</div></div>
+                        <div><div id="minutes" class="text-lg font-black text-center text-white">00</div><div class="text-[8px] uppercase text-gray-400 font-bold text-center">Min</div></div>
                     </div>
                 </header>
                 <div id="picks-rules-shelf" class="mb-8 md:pt-2">
@@ -569,42 +587,6 @@
                                 <div><span class="text-gray-900">Tier 3:</span> Minimum 3 teams required.</div>
                             </div>
                         </div>
-                        <div id="picks-rules-help-wrap" class="pointer-events-auto">
-                            <button id="picks-rules-toggle" onclick="togglePicksRulesBar()" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-base font-black shadow-sm transition-colors" aria-label="Show rule status help">?</button>
-                            <div id="picks-rules-help-panel" class="hidden rounded-2xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur-sm md:w-auto md:min-w-[620px] md:max-w-[920px]">
-                                <button id="picks-rules-toggle-expanded" onclick="togglePicksRulesBar(false)" class="hidden inline-flex h-10 w-10 items-center justify-center rounded-full border text-base font-black shadow-sm transition-colors" aria-label="Hide rule status help">×</button>
-                                <div class="grid grid-cols-2 gap-2 xl:grid-cols-4">
-                                    <div id="rule-chip-budget" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">
-                                        <div class="text-[11px] font-black uppercase tracking-[0.15em]">$150 Budget</div>
-                                        <div class="mt-1 flex items-center justify-between gap-2">
-                                            <span id="rule-chip-budget-helper" class="text-[11px] font-bold normal-case tracking-normal text-gray-500">Under budget</span>
-                                            <span id="rule-chip-budget-icon" class="text-sm font-black text-gray-400">~</span>
-                                        </div>
-                                    </div>
-                                    <div id="rule-chip-tier1" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">
-                                        <div class="text-[11px] font-black uppercase tracking-[0.15em]">Tier 1: 0-1</div>
-                                        <div class="mt-1 flex items-center justify-between gap-2">
-                                            <span id="rule-chip-tier1-helper" class="text-[11px] font-bold normal-case tracking-normal text-gray-500">Complete</span>
-                                            <span id="rule-chip-tier1-icon" class="text-sm font-black text-gray-400">✓</span>
-                                        </div>
-                                    </div>
-                                    <div id="rule-chip-tier2" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">
-                                        <div class="text-[11px] font-black uppercase tracking-[0.15em]">Tier 2: ∞</div>
-                                        <div class="mt-1 flex items-center justify-between gap-2">
-                                            <span id="rule-chip-tier2-helper" class="text-[11px] font-bold normal-case tracking-normal text-gray-500">Complete</span>
-                                            <span id="rule-chip-tier2-icon" class="text-sm font-black text-gray-400">✓</span>
-                                        </div>
-                                    </div>
-                                    <div id="rule-chip-tier3" class="picks-rules-chip rounded-2xl border bg-white px-4 py-3 text-gray-900">
-                                        <div class="text-[11px] font-black uppercase tracking-[0.15em]">Tier 3: &gt;3</div>
-                                        <div class="mt-1 flex items-center justify-between gap-2">
-                                            <span id="rule-chip-tier3-helper" class="text-[11px] font-bold normal-case tracking-normal text-gray-500">Pick 3 more</span>
-                                            <span id="rule-chip-tier3-icon" class="text-sm font-black text-gray-400">✕</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </section>
                 </div>
                 <div id="tiers-container" class="grid gap-12 text-left text-gray-900"></div>
@@ -617,8 +599,9 @@
                         <span id="roster-helper" class="md:hidden text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Click to view</span>
                     </h2>
                     <div class="flex items-center gap-2">
-                        <button id="mobile-quick-save" onclick="event.stopPropagation(); saveToSupabase()" class="md:hidden px-3 py-1 rounded-full bg-green-600 hover:bg-green-500 text-[10px] font-black uppercase tracking-wider text-white transition-colors">Save</button>
                         <span id="roster-count" class="picks-roster-count px-2 py-0.5 rounded-full text-[10px] font-bold text-center">0 teams</span>
+                        <button id="mobile-quick-save" onclick="event.stopPropagation(); saveToSupabase()" class="md:hidden px-3 py-1 rounded-full bg-green-600 hover:bg-green-500 text-[10px] font-black uppercase tracking-wider text-white transition-colors">Save</button>
+                        <button id="picks-rules-toggle" onclick="event.stopPropagation(); togglePicksRulesBar()" class="h-7 w-7 rounded-full border border-gray-600 bg-gray-800 text-xs font-black text-gray-300 hover:bg-gray-700 hover:text-white transition-colors flex items-center justify-center flex-shrink-0" aria-label="Show rule status help">?</button>
                     </div>
                 </div>
                 <div id="roster-list" class="grid grid-cols-2 gap-2 max-h-[170px] overflow-y-auto mb-4 md:mb-6 md:flex md:flex-col md:gap-3 md:flex-1 md:min-h-0 md:max-h-none text-white text-left"></div>
@@ -632,7 +615,7 @@
                         </div>
                         <button onclick="saveToSupabase()" id="save-btn" class="w-1/3 md:w-full bg-green-600 hover:bg-green-500 py-3 md:py-4 rounded-xl font-black text-sm md:text-xl uppercase tracking-widest transition-all text-white text-center">Save</button>
                     </div>
-                    <div id="save-status" class="rounded-xl border border-gray-800 bg-gray-900/70 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center md:text-left">No changes yet</div>
+                    <div id="save-status" class="rounded-xl border border-gray-800 bg-gray-900/70 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center w-full">No changes yet</div>
                 </div>
             </div>
         </div>
@@ -1190,6 +1173,79 @@
             <div class="border-t border-gray-800 bg-gray-950/70 p-4 flex gap-3">
                 <button id="confirm-modal-cancel" class="flex-1 rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-gray-300 hover:bg-gray-700 transition-colors">Cancel</button>
                 <button id="confirm-modal-confirm" class="theme-primary-button flex-1 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-white transition-colors">Create Profile</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Picks helper modal — bottom sheet on mobile, centered on desktop -->
+    <div id="picks-helper-modal" class="hidden fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4" onclick="if(event.target===this)togglePicksRulesBar(false)">
+        <div class="w-full md:max-w-md rounded-t-3xl md:rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden">
+            <!-- Mobile drag handle -->
+            <div class="flex justify-center pt-3 pb-1 md:hidden">
+                <div class="w-10 h-1 rounded-full bg-gray-700"></div>
+            </div>
+            <!-- Header -->
+            <div class="flex items-center justify-between px-6 pt-4 pb-3">
+                <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                    <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.25em]">My Picks</div>
+                    <h3 class="text-xl font-black uppercase italic tracking-tight text-white">Squad Checker</h3>
+                </div>
+                <button onclick="togglePicksRulesBar(false)" class="h-9 w-9 rounded-2xl border border-gray-700 bg-gray-800 flex items-center justify-center text-gray-300 hover:bg-gray-700 transition-colors font-black">×</button>
+            </div>
+            <!-- Budget card with progress bar -->
+            <div id="rule-chip-budget" class="mx-6 mb-3 rounded-2xl border border-gray-700 bg-gray-800 px-5 py-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Budget</div>
+                    <span id="rule-chip-budget-icon" class="text-lg font-black text-gray-400">~</span>
+                </div>
+                <div class="h-2 rounded-full bg-gray-700 overflow-hidden">
+                    <div id="rule-chip-budget-bar" class="h-full rounded-full transition-all duration-300" style="width: 0%;"></div>
+                </div>
+                <div class="flex items-end justify-between mt-2.5">
+                    <div>
+                        <span id="rule-chip-budget-spent" class="text-2xl font-black text-white">$0</span>
+                        <span class="text-xs font-bold text-gray-500 ml-1">used</span>
+                    </div>
+                    <span id="rule-chip-budget-helper" class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">of $150</span>
+                </div>
+            </div>
+            <!-- Squad size + tier rules -->
+            <div class="grid grid-cols-2 gap-3 mx-6 mb-3">
+                <!-- Squad size -->
+                <div id="rule-chip-squad" class="rounded-2xl border border-gray-700 bg-gray-800 px-4 py-4 col-span-2 flex items-center justify-between">
+                    <div>
+                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Squad Size</div>
+                        <div class="mt-1 text-[10px] font-bold text-gray-500">Exactly 8 teams required</div>
+                    </div>
+                    <div class="text-right">
+                        <span id="rule-chip-squad-count" class="text-3xl font-black text-white">0</span>
+                        <span class="text-gray-500 font-black text-lg">/8</span>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3 mx-6 mb-5">
+                <div id="rule-chip-tier1" class="rounded-2xl border border-gray-700 bg-gray-800 px-3 py-4 text-center">
+                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Tier 1</div>
+                    <div class="text-[8px] font-bold text-gray-600 mt-0.5">0–1 max</div>
+                    <div id="rule-chip-tier1-icon" class="mt-2 text-xl font-black text-gray-400">✓</div>
+                    <div id="rule-chip-tier1-helper" class="mt-1 text-[10px] font-bold text-gray-500">OK</div>
+                </div>
+                <div id="rule-chip-tier2" class="rounded-2xl border border-gray-700 bg-gray-800 px-3 py-4 text-center">
+                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Tier 2</div>
+                    <div class="text-[8px] font-bold text-gray-600 mt-0.5">unlimited</div>
+                    <div id="rule-chip-tier2-icon" class="mt-2 text-xl font-black text-gray-400">✓</div>
+                    <div id="rule-chip-tier2-helper" class="mt-1 text-[10px] font-bold text-gray-500">OK</div>
+                </div>
+                <div id="rule-chip-tier3" class="rounded-2xl border border-gray-700 bg-gray-800 px-3 py-4 text-center">
+                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Tier 3</div>
+                    <div class="text-[8px] font-bold text-gray-600 mt-0.5">min 3</div>
+                    <div id="rule-chip-tier3-icon" class="mt-2 text-xl font-black text-gray-400">✕</div>
+                    <div id="rule-chip-tier3-helper" class="mt-1 text-[10px] font-bold text-gray-500">Pick 3 more</div>
+                </div>
+            </div>
+            <!-- Footer -->
+            <div class="border-t border-gray-800 px-6 py-4">
+                <button onclick="togglePicksRulesBar(false)" class="w-full rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-gray-300 hover:bg-gray-700 transition-colors">Close</button>
             </div>
         </div>
     </div>
