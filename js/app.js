@@ -114,7 +114,7 @@ function updateSaveStatusUI() {
             element.className = 'mt-2 text-xl font-black uppercase italic';
             element.classList.add(classes.text);
         } else {
-            element.className = 'rounded-xl border px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-center md:text-left';
+            element.className = 'rounded-xl border px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-center w-full';
             element.classList.add(classes.text, classes.border, classes.background);
         }
 

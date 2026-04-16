@@ -1,5 +1,6 @@
 // Tracks the ? button state so we know when to re-flash on regression
 let _picksHelperState = 'neutral'; // 'neutral' | 'warn' | 'success'
+let _picksHelperAnimId = 0; // incremented on every new animation so stale listeners self-cancel
 
 // Always keep an inner <span> for the label so we can fade text independently
 function _phSpan(btn) {
@@ -20,22 +21,25 @@ function _phSetText(btn, text) {
     _phSpan(btn).textContent = text;
 }
 
-function _phFadeText(btn, newText, callback) {
+function _phFadeText(btn, newText, animId, callback) {
     const span = _phSpan(btn);
     span.style.opacity = '0';
     setTimeout(() => {
+        if (_picksHelperAnimId !== animId) return; // interrupted — bail
         span.textContent = newText;
         span.style.opacity = '1';
-        if (callback) setTimeout(callback, 300);
+        if (callback) setTimeout(() => { if (_picksHelperAnimId === animId) callback(); }, 300);
     }, 290);
 }
 
 function triggerPicksHelperFlash(btn) {
+    const animId = ++_picksHelperAnimId;
     _phSetText(btn, '?');
     btn.classList.remove('picks-helper-warn', 'picks-helper-success', 'picks-helper-success-flash', 'picks-helper-flash');
     void btn.offsetWidth; // reflow to restart animation
     btn.classList.add('picks-helper-flash');
     btn.addEventListener('animationend', function onEnd() {
+        if (_picksHelperAnimId !== animId) return; // stale — a newer animation took over
         btn.classList.remove('picks-helper-flash');
         if (_picksHelperState === 'warn') btn.classList.add('picks-helper-warn');
         else if (_picksHelperState === 'success') btn.classList.add('picks-helper-success');
@@ -43,14 +47,16 @@ function triggerPicksHelperFlash(btn) {
 }
 
 function triggerPicksHelperSuccess(btn) {
+    const animId = ++_picksHelperAnimId;
     _phSetText(btn, '✓');
     btn.classList.remove('picks-helper-warn', 'picks-helper-success', 'picks-helper-flash', 'picks-helper-success-flash');
     void btn.offsetWidth;
     btn.classList.add('picks-helper-success-flash');
     btn.addEventListener('animationend', function onEnd() {
+        if (_picksHelperAnimId !== animId) return; // stale
         btn.classList.remove('picks-helper-success-flash');
         // Fade only the label ✓ → ? while the circle stays fully visible
-        _phFadeText(btn, '?', () => {
+        _phFadeText(btn, '?', animId, () => {
             btn.classList.add('picks-helper-success');
         });
     }, { once: true });
@@ -601,33 +607,24 @@ function updateUI() {
     setRuleChipState('rule-chip-tier2', tier2State, 'Complete', '✓');
     setRuleChipState('rule-chip-tier3', tier3State, tier3Helper, tier3Icon);
 
-    // Update ? button state: neutral → warn (yellow pulse) → success (green bounce + pulse)
+    // Update ? button state immediately — no guards, interrupts any in-progress animation
     const helperToggle = document.getElementById('picks-rules-toggle');
-    const flashInProgress = helperToggle && (
-        helperToggle.classList.contains('picks-helper-flash') ||
-        helperToggle.classList.contains('picks-helper-success-flash')
-    );
-    if (helperToggle && !flashInProgress) {
-        const allMet = myPicks.length === 8 && remaining >= 0 && tier1Count <= 1 && tier3Count >= 3;
+    if (helperToggle) {
+        const allMet = myPicks.length === 8 && remaining >= 0 && remaining < 2 && tier1Count <= 1 && tier3Count >= 3;
         const hasAny = myPicks.length > 0;
         const newState = allMet ? 'success' : hasAny ? 'warn' : 'neutral';
 
         if (newState !== _picksHelperState) {
             if (newState === 'success') {
-                // Green bounce × 3 → settle to green glow with ?
                 triggerPicksHelperSuccess(helperToggle);
             } else if (newState === 'warn') {
-                // Flash yellow on regression from success, otherwise just add the class
-                if (_picksHelperState === 'success') {
-                    triggerPicksHelperFlash(helperToggle);
-                } else {
-                    helperToggle.classList.remove('picks-helper-success');
-                    helperToggle.classList.add('picks-helper-warn');
-                }
+                // Flash yellow on any transition into warn (regression or mid-bounce correction)
+                triggerPicksHelperFlash(helperToggle);
             } else {
-                // neutral — no picks
-                helperToggle.classList.remove('picks-helper-warn', 'picks-helper-success');
-                helperToggle.textContent = '?';
+                // neutral — no picks yet
+                ++_picksHelperAnimId; // cancel any pending animation callbacks
+                helperToggle.classList.remove('picks-helper-warn', 'picks-helper-success', 'picks-helper-flash', 'picks-helper-success-flash');
+                _phSetText(helperToggle, '?');
             }
             _picksHelperState = newState;
         }

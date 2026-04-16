@@ -605,12 +605,12 @@
                     </div>
                 </div>
                 <div id="roster-list" class="grid grid-cols-2 gap-2 max-h-[170px] overflow-y-auto mb-4 md:mb-6 md:flex md:flex-col md:gap-3 md:flex-1 md:min-h-0 md:max-h-none text-white text-left"></div>
-                <div class="mt-auto w-full space-y-2 text-left">
-                    <div class="flex flex-row md:flex-col items-center gap-3 text-left">
-                        <div class="flex-grow md:w-full bg-gray-900 p-3 md:p-4 rounded-2xl border border-gray-800 text-white text-left">
-                            <div class="flex justify-between items-center text-left text-white">
-                                <span class="text-gray-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-left">Budget</span>
-                                <span id="budget-display" class="text-xl md:text-2xl font-mono font-bold text-green-400 text-left">$150</span>
+                <div class="mt-auto w-full flex flex-col gap-2">
+                    <div class="flex flex-row md:flex-col items-stretch gap-3">
+                        <div class="flex-grow md:w-full bg-gray-900 p-3 md:p-4 rounded-2xl border border-gray-800 text-white">
+                            <div class="flex justify-between items-center text-white">
+                                <span class="text-gray-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest">Budget</span>
+                                <span id="budget-display" class="text-xl md:text-2xl font-mono font-bold text-green-400">$150</span>
                             </div>
                         </div>
                         <button onclick="saveToSupabase()" id="save-btn" class="w-1/3 md:w-full bg-green-600 hover:bg-green-500 py-3 md:py-4 rounded-xl font-black text-sm md:text-xl uppercase tracking-widest transition-all text-white text-center">Save</button>
