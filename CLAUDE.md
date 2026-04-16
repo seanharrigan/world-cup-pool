@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # World Cup Pool
 
 A browser-based fantasy football pool for the 2026 FIFA World Cup. Players pick a squad of 8 teams within a points budget, and score points based on real match results throughout the tournament.
@@ -48,9 +52,13 @@ Advancing to the knockout round also awards **+1 bonus point**.
 ## Running tests
 
 ```bash
-npm test
-# or
-node --test tests/scoring.test.mjs
+npm test                              # run all tests
+node --test tests/scoring.test.mjs   # run a single test file
+node --test --test-name-pattern "leaderboard" tests/scoring.test.mjs  # run tests matching a name
 ```
 
 Tests only cover `scoring.js` — it is the only module written to run in Node. All other JS targets the browser.
+
+## Key architectural note
+
+`scoring.js` is wrapped in an IIFE that detects its environment and exports accordingly — `window.WorldCupScoring` in the browser, `module.exports` in Node. This is what makes it the only file unit-testable without a bundler. All other `js/` files assume `window` globals and reference each other via globals (`window.WorldCupScoring`, `advancedTeams`, `teams`, etc.) rather than imports.
