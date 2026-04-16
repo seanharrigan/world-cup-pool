@@ -739,6 +739,7 @@ async function completeLogin(email, existingProfile = null, options = {}) {
     clearDirtyFlags();
     startCountdown();
     showPage('instructions');
+    setupLeaderboardRealtime();
     setupNotifications();
     setupProfileStatusWatcher();
 

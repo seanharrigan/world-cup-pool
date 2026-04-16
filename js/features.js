@@ -1185,9 +1185,18 @@ async function setupDashboard() {
     const resultsEl = document.getElementById('dashboard-latest-results');
     const mostPickedEl = document.getElementById('dashboard-most-picked');
 
-    if (leaderboardEl) leaderboardEl.innerHTML = '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Loading leaderboard...</div>';
-    if (resultsEl) resultsEl.innerHTML = '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Loading results...</div>';
-    if (mostPickedEl) mostPickedEl.innerHTML = '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Loading picks...</div>';
+    // Skeleton cards replace text loading states so the dashboard layout doesn't flash blank
+    const dashSkeletonCard = `
+        <div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4 flex items-center justify-between gap-4">
+            <div class="space-y-2">
+                <div class="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                <div class="h-3 w-16 bg-gray-100 rounded animate-pulse"></div>
+            </div>
+            <div class="h-6 w-12 bg-gray-200 rounded animate-pulse"></div>
+        </div>`;
+    if (leaderboardEl) leaderboardEl.innerHTML = dashSkeletonCard.repeat(3);
+    if (resultsEl) resultsEl.innerHTML = dashSkeletonCard.repeat(3);
+    if (mostPickedEl) mostPickedEl.innerHTML = dashSkeletonCard.repeat(5);
     if (squadStripEl) squadStripEl.innerHTML = '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Loading squad...</div>';
 
     if (saveStatusEl) {
@@ -1936,6 +1945,102 @@ async function clearChatMessages() {
     }
 }
 
+async function resetAllTeamStatus() {
+    const shouldReset = await showConfirmModal({
+        label: 'Are You Sure?',
+        icon: '⚠️',
+        title: 'Reset Tournament Progression?',
+        message: 'This will mark every team as not advanced and not eliminated.',
+        detail: 'All knockout and elimination flags will be cleared.',
+        confirmText: 'Yes, Reset Progression',
+        cancelText: 'Cancel'
+    });
+
+    if (!shouldReset) return;
+
+    const finalReset = await showConfirmModal({
+        label: 'Final Check',
+        icon: '🔄',
+        title: 'One Last Time',
+        message: 'This will wipe all advancement and elimination data for every team.',
+        detail: 'Are you absolutely sure?',
+        confirmText: 'Reset Progression',
+        cancelText: 'Cancel'
+    });
+
+    if (!finalReset) return;
+
+    const button = document.getElementById('admin-reset-teams-btn');
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'Resetting...';
+    }
+
+    try {
+        const { error } = await supabaseClient
+            .from('team_advancement')
+            .update({ advanced_to_knockouts: false, eliminated: false })
+            .neq('team_name', '');
+        if (error) throw error;
+        showToast('All team status reset.', 'success');
+    } catch (error) {
+        showToast(error.message || 'Unable to reset team status.');
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Reset Progression';
+        }
+    }
+}
+
+async function resetAllMatches() {
+    const shouldReset = await showConfirmModal({
+        label: 'Are You Sure?',
+        icon: '⚠️',
+        title: 'Delete All Matches?',
+        message: 'This will permanently delete every match result.',
+        detail: 'All scores and results will be wiped.',
+        confirmText: 'Yes, Delete Matches',
+        cancelText: 'Cancel'
+    });
+
+    if (!shouldReset) return;
+
+    const finalReset = await showConfirmModal({
+        label: 'Final Check',
+        icon: '🗑️',
+        title: 'One Last Time',
+        message: 'Every match result will be permanently deleted.',
+        detail: 'Are you absolutely sure?',
+        confirmText: 'Delete All Matches',
+        cancelText: 'Cancel'
+    });
+
+    if (!finalReset) return;
+
+    const button = document.getElementById('admin-reset-matches-btn');
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'Deleting...';
+    }
+
+    try {
+        const { error } = await supabaseClient
+            .from('matches')
+            .delete()
+            .neq('id', 0);
+        if (error) throw error;
+        showToast('All matches deleted.', 'success');
+    } catch (error) {
+        showToast(error.message || 'Unable to delete matches.');
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Delete All Matches';
+        }
+    }
+}
+
 async function deleteUserPicks(email) {
     const shouldDelete = await showConfirmModal({
         label: 'Are You Sure?',
@@ -2190,7 +2295,17 @@ async function submitManualResult() {
 
 async function fetchLeaderboard() {
     const body = document.getElementById('leaderboard-body');
-    body.innerHTML = '<tr><td colspan="12" class="p-8 text-center text-gray-500">Calculating Live Standings...</td></tr>';
+    // Show animated placeholder rows while scores are calculated.
+    // Columns: rank, points, player+squad, then 7 stage-points cols (G, Bonus, R32, R16, QF, SM, F)
+    const skeletonCell = '<td class="px-4 py-4 text-center"><div class="h-4 w-6 bg-gray-200 rounded animate-pulse mx-auto"></div></td>';
+    const skeletonRow = `
+        <tr class="border-b border-gray-100">
+            <td class="px-6 py-4 text-center"><div class="h-5 w-6 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
+            <td class="px-6 py-4 text-center"><div class="h-6 w-10 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
+            <td class="px-6 py-4"><div class="space-y-2"><div class="h-4 w-28 bg-gray-200 rounded animate-pulse"></div><div class="h-3 w-20 bg-gray-100 rounded animate-pulse"></div></div></td>
+            ${skeletonCell.repeat(7)}
+        </tr>`;
+    body.innerHTML = skeletonRow.repeat(5);
 
     try {
         const [
@@ -2385,6 +2500,21 @@ function setupChat() {
     fetchMessages();
     setupChatKeyboardSubmit();
 
+    // Register a single document-level click handler to dismiss open emoji pickers
+    // when the user taps anywhere outside a picker or its trigger button.
+    // The flag prevents duplicate listeners if setupChat is called more than once.
+    if (!document._emojiPickerDismissSetup) {
+        document._emojiPickerDismissSetup = true;
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.emoji-add-btn') && !e.target.closest('[id^="emoji-picker-"]')) {
+                document.querySelectorAll('[id^="emoji-picker-"]').forEach((p) => {
+                    p.classList.add('hidden');
+                    p.classList.remove('flex');
+                });
+            }
+        });
+    }
+
     if (chatChannel) {
         return;
     }
@@ -2392,7 +2522,20 @@ function setupChat() {
     chatChannel = supabaseClient
         .channel('chat-channel')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+            // Remove empty state if present
+            const box = document.getElementById('chat-box');
+            if (box && box.querySelector('.flex-col.items-center')) {
+                box.innerHTML = '';
+            }
             renderMessage(payload.new);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'message_reactions' }, () => {
+            const box = document.getElementById('chat-box');
+            if (!box) return;
+            const ids = Array.from(box.querySelectorAll('[data-message-id]'))
+                .map((el) => parseInt(el.dataset.messageId))
+                .filter(Boolean);
+            if (ids.length) loadAllReactions(ids);
         })
         .subscribe();
 }
@@ -2407,8 +2550,16 @@ async function fetchMessages() {
     const box = document.getElementById('chat-box');
     box.innerHTML = '';
 
-    if (data) {
+    if (data && data.length > 0) {
         data.forEach((message) => renderMessage(message));
+        loadAllReactions(data.map((m) => m.id));
+    } else {
+        box.innerHTML = `
+            <div class="flex flex-col items-center justify-center flex-1 text-center py-16 text-gray-400">
+                <div class="text-5xl mb-4">💬</div>
+                <p class="font-black uppercase tracking-[0.2em] text-sm">No messages yet</p>
+                <p class="text-xs mt-2 font-bold uppercase tracking-wider opacity-70">Say hello to kick things off!</p>
+            </div>`;
     }
 }
 
@@ -2419,15 +2570,42 @@ function renderMessage(message) {
     }
 
     const isMe = message.user_email === userEmail;
-    const messageElement = document.createElement('div');
-    messageElement.className = `max-w-[80%] p-4 rounded-2xl text-left ${isMe ? 'theme-chat-own self-end rounded-tr-none' : 'bg-gray-100 self-start rounded-tl-none text-black'}`;
-    messageElement.innerHTML = `
-        <div class="text-[9px] font-black uppercase text-left ${isMe ? 'theme-chat-own-meta' : 'theme-accent-text'}">
-            ${message.nickname} <span class="opacity-50 text-left">(${message.realname})</span>
+    const EMOJI_SET = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
+
+    const wrapper = document.createElement('div');
+    wrapper.className = `max-w-[80%] ${isMe ? 'self-end' : 'self-start'}`;
+    wrapper.dataset.messageId = message.id;
+
+    const emojiPickerButtons = EMOJI_SET.map((e) =>
+        `<button class="text-base hover:scale-125 transition-transform" data-message-id="${message.id}" data-emoji="${e}" onclick="handleEmojiReaction(this)">${e}</button>`
+    ).join('');
+
+    // The + button sits beside the bubble at the top corner (left for own messages, right for others),
+    // mirroring the iMessage tapback position. The picker floats above the button via bottom-full.
+    const addBtnContainer = `
+        <div class="relative flex-shrink-0">
+            <button class="emoji-add-btn mt-1 w-6 h-6 rounded-full bg-white border border-gray-200 hover:bg-gray-100 flex items-center justify-center text-xs text-gray-400 shadow-sm transition-colors" onclick="toggleEmojiPicker(${message.id})">＋</button>
+            <div id="emoji-picker-${message.id}" class="hidden absolute bottom-full mb-1 ${isMe ? 'left-0' : 'right-0'} z-30 items-center gap-2 bg-white border border-gray-200 rounded-2xl px-3 py-2 shadow-lg whitespace-nowrap">
+                ${emojiPickerButtons}
+            </div>
+        </div>`;
+
+    const bubble = `
+        <div class="p-4 rounded-2xl text-left ${isMe ? 'theme-chat-own rounded-tr-none' : 'bg-gray-100 rounded-tl-none'}">
+            <div class="text-[9px] font-black uppercase text-left ${isMe ? 'theme-chat-own-meta' : 'theme-accent-text'}">
+                ${message.nickname} <span class="opacity-50">(${message.realname})</span>
+            </div>
+            <div class="font-bold mt-1 text-sm text-left ${isMe ? 'text-white' : 'text-black'}">${message.content}</div>
+        </div>`;
+
+    wrapper.innerHTML = `
+        <div class="flex items-start gap-1 ${isMe ? 'justify-end' : 'justify-start'}">
+            ${isMe ? addBtnContainer + bubble : bubble + addBtnContainer}
         </div>
-        <div class="font-bold mt-1 text-sm text-left ${isMe ? 'text-white' : 'text-black'}">${message.content}</div>
+        <div id="reactions-${message.id}" class="flex flex-wrap items-center gap-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}"></div>
     `;
-    box.appendChild(messageElement);
+
+    box.appendChild(wrapper);
     box.scrollTop = box.scrollHeight;
 }
 
@@ -2469,6 +2647,132 @@ function setupChatKeyboardSubmit() {
     });
 }
 
+// ── Emoji Reactions ──────────────────────────────────────────────────────────
+
+function toggleEmojiPicker(messageId) {
+    const picker = document.getElementById(`emoji-picker-${messageId}`);
+    if (!picker) return;
+    const isHidden = picker.classList.contains('hidden');
+    // Close all open pickers first
+    document.querySelectorAll('[id^="emoji-picker-"]').forEach((p) => {
+        p.classList.add('hidden');
+        p.classList.remove('flex');
+    });
+    if (isHidden) {
+        picker.classList.remove('hidden');
+        picker.classList.add('flex');
+    }
+}
+
+function handleEmojiReaction(btn) {
+    toggleReaction(parseInt(btn.dataset.messageId), btn.dataset.emoji);
+}
+
+async function toggleReaction(messageId, emoji) {
+    const picker = document.getElementById(`emoji-picker-${messageId}`);
+    if (picker) {
+        picker.classList.add('hidden');
+        picker.classList.remove('flex');
+    }
+
+    const { data: existing } = await supabaseClient
+        .from('message_reactions')
+        .select('id')
+        .eq('message_id', messageId)
+        .eq('user_email', userEmail)
+        .eq('emoji', emoji)
+        .maybeSingle();
+
+    if (existing) {
+        await supabaseClient.from('message_reactions').delete().eq('id', existing.id);
+    } else {
+        await supabaseClient.from('message_reactions').insert({ message_id: messageId, user_email: userEmail, emoji });
+    }
+
+    await renderReactions(messageId);
+}
+
+async function renderReactions(messageId) {
+    const { data } = await supabaseClient
+        .from('message_reactions')
+        .select('emoji, user_email')
+        .eq('message_id', messageId);
+
+    updateReactionDisplay(messageId, data || []);
+}
+
+function updateReactionDisplay(messageId, reactions) {
+    const area = document.getElementById(`reactions-${messageId}`);
+    if (!area) return;
+
+    // Group reactions by emoji
+    const counts = {};
+    reactions.forEach((r) => {
+        if (!counts[r.emoji]) counts[r.emoji] = { count: 0, mine: false };
+        counts[r.emoji].count++;
+        if (r.user_email === userEmail) counts[r.emoji].mine = true;
+    });
+
+    area.innerHTML = '';
+    Object.entries(counts).forEach(([emoji, { count, mine }]) => {
+        const btn = document.createElement('button');
+        btn.className = `reaction-count-btn text-xs px-2 py-0.5 rounded-full border font-bold transition-colors ${mine ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`;
+        btn.dataset.messageId = messageId;
+        btn.dataset.emoji = emoji;
+        btn.onclick = function () { handleEmojiReaction(this); };
+        btn.textContent = `${emoji} ${count}`;
+        area.appendChild(btn);
+    });
+}
+
+async function loadAllReactions(messageIds) {
+    if (!messageIds.length) return;
+
+    const { data } = await supabaseClient
+        .from('message_reactions')
+        .select('message_id, emoji, user_email')
+        .in('message_id', messageIds);
+
+    if (!data) return;
+
+    const byMessage = {};
+    data.forEach((r) => {
+        if (!byMessage[r.message_id]) byMessage[r.message_id] = [];
+        byMessage[r.message_id].push(r);
+    });
+
+    messageIds.forEach((id) => updateReactionDisplay(id, byMessage[id] || []));
+}
+
+// ── Real-time Leaderboard ─────────────────────────────────────────────────────
+// Subscribes to match and team_advancement changes so the leaderboard updates
+// automatically when the admin logs a result — no manual reload needed.
+
+let leaderboardChannel = null;
+let leaderboardDebounceTimer = null;
+
+function setupLeaderboardRealtime() {
+    if (leaderboardChannel) return; // Only subscribe once per session
+
+    leaderboardChannel = supabaseClient
+        .channel('leaderboard-channel')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => {
+            // Debounce 500ms so rapid admin edits (e.g. score corrections) don't fire multiple fetches
+            clearTimeout(leaderboardDebounceTimer);
+            leaderboardDebounceTimer = setTimeout(() => {
+                fetchLeaderboard();
+                setupDashboard(); // Also refresh the dashboard snapshot
+            }, 500);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'team_advancement' }, () => {
+            clearTimeout(leaderboardDebounceTimer);
+            leaderboardDebounceTimer = setTimeout(() => {
+                fetchLeaderboard();
+            }, 500);
+        })
+        .subscribe();
+}
+
 Object.assign(window, {
     setupAdminPage,
     showAdminTab,
@@ -2502,10 +2806,16 @@ Object.assign(window, {
     deleteAdminNotification,
     toggleTeamAdvancement,
     toggleTeamElimination,
+    resetAllTeamStatus,
+    resetAllMatches,
     togglePicksLock,
     toggleAutoLock
     ,
     toggleHideTeamSelection,
     renderProfileFavoriteBanner,
-    applyPicksAccentTheme
+    applyPicksAccentTheme,
+    toggleEmojiPicker,
+    handleEmojiReaction,
+    toggleReaction,
+    setupLeaderboardRealtime
 });

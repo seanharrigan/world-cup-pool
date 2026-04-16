@@ -318,10 +318,14 @@ function toggleMobileRoster() {
     const panel = document.getElementById('roster-panel');
     const arrow = document.getElementById('roster-arrow');
     const helper = document.getElementById('roster-helper');
+    const quickSave = document.getElementById('mobile-quick-save');
     const isMinimized = panel.classList.toggle('roster-minimized');
     arrow.innerText = isMinimized ? '▲' : '▼';
     if (helper) {
         helper.textContent = isMinimized ? 'Click to view' : 'Click to close';
+    }
+    if (quickSave) {
+        quickSave.classList.toggle('hidden', !isMinimized);
     }
 }
 
@@ -512,7 +516,7 @@ function updateUI() {
         ? 'text-xl md:text-2xl font-mono font-bold text-red-500 text-left'
         : 'text-xl md:text-2xl font-mono font-bold text-green-400 text-left';
 
-    document.getElementById('roster-count').innerText = `${myPicks.length}`;
+    document.getElementById('roster-count').innerText = `${myPicks.length} teams`;
 
     const hasStarted = myPicks.length > 0;
     const tier1Count = myPicks.filter((team) => team.tier === 1).length;
