@@ -601,6 +601,8 @@ async function sendAdminNotification() {
 
         fetchAdminNotifications();
         showToast('Notification sent.', 'success');
+        // Mirror to chat so users who have it open see the notification immediately.
+        postSystemMessage('admin_notification', `📢 ${message}`);
     } catch (error) {
         showToast(error.message || 'Unable to send notification.');
     } finally {
@@ -1108,6 +1110,8 @@ async function fetchAdminAdvancement() {
 }
 
 async function toggleTeamAdvancement(teamName, checked) {
+    // The checkbox is already visually toggled — update state silently in the background.
+    const checkbox = document.querySelector(`[data-advancement-team="${teamName}"]`);
     try {
         const currentStatus = getTeamStatus(teamName);
         const { error } = await supabaseClient
@@ -1118,24 +1122,23 @@ async function toggleTeamAdvancement(teamName, checked) {
                 eliminated: currentStatus.eliminated
             }, { onConflict: 'team_name' });
 
-        if (error) {
-            throw error;
-        }
+        if (error) throw error;
 
         await fetchAdvancedTeams();
-        fetchAdminAdvancement();
         renderGroups();
         fetchLeaderboard();
         fetchPublicTeamResults();
         setupDashboard();
-        showToast(checked ? `${teamName} marked advanced.` : `${teamName} advancement removed.`, 'success');
     } catch (error) {
         showToast(error.message || 'Unable to update advancement.');
-        fetchAdminAdvancement();
+        // Revert the checkbox since the save failed
+        if (checkbox) checkbox.checked = !checked;
     }
 }
 
 async function toggleTeamElimination(teamName, checked) {
+    // The checkbox is already visually toggled — update state silently in the background.
+    const checkbox = document.querySelector(`[data-eliminated-team="${teamName}"]`);
     try {
         const currentStatus = getTeamStatus(teamName);
         const { error } = await supabaseClient
@@ -1146,18 +1149,19 @@ async function toggleTeamElimination(teamName, checked) {
                 eliminated: checked
             }, { onConflict: 'team_name' });
 
-        if (error) {
-            throw error;
-        }
+        if (error) throw error;
 
         await fetchAdvancedTeams();
-        fetchAdminAdvancement();
         fetchLeaderboard();
         setupDashboard();
-        showToast(checked ? `${teamName} marked eliminated.` : `${teamName} moved back to remaining.`, 'success');
+
+        if (checked) {
+            const teamData = teams.find((t) => t.name === teamName);
+            postSystemMessage('elimination', `${teamData ? teamData.flag : ''} ${teamName} eliminated`);
+        }
     } catch (error) {
         showToast(error.message || 'Unable to update elimination status.');
-        fetchAdminAdvancement();
+        if (checkbox) checkbox.checked = !checked;
     }
 }
 
@@ -1443,12 +1447,12 @@ async function fetchAdminUsers() {
                 <td class="px-3.5 py-3 align-top min-w-[165px]">${renderAdminTeamFlagsByTier(user.teamGroups)}</td>
                 <td class="px-3.5 py-3 align-top min-w-[125px]">${formatAdminTeamSavedAt(user.lastTeamSavedAt, user.picksSaveCount)}</td>
                 <td class="px-3.5 py-3 align-top text-center">
-                    <button aria-label="${user.hasPaid ? 'Set unpaid' : 'Set paid'}" onclick="toggleUserPaidStatus('${user.email.replace(/'/g, "\\'")}', ${user.hasPaid ? 'true' : 'false'})" class="inline-flex h-8 w-[72px] items-center rounded-full border border-gray-600 px-1 transition-colors ${user.hasPaid ? 'bg-green-600/90 border-green-500 justify-end' : 'bg-gray-700 justify-start'}">
+                    <button aria-label="${user.hasPaid ? 'Set unpaid' : 'Set paid'}" onclick="toggleUserPaidStatus(this, '${user.email.replace(/'/g, "\\'")}', ${user.hasPaid ? 'true' : 'false'})" class="inline-flex h-8 w-[72px] items-center rounded-full border border-gray-600 px-1 transition-colors ${user.hasPaid ? 'bg-green-600/90 border-green-500 justify-end' : 'bg-gray-700 justify-start'}">
                         <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-[7px] font-black uppercase tracking-[0.1em] ${user.hasPaid ? 'text-green-700' : 'text-gray-500'}">${user.hasPaid ? 'Paid' : ''}</span>
                     </button>
                 </td>
                 <td class="px-3.5 py-3 align-top text-center">
-                    <button aria-label="${isProtectedAdminEmail(user.email) ? 'Admin account protected' : user.blocked ? 'Set active' : 'Set blocked'}" onclick="${isProtectedAdminEmail(user.email) ? '' : `toggleUserBlockedStatus('${user.email.replace(/'/g, "\\'")}', ${user.blocked ? 'true' : 'false'})`}" class="inline-flex h-8 w-[72px] items-center rounded-full border border-gray-600 px-1 transition-colors ${isProtectedAdminEmail(user.email) ? 'bg-gray-800 border-gray-700 justify-start cursor-not-allowed opacity-70' : user.blocked ? 'bg-red-600/90 border-red-500 justify-end' : 'bg-gray-700 justify-start'}">
+                    <button aria-label="${isProtectedAdminEmail(user.email) ? 'Admin account protected' : user.blocked ? 'Set active' : 'Set blocked'}" onclick="${isProtectedAdminEmail(user.email) ? '' : `toggleUserBlockedStatus(this, '${user.email.replace(/'/g, "\\'")}', ${user.blocked ? 'true' : 'false'})`}" class="inline-flex h-8 w-[72px] items-center rounded-full border border-gray-600 px-1 transition-colors ${isProtectedAdminEmail(user.email) ? 'bg-gray-800 border-gray-700 justify-start cursor-not-allowed opacity-70' : user.blocked ? 'bg-red-600/90 border-red-500 justify-end' : 'bg-gray-700 justify-start'}">
                         <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-[7px] font-black uppercase tracking-[0.1em] ${isProtectedAdminEmail(user.email) ? 'text-gray-500' : user.blocked ? 'text-red-700' : 'text-gray-500'}">${isProtectedAdminEmail(user.email) ? 'Adm' : user.blocked ? 'Blk' : ''}</span>
                     </button>
                 </td>
@@ -1607,27 +1611,65 @@ function formatAdminTeamSavedAt(timestamp, picksSaveCount = 0) {
     `;
 }
 
-async function toggleUserPaidStatus(email, currentValue) {
-    const nextValue = !currentValue;
-
-    try {
-        const { error } = await supabaseClient
-            .from('profiles')
-            .update({ has_paid: nextValue })
-            .eq('email', email);
-
-        if (error) {
-            throw error;
-        }
-    } catch (error) {
-        showToast(error.message || 'Unable to update payment status.');
-        return;
+function applyPaidToggleVisuals(btn, isPaid) {
+    const span = btn.querySelector('span');
+    if (isPaid) {
+        btn.classList.remove('bg-gray-700', 'justify-start');
+        btn.classList.add('bg-green-600/90', 'border-green-500', 'justify-end');
+        span.classList.remove('text-gray-500');
+        span.classList.add('text-green-700');
+        span.textContent = 'Paid';
+        btn.setAttribute('aria-label', 'Set unpaid');
+    } else {
+        btn.classList.remove('bg-green-600/90', 'border-green-500', 'justify-end');
+        btn.classList.add('bg-gray-700', 'justify-start');
+        span.classList.remove('text-green-700');
+        span.classList.add('text-gray-500');
+        span.textContent = '';
+        btn.setAttribute('aria-label', 'Set paid');
     }
-
-    refreshAdminUsersPreservingScroll();
 }
 
-async function toggleUserBlockedStatus(email, currentValue) {
+function applyBlockedToggleVisuals(btn, isBlocked) {
+    const span = btn.querySelector('span');
+    if (isBlocked) {
+        btn.classList.remove('bg-gray-700', 'justify-start');
+        btn.classList.add('bg-red-600/90', 'border-red-500', 'justify-end');
+        span.classList.remove('text-gray-500');
+        span.classList.add('text-red-700');
+        span.textContent = 'Blk';
+        btn.setAttribute('aria-label', 'Set active');
+    } else {
+        btn.classList.remove('bg-red-600/90', 'border-red-500', 'justify-end');
+        btn.classList.add('bg-gray-700', 'justify-start');
+        span.classList.remove('text-red-700');
+        span.classList.add('text-gray-500');
+        span.textContent = '';
+        btn.setAttribute('aria-label', 'Set blocked');
+    }
+}
+
+async function toggleUserPaidStatus(btn, email, currentValue) {
+    const nextValue = !currentValue;
+
+    // Flip visually right away — no reload needed
+    applyPaidToggleVisuals(btn, nextValue);
+    btn.onclick = () => toggleUserPaidStatus(btn, email, nextValue);
+
+    const { error } = await supabaseClient
+        .from('profiles')
+        .update({ has_paid: nextValue })
+        .eq('email', email);
+
+    if (error) {
+        showToast(error.message || 'Unable to update payment status.');
+        // Revert visuals on failure
+        applyPaidToggleVisuals(btn, currentValue);
+        btn.onclick = () => toggleUserPaidStatus(btn, email, currentValue);
+    }
+}
+
+async function toggleUserBlockedStatus(btn, email, currentValue) {
     if (isProtectedAdminEmail(email)) {
         showToast('Admin accounts cannot be blocked.');
         return;
@@ -1635,21 +1677,19 @@ async function toggleUserBlockedStatus(email, currentValue) {
 
     const nextValue = !currentValue;
 
-    try {
-        const { error } = await supabaseClient
-            .from('profiles')
-            .update({ blocked: nextValue })
-            .eq('email', email);
+    applyBlockedToggleVisuals(btn, nextValue);
+    btn.onclick = () => toggleUserBlockedStatus(btn, email, nextValue);
 
-        if (error) {
-            throw error;
-        }
-    } catch (error) {
+    const { error } = await supabaseClient
+        .from('profiles')
+        .update({ blocked: nextValue })
+        .eq('email', email);
+
+    if (error) {
         showToast(error.message || 'Unable to update blocked status.');
-        return;
+        applyBlockedToggleVisuals(btn, currentValue);
+        btn.onclick = () => toggleUserBlockedStatus(btn, email, currentValue);
     }
-
-    refreshAdminUsersPreservingScroll();
 }
 
 function formatTeamResultsCell(match, teamName, theme = 'dark') {
@@ -2094,32 +2134,68 @@ async function deleteUserPicks(email) {
     }
 }
 
-async function fetchAdminHistory() {
+async function fetchAdminHistory(highlightLatest = false) {
     const container = document.getElementById('admin-history-log');
-    if (!container) {
-        return;
-    }
+    if (!container) return;
 
-    const { data } = await supabaseClient
-        .from('matches')
-        .select('*')
-        .order('match_date_manual', { ascending: false })
-        .limit(20);
+    const [
+        { data: matches },
+        { data: picks },
+        { data: profiles }
+    ] = await Promise.all([
+        supabaseClient.from('matches').select('*').order('match_date_manual', { ascending: false }).limit(20),
+        supabaseClient.from('picks').select('user_email, team_name'),
+        supabaseClient.from('profiles').select('email')
+    ]);
 
-    container.innerHTML = data?.map((match) => `
-        <div class="bg-gray-800 p-4 rounded-2xl border border-gray-700 flex justify-between items-center group">
-            <div class="text-left text-white">
-                <div class="theme-accent-text text-[9px] font-black uppercase text-left">${match.match_date_manual} | ${match.stage}</div>
-                <div class="font-bold flex items-center gap-3 text-left">
-                    <span>${match.team_home}</span>
-                    <span class="bg-gray-950 px-2 py-1 rounded text-green-400 font-mono text-center">${match.score_home} - ${match.score_away}</span>
-                    <span>${match.team_away}</span>
-                    ${match.was_extra_time ? '<span class="text-[8px] bg-red-900/40 text-red-400 px-1.5 py-0.5 rounded uppercase text-left">ET/P</span>' : ''}
+    const selectionStats = buildSelectionStatsSnapshot(picks || [], profiles || []);
+    const teamOwnership = new Map();
+    selectionStats.sortedCountryCounts.forEach((entry) => {
+        teamOwnership.set(entry.teamName, { pickedCount: entry.pickedCount, percentage: entry.percentage });
+    });
+
+    const ownershipMarkup = (teamName) => {
+        if (appSettings.hideTeamSelection) return '';
+        const { pickedCount = 0, percentage = 0 } = teamOwnership.get(teamName) || {};
+        return `<div class="mt-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">${pickedCount} picked${selectionStats.totalPlayers > 0 ? ` · ${percentage}%` : ''}</div>`;
+    };
+
+    const buildPointsLabel = (match) => {
+        if (match.score_home === match.score_away) {
+            const pts = getMatchPointsForTeam(match, match.team_home);
+            return `${pts} pt${pts === 1 ? '' : 's'} each`;
+        }
+        const winner = match.score_home > match.score_away ? match.team_home : match.team_away;
+        const pts = getMatchPointsForTeam(match, winner);
+        return `${pts} pts awarded`;
+    };
+
+    container.innerHTML = matches?.map((match, i) => {
+        const homeTeam = teams.find((t) => t.name === match.team_home);
+        const awayTeam = teams.find((t) => t.name === match.team_away);
+        return `
+            <div class="bg-gray-800 rounded-3xl border border-gray-700 p-4 md:p-6 ${highlightLatest && i === 0 ? 'result-flash' : ''}">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="theme-accent-text text-[9px] font-black uppercase tracking-[0.15em]">${match.match_date_manual} · ${match.stage}</div>
+                    <button onclick="deleteMatch(${match.id})" class="text-gray-600 hover:text-red-500 text-lg font-black transition-colors leading-none">×</button>
                 </div>
-            </div>
-            <button onclick="deleteMatch(${match.id})" class="text-gray-600 hover:text-red-500 font-bold px-4 text-xl transition-all text-white text-center">×</button>
-        </div>
-    `).join('') || '<div class="text-center py-10 text-gray-600 uppercase text-xs text-center text-gray-500">No matches logged</div>';
+                <div class="grid grid-cols-[minmax(0,1fr)_100px_minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_140px_minmax(0,1fr)] items-center gap-3">
+                    <div class="text-left">
+                        <div class="text-sm md:text-lg font-black text-white truncate">${homeTeam?.flag || ''} ${match.team_home}</div>
+                        ${ownershipMarkup(match.team_home)}
+                    </div>
+                    <div class="text-center">
+                        <div class="text-[9px] font-black uppercase tracking-[0.12em] text-gray-500 mb-1">${buildPointsLabel(match)}</div>
+                        <div class="bg-gray-950 text-white font-mono font-black text-sm md:text-base tabular-nums px-3 py-1.5 rounded-lg text-center">${match.score_home} – ${match.score_away}</div>
+                        ${match.was_extra_time ? '<div class="mt-1 text-[8px] font-black uppercase text-red-400">ET/Pens</div>' : ''}
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm md:text-lg font-black text-white truncate">${match.team_away} ${awayTeam?.flag || ''}</div>
+                        ${ownershipMarkup(match.team_away)}
+                    </div>
+                </div>
+            </div>`;
+    }).join('') || '<div class="text-center py-10 text-gray-600 uppercase text-xs font-black">No matches logged yet</div>';
 }
 
 async function fetchPublicResults() {
@@ -2278,13 +2354,32 @@ async function submitManualResult() {
         showToast('Logged!', 'success');
         document.getElementById('admin-score1').value = '';
         document.getElementById('admin-score2').value = '';
-        fetchAdminHistory();
+
+        // Refresh history with the flash animation on the new top row, then scroll to it
+        await fetchAdminHistory(true);
+        const historyEl = document.getElementById('admin-history-log');
+        if (historyEl) {
+            historyEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
         fetchPublicTeamResults();
         fetchPublicResults();
         renderGroups();
         fetchLeaderboard();
         fetchStats();
         setupDashboard();
+
+        // Post a match result system message to the chat so everyone sees the score.
+        const getFlag = (name) => (teams.find((t) => t.name === name) || {}).flag || '';
+        const stageLabels = { Group: 'Group Stage', R32: 'Round of 32', R16: 'Round of 16', Quarters: 'Quarter-Final', Semis: 'Semi-Final', Finals: 'Final' };
+        const stageLabel = stageLabels[stage] || stage;
+        postSystemMessage('match_result', `${getFlag(team1)} ${team1} ${score1}–${score2} ${team2} ${getFlag(team2)} · ${stageLabel}`);
+
+        // For knockout matches with a clear winner, also post an elimination strip.
+        if (stage !== 'Group' && score1 !== score2) {
+            const loser = score1 < score2 ? team1 : team2;
+            postSystemMessage('elimination', `${getFlag(loser)} ${loser} eliminated`);
+        }
     } catch (error) {
         showToast(error.message);
     } finally {
@@ -2496,9 +2591,376 @@ async function fetchStats() {
     }
 }
 
+// ── System Messages ──────────────────────────────────────────────────────────
+// Posts a centred notification strip into the chat (match results, eliminations,
+// admin announcements). These have type != 'user' and never show reactions.
+
+async function postSystemMessage(type, content) {
+    await supabaseClient.from('messages').insert([{
+        user_email: 'system',
+        nickname: 'system',
+        realname: 'system',
+        content,
+        type
+    }]);
+}
+
+// Escape special HTML characters so raw message content can't inject markup.
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+// Replace @[Nickname] tokens with a highlighted blue span.
+function parseMentions(content) {
+    return escapeHtml(content).replace(/@\[([^\]]+)\]/g, (_, name) =>
+        `<span class="font-black text-blue-400">@${escapeHtml(name)}</span>`
+    );
+}
+
+// ── @mention autocomplete ────────────────────────────────────────────────────
+
+let mentionProfilesCache = null;
+
+async function getMentionProfiles() {
+    if (mentionProfilesCache) return mentionProfilesCache;
+    const { data } = await supabaseClient
+        .from('profiles')
+        .select('nickname, realname')
+        .not('nickname', 'is', null);
+    mentionProfilesCache = (data || []).filter((p) => p.nickname);
+    return mentionProfilesCache;
+}
+
+// Returns info about an active @-mention being typed at the cursor, or null.
+function getMentionQuery() {
+    const input = document.getElementById('chat-input');
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return null;
+
+    const range = sel.getRangeAt(0);
+    if (!input || !input.contains(range.startContainer)) return null;
+
+    const textNode = range.startContainer;
+    if (textNode.nodeType !== Node.TEXT_NODE) return null;
+
+    const before = textNode.textContent.slice(0, range.startOffset);
+    const atIndex = before.lastIndexOf('@');
+    if (atIndex === -1) return null;
+
+    const query = before.slice(atIndex + 1);
+    if (query.includes(' ')) return null; // space = mention ended
+
+    return { query, atIndex, textNode, cursorOffset: range.startOffset };
+}
+
+// Read the contenteditable div, converting mention chips back to @[Name] tokens.
+function getChatContent() {
+    const input = document.getElementById('chat-input');
+    if (!input) return '';
+
+    let result = '';
+    function walk(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            result += node.textContent;
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+            if (node.classList.contains('mention-chip')) {
+                result += `@[${node.dataset.mentionName}]`;
+            } else {
+                node.childNodes.forEach(walk);
+            }
+        }
+    }
+    input.childNodes.forEach(walk);
+    // Collapse non-breaking spaces back to regular spaces and trim
+    return result.replace(/\u00A0/g, ' ').trim();
+}
+
+function insertMention(nickname) {
+    const input = document.getElementById('chat-input');
+    const dropdown = document.getElementById('mention-dropdown');
+    if (!input) return;
+
+    const info = getMentionQuery();
+    if (!info) return;
+
+    const { atIndex, textNode, cursorOffset } = info;
+    const afterText = textNode.textContent.slice(cursorOffset);
+
+    // Trim the @query from the text node
+    textNode.textContent = textNode.textContent.slice(0, atIndex);
+
+    // Insert a non-editable chip span
+    const chip = document.createElement('span');
+    chip.contentEditable = 'false';
+    chip.className = 'mention-chip inline-block text-blue-600 font-black bg-blue-50 rounded-md px-1 mx-px cursor-default select-all text-sm';
+    chip.dataset.mentionName = nickname;
+    chip.textContent = `@${nickname}`;
+
+    // Space node after the chip so the cursor lands in the right place
+    const spaceNode = document.createTextNode('\u00A0' + afterText);
+
+    textNode.after(chip);
+    chip.after(spaceNode);
+
+    // Move cursor to after the space
+    const sel = window.getSelection();
+    const newRange = document.createRange();
+    newRange.setStart(spaceNode, 1);
+    newRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+
+    input.focus();
+    if (dropdown) dropdown.classList.add('hidden');
+}
+
+function setupMentionAutocomplete() {
+    const input = document.getElementById('chat-input');
+    if (!input || input.dataset.mentionBound === 'true') return;
+    input.dataset.mentionBound = 'true';
+
+    const dropdown = document.getElementById('mention-dropdown');
+    if (!dropdown) return;
+
+    let activeIndex = -1; // which row is keyboard-highlighted
+
+    function getRows() {
+        return Array.from(dropdown.querySelectorAll('button[data-mention-row]'));
+    }
+
+    function highlight(index) {
+        const rows = getRows();
+        rows.forEach((r, i) => {
+            r.classList.toggle('bg-gray-100', i === index);
+            r.classList.toggle('bg-white', i !== index);
+        });
+        activeIndex = index;
+    }
+
+    async function updateDropdown() {
+        const info = getMentionQuery();
+        if (!info) {
+            dropdown.classList.add('hidden');
+            activeIndex = -1;
+            return;
+        }
+
+        const query = info.query.toLowerCase();
+        const profiles = await getMentionProfiles();
+
+        // Match against both nickname and realname so you can type either.
+        const filtered = profiles.filter((p) =>
+            p.nickname.toLowerCase().includes(query) ||
+            (p.realname && p.realname.toLowerCase().includes(query))
+        );
+
+        if (!filtered.length) {
+            dropdown.classList.add('hidden');
+            activeIndex = -1;
+            return;
+        }
+
+        dropdown.innerHTML = filtered.map((p) => `
+            <button data-mention-row data-nickname="${escapeHtml(p.nickname)}"
+                    class="w-full text-left px-4 py-2.5 bg-white hover:bg-gray-100 text-sm font-bold text-gray-700 flex items-center gap-2 transition-colors"
+                    onmousedown="event.preventDefault(); insertMention('${escapeHtml(p.nickname)}')">
+                <span class="theme-accent-text">@${escapeHtml(p.nickname)}</span>
+                <span class="text-xs font-normal text-gray-400">${escapeHtml(p.realname || '')}</span>
+            </button>`).join('');
+
+        activeIndex = -1;
+        dropdown.classList.remove('hidden');
+    }
+
+    input.addEventListener('input', updateDropdown);
+    input.addEventListener('keyup', updateDropdown); // contenteditable fires keyup too
+
+    // Keyboard navigation: ArrowUp / ArrowDown to move, Tab / Enter to confirm, Escape to close.
+    input.addEventListener('keydown', (e) => {
+        if (dropdown.classList.contains('hidden')) return;
+        const rows = getRows();
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            highlight(Math.min(activeIndex + 1, rows.length - 1));
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            highlight(Math.max(activeIndex - 1, 0));
+        } else if (e.key === 'Tab' || e.key === 'Enter') {
+            const target = activeIndex >= 0 ? rows[activeIndex] : rows[0];
+            if (target) {
+                e.preventDefault();
+                insertMention(target.dataset.nickname);
+            }
+        } else if (e.key === 'Escape') {
+            dropdown.classList.add('hidden');
+            activeIndex = -1;
+        }
+    });
+
+    // Use blur instead of click-outside so mobile tap-to-select still works
+    // (mousedown on a row uses preventDefault to keep focus on the input).
+    input.addEventListener('blur', () => {
+        setTimeout(() => { dropdown.classList.add('hidden'); activeIndex = -1; }, 150);
+    });
+}
+
+// ── Long-press / Edit / Undo Send ────────────────────────────────────────────
+
+// Cross-platform long-press: fires callback after 500ms hold on touch or mouse.
+function addLongPressHandler(el, callback) {
+    let timer = null;
+    const start = () => { timer = setTimeout(callback, 500); };
+    const cancel = () => { clearTimeout(timer); timer = null; };
+
+    el.addEventListener('touchstart', start, { passive: true });
+    el.addEventListener('touchend', cancel);
+    el.addEventListener('touchmove', cancel);
+    el.addEventListener('mousedown', start);
+    el.addEventListener('mouseup', cancel);
+    el.addEventListener('mouseleave', cancel);
+}
+
+// Create the singleton action menu (Edit / Undo Send) once, appended to body.
+function setupMessageActionMenu() {
+    if (document.getElementById('message-action-menu')) return;
+
+    const menu = document.createElement('div');
+    menu.id = 'message-action-menu';
+    menu.className = 'hidden fixed z-50 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden min-w-[160px]';
+    menu.innerHTML = `
+        <button id="msg-action-edit"
+                class="flex items-center gap-3 px-5 py-3.5 text-sm font-bold text-gray-700 hover:bg-gray-50 w-full text-left transition-colors">
+            ✏️ Edit
+        </button>
+        <div class="h-px bg-gray-100 mx-3"></div>
+        <button id="msg-action-undo"
+                class="flex items-center gap-3 px-5 py-3.5 text-sm font-bold text-red-500 hover:bg-red-50 w-full text-left transition-colors">
+            🗑 Undo Send
+        </button>`;
+    document.body.appendChild(menu);
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#message-action-menu')) {
+            menu.classList.add('hidden');
+        }
+    });
+}
+
+// Show the action menu anchored near anchorEl (the bubble).
+// Only within the 3-minute edit window — no-ops silently if outside.
+function showMessageActionMenu(messageId, createdAt, anchorEl) {
+    const menu = document.getElementById('message-action-menu');
+    if (!menu) return;
+
+    const ageMs = Date.now() - new Date(createdAt).getTime();
+    if (ageMs > 3 * 60 * 1000) return; // outside the 3-min window, ignore
+
+    const editBtn = document.getElementById('msg-action-edit');
+    const undoBtn = document.getElementById('msg-action-undo');
+
+    editBtn.onclick = () => { menu.classList.add('hidden'); startEditMessage(messageId); };
+    undoBtn.onclick = () => { menu.classList.add('hidden'); undoSendMessage(messageId); };
+
+    // Position above or beside the bubble, keeping within viewport
+    const rect = anchorEl.getBoundingClientRect();
+    const menuW = 180;
+    let left = rect.right - menuW;
+    let top = rect.top - 110;
+
+    left = Math.max(8, Math.min(left, window.innerWidth - menuW - 8));
+    top = Math.max(8, top);
+
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+    menu.classList.remove('hidden');
+}
+
+function startEditMessage(messageId) {
+    const wrapper = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (!wrapper) return;
+
+    const contentDiv = wrapper.querySelector('.message-content');
+    if (!contentDiv || contentDiv.dataset.editing === 'true') return;
+    contentDiv.dataset.editing = 'true';
+
+    const rawContent = contentDiv.dataset.rawContent || '';
+
+    contentDiv.innerHTML = `
+        <div class="flex flex-col gap-2 mt-1">
+            <textarea class="w-full rounded-xl border border-gray-300 p-2 text-sm font-bold text-gray-900 outline-none resize-none bg-white" rows="2">${escapeHtml(rawContent)}</textarea>
+            <div class="flex gap-2">
+                <button onclick="saveEditMessage(${messageId})"
+                        class="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full bg-green-500 text-white hover:bg-green-400 transition-colors">
+                    Save
+                </button>
+                <button onclick="cancelEditMessage(${messageId})"
+                        class="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>`;
+
+    contentDiv.querySelector('textarea').focus();
+}
+
+async function saveEditMessage(messageId) {
+    const wrapper = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (!wrapper) return;
+
+    const contentDiv = wrapper.querySelector('.message-content');
+    const textarea = contentDiv?.querySelector('textarea');
+    if (!textarea) return;
+
+    const newContent = textarea.value.trim();
+    if (!newContent) return;
+
+    const { error } = await supabaseClient
+        .from('messages')
+        .update({ content: newContent })
+        .eq('id', messageId)
+        .eq('user_email', userEmail);
+
+    if (error) { showToast('Could not save edit.'); return; }
+
+    contentDiv.dataset.rawContent = newContent;
+    contentDiv.dataset.editing = 'false';
+    contentDiv.innerHTML = `${parseMentions(newContent)}<span class="text-[9px] opacity-40 ml-1 font-normal italic">edited</span>`;
+}
+
+function cancelEditMessage(messageId) {
+    const wrapper = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (!wrapper) return;
+
+    const contentDiv = wrapper.querySelector('.message-content');
+    if (!contentDiv) return;
+
+    contentDiv.dataset.editing = 'false';
+    contentDiv.innerHTML = parseMentions(contentDiv.dataset.rawContent || '');
+}
+
+async function undoSendMessage(messageId) {
+    const wrapper = document.querySelector(`[data-message-id="${messageId}"]`);
+
+    const { error } = await supabaseClient
+        .from('messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('user_email', userEmail);
+
+    if (error) { showToast('Could not delete message.'); return; }
+    if (wrapper) wrapper.remove();
+}
+
 function setupChat() {
     fetchMessages();
     setupChatKeyboardSubmit();
+    setupMentionAutocomplete();
+    setupMessageActionMenu();
 
     // Register a single document-level click handler to dismiss open emoji pickers
     // when the user taps anywhere outside a picker or its trigger button.
@@ -2522,12 +2984,18 @@ function setupChat() {
     chatChannel = supabaseClient
         .channel('chat-channel')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+            // Skip if already rendered optimistically by the sender
+            if (document.querySelector(`[data-message-id="${payload.new.id}"]`)) return;
             // Remove empty state if present
             const box = document.getElementById('chat-box');
             if (box && box.querySelector('.flex-col.items-center')) {
                 box.innerHTML = '';
             }
             renderMessage(payload.new);
+        })
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, (payload) => {
+            const el = document.querySelector(`[data-message-id="${payload.old.id}"]`);
+            if (el) el.remove();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'message_reactions' }, () => {
             const box = document.getElementById('chat-box');
@@ -2563,9 +3031,45 @@ async function fetchMessages() {
     }
 }
 
+function formatMessageTime(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+
+    const timeStr = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    if (isToday) return `Today ${timeStr}`;
+    if (isYesterday) return `Yesterday ${timeStr}`;
+    return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${timeStr}`;
+}
+
 function renderMessage(message) {
     const box = document.getElementById('chat-box');
     if (!box) {
+        return;
+    }
+
+    // System messages (match results, eliminations, admin notifications) render as
+    // centred, pill-shaped notification strips — no bubble, reactions, or + button.
+    if (message.type && message.type !== 'user') {
+        const strip = document.createElement('div');
+        strip.className = 'w-full flex justify-center my-1';
+        let pillClass = 'text-xs font-bold tracking-wide text-center px-4 py-1.5 rounded-full max-w-xs';
+        if (message.type === 'match_result') {
+            pillClass += ' bg-gray-100 text-gray-500';
+        } else if (message.type === 'elimination') {
+            pillClass += ' bg-red-50 text-red-400';
+        } else if (message.type === 'admin_notification') {
+            pillClass += ' bg-blue-50 text-blue-500';
+        } else {
+            pillClass += ' bg-gray-100 text-gray-400';
+        }
+        strip.innerHTML = `<div class="${pillClass}">${escapeHtml(message.content)}</div>`;
+        box.appendChild(strip);
+        box.scrollTop = box.scrollHeight;
         return;
     }
 
@@ -2573,7 +3077,7 @@ function renderMessage(message) {
     const EMOJI_SET = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 
     const wrapper = document.createElement('div');
-    wrapper.className = `max-w-[80%] ${isMe ? 'self-end' : 'self-start'}`;
+    wrapper.className = `max-w-[80%] ${isMe ? 'self-end' : 'self-start'} message-enter`;
     wrapper.dataset.messageId = message.id;
 
     const emojiPickerButtons = EMOJI_SET.map((e) =>
@@ -2591,11 +3095,13 @@ function renderMessage(message) {
         </div>`;
 
     const bubble = `
-        <div class="p-4 rounded-2xl text-left ${isMe ? 'theme-chat-own rounded-tr-none' : 'bg-gray-100 rounded-tl-none'}">
+        <div data-bubble class="p-4 rounded-2xl text-left ${isMe ? 'theme-chat-own rounded-tr-none' : 'bg-gray-100 rounded-tl-none'}">
             <div class="text-[9px] font-black uppercase text-left ${isMe ? 'theme-chat-own-meta' : 'theme-accent-text'}">
-                ${message.nickname} <span class="opacity-50">(${message.realname})</span>
+                ${escapeHtml(message.nickname)} <span class="opacity-50">(${escapeHtml(message.realname)})</span>
             </div>
-            <div class="font-bold mt-1 text-sm text-left ${isMe ? 'text-white' : 'text-black'}">${message.content}</div>
+            <div class="message-content font-bold mt-1 text-sm text-left ${isMe ? 'text-white' : 'text-black'}"
+                 data-raw-content="${escapeHtml(message.content)}">${parseMentions(message.content)}</div>
+            <div class="text-[9px] mt-1.5 opacity-40 text-left font-medium">${formatMessageTime(message.created_at)}</div>
         </div>`;
 
     wrapper.innerHTML = `
@@ -2607,11 +3113,25 @@ function renderMessage(message) {
 
     box.appendChild(wrapper);
     box.scrollTop = box.scrollHeight;
+
+    // Long-press (mobile) and right-click (desktop) both open the edit/undo menu
+    if (isMe) {
+        const bubbleEl = wrapper.querySelector('[data-bubble]');
+        if (bubbleEl) {
+            addLongPressHandler(bubbleEl, () => {
+                showMessageActionMenu(message.id, message.created_at, bubbleEl);
+            });
+            bubbleEl.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showMessageActionMenu(message.id, message.created_at, bubbleEl);
+            });
+        }
+    }
 }
 
 async function sendChatMessage() {
     const input = document.getElementById('chat-input');
-    const content = input.value.trim();
+    const content = getChatContent();
     const nickname = document.getElementById('nickname-input').value.trim();
     const realname = document.getElementById('realname-input').value.trim();
 
@@ -2619,14 +3139,24 @@ async function sendChatMessage() {
         return showToast('Set your Name first!');
     }
 
-    await supabaseClient.from('messages').insert([{
-        user_email: userEmail,
-        nickname,
-        realname,
-        content
-    }]);
+    // Clear input immediately so it feels instant
+    input.innerHTML = '';
+    input.focus();
 
-    input.value = '';
+    // Insert and get the saved row back so we can render it optimistically
+    const { data, error } = await supabaseClient
+        .from('messages')
+        .insert([{ user_email: userEmail, nickname, realname, content }])
+        .select()
+        .single();
+
+    if (error) {
+        showToast('Message failed to send.');
+        return;
+    }
+
+    // Render immediately — the realtime handler will skip it since it's already in the DOM
+    renderMessage(data);
 }
 
 function setupChatKeyboardSubmit() {
@@ -2637,6 +3167,7 @@ function setupChatKeyboardSubmit() {
     }
 
     input.dataset.enterBound = 'true';
+    // contenteditable fires keydown; Enter sends, Shift+Enter is a newline
     input.addEventListener('keydown', (event) => {
         if (event.key !== 'Enter' || event.shiftKey) {
             return;
@@ -2817,5 +3348,10 @@ Object.assign(window, {
     toggleEmojiPicker,
     handleEmojiReaction,
     toggleReaction,
-    setupLeaderboardRealtime
+    setupLeaderboardRealtime,
+    postSystemMessage,
+    insertMention,
+    saveEditMessage,
+    cancelEditMessage,
+    undoSendMessage
 });

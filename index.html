@@ -159,7 +159,21 @@
         @keyframes pageFadeIn { from { opacity: 0; } to { opacity: 1; } }
         .page-content:not(.hidden) { animation: pageFadeIn 0.15s ease; }
 
+        @keyframes messageEnter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .message-enter { animation: messageEnter 0.18s ease forwards; }
+
+        @keyframes resultFlash { 0% { opacity: 0; transform: translateY(-8px); } 60% { background-color: #14532d; } 100% { opacity: 1; transform: translateY(0); background-color: #1f2937; } }
+        .result-flash { animation: resultFlash 0.5s ease forwards; }
+
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+
+        /* Contenteditable chat input placeholder */
+        #chat-input:empty::before {
+            content: attr(data-placeholder);
+            color: #9ca3af;
+            font-weight: 600;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="bg-gray-950 text-white h-screen overflow-hidden font-sans flex flex-col text-left">
@@ -417,7 +431,7 @@
                             <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4">
                                 <div class="flex items-start justify-between gap-4">
                                     <div>
-                                        <div class="text-lg font-black text-gray-900">$150 Budget Limit</div>
+                                        <div class="text-lg font-black text-gray-900">Budget Limit</div>
                                         <div class="mt-1 text-sm font-semibold text-gray-500">Build your squad without overspending.</div>
                                     </div>
                                     <div class="theme-accent-text text-2xl font-black">$150</div>
@@ -473,7 +487,7 @@
                     <h2 class="text-2xl font-black uppercase border-b-4 border-gray-900 pb-2 text-left">Point Scoring</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 font-bold text-gray-800">
                         <div class="theme-soft-card p-6 rounded-2xl border-2"><h3 class="uppercase mb-2 italic">Group Phase</h3><p>Win: 3 pts | Tie: 1 pt</p><p class="theme-accent-text">Advance to Knockouts: +1 pt</p></div>
-                        <div class="bg-purple-50 p-6 rounded-2xl border-2 border-purple-100"><h3 class="uppercase mb-2 italic text-gray-900">Knockout Phase</h3><p>Win: 3 pts</p><p class="text-xs text-purple-400 font-normal uppercase mt-2 text-left">* No points for bronze game</p></div>
+                        <div style="background-color: color-mix(in srgb, var(--theme-accent-primary) 75%, white); border-color: var(--theme-accent-primary);" class="p-6 rounded-2xl border-2 text-white"><h3 class="uppercase mb-2 italic text-white">Knockout Phase</h3><p>Win: 3 pts</p><p class="text-xs font-normal uppercase mt-2 text-left opacity-70">* No points for bronze game</p></div>
                     </div>
                     <div class="bg-gray-100 p-6 rounded-2xl text-gray-900 text-center">
                         <h3 class="font-black uppercase mb-4 italic">Stage Multipliers</h3>
@@ -482,7 +496,7 @@
                             <div class="bg-white p-3 rounded-xl border border-gray-200 text-gray-900"><div class="text-[8px] font-black text-gray-400 uppercase">Round 16</div><div class="theme-accent-text text-xl font-black">x3</div></div>
                             <div class="bg-white p-3 rounded-xl border border-gray-200 text-gray-900"><div class="text-[8px] font-black text-gray-400 uppercase">Quarters</div><div class="theme-accent-text text-xl font-black">x5</div></div>
                             <div class="bg-white p-3 rounded-xl border border-gray-200 text-gray-900"><div class="text-[8px] font-black text-gray-400 uppercase">Semis</div><div class="theme-accent-text text-xl font-black">x8</div></div>
-                            <div class="bg-gray-900 p-3 rounded-xl text-white"><div class="text-[8px] font-black uppercase text-gray-400">Finals</div><div class="text-xl font-black text-yellow-400">x12</div></div>
+                            <div class="bg-gray-900 p-3 rounded-xl text-white"><div class="text-[8px] font-black uppercase text-white">Finals</div><div class="text-xl font-black text-white">x12</div></div>
                         </div>
                     </div>
                 </section>
@@ -1032,7 +1046,11 @@
 
         <div id="page-chat" class="page-content hidden h-full w-full flex flex-col bg-white text-gray-900 text-left">
             <div class="flex-grow overflow-y-auto p-4 md:p-8 space-y-4 flex flex-col text-left text-gray-900 text-left text-gray-900 text-left" id="chat-box"></div>
-            <div class="p-4 bg-gray-50 border-t flex gap-2 text-left"><input type="text" id="chat-input" placeholder="Type a message..." class="theme-input flex-grow p-4 rounded-2xl border-2 outline-none font-bold text-gray-900"><button onclick="sendChatMessage()" class="theme-primary-button px-8 rounded-2xl font-black uppercase tracking-widest text-center">Send</button></div>
+            <div class="p-4 bg-gray-50 border-t flex gap-2 text-left relative">
+                <div id="mention-dropdown" class="hidden absolute bottom-full left-4 right-24 mb-1 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-30 max-h-48 overflow-y-auto"></div>
+                <div id="chat-input" contenteditable="true" role="textbox" data-placeholder="Type a message… use @ to mention" class="theme-input flex-grow p-4 rounded-2xl border-2 outline-none font-bold text-gray-900 min-h-[52px] max-h-32 overflow-y-auto"></div>
+                <button onclick="sendChatMessage()" class="theme-primary-button px-8 rounded-2xl font-black uppercase tracking-widest text-center">Send</button>
+            </div>
             <div class="h-8 md:hidden"></div>
         </div>
 
