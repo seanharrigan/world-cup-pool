@@ -408,6 +408,256 @@ function renderTopNavFavoriteTheme(currentProfile) {
     }
 }
 
+// ── 2026 World Cup Group Stage Schedule ──────────────────────────────────────
+// All 72 group stage matches. Dates are "YYYY-MM-DD". Teams match the names in
+// the global `teams` array exactly so flag lookups work automatically.
+
+const GROUP_STAGE_SCHEDULE = [
+    // June 11
+    { date: '2026-06-11', group: 'A', home: 'Mexico',         away: 'South Africa' },
+    { date: '2026-06-11', group: 'A', home: 'Korea Republic', away: 'Czechia' },
+    // June 12
+    { date: '2026-06-12', group: 'B', home: 'Canada',         away: 'Bosnia and Herzegovina' },
+    { date: '2026-06-12', group: 'D', home: 'United States',  away: 'Paraguay' },
+    // June 13
+    { date: '2026-06-13', group: 'B', home: 'Qatar',          away: 'Switzerland' },
+    { date: '2026-06-13', group: 'C', home: 'Brazil',         away: 'Morocco' },
+    { date: '2026-06-13', group: 'C', home: 'Haiti',          away: 'Scotland' },
+    { date: '2026-06-13', group: 'D', home: 'Australia',      away: 'Turkey' },
+    // June 14
+    { date: '2026-06-14', group: 'E', home: 'Germany',        away: 'Curaçao' },
+    { date: '2026-06-14', group: 'E', home: 'Ivory Coast',    away: 'Ecuador' },
+    { date: '2026-06-14', group: 'F', home: 'Netherlands',    away: 'Japan' },
+    { date: '2026-06-14', group: 'F', home: 'Sweden',         away: 'Tunisia' },
+    // June 15
+    { date: '2026-06-15', group: 'G', home: 'Belgium',        away: 'Egypt' },
+    { date: '2026-06-15', group: 'G', home: 'Iran',           away: 'New Zealand' },
+    { date: '2026-06-15', group: 'H', home: 'Spain',          away: 'Cape Verde' },
+    { date: '2026-06-15', group: 'H', home: 'Saudi Arabia',   away: 'Uruguay' },
+    // June 16
+    { date: '2026-06-16', group: 'I', home: 'France',         away: 'Senegal' },
+    { date: '2026-06-16', group: 'I', home: 'Iraq',           away: 'Norway' },
+    { date: '2026-06-16', group: 'J', home: 'Argentina',      away: 'Algeria' },
+    { date: '2026-06-16', group: 'J', home: 'Austria',        away: 'Jordan' },
+    // June 17
+    { date: '2026-06-17', group: 'K', home: 'Portugal',       away: 'DR Congo' },
+    { date: '2026-06-17', group: 'K', home: 'Uzbekistan',     away: 'Colombia' },
+    { date: '2026-06-17', group: 'L', home: 'England',        away: 'Croatia' },
+    { date: '2026-06-17', group: 'L', home: 'Ghana',          away: 'Panama' },
+    // June 18
+    { date: '2026-06-18', group: 'A', home: 'Czechia',        away: 'South Africa' },
+    { date: '2026-06-18', group: 'A', home: 'Mexico',         away: 'Korea Republic' },
+    { date: '2026-06-18', group: 'B', home: 'Switzerland',    away: 'Bosnia and Herzegovina' },
+    { date: '2026-06-18', group: 'B', home: 'Canada',         away: 'Qatar' },
+    // June 19
+    { date: '2026-06-19', group: 'C', home: 'Scotland',       away: 'Morocco' },
+    { date: '2026-06-19', group: 'C', home: 'Brazil',         away: 'Haiti' },
+    { date: '2026-06-19', group: 'D', home: 'United States',  away: 'Australia' },
+    { date: '2026-06-19', group: 'D', home: 'Turkey',         away: 'Paraguay' },
+    // June 20
+    { date: '2026-06-20', group: 'E', home: 'Germany',        away: 'Ivory Coast' },
+    { date: '2026-06-20', group: 'E', home: 'Ecuador',        away: 'Curaçao' },
+    { date: '2026-06-20', group: 'F', home: 'Netherlands',    away: 'Sweden' },
+    { date: '2026-06-20', group: 'F', home: 'Tunisia',        away: 'Japan' },
+    // June 21
+    { date: '2026-06-21', group: 'G', home: 'Belgium',        away: 'Iran' },
+    { date: '2026-06-21', group: 'G', home: 'New Zealand',    away: 'Egypt' },
+    { date: '2026-06-21', group: 'H', home: 'Spain',          away: 'Saudi Arabia' },
+    { date: '2026-06-21', group: 'H', home: 'Uruguay',        away: 'Cape Verde' },
+    // June 22
+    { date: '2026-06-22', group: 'I', home: 'France',         away: 'Iraq' },
+    { date: '2026-06-22', group: 'I', home: 'Norway',         away: 'Senegal' },
+    { date: '2026-06-22', group: 'J', home: 'Argentina',      away: 'Austria' },
+    { date: '2026-06-22', group: 'J', home: 'Jordan',         away: 'Algeria' },
+    // June 23
+    { date: '2026-06-23', group: 'K', home: 'Portugal',       away: 'Uzbekistan' },
+    { date: '2026-06-23', group: 'K', home: 'Colombia',       away: 'DR Congo' },
+    { date: '2026-06-23', group: 'L', home: 'England',        away: 'Ghana' },
+    { date: '2026-06-23', group: 'L', home: 'Panama',         away: 'Croatia' },
+    // June 24
+    { date: '2026-06-24', group: 'A', home: 'Czechia',        away: 'Mexico' },
+    { date: '2026-06-24', group: 'A', home: 'South Africa',   away: 'Korea Republic' },
+    { date: '2026-06-24', group: 'B', home: 'Switzerland',    away: 'Canada' },
+    { date: '2026-06-24', group: 'B', home: 'Bosnia and Herzegovina', away: 'Qatar' },
+    { date: '2026-06-24', group: 'C', home: 'Scotland',       away: 'Brazil' },
+    { date: '2026-06-24', group: 'C', home: 'Morocco',        away: 'Haiti' },
+    // June 25
+    { date: '2026-06-25', group: 'D', home: 'Turkey',         away: 'United States' },
+    { date: '2026-06-25', group: 'D', home: 'Paraguay',       away: 'Australia' },
+    { date: '2026-06-25', group: 'E', home: 'Curaçao',        away: 'Ivory Coast' },
+    { date: '2026-06-25', group: 'E', home: 'Ecuador',        away: 'Germany' },
+    { date: '2026-06-25', group: 'F', home: 'Japan',          away: 'Sweden' },
+    { date: '2026-06-25', group: 'F', home: 'Tunisia',        away: 'Netherlands' },
+    // June 26
+    { date: '2026-06-26', group: 'G', home: 'Egypt',          away: 'Iran' },
+    { date: '2026-06-26', group: 'G', home: 'New Zealand',    away: 'Belgium' },
+    { date: '2026-06-26', group: 'H', home: 'Cape Verde',     away: 'Saudi Arabia' },
+    { date: '2026-06-26', group: 'H', home: 'Uruguay',        away: 'Spain' },
+    { date: '2026-06-26', group: 'I', home: 'Norway',         away: 'France' },
+    { date: '2026-06-26', group: 'I', home: 'Senegal',        away: 'Iraq' },
+    // June 27
+    { date: '2026-06-27', group: 'J', home: 'Jordan',         away: 'Argentina' },
+    { date: '2026-06-27', group: 'J', home: 'Algeria',        away: 'Austria' },
+    { date: '2026-06-27', group: 'K', home: 'Colombia',       away: 'Portugal' },
+    { date: '2026-06-27', group: 'K', home: 'DR Congo',       away: 'Uzbekistan' },
+    { date: '2026-06-27', group: 'L', home: 'Panama',         away: 'England' },
+    { date: '2026-06-27', group: 'L', home: 'Croatia',        away: 'Ghana' },
+];
+
+// Cache of already-logged matches for the schedule browser done/undone state
+let _scheduleBrowserLoggedCache = [];
+let _scheduleBrowserActiveFilter = 'all'; // 'all' | 'A'–'L' | date string
+
+function _scheduleTeam(name) {
+    return teams.find((t) => t.name === name) || { name, flag: '🏳' };
+}
+
+function _formatScheduleDate(dateStr) {
+    const d = new Date(dateStr + 'T12:00:00Z');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+}
+
+function _isMatchLogged(m) {
+    return _scheduleBrowserLoggedCache.some((r) =>
+        r.stage === 'Group' &&
+        ((r.team_home === m.home && r.team_away === m.away) ||
+         (r.team_home === m.away && r.team_away === m.home))
+    );
+}
+
+function _getLoggedResult(m) {
+    return _scheduleBrowserLoggedCache.find((r) =>
+        r.stage === 'Group' &&
+        ((r.team_home === m.home && r.team_away === m.away) ||
+         (r.team_home === m.away && r.team_away === m.home))
+    );
+}
+
+function renderScheduleBrowser() {
+    const filterEl = document.getElementById('schedule-group-filters');
+    const cardsEl  = document.getElementById('schedule-cards');
+    if (!filterEl || !cardsEl) return;
+
+    const allGroups = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+    const f = _scheduleBrowserActiveFilter;
+
+    // Filter matches
+    const filtered = f === 'all' ? GROUP_STAGE_SCHEDULE
+        : allGroups.includes(f) ? GROUP_STAGE_SCHEDULE.filter((m) => m.group === f)
+        : GROUP_STAGE_SCHEDULE.filter((m) => m.date === f);
+
+    const doneCount  = filtered.filter(_isMatchLogged).length;
+    const totalCount = filtered.length;
+
+    // ── Filter pills ──────────────────────────────────────────────────────────
+    const activePill  = 'border-blue-500 bg-blue-600/30 text-blue-300';
+    const inactivePill = 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-500 hover:text-gray-200';
+
+    filterEl.innerHTML = ['all', ...allGroups].map((g) => `
+        <button onclick="setScheduleFilter('${g}')"
+            class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border transition-colors ${f === g ? activePill : inactivePill}">
+            ${g === 'all' ? `All <span class="opacity-60">${doneCount}/${totalCount}</span>` : `Grp ${g}`}
+        </button>
+    `).join('');
+
+    // ── Match cards ───────────────────────────────────────────────────────────
+    // Group by date for display
+    const byDate = {};
+    filtered.forEach((m) => {
+        if (!byDate[m.date]) byDate[m.date] = [];
+        byDate[m.date].push(m);
+    });
+
+    cardsEl.innerHTML = Object.entries(byDate).map(([date, matches]) => {
+        const dayDone  = matches.filter(_isMatchLogged).length;
+        const dayTotal = matches.length;
+
+        const cards = matches.map((m) => {
+            const logged = _isMatchLogged(m);
+            const result = logged ? _getLoggedResult(m) : null;
+            const homeTeam = _scheduleTeam(m.home);
+            const awayTeam = _scheduleTeam(m.away);
+
+            // Score display if logged
+            let scoreHtml = '';
+            if (result) {
+                const sh = result.team_home === m.home ? result.score_home : result.score_away;
+                const sa = result.team_home === m.home ? result.score_away : result.score_home;
+                scoreHtml = `<span class="font-black text-white text-lg mx-2">${sh} – ${sa}</span>`;
+            } else {
+                scoreHtml = `<span class="text-gray-600 font-black text-sm mx-2">vs</span>`;
+            }
+
+            return `
+                <button onclick="prefillFromSchedule('${m.home.replace(/'/g,"\\'")}','${m.away.replace(/'/g,"\\'")}','${m.group}')"
+                    class="w-full text-left rounded-2xl border px-4 py-3 transition-all
+                        ${logged
+                            ? 'border-gray-800 bg-gray-900/50 opacity-60 cursor-default'
+                            : 'border-gray-700 bg-gray-800 hover:border-blue-500/50 hover:bg-gray-700 active:scale-[0.99]'}"
+                    ${logged ? 'title="Already logged"' : ''}>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2 min-w-0 flex-1">
+                            <span class="text-xl shrink-0">${homeTeam.flag}</span>
+                            <span class="font-black text-sm text-white truncate">${m.home}</span>
+                        </div>
+                        <div class="flex items-center shrink-0">${scoreHtml}</div>
+                        <div class="flex items-center gap-2 min-w-0 flex-1 justify-end">
+                            <span class="font-black text-sm text-white truncate">${m.away}</span>
+                            <span class="text-xl shrink-0">${awayTeam.flag}</span>
+                        </div>
+                        <div class="ml-3 shrink-0">
+                            ${logged
+                                ? '<span class="text-[9px] font-black uppercase tracking-[0.15em] text-emerald-500">Done</span>'
+                                : '<span class="text-[9px] font-black uppercase tracking-[0.15em] text-blue-400">Enter</span>'}
+                        </div>
+                    </div>
+                </button>`;
+        }).join('');
+
+        return `
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between px-1 pt-3 pb-1">
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${_formatScheduleDate(date)}</span>
+                    <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">${dayDone}/${dayTotal} logged</span>
+                </div>
+                ${cards}
+            </div>`;
+    }).join('');
+
+    if (!cardsEl.innerHTML.trim()) {
+        cardsEl.innerHTML = '<div class="text-center py-8 text-gray-600 text-[10px] font-black uppercase tracking-[0.2em]">No matches in this group</div>';
+    }
+}
+
+function setScheduleFilter(filter) {
+    _scheduleBrowserActiveFilter = filter;
+    renderScheduleBrowser();
+}
+
+function prefillFromSchedule(homeName, awayName, _group) {
+    // Ignore taps on already-logged matches
+    if (_isMatchLogged({ home: homeName, away: awayName })) return;
+
+    // Switch to Match Results tab and pre-fill form
+    showAdminTab('matches');
+
+    const team1 = document.getElementById('admin-team1');
+    const team2 = document.getElementById('admin-team2');
+    const stage = document.getElementById('admin-stage');
+    const score1 = document.getElementById('admin-score1');
+    const score2 = document.getElementById('admin-score2');
+
+    if (team1) team1.value = homeName;
+    if (team2) team2.value = awayName;
+    if (stage) stage.value = 'Group';
+    if (score1) { score1.value = ''; score1.focus(); }
+    if (score2) score2.value = '';
+
+    // Scroll to the entry form
+    const form = document.getElementById('admin-match-entry-form');
+    if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function setupAdminPage() {
     const teamOneSelect = document.getElementById('admin-team1');
     const teamTwoSelect = document.getElementById('admin-team2');
@@ -1234,6 +1484,14 @@ async function setupDashboard() {
         const picks = allPicks || [];
         const matches = allMatches || [];
         const profilesMap = buildProfilesMap(allProfiles);
+        const selectionStats = buildSelectionStatsSnapshot(picks, allProfiles || []);
+        const teamOwnership = new Map();
+        selectionStats.sortedCountryCounts.forEach((entry) => {
+            teamOwnership.set(entry.teamName, {
+                pickedCount: entry.pickedCount,
+                percentage: entry.percentage
+            });
+        });
         await fetchAdvancedTeams();
         const teamPointsMap = buildTeamPointsMap(matches, teams, advancedTeams);
         const leaderboardData = buildLeaderboardData(picks, matches, profilesMap, teams, advancedTeams, eliminatedTeams);
@@ -1247,66 +1505,132 @@ async function setupDashboard() {
             .filter(Boolean);
         const liveSquad = myPicks.length > 0 ? myPicks : savedSquad;
 
+        const localTodayKey = (() => {
+            const now = new Date();
+            const offsetMs = now.getTimezoneOffset() * 60000;
+            return new Date(now.getTime() - offsetMs).toISOString().slice(0, 10);
+        })();
+        const getMatchSortKey = (match) => `${match?.match_date_manual || '9999-99-99'}-${String(match?.id || 0).padStart(8, '0')}`;
+        const ownershipMarkup = (teamName, align = 'left') => {
+            if (appSettings.hideTeamSelection) {
+                return '';
+            }
+
+            const pickedCount = teamOwnership.get(teamName)?.pickedCount || 0;
+            const percentage = teamOwnership.get(teamName)?.percentage || 0;
+            const alignClass = align === 'right' ? 'text-right' : 'text-left';
+            return `
+                <div class="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-gray-400 ${alignClass}">
+                    ${pickedCount} picked${selectionStats.totalPlayers > 0 ? ` · ${percentage}%` : ''}
+                </div>
+            `;
+        };
+        const buildPointsAwardedLabel = (match) => {
+            if (!match?.is_finished) {
+                return match?.match_date_manual || 'Upcoming';
+            }
+
+            if (match.score_home === match.score_away) {
+                const drawPoints = getMatchPointsForTeam(match, match.team_home);
+                return `${drawPoints} pt${drawPoints === 1 ? '' : 's'} each`;
+            }
+
+            const winningTeam = match.score_home > match.score_away ? match.team_home : match.team_away;
+            const awardedPoints = getMatchPointsForTeam(match, winningTeam);
+            return `${awardedPoints} pts awarded`;
+        };
+        const renderDashboardMatchCard = (match, { squadNames = null } = {}) => {
+            const homeTeam = teams.find((team) => team.name === match.team_home);
+            const awayTeam = teams.find((team) => team.name === match.team_away);
+            const isHomeMine = squadNames?.has(match.team_home);
+            const isAwayMine = squadNames?.has(match.team_away);
+            const scoreMarkup = match.is_finished
+                ? `${match.score_home}-${match.score_away}`
+                : (match.match_date_manual || 'TBD');
+
+            return `
+                <div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
+                    <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.2em]">${match.match_date_manual || 'TBD'} | ${match.stage}</div>
+                    <div class="mt-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 text-sm font-black text-gray-900">
+                        <div class="min-w-0 text-left ${isHomeMine ? 'font-black' : ''}">
+                            <div class="truncate">${homeTeam?.flag || ''} ${match.team_home}</div>
+                            ${ownershipMarkup(match.team_home, 'left')}
+                        </div>
+                        <div class="text-center">
+                            <div class="mb-1 text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">
+                                ${buildPointsAwardedLabel(match)}
+                            </div>
+                            <div class="rounded-xl bg-gray-900 px-3 py-1 font-mono text-white text-center">
+                                ${scoreMarkup}
+                            </div>
+                        </div>
+                        <div class="min-w-0 text-right ${isAwayMine ? 'font-black' : ''}">
+                            <div class="truncate">${match.team_away} ${awayTeam?.flag || ''}</div>
+                            ${ownershipMarkup(match.team_away, 'right')}
+                        </div>
+                    </div>
+                    ${match.was_extra_time ? '<div class="mt-2 text-[8px] font-black uppercase text-red-500 italic text-right">ET/Pens Result</div>' : ''}
+                </div>
+            `;
+        };
+
         // ── My Teams Today ────────────────────────────────────────────────────
         const teamsTodaySection = document.getElementById('dashboard-teams-today-section');
         const teamsTodayEl = document.getElementById('dashboard-teams-today');
         const teamsTodayLabel = document.getElementById('dashboard-teams-today-label');
         if (teamsTodayEl && liveSquad.length > 0) {
-            const today = new Date().toISOString().slice(0, 10);
             const squadNames = new Set(liveSquad.map((t) => t.name));
-            let myTodayMatches = matches.filter((m) =>
-                m.match_date_manual === today && (squadNames.has(m.team_home) || squadNames.has(m.team_away))
+            const squadMatches = matches
+                .filter((match) =>
+                    match?.match_date_manual && (squadNames.has(match.team_home) || squadNames.has(match.team_away))
+                )
+                .sort((a, b) => getMatchSortKey(a).localeCompare(getMatchSortKey(b)));
+            const nextUpcoming = squadMatches.find((match) =>
+                match.match_date_manual >= localTodayKey && !match.is_finished
             );
-
-            // If no matches today, fall back to the most recent date that had any squad team
-            let isFallback = false;
-            if (myTodayMatches.length === 0) {
-                const recentMatch = matches.find((m) => squadNames.has(m.team_home) || squadNames.has(m.team_away));
-                if (recentMatch) {
-                    isFallback = true;
-                    const recentDate = recentMatch.match_date_manual;
-                    myTodayMatches = matches.filter((m) =>
-                        m.match_date_manual === recentDate && (squadNames.has(m.team_home) || squadNames.has(m.team_away))
-                    );
-                    if (teamsTodayLabel) teamsTodayLabel.textContent = `Most recent — ${recentDate}`;
-                }
-            }
+            const nextMatchDay = nextUpcoming?.match_date_manual || '';
+            const nextDayMatches = nextMatchDay
+                ? squadMatches.filter((match) => match.match_date_manual === nextMatchDay)
+                : [];
+            const previousMatches = squadMatches
+                .filter((match) => !nextMatchDay || getMatchSortKey(match) < getMatchSortKey(nextUpcoming))
+                .sort((a, b) => getMatchSortKey(b).localeCompare(getMatchSortKey(a)))
+                .slice(0, 3);
 
             if (teamsTodaySection) teamsTodaySection.classList.remove('hidden');
 
-            if (myTodayMatches.length === 0) {
+            if (nextDayMatches.length === 0 && previousMatches.length === 0) {
                 teamsTodayEl.innerHTML = '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No matches found for your squad</div>';
+                if (teamsTodayLabel) {
+                    teamsTodayLabel.textContent = 'Upcoming and recent squad matches';
+                }
             } else {
-                teamsTodayEl.innerHTML = myTodayMatches.map((match) => {
-                    const isMyHome = squadNames.has(match.team_home);
-                    const homeTeam = teams.find((t) => t.name === match.team_home);
-                    const awayTeam = teams.find((t) => t.name === match.team_away);
+                if (teamsTodayLabel) {
+                    teamsTodayLabel.textContent = nextMatchDay
+                        ? `Next squad match day: ${nextMatchDay}`
+                        : 'Recent squad matches';
+                }
 
-                    let centerEl;
-                    if (match.is_finished) {
-                        centerEl = `<div class="rounded-xl bg-gray-900 px-3 py-1 font-mono text-white text-sm font-black text-center shrink-0">${match.score_home}-${match.score_away}</div>`;
-                    } else if (!isFallback) {
-                        centerEl = `<div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.2em] shrink-0">Today</div>`;
-                    } else {
-                        centerEl = `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 shrink-0">${match.match_date_manual || 'TBD'}</div>`;
-                    }
-
-                    return `
-                    <div class="rounded-2xl border border-gray-100 px-4 py-3.5 flex items-center gap-3 overflow-hidden relative" style="border-left: 3px solid ${isMyHome ? 'var(--theme-accent-primary)' : 'transparent'}; border-right: 3px solid ${!isMyHome ? 'var(--theme-accent-primary)' : 'transparent'};">
-                        <div class="flex-1 min-w-0 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                            <div class="min-w-0 text-left ${isMyHome ? 'font-black text-gray-900' : 'font-bold text-gray-400'}">
-                                <span class="text-xl">${homeTeam?.flag || ''}</span>
-                                <span class="text-sm ml-1 truncate">${match.team_home}</span>
-                            </div>
-                            ${centerEl}
-                            <div class="min-w-0 text-right ${!isMyHome ? 'font-black text-gray-900' : 'font-bold text-gray-400'}">
-                                <span class="text-sm mr-1 truncate">${match.team_away}</span>
-                                <span class="text-xl">${awayTeam?.flag || ''}</span>
-                            </div>
+                const sections = [];
+                if (nextDayMatches.length > 0) {
+                    sections.push(`
+                        <div class="space-y-3">
+                            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Next Match Day</div>
+                            ${nextDayMatches.map((match) => renderDashboardMatchCard(match, { squadNames })).join('')}
                         </div>
-                        <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 shrink-0">${match.stage}</div>
-                    </div>`;
-                }).join('');
+                    `);
+                }
+
+                if (previousMatches.length > 0) {
+                    sections.push(`
+                        <div class="space-y-3">
+                            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Previous Three</div>
+                            ${previousMatches.map((match) => renderDashboardMatchCard(match, { squadNames })).join('')}
+                        </div>
+                    `);
+                }
+
+                teamsTodayEl.innerHTML = sections.join('');
             }
         }
 
@@ -1393,20 +1717,11 @@ async function setupDashboard() {
         }
 
         if (resultsEl) {
-            resultsEl.innerHTML = matches.slice(0, 3).map((match) => `
-                <div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
-                    <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.2em]">${match.match_date_manual || 'TBD'} | ${match.stage}</div>
-                    <div class="mt-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 text-sm font-black text-gray-900">
-                        <div class="min-w-0 text-left">
-                            <span class="truncate">${teams.find((team) => team.name === match.team_home)?.flag || ''} ${match.team_home}</span>
-                        </div>
-                        <div class="rounded-xl bg-gray-900 px-3 py-1 font-mono text-white text-center">${match.score_home}-${match.score_away}</div>
-                        <div class="min-w-0 text-right">
-                            <span class="truncate">${match.team_away} ${teams.find((team) => team.name === match.team_away)?.flag || ''}</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No results logged yet</div>';
+            resultsEl.innerHTML = matches
+                .filter((match) => match.is_finished)
+                .slice(0, 3)
+                .map((match) => renderDashboardMatchCard(match))
+                .join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No results logged yet</div>';
         }
 
         if (mostPickedEl) {
@@ -1422,27 +1737,15 @@ async function setupDashboard() {
                 return;
             }
 
-            const countryCounts = {};
-            picks.forEach((pick) => {
-                countryCounts[pick.team_name] = (countryCounts[pick.team_name] || 0) + 1;
-            });
+            const topTeams = selectionStats.sortedCountryCounts.slice(0, 5);
+            const maxPickedCount = topTeams[0]?.pickedCount || 1;
 
-            const topTeams = Object.entries(countryCounts)
-                .sort((a, b) => {
-                    if (b[1] !== a[1]) {
-                        return b[1] - a[1];
-                    }
-
-                    return a[0].localeCompare(b[0]);
-                })
-                .slice(0, 5);
-
-            const maxCount = topTeams[0]?.[1] || 1;
-            const totalPicks = picks.length || 1;
-            mostPickedEl.innerHTML = topTeams.map(([name, count], i) => {
-                const team = teams.find((entry) => entry.name === name);
-                const barPct = Math.round((count / maxCount) * 100);
-                const ownPct = Math.round((count / totalPicks) * 100);
+            mostPickedEl.innerHTML = topTeams.map((entry, i) => {
+                const name = entry.teamName;
+                const count = entry.pickedCount;
+                const team = entry.teamData || teams.find((teamEntry) => teamEntry.name === name);
+                const barPct = Math.round((count / maxPickedCount) * 100);
+                const ownPct = entry.percentage;
                 const barOpacity = i === 0 ? '0.12' : '0.07';
                 return `
                     <div class="relative rounded-2xl border border-gray-100 overflow-hidden px-4 py-3.5" style="background-color: #f9fafb;">
@@ -2228,10 +2531,14 @@ async function fetchAdminHistory(highlightLatest = false) {
         { data: picks },
         { data: profiles }
     ] = await Promise.all([
-        supabaseClient.from('matches').select('*').order('match_date_manual', { ascending: false }).limit(20),
+        supabaseClient.from('matches').select('*').order('match_date_manual', { ascending: false }).limit(100),
         supabaseClient.from('picks').select('user_email, team_name'),
         supabaseClient.from('profiles').select('email')
     ]);
+
+    // Keep schedule browser in sync
+    _scheduleBrowserLoggedCache = matches || [];
+    renderScheduleBrowser();
 
     const selectionStats = buildSelectionStatsSnapshot(picks || [], profiles || []);
     const teamOwnership = new Map();
@@ -3603,6 +3910,9 @@ Object.assign(window, {
     setupResultsPage,
     setTeamResultsSort,
     fetchAdminHistory,
+    renderScheduleBrowser,
+    setScheduleFilter,
+    prefillFromSchedule,
     fetchAdminUsers,
     fetchAdminNotifications,
     fetchAdminAdvancement,
