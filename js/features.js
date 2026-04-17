@@ -589,7 +589,7 @@ function renderScheduleBrowser() {
             }
 
             return `
-                <button onclick="prefillFromSchedule('${m.home.replace(/'/g,"\\'")}','${m.away.replace(/'/g,"\\'")}','${m.group}')"
+                <button onclick="prefillFromSchedule('${m.home.replace(/'/g,"\\'")}','${m.away.replace(/'/g,"\\'")}','${m.group}','${m.date}')"
                     class="w-full text-left rounded-2xl border px-4 py-3 transition-all
                         ${logged
                             ? 'border-gray-800 bg-gray-900/50 opacity-60 cursor-default'
@@ -634,7 +634,7 @@ function setScheduleFilter(filter) {
     renderScheduleBrowser();
 }
 
-function prefillFromSchedule(homeName, awayName, _group) {
+function prefillFromSchedule(homeName, awayName, _group, date) {
     // Ignore taps on already-logged matches
     if (_isMatchLogged({ home: homeName, away: awayName })) return;
 
@@ -646,10 +646,14 @@ function prefillFromSchedule(homeName, awayName, _group) {
     const stage = document.getElementById('admin-stage');
     const score1 = document.getElementById('admin-score1');
     const score2 = document.getElementById('admin-score2');
+    const matchDate = document.getElementById('admin-match-date');
+    const extraTime = document.getElementById('admin-extratime');
 
     if (team1) team1.value = homeName;
     if (team2) team2.value = awayName;
     if (stage) stage.value = 'Group';
+    if (matchDate && date) matchDate.value = date;
+    if (extraTime) extraTime.value = 'false';
     if (score1) { score1.value = ''; score1.focus(); }
     if (score2) score2.value = '';
 
