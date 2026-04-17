@@ -588,13 +588,9 @@ function renderScheduleBrowser() {
                 scoreHtml = `<span class="text-gray-600 font-black text-sm mx-2">vs</span>`;
             }
 
-            return `
-                <button onclick="prefillFromSchedule('${m.home.replace(/'/g,"\\'")}','${m.away.replace(/'/g,"\\'")}','${m.group}','${m.date}')"
-                    class="w-full text-left rounded-2xl border px-4 py-3 transition-all
-                        ${logged
-                            ? 'border-gray-800 bg-gray-900/50 opacity-60 cursor-default'
-                            : 'border-gray-700 bg-gray-800 hover:border-blue-500/50 hover:bg-gray-700 active:scale-[0.99]'}"
-                    ${logged ? 'title="Already logged"' : ''}>
+            if (logged) {
+                return `
+                <div class="w-full rounded-2xl border border-gray-800 bg-gray-900/50 px-4 py-3">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2 min-w-0 flex-1">
                             <span class="text-xl shrink-0">${homeTeam.flag}</span>
@@ -606,9 +602,30 @@ function renderScheduleBrowser() {
                             <span class="text-xl shrink-0">${awayTeam.flag}</span>
                         </div>
                         <div class="ml-3 shrink-0">
-                            ${logged
-                                ? '<span class="text-[9px] font-black uppercase tracking-[0.15em] text-emerald-500">Done</span>'
-                                : '<span class="text-[9px] font-black uppercase tracking-[0.15em] text-blue-400">Enter</span>'}
+                            <button onclick="editScheduleMatch('${m.home.replace(/'/g,"\\'")}','${m.away.replace(/'/g,"\\'")}','${m.group}','${m.date}',${result.id})"
+                                class="px-2 py-1 rounded-lg border border-gray-600 bg-gray-800 text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 hover:border-yellow-500/60 hover:text-yellow-400 transition-colors">
+                                Edit
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            return `
+                <button onclick="prefillFromSchedule('${m.home.replace(/'/g,"\\'")}','${m.away.replace(/'/g,"\\'")}','${m.group}','${m.date}')"
+                    class="w-full text-left rounded-2xl border border-gray-700 bg-gray-800 hover:border-blue-500/50 hover:bg-gray-700 active:scale-[0.99] px-4 py-3 transition-all">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2 min-w-0 flex-1">
+                            <span class="text-xl shrink-0">${homeTeam.flag}</span>
+                            <span class="font-black text-sm text-white truncate">${m.home}</span>
+                        </div>
+                        <div class="flex items-center shrink-0">${scoreHtml}</div>
+                        <div class="flex items-center gap-2 min-w-0 flex-1 justify-end">
+                            <span class="font-black text-sm text-white truncate">${m.away}</span>
+                            <span class="text-xl shrink-0">${awayTeam.flag}</span>
+                        </div>
+                        <div class="ml-3 shrink-0">
+                            <span class="text-[9px] font-black uppercase tracking-[0.15em] text-blue-400">Enter</span>
                         </div>
                     </div>
                 </button>`;
@@ -657,9 +674,44 @@ function prefillFromSchedule(homeName, awayName, _group, date) {
     if (score1) { score1.value = ''; score1.focus(); }
     if (score2) score2.value = '';
 
+    window._editingMatchId = null;
+    const submitBtn = document.getElementById('admin-submit-btn');
+    if (submitBtn) submitBtn.textContent = 'LOG SCORE';
+
     // Scroll to the entry form
     const form = document.getElementById('admin-match-entry-form');
     if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function editScheduleMatch(_homeName, _awayName, _group, date, matchId) {
+    const result = _scheduleBrowserLoggedCache.find((r) => r.id === matchId);
+    if (!result) return;
+
+    showAdminTab('matches');
+
+    const team1 = document.getElementById('admin-team1');
+    const team2 = document.getElementById('admin-team2');
+    const stage = document.getElementById('admin-stage');
+    const score1 = document.getElementById('admin-score1');
+    const score2 = document.getElementById('admin-score2');
+    const matchDate = document.getElementById('admin-match-date');
+    const extraTime = document.getElementById('admin-extratime');
+    const submitBtn = document.getElementById('admin-submit-btn');
+
+    // Always use home=result.team_home so scores align correctly
+    if (team1) team1.value = result.team_home;
+    if (team2) team2.value = result.team_away;
+    if (stage) stage.value = 'Group';
+    if (matchDate && date) matchDate.value = date;
+    if (extraTime) extraTime.value = result.was_extra_time ? 'true' : 'false';
+    if (score1) score1.value = result.score_home;
+    if (score2) score2.value = result.score_away;
+    if (submitBtn) submitBtn.textContent = 'UPDATE SCORE';
+
+    window._editingMatchId = matchId;
+
+    score1?.focus();
+    document.getElementById('admin-match-entry-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function setupAdminPage() {
@@ -2730,24 +2782,42 @@ async function submitManualResult() {
     button.innerText = 'SAVING...';
     button.disabled = true;
 
+    const editId = window._editingMatchId || null;
+
     try {
-        const { error } = await supabaseClient.from('matches').insert([{
-            team_home: team1,
-            team_away: team2,
-            score_home: score1,
-            score_away: score2,
-            stage,
-            is_finished: true,
-            match_date: new Date().toISOString(),
-            match_date_manual: matchDate,
-            was_extra_time: wasExtraTime
-        }]);
+        let error;
+
+        if (editId) {
+            ({ error } = await supabaseClient.from('matches').update({
+                team_home: team1,
+                team_away: team2,
+                score_home: score1,
+                score_away: score2,
+                stage,
+                is_finished: true,
+                match_date_manual: matchDate,
+                was_extra_time: wasExtraTime
+            }).eq('id', editId));
+        } else {
+            ({ error } = await supabaseClient.from('matches').insert([{
+                team_home: team1,
+                team_away: team2,
+                score_home: score1,
+                score_away: score2,
+                stage,
+                is_finished: true,
+                match_date: new Date().toISOString(),
+                match_date_manual: matchDate,
+                was_extra_time: wasExtraTime
+            }]));
+        }
 
         if (error) {
             throw error;
         }
 
-        showToast('Logged!', 'success');
+        window._editingMatchId = null;
+        showToast(editId ? 'Updated!' : 'Logged!', 'success');
         document.getElementById('admin-score1').value = '';
         document.getElementById('admin-score2').value = '';
 
@@ -3917,6 +3987,7 @@ Object.assign(window, {
     renderScheduleBrowser,
     setScheduleFilter,
     prefillFromSchedule,
+    editScheduleMatch,
     fetchAdminUsers,
     fetchAdminNotifications,
     fetchAdminAdvancement,
