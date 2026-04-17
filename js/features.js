@@ -504,9 +504,56 @@ const GROUP_STAGE_SCHEDULE = [
     { date: '2026-06-27', group: 'L', home: 'Croatia',        away: 'Ghana' },
 ];
 
+// ── 2026 World Cup Knockout Stage Schedule ───────────────────────────────────
+// Seedings: 1X = Group X winner, 2X = Group X runner-up.
+// July 4 R32 slots are for the best 8 third-place finishers (exact pairings TBD
+// after the group stage). R16 and beyond are TBD until prior results are known.
+
+const KNOCKOUT_SCHEDULE = [
+    // ── Round of 32 ─── July 1–4, 2026 ───────────────────────────────────────
+    { date: '2026-07-01', stage: 'R32', home: '1A', away: '2B' },
+    { date: '2026-07-01', stage: 'R32', home: '1B', away: '2A' },
+    { date: '2026-07-01', stage: 'R32', home: '1C', away: '2D' },
+    { date: '2026-07-01', stage: 'R32', home: '1D', away: '2C' },
+    { date: '2026-07-02', stage: 'R32', home: '1E', away: '2F' },
+    { date: '2026-07-02', stage: 'R32', home: '1F', away: '2E' },
+    { date: '2026-07-02', stage: 'R32', home: '1G', away: '2H' },
+    { date: '2026-07-02', stage: 'R32', home: '1H', away: '2G' },
+    { date: '2026-07-03', stage: 'R32', home: '1I', away: '2J' },
+    { date: '2026-07-03', stage: 'R32', home: '1J', away: '2I' },
+    { date: '2026-07-03', stage: 'R32', home: '1K', away: '2L' },
+    { date: '2026-07-03', stage: 'R32', home: '1L', away: '2K' },
+    { date: '2026-07-04', stage: 'R32', home: 'Best 3rd', away: 'Best 3rd' },
+    { date: '2026-07-04', stage: 'R32', home: 'Best 3rd', away: 'Best 3rd' },
+    { date: '2026-07-04', stage: 'R32', home: 'Best 3rd', away: 'Best 3rd' },
+    { date: '2026-07-04', stage: 'R32', home: 'Best 3rd', away: 'Best 3rd' },
+    // ── Round of 16 ─── July 6–9, 2026 ───────────────────────────────────────
+    { date: '2026-07-06', stage: 'R16', home: 'TBD', away: 'TBD' },
+    { date: '2026-07-06', stage: 'R16', home: 'TBD', away: 'TBD' },
+    { date: '2026-07-07', stage: 'R16', home: 'TBD', away: 'TBD' },
+    { date: '2026-07-07', stage: 'R16', home: 'TBD', away: 'TBD' },
+    { date: '2026-07-08', stage: 'R16', home: 'TBD', away: 'TBD' },
+    { date: '2026-07-08', stage: 'R16', home: 'TBD', away: 'TBD' },
+    { date: '2026-07-09', stage: 'R16', home: 'TBD', away: 'TBD' },
+    { date: '2026-07-09', stage: 'R16', home: 'TBD', away: 'TBD' },
+    // ── Quarter-finals ─── July 11–12, 2026 ──────────────────────────────────
+    { date: '2026-07-11', stage: 'Quarters', home: 'TBD', away: 'TBD' },
+    { date: '2026-07-11', stage: 'Quarters', home: 'TBD', away: 'TBD' },
+    { date: '2026-07-12', stage: 'Quarters', home: 'TBD', away: 'TBD' },
+    { date: '2026-07-12', stage: 'Quarters', home: 'TBD', away: 'TBD' },
+    // ── Semi-finals ─── July 15–16, 2026 ─────────────────────────────────────
+    { date: '2026-07-15', stage: 'Semis', home: 'TBD', away: 'TBD' },
+    { date: '2026-07-16', stage: 'Semis', home: 'TBD', away: 'TBD' },
+    // ── Third-place play-off ─── July 18, 2026 ───────────────────────────────
+    { date: '2026-07-18', stage: 'Finals', home: 'TBD', away: 'TBD' },
+    // ── Grand Final ─── July 19, 2026 ────────────────────────────────────────
+    { date: '2026-07-19', stage: 'Finals', home: 'TBD', away: 'TBD' },
+];
+
 // Cache of already-logged matches for the schedule browser done/undone state
 let _scheduleBrowserLoggedCache = [];
-let _scheduleBrowserActiveFilter = 'all'; // 'all' | 'A'–'L' | date string
+// 'all' | 'A'–'L' | 'knockout-all' | 'R32' | 'R16' | 'Quarters' | 'Semis' | 'Finals'
+let _scheduleBrowserActiveFilter = 'all';
 
 function _scheduleTeam(name) {
     return teams.find((t) => t.name === name) || { name, flag: '🏳' };
@@ -533,53 +580,178 @@ function _getLoggedResult(m) {
     );
 }
 
+// Returns logged results for a knockout stage+date, sorted by id so slot
+// assignment is consistent: the i-th card on a date maps to the i-th result.
+function _getKnockoutDayResults(stage, date) {
+    return _scheduleBrowserLoggedCache
+        .filter((r) => r.stage === stage && r.match_date_manual === date)
+        .sort((a, b) => a.id - b.id);
+}
+
 function renderScheduleBrowser() {
     const filterEl = document.getElementById('schedule-group-filters');
     const cardsEl  = document.getElementById('schedule-cards');
     if (!filterEl || !cardsEl) return;
 
-    const allGroups = ['A','B','C','D','E','F','G','H','I','J','K','L'];
-    const f = _scheduleBrowserActiveFilter;
+    const f          = _scheduleBrowserActiveFilter;
+    const allGroups  = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+    const koStages   = ['R32', 'R16', 'Quarters', 'Semis', 'Finals'];
+    const koLabels   = { R32: 'R32', R16: 'R16', Quarters: 'QF', Semis: 'Semi', Finals: 'Final' };
+    const isKnockout = koStages.includes(f) || f === 'knockout-all';
 
-    // Filter matches
-    const filtered = f === 'all' ? GROUP_STAGE_SCHEDULE
-        : allGroups.includes(f) ? GROUP_STAGE_SCHEDULE.filter((m) => m.group === f)
-        : GROUP_STAGE_SCHEDULE.filter((m) => m.date === f);
+    const active   = 'border-blue-500 bg-blue-600/30 text-blue-300';
+    const inactive = 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-500 hover:text-gray-200';
 
-    const doneCount  = filtered.filter(_isMatchLogged).length;
-    const totalCount = filtered.length;
+    // ── Counts for pill labels ────────────────────────────────────────────────
+    const groupDone = GROUP_STAGE_SCHEDULE.filter(_isMatchLogged).length;
+    const koDone    = _scheduleBrowserLoggedCache.filter((r) => r.stage !== 'Group').length;
 
     // ── Filter pills ──────────────────────────────────────────────────────────
-    const activePill  = 'border-blue-500 bg-blue-600/30 text-blue-300';
-    const inactivePill = 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-500 hover:text-gray-200';
+    filterEl.innerHTML = `
+        <div class="flex flex-wrap gap-2">
+            <button onclick="setScheduleFilter('all')"
+                class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border transition-colors ${f === 'all' ? active : inactive}">
+                Groups <span class="opacity-60">${groupDone}/${GROUP_STAGE_SCHEDULE.length}</span>
+            </button>
+            ${allGroups.map((g) => `
+                <button onclick="setScheduleFilter('${g}')"
+                    class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border transition-colors ${f === g ? active : inactive}">
+                    Grp ${g}
+                </button>
+            `).join('')}
+        </div>
+        <div class="flex flex-wrap gap-2 mt-2 pt-2 border-t border-gray-800">
+            <button onclick="setScheduleFilter('knockout-all')"
+                class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border transition-colors ${f === 'knockout-all' ? active : inactive}">
+                Knockout <span class="opacity-60">${koDone}/${KNOCKOUT_SCHEDULE.length}</span>
+            </button>
+            ${koStages.map((s) => `
+                <button onclick="setScheduleFilter('${s}')"
+                    class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border transition-colors ${f === s ? active : inactive}">
+                    ${koLabels[s]}
+                </button>
+            `).join('')}
+        </div>
+    `;
 
-    filterEl.innerHTML = ['all', ...allGroups].map((g) => `
-        <button onclick="setScheduleFilter('${g}')"
-            class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border transition-colors ${f === g ? activePill : inactivePill}">
-            ${g === 'all' ? `All <span class="opacity-60">${doneCount}/${totalCount}</span>` : `Grp ${g}`}
-        </button>
-    `).join('');
+    // ── Which matches to display ──────────────────────────────────────────────
+    let filtered;
+    if (isKnockout) {
+        filtered = f === 'knockout-all' ? KNOCKOUT_SCHEDULE
+            : KNOCKOUT_SCHEDULE.filter((m) => m.stage === f);
+    } else {
+        filtered = f === 'all' ? GROUP_STAGE_SCHEDULE
+            : GROUP_STAGE_SCHEDULE.filter((m) => m.group === f);
+    }
 
-    // ── Match cards ───────────────────────────────────────────────────────────
-    // Group by date for display
+    // ── Group matches by date ─────────────────────────────────────────────────
     const byDate = {};
     filtered.forEach((m) => {
         if (!byDate[m.date]) byDate[m.date] = [];
         byDate[m.date].push(m);
     });
 
-    cardsEl.innerHTML = Object.entries(byDate).map(([date, matches]) => {
-        const dayDone  = matches.filter(_isMatchLogged).length;
-        const dayTotal = matches.length;
+    if (!Object.keys(byDate).length) {
+        cardsEl.innerHTML = '<div class="text-center py-8 text-gray-600 text-[10px] font-black uppercase tracking-[0.2em]">No matches</div>';
+        return;
+    }
 
-        const cards = matches.map((m) => {
-            const logged = _isMatchLogged(m);
-            const result = logged ? _getLoggedResult(m) : null;
+    cardsEl.innerHTML = Object.entries(byDate).map(([date, matches]) => {
+        let cards;
+
+        if (isKnockout) {
+            // Track how many cards of each stage we've rendered for this date,
+            // so we can map the i-th card to the i-th logged result.
+            const slotCounters = {};
+
+            cards = matches.map((m) => {
+                if (!slotCounters[m.stage]) slotCounters[m.stage] = 0;
+                const slotIdx  = slotCounters[m.stage]++;
+                const dayRes   = _getKnockoutDayResults(m.stage, m.date);
+                const result   = dayRes[slotIdx] || null;
+                const isLogged = !!result;
+
+                if (isLogged) {
+                    const homeTeam = _scheduleTeam(result.team_home);
+                    const awayTeam = _scheduleTeam(result.team_away);
+                    return `
+                        <div class="w-full rounded-2xl border border-gray-800 bg-gray-900/50 px-4 py-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2 min-w-0 flex-1">
+                                    <span class="text-xl shrink-0">${homeTeam.flag}</span>
+                                    <span class="font-black text-sm text-white truncate">${result.team_home}</span>
+                                </div>
+                                <div class="flex items-center shrink-0">
+                                    <span class="font-black text-white text-lg mx-2">${result.score_home} – ${result.score_away}</span>
+                                </div>
+                                <div class="flex items-center gap-2 min-w-0 flex-1 justify-end">
+                                    <span class="font-black text-sm text-white truncate">${result.team_away}</span>
+                                    <span class="text-xl shrink-0">${awayTeam.flag}</span>
+                                </div>
+                                <div class="ml-3 shrink-0">
+                                    <button onclick="editScheduleMatch('','','${m.stage}','${m.date}',${result.id})"
+                                        class="px-2 py-1 rounded-lg border border-gray-600 bg-gray-800 text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 hover:border-yellow-500/60 hover:text-yellow-400 transition-colors">
+                                        Edit
+                                    </button>
+                                </div>
+                            </div>
+                        </div>`;
+                }
+
+                // Unlogged knockout card — show seedings or TBD
+                const isTBD     = m.home === 'TBD';
+                const is3rd     = m.home === 'Best 3rd';
+                const homeLabel = isTBD ? `<span class="text-gray-600 font-black text-sm">TBD</span>`
+                    : is3rd ? `<span class="text-gray-500 font-black text-sm italic">Best 3rd</span>`
+                    : `<span class="font-black text-sm text-white">${m.home}</span>`;
+                const awayLabel = isTBD ? `<span class="text-gray-600 font-black text-sm">TBD</span>`
+                    : is3rd ? `<span class="text-gray-500 font-black text-sm italic">Best 3rd</span>`
+                    : `<span class="font-black text-sm text-white">${m.away}</span>`;
+
+                return `
+                    <button onclick="prefillFromSchedule('${m.home}','${m.away}','${m.stage}','${m.date}')"
+                        class="w-full text-left rounded-2xl border border-gray-700 bg-gray-800 hover:border-blue-500/50 hover:bg-gray-700 active:scale-[0.99] px-4 py-3 transition-all">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2 min-w-0 flex-1">
+                                ${homeLabel}
+                            </div>
+                            <div class="flex items-center shrink-0">
+                                <span class="text-gray-600 font-black text-sm mx-2">vs</span>
+                            </div>
+                            <div class="flex items-center gap-2 min-w-0 flex-1 justify-end">
+                                ${awayLabel}
+                                <span class="text-[9px] font-black uppercase tracking-[0.15em] text-blue-400 ml-1">Enter</span>
+                            </div>
+                        </div>
+                    </button>`;
+            }).join('');
+
+            // Count how many slots on this date are filled
+            const stageOnDay = matches[0]?.stage;
+            const dayDone    = Math.min(
+                _scheduleBrowserLoggedCache.filter((r) => r.stage === stageOnDay && r.match_date_manual === date).length,
+                matches.length
+            );
+            const stageTag   = koLabels[stageOnDay] || stageOnDay;
+
+            return `
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between px-1 pt-3 pb-1">
+                        <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${_formatScheduleDate(date)} <span class="text-gray-600">· ${stageTag}</span></span>
+                        <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">${dayDone}/${matches.length} logged</span>
+                    </div>
+                    ${cards}
+                </div>`;
+        }
+
+        // ── Group stage cards ─────────────────────────────────────────────────
+        cards = matches.map((m) => {
+            const logged   = _isMatchLogged(m);
+            const result   = logged ? _getLoggedResult(m) : null;
             const homeTeam = _scheduleTeam(m.home);
             const awayTeam = _scheduleTeam(m.away);
 
-            // Score display if logged
-            let scoreHtml = '';
+            let scoreHtml;
             if (result) {
                 const sh = result.team_home === m.home ? result.score_home : result.score_away;
                 const sa = result.team_home === m.home ? result.score_away : result.score_home;
@@ -590,25 +762,25 @@ function renderScheduleBrowser() {
 
             if (logged) {
                 return `
-                <div class="w-full rounded-2xl border border-gray-800 bg-gray-900/50 px-4 py-3">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2 min-w-0 flex-1">
-                            <span class="text-xl shrink-0">${homeTeam.flag}</span>
-                            <span class="font-black text-sm text-white truncate">${m.home}</span>
+                    <div class="w-full rounded-2xl border border-gray-800 bg-gray-900/50 px-4 py-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2 min-w-0 flex-1">
+                                <span class="text-xl shrink-0">${homeTeam.flag}</span>
+                                <span class="font-black text-sm text-white truncate">${m.home}</span>
+                            </div>
+                            <div class="flex items-center shrink-0">${scoreHtml}</div>
+                            <div class="flex items-center gap-2 min-w-0 flex-1 justify-end">
+                                <span class="font-black text-sm text-white truncate">${m.away}</span>
+                                <span class="text-xl shrink-0">${awayTeam.flag}</span>
+                            </div>
+                            <div class="ml-3 shrink-0">
+                                <button onclick="editScheduleMatch('${m.home.replace(/'/g,"\\'")}','${m.away.replace(/'/g,"\\'")}','${m.group}','${m.date}',${result.id})"
+                                    class="px-2 py-1 rounded-lg border border-gray-600 bg-gray-800 text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 hover:border-yellow-500/60 hover:text-yellow-400 transition-colors">
+                                    Edit
+                                </button>
+                            </div>
                         </div>
-                        <div class="flex items-center shrink-0">${scoreHtml}</div>
-                        <div class="flex items-center gap-2 min-w-0 flex-1 justify-end">
-                            <span class="font-black text-sm text-white truncate">${m.away}</span>
-                            <span class="text-xl shrink-0">${awayTeam.flag}</span>
-                        </div>
-                        <div class="ml-3 shrink-0">
-                            <button onclick="editScheduleMatch('${m.home.replace(/'/g,"\\'")}','${m.away.replace(/'/g,"\\'")}','${m.group}','${m.date}',${result.id})"
-                                class="px-2 py-1 rounded-lg border border-gray-600 bg-gray-800 text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 hover:border-yellow-500/60 hover:text-yellow-400 transition-colors">
-                                Edit
-                            </button>
-                        </div>
-                    </div>
-                </div>`;
+                    </div>`;
             }
 
             return `
@@ -635,15 +807,11 @@ function renderScheduleBrowser() {
             <div class="space-y-1.5">
                 <div class="flex items-center justify-between px-1 pt-3 pb-1">
                     <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${_formatScheduleDate(date)}</span>
-                    <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">${dayDone}/${dayTotal} logged</span>
+                    <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">${matches.filter(_isMatchLogged).length}/${matches.length} logged</span>
                 </div>
                 ${cards}
             </div>`;
     }).join('');
-
-    if (!cardsEl.innerHTML.trim()) {
-        cardsEl.innerHTML = '<div class="text-center py-8 text-gray-600 text-[10px] font-black uppercase tracking-[0.2em]">No matches in this group</div>';
-    }
 }
 
 function setScheduleFilter(filter) {
@@ -651,24 +819,35 @@ function setScheduleFilter(filter) {
     renderScheduleBrowser();
 }
 
-function prefillFromSchedule(homeName, awayName, _group, date) {
-    // Ignore taps on already-logged matches
-    if (_isMatchLogged({ home: homeName, away: awayName })) return;
+function prefillFromSchedule(homeName, awayName, groupOrStage, date) {
+    const knockoutStages = ['R32', 'R16', 'Quarters', 'Semis', 'Finals'];
+    const isKnockout = knockoutStages.includes(groupOrStage);
 
-    // Switch to Match Results tab and pre-fill form
+    // For group matches, ignore taps on already-logged matches
+    if (!isKnockout && _isMatchLogged({ home: homeName, away: awayName })) return;
+
     showAdminTab('matches');
 
-    const team1 = document.getElementById('admin-team1');
-    const team2 = document.getElementById('admin-team2');
-    const stage = document.getElementById('admin-stage');
-    const score1 = document.getElementById('admin-score1');
-    const score2 = document.getElementById('admin-score2');
+    const team1     = document.getElementById('admin-team1');
+    const team2     = document.getElementById('admin-team2');
+    const stage     = document.getElementById('admin-stage');
+    const score1    = document.getElementById('admin-score1');
+    const score2    = document.getElementById('admin-score2');
     const matchDate = document.getElementById('admin-match-date');
     const extraTime = document.getElementById('admin-extratime');
 
-    if (team1) team1.value = homeName;
-    if (team2) team2.value = awayName;
-    if (stage) stage.value = 'Group';
+    if (isKnockout) {
+        // Seedings like '1A' / 'TBD' are not real team names — clear the fields
+        // so the admin can type the actual teams once they're known.
+        if (team1) team1.value = '';
+        if (team2) team2.value = '';
+        if (stage) stage.value = groupOrStage;
+    } else {
+        if (team1) team1.value = homeName;
+        if (team2) team2.value = awayName;
+        if (stage) stage.value = 'Group';
+    }
+
     if (matchDate && date) matchDate.value = date;
     if (extraTime) extraTime.value = 'false';
     if (score1) { score1.value = ''; score1.focus(); }
@@ -678,7 +857,6 @@ function prefillFromSchedule(homeName, awayName, _group, date) {
     const submitBtn = document.getElementById('admin-submit-btn');
     if (submitBtn) submitBtn.textContent = 'LOG SCORE';
 
-    // Scroll to the entry form
     const form = document.getElementById('admin-match-entry-form');
     if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -701,7 +879,7 @@ function editScheduleMatch(_homeName, _awayName, _group, date, matchId) {
     // Always use home=result.team_home so scores align correctly
     if (team1) team1.value = result.team_home;
     if (team2) team2.value = result.team_away;
-    if (stage) stage.value = 'Group';
+    if (stage) stage.value = result.stage;
     if (matchDate && date) matchDate.value = date;
     if (extraTime) extraTime.value = result.was_extra_time ? 'true' : 'false';
     if (score1) score1.value = result.score_home;
