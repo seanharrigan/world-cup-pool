@@ -418,7 +418,7 @@ const GROUP_STAGE_SCHEDULE = [
     { date: '2026-06-11', group: 'A', home: 'South Korea', away: 'Czechia' },
     // June 12
     { date: '2026-06-12', group: 'B', home: 'Canada',         away: 'Bosnia' },
-    { date: '2026-06-12', group: 'D', home: 'United States',  away: 'Paraguay' },
+    { date: '2026-06-12', group: 'D', home: 'USA',  away: 'Paraguay' },
     // June 13
     { date: '2026-06-13', group: 'B', home: 'Qatar',          away: 'Switzerland' },
     { date: '2026-06-13', group: 'C', home: 'Brazil',         away: 'Morocco' },
@@ -452,7 +452,7 @@ const GROUP_STAGE_SCHEDULE = [
     // June 19
     { date: '2026-06-19', group: 'C', home: 'Scotland',       away: 'Morocco' },
     { date: '2026-06-19', group: 'C', home: 'Brazil',         away: 'Haiti' },
-    { date: '2026-06-19', group: 'D', home: 'United States',  away: 'Australia' },
+    { date: '2026-06-19', group: 'D', home: 'USA',  away: 'Australia' },
     { date: '2026-06-19', group: 'D', home: 'Turkiye',         away: 'Paraguay' },
     // June 20
     { date: '2026-06-20', group: 'E', home: 'Germany',        away: 'Ivory Coast' },
@@ -482,7 +482,7 @@ const GROUP_STAGE_SCHEDULE = [
     { date: '2026-06-24', group: 'C', home: 'Scotland',       away: 'Brazil' },
     { date: '2026-06-24', group: 'C', home: 'Morocco',        away: 'Haiti' },
     // June 25
-    { date: '2026-06-25', group: 'D', home: 'Turkiye',         away: 'United States' },
+    { date: '2026-06-25', group: 'D', home: 'Turkiye',         away: 'USA' },
     { date: '2026-06-25', group: 'D', home: 'Paraguay',       away: 'Australia' },
     { date: '2026-06-25', group: 'E', home: 'Curacao',        away: 'Ivory Coast' },
     { date: '2026-06-25', group: 'E', home: 'Ecuador',        away: 'Germany' },
@@ -578,6 +578,14 @@ function _getLoggedResult(m) {
         ((r.team_home === m.home && r.team_away === m.away) ||
          (r.team_home === m.away && r.team_away === m.home))
     );
+}
+
+// Pins the schedule filter pills just below the sticky admin header so they
+// also appear locked when scrolling through match cards.
+function _syncScheduleFilterTop() {
+    const header  = document.getElementById('admin-sticky-header');
+    const filters = document.getElementById('schedule-group-filters');
+    if (header && filters) filters.style.top = header.offsetHeight + 'px';
 }
 
 // Returns logged results for a knockout stage+date, sorted by id so slot
@@ -812,6 +820,9 @@ function renderScheduleBrowser() {
                 ${cards}
             </div>`;
     }).join('');
+
+    // Keep sub-tab pills pinned below the sticky admin header
+    _syncScheduleFilterTop();
 }
 
 function setScheduleFilter(filter) {
@@ -958,6 +969,8 @@ function showAdminTab(tabId) {
         activeTab.classList.add('active', 'border-blue-500/40', 'bg-blue-600/20', 'text-blue-300');
         activeTab.classList.remove('border-gray-700', 'bg-gray-800', 'text-gray-300');
     }
+
+    if (tabId === 'schedule') _syncScheduleFilterTop();
 }
 
 function showResultsTab(tabId) {
