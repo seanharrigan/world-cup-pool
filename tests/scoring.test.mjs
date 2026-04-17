@@ -68,6 +68,29 @@ test('knockout win applies the correct multiplier', () => {
     assert.equal(getMatchPointsForTeam(finalMatch, 'Spain'), 36);
 });
 
+test('every knockout stage uses the expected multiplier in scoring', () => {
+    const stageExpectations = [
+        ['R32', 6],
+        ['R16', 9],
+        ['Quarters', 15],
+        ['Semis', 24],
+        ['Finals', 36]
+    ];
+
+    stageExpectations.forEach(([stage, expectedPoints]) => {
+        const match = {
+            stage,
+            team_home: 'Spain',
+            team_away: 'Morocco',
+            score_home: 1,
+            score_away: 0
+        };
+
+        assert.equal(getMatchPointsForTeam(match, 'Spain'), expectedPoints);
+        assert.equal(getMatchPointsForTeam(match, 'Morocco'), 0);
+    });
+});
+
 test('team points aggregate across multiple matches', () => {
     const matches = [
         {
@@ -152,6 +175,27 @@ test('team stage breakdown includes group slots and bonus separately', () => {
     assert.equal(breakdown.Spain.G3, 0);
     assert.equal(breakdown.Spain.Bonus, 1);
     assert.equal(breakdown.Spain.total, 5);
+});
+
+test('team stage breakdown total equals the sum of each scoring bucket', () => {
+    const matches = [
+        { id: 1, stage: 'Group', match_date_manual: '2026-06-11', team_home: 'Spain', team_away: 'Morocco', score_home: 2, score_away: 0 },
+        { id: 2, stage: 'Group', match_date_manual: '2026-06-15', team_home: 'Spain', team_away: 'Canada', score_home: 1, score_away: 1 },
+        { id: 3, stage: 'R32', match_date_manual: '2026-07-01', team_home: 'Spain', team_away: 'Iraq', score_home: 1, score_away: 0 },
+        { id: 4, stage: 'R16', match_date_manual: '2026-07-06', team_home: 'Spain', team_away: 'Canada', score_home: 2, score_away: 0 }
+    ];
+
+    const advancedTeams = buildAdvancedTeamsSet([
+        { team_name: 'Spain', advanced_to_knockouts: true }
+    ]);
+
+    const breakdown = buildTeamStageBreakdownMap(matches, teams, advancedTeams).Spain;
+
+    assert.equal(
+        breakdown.total,
+        breakdown.G1 + breakdown.G2 + breakdown.G3 + breakdown.Bonus + breakdown.R32 + breakdown.R16 + breakdown.QF + breakdown.SM + breakdown.F
+    );
+    assert.equal(breakdown.total, 20);
 });
 
 test('leaderboard totals score each saved squad and break ties alphabetically by nickname', () => {

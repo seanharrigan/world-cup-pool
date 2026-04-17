@@ -374,10 +374,10 @@
 
                 <div id="dashboard-teams-today-section" class="hidden rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
                     <div class="mb-4 border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                        <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Your Teams Today</h2>
-                        <p id="dashboard-teams-today-label" class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Today's fixtures for your squad</p>
+                        <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Your Squad Matches</h2>
+                        <p id="dashboard-teams-today-label" class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Recent and upcoming matches for your squad</p>
                     </div>
-                    <div id="dashboard-teams-today" class="space-y-3"></div>
+                    <div id="dashboard-teams-today" class="grid grid-cols-1 gap-4 xl:grid-cols-2"></div>
                 </div>
 
                 <section class="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-8">
@@ -628,19 +628,19 @@
                         <p class="theme-accent-text font-black uppercase tracking-[0.2em] text-[10px]">Verified Tournament Progress</p>
                     </div>
                 </header>
-                <div class="flex flex-wrap gap-3">
-                    <button onclick="showResultsTab('groups')" id="results-tab-groups" class="results-tab theme-tab-active active rounded-2xl border px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] transition-colors">Results by Group</button>
-                    <button onclick="showResultsTab('pool')" id="results-tab-pool" class="results-tab rounded-2xl border border-gray-300 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Results Table</button>
-                    <button onclick="showResultsTab('matches')" id="results-tab-matches" class="results-tab rounded-2xl border border-gray-300 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Match Results</button>
-                    <button onclick="showResultsTab('selection')" id="results-tab-selection" class="results-tab rounded-2xl border border-gray-300 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Selection Stats</button>
-                    <button onclick="showResultsTab('bracket')" id="results-tab-bracket" class="results-tab rounded-2xl border border-gray-300 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Bracket</button>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                    <button onclick="showResultsTab('groups')" id="results-tab-groups" class="results-tab theme-tab-active active flex min-h-[52px] items-center justify-center rounded-2xl border px-4 py-3 text-center text-[10px] font-black uppercase tracking-[0.25em] transition-colors">Results by Group</button>
+                    <button onclick="showResultsTab('bracket')" id="results-tab-bracket" class="results-tab flex min-h-[52px] items-center justify-center rounded-2xl border border-gray-300 bg-white px-4 py-3 text-center text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Bracket</button>
+                    <button onclick="showResultsTab('pool')" id="results-tab-pool" class="results-tab flex min-h-[52px] items-center justify-center rounded-2xl border border-gray-300 bg-white px-4 py-3 text-center text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Results Table</button>
+                    <button onclick="showResultsTab('matches')" id="results-tab-matches" class="results-tab flex min-h-[52px] items-center justify-center rounded-2xl border border-gray-300 bg-white px-4 py-3 text-center text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Match Results</button>
+                    <button onclick="showResultsTab('selection')" id="results-tab-selection" class="results-tab flex min-h-[52px] items-center justify-center rounded-2xl border border-gray-300 bg-white px-4 py-3 text-center text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Selection Stats</button>
                 </div>
 
                 <div id="results-panel-groups" class="results-panel space-y-6">
                     <section class="space-y-4">
                         <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
                             <h2 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-gray-900">Group Standings</h2>
-                            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Current standings across all groups</p>
+                            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Group-stage table only · points and goal differential with bracket seeds</p>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 text-left text-gray-900" id="groups-grid"></div>
                     </section>
@@ -650,7 +650,31 @@
                     <section class="space-y-4">
                         <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
                             <h2 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-gray-900">Knockout Bracket</h2>
-                            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Teams shown as confirmed once their group is complete · <span class="text-gray-300">~</span> = provisional</p>
+                            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Teams shown as confirmed once their group is complete or their seed is clinched</p>
+                        </div>
+                        <div id="bracket-guide" class="rounded-[28px] border border-gray-200 bg-white p-4 shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
+                            <div class="flex flex-wrap items-center gap-3 border-b border-gray-100 pb-3">
+                                <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Bracket Guide</span>
+                                <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">How to read the colours and seed badges</p>
+                            </div>
+                            <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                                <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                                    <p class="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">Green Badge</p>
+                                    <p class="mt-1 text-sm font-bold text-gray-900">Qualified and seed locked in that exact bracket slot.</p>
+                                </div>
+                                <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                                    <p class="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">Yellow Badge</p>
+                                    <p class="mt-1 text-sm font-bold text-gray-700">Qualified for the knockouts, but the seed is not locked yet.</p>
+                                </div>
+                                <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3">
+                                    <p class="text-[10px] font-black uppercase tracking-[0.18em] text-rose-700">Red Badge</p>
+                                    <p class="mt-1 text-sm font-bold text-gray-700">Not qualified yet, but still in position to qualify.</p>
+                                </div>
+                                <div class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
+                                    <p class="text-[10px] font-black uppercase tracking-[0.18em] text-rose-700">E/P</p>
+                                    <p class="mt-1 text-sm font-bold text-gray-700"><span class="font-black text-rose-600">E/P</span> means the match was decided after extra time or penalties.</p>
+                                </div>
+                            </div>
                         </div>
                         <div class="overflow-x-auto" id="bracket-scroll-wrap">
                             <div id="bracket-container" class="min-w-max"></div>
@@ -763,7 +787,7 @@
                         <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm relative overflow-hidden">
                             <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl" style="background-color: var(--theme-accent-primary);"></div>
                             <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                                <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                                <div>
                                     <h2 class="text-3xl font-black uppercase italic tracking-tight text-gray-900">Selection Stats</h2>
                                     <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Live ownership, squad shape &amp; group lean</p>
                                 </div>
@@ -777,7 +801,7 @@
                         <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
                             <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm relative overflow-hidden">
                                 <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl" style="background-color: var(--theme-accent-primary);"></div>
-                                <div class="border-l-[3px] pl-3 mb-6" style="border-color: var(--theme-accent-primary);">
+                                <div class="mb-6">
                                     <h2 class="text-3xl font-black uppercase italic tracking-tight text-gray-900">Ownership</h2>
                                     <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Most popular teams across all entries</p>
                                 </div>
@@ -786,7 +810,7 @@
 
                             <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm relative overflow-hidden">
                                 <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl" style="background-color: var(--theme-accent-primary);"></div>
-                                <div class="border-l-[3px] pl-3 mb-6" style="border-color: var(--theme-accent-primary);">
+                                <div class="mb-6">
                                     <h2 class="text-3xl font-black uppercase italic tracking-tight text-gray-900">Squad Sizes</h2>
                                     <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">How many teams each player is carrying</p>
                                 </div>
@@ -795,7 +819,7 @@
 
                             <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm relative overflow-hidden">
                                 <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl" style="background-color: var(--theme-accent-primary);"></div>
-                                <div class="border-l-[3px] pl-3 mb-6" style="border-color: var(--theme-accent-primary);">
+                                <div class="mb-6">
                                     <h2 class="text-3xl font-black uppercase italic tracking-tight text-gray-900">Group Lean</h2>
                                     <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Which groups the pool is leaning on hardest</p>
                                 </div>
@@ -806,7 +830,7 @@
                 </div>
 
                 <div id="results-panel-matches" class="results-panel hidden">
-                    <div id="public-history-log" class="grid grid-cols-1 gap-4 text-left"></div>
+                    <div id="public-history-log" class="space-y-4 text-left"></div>
                 </div>
             </div>
         </div>
@@ -882,6 +906,7 @@
                     <div class="flex flex-wrap gap-3">
                         <button onclick="showAdminTab('matches')" id="admin-tab-matches" class="admin-tab active rounded-2xl border border-blue-500/40 bg-blue-600/20 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-blue-300 transition-colors">Match Results</button>
                         <button onclick="showAdminTab('schedule')" id="admin-tab-schedule" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Schedule</button>
+                        <button onclick="showAdminTab('verify')" id="admin-tab-verify" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Verify</button>
                         <button onclick="showAdminTab('advancement')" id="admin-tab-advancement" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Tournament Status</button>
                         <button onclick="showAdminTab('manage')" id="admin-tab-manage" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Players</button>
                         <button onclick="showAdminTab('notifications')" id="admin-tab-notifications" class="admin-tab rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-300 transition-colors">Notifications</button>
@@ -895,17 +920,17 @@
                 <div class="max-w-6xl mx-auto text-left">
 
                 <div id="admin-panel-matches" class="admin-panel space-y-10">
-                    <div id="admin-match-entry-form" class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-8 text-left text-white text-left text-white text-left text-white text-left text-white text-left text-left">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left text-white text-left">
-                            <div class="space-y-2 text-left text-white"><label class="block text-[10px] font-black uppercase text-gray-400">Team 1 (Home)</label><select id="admin-team1" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none focus:border-blue-500 text-left text-white"></select><input type="number" id="admin-score1" placeholder="Score" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-center text-2xl text-white text-center"></div>
-                            <div class="space-y-2 text-white"><label class="block text-[10px] font-black uppercase text-gray-400">Team 2 (Away)</label><select id="admin-team2" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none focus:border-blue-500"></select><input type="number" id="admin-score2" placeholder="Score" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-center text-2xl text-white text-center"></div>
+                    <div id="admin-match-entry-form" class="bg-gray-800 p-6 rounded-3xl border border-gray-700 shadow-2xl space-y-6 text-left text-white text-left text-white text-left text-white text-left text-white text-left text-left">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left text-white text-left">
+                            <div class="space-y-2 text-left text-white"><label class="block text-[10px] font-black uppercase text-gray-400">Team 1 (Home)</label><select id="admin-team1" class="w-full p-3.5 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none focus:border-blue-500 text-left text-white"></select><input type="number" id="admin-score1" placeholder="Score" class="w-full p-3 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-center text-xl text-white text-center"></div>
+                            <div class="space-y-2 text-white"><label class="block text-[10px] font-black uppercase text-gray-400">Team 2 (Away)</label><select id="admin-team2" class="w-full p-3.5 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none focus:border-blue-500"></select><input type="number" id="admin-score2" placeholder="Score" class="w-full p-3 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-center text-xl text-white text-center"></div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-gray-700 text-left text-white text-left">
-                            <div class="space-y-2 text-left"><label class="block text-[10px] font-black uppercase text-gray-400 text-left">Date of Match</label><input type="date" id="admin-match-date" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none text-left"></div>
-                            <div class="space-y-2 text-left"><label class="block text-[10px] font-black uppercase text-gray-400 text-left">Tournament Stage</label><select id="admin-stage" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none text-left text-white"><option value="Group">Group Stage</option><option value="R32">Round of 32 (x2)</option><option value="R16">Round of 16 (x3)</option><option value="Quarters">Quarter-Finals (x5)</option><option value="Semis">Semi-Finals (x8)</option><option value="Finals">Grand Final (x12)</option></select></div>
-                            <div class="space-y-2 text-left"><label class="block text-[10px] font-black uppercase text-gray-400 text-left">Extra Time / Pens?</label><select id="admin-extratime" class="w-full p-4 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none text-left text-white"><option value="false">No (Regular Time)</option><option value="true">Yes (Extra Time/Pens)</option></select></div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 pt-4 border-t border-gray-700 text-left text-white text-left">
+                            <div class="space-y-2 text-left"><label class="block text-[10px] font-black uppercase text-gray-400 text-left">Date of Match</label><input type="date" id="admin-match-date" class="w-full p-3.5 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none text-left"></div>
+                            <div class="space-y-2 text-left"><label class="block text-[10px] font-black uppercase text-gray-400 text-left">Tournament Stage</label><select id="admin-stage" class="w-full p-3.5 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none text-left text-white"><option value="Group">Group Stage</option><option value="R32">Round of 32 (x2)</option><option value="R16">Round of 16 (x3)</option><option value="Quarters">Quarter-Finals (x5)</option><option value="Semis">Semi-Finals (x8)</option><option value="Finals">Grand Final (x12)</option></select></div>
+                            <div class="space-y-2 text-left"><label class="block text-[10px] font-black uppercase text-gray-400 text-left">Extra Time / Pens?</label><select id="admin-extratime" class="w-full p-3.5 bg-gray-950 border border-gray-700 rounded-2xl font-bold text-white outline-none text-left text-white"><option value="false">No (Regular Time)</option><option value="true">Yes (Extra Time/Pens)</option></select></div>
                         </div>
-                        <button onclick="submitManualResult()" id="admin-submit-btn" class="w-full bg-green-600 hover:bg-green-500 py-6 rounded-2xl font-black uppercase tracking-[0.2em] transition-all shadow-lg text-xl text-white text-center text-white text-center">Log Result</button>
+                        <button onclick="submitManualResult()" id="admin-submit-btn" class="w-full bg-green-600 hover:bg-green-500 py-4 rounded-2xl font-black uppercase tracking-[0.2em] transition-all shadow-lg text-base text-white text-center text-white text-center">Log Result</button>
                     </div>
 
                     <div class="space-y-4 text-left text-white text-left text-white text-left text-white text-left text-white text-left">
@@ -1001,6 +1026,59 @@
                     </div>
                 </div>
 
+                <div id="admin-panel-verify" class="admin-panel hidden space-y-8">
+                    <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-6">
+                        <div>
+                            <h2 class="text-xl font-black uppercase tracking-tight text-white">Knockout Verification</h2>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Cross-check advancing seeds, ranked third-place teams, and the exact FIFA Annex C mapping row used for the Round of 32</p>
+                        </div>
+                        <div id="admin-verify-summary" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+                        <div id="admin-verify-advanced" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                            <div class="rounded-3xl border border-gray-700 overflow-hidden">
+                                <div class="border-b border-gray-700 bg-gray-900/80 px-5 py-4">
+                                    <h3 class="text-sm font-black uppercase tracking-[0.2em] text-white">Third-Place Ranking</h3>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left">
+                                        <thead class="bg-gray-950 text-white uppercase text-[9px] tracking-[0.18em] font-black">
+                                            <tr>
+                                                <th class="px-4 py-3">Pos</th>
+                                                <th class="px-4 py-3">Seed</th>
+                                                <th class="px-4 py-3">Team</th>
+                                                <th class="px-4 py-3 text-center">Pts</th>
+                                                <th class="px-4 py-3 text-center">GD</th>
+                                                <th class="px-4 py-3 text-center">GF</th>
+                                                <th class="px-4 py-3 text-center">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="admin-verify-thirds" class="bg-gray-900 text-[11px] font-bold text-gray-100"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="rounded-3xl border border-gray-700 overflow-hidden">
+                                <div class="border-b border-gray-700 bg-gray-900/80 px-5 py-4">
+                                    <h3 class="text-sm font-black uppercase tracking-[0.2em] text-white">FIFA Mapping Output</h3>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left">
+                                        <thead class="bg-gray-950 text-white uppercase text-[9px] tracking-[0.18em] font-black">
+                                            <tr>
+                                                <th class="px-4 py-3">Winner Seed</th>
+                                                <th class="px-4 py-3">CSV Seed</th>
+                                                <th class="px-4 py-3">Assigned Team</th>
+                                                <th class="px-4 py-3">Plays Against</th>
+                                                <th class="px-4 py-3">R32 Slot</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="admin-verify-mapping" class="bg-gray-900 text-[11px] font-bold text-gray-100"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="admin-panel-stats" class="admin-panel hidden space-y-8">
                     <div>
                         <h2 class="text-xl font-black uppercase tracking-tight text-white">Pool Statistics</h2>
@@ -1065,6 +1143,18 @@
                                     <span class="absolute left-1 h-6 w-6 rounded-full bg-white transition-transform peer-checked:translate-x-6"></span>
                                 </label>
                             </div>
+
+                            <div class="flex items-center justify-between gap-4 rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-4">
+                                <div>
+                                    <div class="text-sm font-black uppercase text-white">Auto Sync Team Status</div>
+                                    <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Automatically mark teams advanced or eliminated from current results</div>
+                                </div>
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input id="admin-auto-team-status-toggle" type="checkbox" class="peer sr-only" onchange="toggleAutoTeamStatusSync(this.checked)">
+                                    <span class="h-8 w-14 rounded-full bg-gray-700 transition-colors peer-checked:bg-emerald-600"></span>
+                                    <span class="absolute left-1 h-6 w-6 rounded-full bg-white transition-transform peer-checked:translate-x-6"></span>
+                                </label>
+                            </div>
                         </div>
 
                         <div class="border-t border-gray-700 pt-6 space-y-4">
@@ -1099,6 +1189,13 @@
                             <div>
                                 <h3 class="text-sm font-black uppercase text-red-400">Testing & Reset</h3>
                                 <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Destructive actions for resetting test data — use with care</p>
+                            </div>
+                            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between rounded-2xl border border-amber-900/40 bg-gray-900/70 px-5 py-4">
+                                <div>
+                                    <h3 class="text-sm font-black uppercase text-white">Simulate Full Tournament</h3>
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Replace current results with random scores, then choose how far the simulation should run</p>
+                                </div>
+                                <button onclick="simulateAllScheduledMatches()" id="admin-simulate-matches-btn" class="rounded-2xl bg-amber-500 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-gray-950 transition-colors hover:bg-amber-400">Run Simulation</button>
                             </div>
                             <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between rounded-2xl border border-red-900/40 bg-gray-900/70 px-5 py-4">
                                 <div>
@@ -1206,6 +1303,38 @@
             <div class="border-t border-gray-800 bg-gray-950/70 p-4 flex gap-3">
                 <button id="confirm-modal-cancel" class="flex-1 rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-gray-300 hover:bg-gray-700 transition-colors">Cancel</button>
                 <button id="confirm-modal-confirm" class="theme-primary-button flex-1 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-white transition-colors">Create Profile</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="simulation-stage-modal" class="hidden fixed inset-0 z-[111] bg-black/80 backdrop-blur-sm items-center justify-center p-4">
+        <div class="w-full max-w-md rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden">
+            <div class="p-6 md:p-8">
+                <div class="flex items-center gap-3 mb-5">
+                    <div class="theme-modal-icon h-11 w-11 rounded-2xl border flex items-center justify-center text-xl">🎲</div>
+                    <div>
+                        <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.25em]">Testing Tool</div>
+                        <h3 class="text-xl font-black uppercase italic tracking-tight text-white">Run Simulation</h3>
+                    </div>
+                </div>
+                <p class="text-sm md:text-base font-bold text-gray-100 leading-relaxed text-left">Choose how far the simulated tournament should run.</p>
+                <div class="mt-5">
+                    <label for="simulation-stage-select" class="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Simulation End Point</label>
+                    <select id="simulation-stage-select" class="w-full rounded-2xl border border-gray-700 bg-gray-950 px-4 py-3 text-sm font-black text-white outline-none">
+                        <option value="GroupMatchday1">Group Game 1</option>
+                        <option value="GroupMatchday2">Group Game 2</option>
+                        <option value="Group">Group Game 3</option>
+                        <option value="R32">Round of 32 End</option>
+                        <option value="R16">Round of 16 End</option>
+                        <option value="Quarters">Quarter-finals End</option>
+                        <option value="Semis">Semi-finals End</option>
+                        <option value="Finals" selected>Tournament End</option>
+                    </select>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 bg-gray-950/70 p-4 flex gap-3">
+                <button id="simulation-stage-cancel" class="flex-1 rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-gray-300 hover:bg-gray-700 transition-colors">Cancel</button>
+                <button id="simulation-stage-confirm" class="theme-primary-button flex-1 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-white transition-colors">Continue</button>
             </div>
         </div>
     </div>
@@ -1341,9 +1470,10 @@
     </div>
 
     <script src="js/data.js?v=20260409b"></script>
-    <script src="js/ui.js?v=20260409c"></script>
+    <script src="js/ui.js?v=20260416b"></script>
     <script src="js/scoring.js?v=20260409c"></script>
-    <script src="js/features.js?v=20260409c"></script>
+    <script src="js/third-place-mapping.js?v=20260416b"></script>
+    <script src="js/features.js?v=20260416y"></script>
     <script src="js/app.js?v=20260409c"></script>
 </body>
 </html>

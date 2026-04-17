@@ -191,6 +191,48 @@ function showConfirmModal({
     });
 }
 
+function showSimulationStageModal(defaultValue = 'Finals') {
+    const modal = document.getElementById('simulation-stage-modal');
+    const selectEl = document.getElementById('simulation-stage-select');
+    const confirmButton = document.getElementById('simulation-stage-confirm');
+    const cancelButton = document.getElementById('simulation-stage-cancel');
+
+    if (!modal || !selectEl || !confirmButton || !cancelButton) {
+        return Promise.resolve(defaultValue);
+    }
+
+    selectEl.value = defaultValue;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    return new Promise((resolve) => {
+        const cleanup = (result) => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            confirmButton.removeEventListener('click', handleConfirm);
+            cancelButton.removeEventListener('click', handleCancel);
+            modal.removeEventListener('click', handleBackdrop);
+            document.removeEventListener('keydown', handleEscape);
+            resolve(result);
+        };
+
+        const handleConfirm = () => cleanup(selectEl.value);
+        const handleCancel = () => cleanup(null);
+        const handleBackdrop = (event) => {
+            if (event.target === modal) cleanup(null);
+        };
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') cleanup(null);
+        };
+
+        confirmButton.addEventListener('click', handleConfirm);
+        cancelButton.addEventListener('click', handleCancel);
+        modal.addEventListener('click', handleBackdrop);
+        document.addEventListener('keydown', handleEscape);
+        selectEl.focus();
+    });
+}
+
 function showProfileSetupModal(email, defaults = {}) {
     const modal = document.getElementById('profile-setup-modal');
     const messageEl = document.getElementById('profile-setup-message');
@@ -642,8 +684,6 @@ async function renderGroups() {
     let matches = [];
 
     try {
-        await fetchAdvancedTeams();
-
         const { data, error } = await supabaseClient
             .from('matches')
             .select('*')
@@ -659,41 +699,59 @@ async function renderGroups() {
     }
 
     container.innerHTML = '';
+    const standingsByGroup = computeGroupStandings(matches);
+    const bestThirdPlaceTeams = _getBestThirdPlaceTeams(standingsByGroup).slice(0, 8);
+    const advancingTeams = new Set();
 
-    const teamPointsMap = window.WorldCupScoring.buildTeamPointsMap(matches, teams, advancedTeams);
+    Object.values(standingsByGroup).forEach((groupStanding) => {
+        (groupStanding?.teams || []).slice(0, 2).forEach((team) => advancingTeams.add(team.name));
+    });
+    bestThirdPlaceTeams.forEach((team) => advancingTeams.add(team.name));
 
     ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'].forEach((group) => {
-        const groupTeams = teams
-            .filter((team) => team.qualified !== false && team.group === group)
-            .map((team) => {
-                return {
-                    ...team,
-                    totalPoints: teamPointsMap[team.name] || 0
-                };
-            })
-            .sort((a, b) => {
-                if (b.totalPoints !== a.totalPoints) {
-                    return b.totalPoints - a.totalPoints;
-                }
-
-                return a.name.localeCompare(b.name);
-            });
+        const groupStanding = standingsByGroup[group];
+        const groupTeams = (groupStanding?.teams || []).map((team, index) => {
+            const teamMeta = teams.find((entry) => entry.name === team.name) || { flag: '🏳', cost: 0, tier: '-' };
+            const seedLabel = `${index + 1}${group}`;
+            return {
+                ...teamMeta,
+                ...team,
+                seedLabel,
+                isAdvancing: advancingTeams.has(team.name)
+            };
+        });
+        const groupStatusLabel = groupStanding?.status === 'complete'
+            ? 'Complete'
+            : 'In Progress';
+        const dividerIndex = groupTeams.findIndex((team) => !team.isAdvancing);
 
         const card = document.createElement('div');
         card.className = 'bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-gray-900 text-left';
         card.innerHTML = `
-            <h3 class="font-black italic text-xl mb-4 border-b pb-2 text-left text-gray-900">GROUP ${group}</h3>
+            <div class="mb-4 border-b border-gray-100 pb-3">
+                <div class="flex items-center justify-between gap-3">
+                    <h3 class="font-black italic text-xl text-left text-gray-900">GROUP ${group}</h3>
+                    <div class="rounded-full bg-gray-100 px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-gray-500">${groupStatusLabel}</div>
+                </div>
+                <div class="mt-3 grid grid-cols-[minmax(0,1fr)_52px] gap-2 text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">
+                    <div>Team</div>
+                    <div class="text-right">Pts</div>
+                </div>
+            </div>
             ${groupTeams.map((team) => `
-                <div class="flex items-center justify-between gap-3 py-2.5 border-b border-gray-50 last:border-0 text-left text-gray-900">
-                    <div class="flex min-w-0 items-center gap-3">
-                        <span class="shrink-0 text-2xl text-left">${team.flag}</span>
+                <div class="-mx-3 px-3 flex items-center justify-between gap-3 py-2.5 ${team.isAdvancing ? 'bg-emerald-50/80' : ''} ${(dividerIndex > 0 && groupTeams[dividerIndex - 1]?.name === team.name) ? 'border-b-2 border-emerald-200' : 'border-b border-gray-50'} last:border-0 text-left text-gray-900">
+                    <div class="flex min-w-0 flex-1 items-center gap-3">
+                        <div class="w-10 shrink-0 text-center">
+                            <div class="text-2xl leading-none">${team.flag}</div>
+                            <div class="mt-1 text-[9px] font-black uppercase tracking-[0.18em] ${team.isAdvancing ? 'text-emerald-500' : 'text-gray-400'}">${team.seedLabel}</div>
+                        </div>
                         <div class="min-w-0">
-                            <div class="font-bold text-sm text-left text-gray-900">${team.name}</div>
-                            <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 text-left">$${team.cost} <span class="text-gray-300">(Tier ${team.tier})</span></div>
+                            <div class="font-bold text-sm text-left text-gray-900">${team.name} <span class="text-[10px] font-black uppercase tracking-[0.18em] text-gray-400">(${team.gd > 0 ? `+${team.gd}` : team.gd})</span></div>
+                            <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 text-left">${team.played} played</div>
                         </div>
                     </div>
-                    <div class="shrink-0 text-right">
-                        <div class="text-lg font-black italic leading-none text-gray-900">${team.totalPoints}</div>
+                    <div class="w-12 shrink-0 text-right">
+                        <div class="text-sm font-black italic leading-none text-gray-900">${team.pts}</div>
                         <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Pts</div>
                     </div>
                 </div>
@@ -775,6 +833,7 @@ document.addEventListener('DOMContentLoaded', () => {
 Object.assign(window, {
     showToast,
     showConfirmModal,
+    showSimulationStageModal,
     showProfileSetupModal,
     showPage,
     toggleMobileMenu,

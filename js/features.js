@@ -8,6 +8,10 @@ const {
     buildBestAvailableTeamData
 } = window.WorldCupScoring;
 
+const {
+    THIRD_PLACE_MAPPING
+} = window.WorldCupThirdPlaceMapping || { THIRD_PLACE_MAPPING: {} };
+
 function getTeamStatus(teamName) {
     return {
         advanced: advancedTeams.has(teamName),
@@ -511,22 +515,22 @@ const GROUP_STAGE_SCHEDULE = [
 
 const KNOCKOUT_SCHEDULE = [
     // ── Round of 32 ─── July 1–4, 2026 ───────────────────────────────────────
-    { date: '2026-07-01', stage: 'R32', home: '1A', away: '2B' },
-    { date: '2026-07-01', stage: 'R32', home: '1B', away: '2A' },
-    { date: '2026-07-01', stage: 'R32', home: '1C', away: '2D' },
-    { date: '2026-07-01', stage: 'R32', home: '1D', away: '2C' },
-    { date: '2026-07-02', stage: 'R32', home: '1E', away: '2F' },
-    { date: '2026-07-02', stage: 'R32', home: '1F', away: '2E' },
-    { date: '2026-07-02', stage: 'R32', home: '1G', away: '2H' },
-    { date: '2026-07-02', stage: 'R32', home: '1H', away: '2G' },
-    { date: '2026-07-03', stage: 'R32', home: '1I', away: '2J' },
-    { date: '2026-07-03', stage: 'R32', home: '1J', away: '2I' },
-    { date: '2026-07-03', stage: 'R32', home: '1K', away: '2L' },
-    { date: '2026-07-03', stage: 'R32', home: '1L', away: '2K' },
-    { date: '2026-07-04', stage: 'R32', home: 'Best 3rd', away: 'Best 3rd' },
-    { date: '2026-07-04', stage: 'R32', home: 'Best 3rd', away: 'Best 3rd' },
-    { date: '2026-07-04', stage: 'R32', home: 'Best 3rd', away: 'Best 3rd' },
-    { date: '2026-07-04', stage: 'R32', home: 'Best 3rd', away: 'Best 3rd' },
+    { slotKey: 'r32-01', date: '2026-07-01', stage: 'R32', home: '2A', away: '2B' },
+    { slotKey: 'r32-02', date: '2026-07-01', stage: 'R32', home: '1F', away: '2C' },
+    { slotKey: 'r32-03', date: '2026-07-01', stage: 'R32', home: '1C', away: '2F' },
+    { slotKey: 'r32-04', date: '2026-07-01', stage: 'R32', home: '2E', away: '2I' },
+    { slotKey: 'r32-05', date: '2026-07-02', stage: 'R32', home: '2K', away: '2L' },
+    { slotKey: 'r32-06', date: '2026-07-02', stage: 'R32', home: '1H', away: '2J' },
+    { slotKey: 'r32-07', date: '2026-07-02', stage: 'R32', home: '1J', away: '2H' },
+    { slotKey: 'r32-08', date: '2026-07-02', stage: 'R32', home: '2D', away: '2G' },
+    { slotKey: 'r32-09', date: '2026-07-03', stage: 'R32', home: '1E', away: 'Best 3rd', awayCandidates: ['A', 'B', 'C', 'D', 'F'] },
+    { slotKey: 'r32-10', date: '2026-07-03', stage: 'R32', home: '1I', away: 'Best 3rd', awayCandidates: ['C', 'D', 'F', 'G', 'H'] },
+    { slotKey: 'r32-11', date: '2026-07-03', stage: 'R32', home: '1A', away: 'Best 3rd', awayCandidates: ['C', 'E', 'F', 'H', 'I'] },
+    { slotKey: 'r32-12', date: '2026-07-03', stage: 'R32', home: '1L', away: 'Best 3rd', awayCandidates: ['E', 'H', 'I', 'J', 'K'] },
+    { slotKey: 'r32-13', date: '2026-07-04', stage: 'R32', home: '1D', away: 'Best 3rd', awayCandidates: ['B', 'E', 'F', 'I', 'J'] },
+    { slotKey: 'r32-14', date: '2026-07-04', stage: 'R32', home: '1G', away: 'Best 3rd', awayCandidates: ['A', 'E', 'H', 'I', 'J'] },
+    { slotKey: 'r32-15', date: '2026-07-04', stage: 'R32', home: '1B', away: 'Best 3rd', awayCandidates: ['E', 'F', 'G', 'I', 'J'] },
+    { slotKey: 'r32-16', date: '2026-07-04', stage: 'R32', home: '1K', away: 'Best 3rd', awayCandidates: ['D', 'E', 'I', 'J', 'L'] },
     // ── Round of 16 ─── July 6–9, 2026 ───────────────────────────────────────
     { date: '2026-07-06', stage: 'R16', home: 'TBD', away: 'TBD' },
     { date: '2026-07-06', stage: 'R16', home: 'TBD', away: 'TBD' },
@@ -566,6 +570,20 @@ function _formatScheduleDate(dateStr) {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
+function _findGroupScheduleMatch(teamHome, teamAway, matchDate = '') {
+    return GROUP_STAGE_SCHEDULE.find((match) =>
+        (!matchDate || match.date === matchDate) &&
+        ((match.home === teamHome && match.away === teamAway) ||
+         (match.home === teamAway && match.away === teamHome))
+    ) || null;
+}
+
+function _getMatchStageDisplayLabel(match) {
+    if (!match || match.stage !== 'Group') return match?.stage || 'TBD';
+    const groupLetter = match.group || _findGroupScheduleMatch(match.team_home, match.team_away, match.match_date_manual)?.group;
+    return groupLetter ? `Group ${groupLetter}` : 'Group Stage';
+}
+
 function _isMatchLogged(m) {
     return _scheduleBrowserLoggedCache.some((r) =>
         r.stage === 'Group' &&
@@ -582,6 +600,55 @@ function _getLoggedResult(m) {
     );
 }
 
+function _hasLoggedKnockoutStage(cache, stage) {
+    return (cache || []).some((match) => match.stage === stage);
+}
+
+function _getLatestLoggedScheduleMatch(cache = _scheduleBrowserLoggedCache) {
+    const stageOrder = { Group: 0, R32: 1, R16: 2, Quarters: 3, Semis: 4, Finals: 5 };
+    return [...(cache || [])]
+        .sort((a, b) => {
+            const dateCompare = String(b.match_date_manual || '').localeCompare(String(a.match_date_manual || ''));
+            if (dateCompare !== 0) return dateCompare;
+            const stageCompare = (stageOrder[b.stage] ?? -1) - (stageOrder[a.stage] ?? -1);
+            if (stageCompare !== 0) return stageCompare;
+            return (b.id || 0) - (a.id || 0);
+        })[0] || null;
+}
+
+function _getDefaultScheduleFilter(cache = _scheduleBrowserLoggedCache) {
+    const latestLogged = _getLatestLoggedScheduleMatch(cache);
+    if (!latestLogged) return 'all';
+    return latestLogged.stage === 'Group' ? 'all' : latestLogged.stage;
+}
+
+function _scrollScheduleToDate(date) {
+    if (!date) return;
+    const container = document.getElementById('page-admin');
+    const target = document.querySelector(`#schedule-cards [data-schedule-date="${date}"]`);
+    const stickyHeader = document.getElementById('admin-sticky-header');
+    const stickyFilters = document.getElementById('schedule-group-filters');
+    const headerOffset = (stickyHeader?.offsetHeight || 0) + (stickyFilters?.offsetHeight || 0) + 16;
+    if (!container || !target) return;
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const nextTop = container.scrollTop + (targetRect.top - containerRect.top) - headerOffset;
+    container.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
+}
+
+function _scrollScheduleToTop() {
+    const container = document.getElementById('page-admin');
+    const target = document.getElementById('schedule-cards');
+    const stickyHeader = document.getElementById('admin-sticky-header');
+    const stickyFilters = document.getElementById('schedule-group-filters');
+    const headerOffset = (stickyHeader?.offsetHeight || 0) + (stickyFilters?.offsetHeight || 0) + 12;
+    if (!container || !target) return;
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const nextTop = container.scrollTop + (targetRect.top - containerRect.top) - headerOffset;
+    container.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
+}
+
 // Pins the schedule filter pills just below the sticky admin header so they
 // also appear locked when scrolling through match cards.
 function _syncScheduleFilterTop() {
@@ -595,7 +662,41 @@ function _syncScheduleFilterTop() {
 function _getKnockoutDayResults(stage, date) {
     return _scheduleBrowserLoggedCache
         .filter((r) => r.stage === stage && r.match_date_manual === date)
-        .sort((a, b) => a.id - b.id);
+        .sort((a, b) => {
+            const dateCompare = String(a.match_date || '').localeCompare(String(b.match_date || ''));
+            if (dateCompare !== 0) return dateCompare;
+            return (a.id || 0) - (b.id || 0);
+        });
+}
+
+function _findKnockoutResultForMatch(scheduleMatch, standings, bestThirdAssignments, usedResultIds) {
+    const dayResults = _getKnockoutDayResults(scheduleMatch.stage, scheduleMatch.date);
+    const resolvedHome = _resolveKnockoutMatchTeam(scheduleMatch, 'home', standings, bestThirdAssignments);
+    const resolvedAway = _resolveKnockoutMatchTeam(scheduleMatch, 'away', standings, bestThirdAssignments);
+    const expectedHome = resolvedHome?.name;
+    const expectedAway = resolvedAway?.name;
+
+    if (expectedHome && expectedAway && expectedHome !== scheduleMatch.home && expectedAway !== scheduleMatch.away) {
+        const matched = dayResults.find((result) => {
+            if (usedResultIds.has(result.id)) return false;
+            return (
+                (result.team_home === expectedHome && result.team_away === expectedAway) ||
+                (result.team_home === expectedAway && result.team_away === expectedHome)
+            );
+        });
+        if (matched) {
+            usedResultIds.add(matched.id);
+            return matched;
+        }
+    }
+
+    const nextByOrder = dayResults.find((result) => !usedResultIds.has(result.id));
+    if (nextByOrder) {
+        usedResultIds.add(nextByOrder.id);
+        return nextByOrder;
+    }
+
+    return null;
 }
 
 // ── Group standings + knockout seeding resolution ─────────────────────────────
@@ -609,7 +710,7 @@ function computeGroupStandings(matchesCache) {
         const sched = GROUP_STAGE_SCHEDULE.filter((m) => m.group === g);
         const names = [...new Set(sched.flatMap((m) => [m.home, m.away]))];
         const stats = {};
-        names.forEach((n) => { stats[n] = { name: n, played: 0, pts: 0, gd: 0, gf: 0 }; });
+        names.forEach((n) => { stats[n] = { name: n, group: g, played: 0, pts: 0, gd: 0, gf: 0 }; });
         let logged = 0;
         sched.forEach((m) => {
             const r = matchesCache.find((r) =>
@@ -629,13 +730,92 @@ function computeGroupStandings(matchesCache) {
             else if (r.score_home < r.score_away) { a.pts += 3; }
             else                                  { h.pts += 1; a.pts += 1; }
         });
-        const sorted = Object.values(stats).sort((a, b) =>
-            b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name)
-        );
         const status = logged === 0 ? 'none' : logged < sched.length ? 'partial' : 'complete';
+        const sorted = Object.values(stats).sort((a, b) => {
+            if (status === 'none') {
+                const teamA = teams.find((team) => team.name === a.name);
+                const teamB = teams.find((team) => team.name === b.name);
+                return (teamB?.cost || 0) - (teamA?.cost || 0) || a.name.localeCompare(b.name);
+            }
+            return b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name);
+        });
         result[g] = { teams: sorted, status };
     });
     return result;
+}
+
+function _compareStandingRows(a, b) {
+    return b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name);
+}
+
+function _isStandingTie(a, b) {
+    return !!a && !!b && a.pts === b.pts && a.gd === b.gd && a.gf === b.gf;
+}
+
+function _hasClinchedGroupSlot(group, pos) {
+    if (!group || !group.teams?.[pos]) return false;
+    const targetTeam = group.teams[pos];
+    const targetThreshold = targetTeam.pts;
+    const contenders = group.teams.filter((team) => team.name !== targetTeam.name);
+    const teamsThatCanStillReachOrPass = contenders.filter((team) => {
+        const remainingMatches = Math.max(0, 3 - (team.played || 0));
+        const maxPossiblePoints = team.pts + (remainingMatches * 3);
+        return maxPossiblePoints >= targetThreshold;
+    }).length;
+
+    return teamsThatCanStillReachOrPass <= pos;
+}
+
+function _groupTeamsByCost(groupLetter) {
+    return teams
+        .filter((team) => team.group === groupLetter)
+        .sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name));
+}
+
+function _hasClinchedTopTwoByPoints(group, teamName) {
+    const team = group?.teams?.find((entry) => entry.name === teamName);
+    if (!team) return false;
+    const contenders = (group.teams || []).filter((entry) => entry.name !== teamName);
+    const teamsThatCanStillReachOrPass = contenders.filter((entry) => {
+        const remainingMatches = Math.max(0, 3 - (entry.played || 0));
+        return entry.pts + (remainingMatches * 3) >= team.pts;
+    }).length;
+    return teamsThatCanStillReachOrPass <= 1;
+}
+
+function _hasClinchedBestThirdQualification(standings, teamName) {
+    const allThirds = _getBestThirdPlaceTeams(standings);
+    const targetTeam = allThirds.find((team) => team.name === teamName);
+    if (!targetTeam || (targetTeam.played || 0) < 3) return false;
+
+    const contenders = allThirds.filter((team) => team.name !== teamName);
+    const teamsThatCanStillReachOrPass = contenders.filter((team) => {
+        const remainingMatches = Math.max(0, 3 - (team.played || 0));
+        return team.pts + (remainingMatches * 3) >= targetTeam.pts;
+    }).length;
+
+    return teamsThatCanStillReachOrPass <= 7;
+}
+
+function _fallbackTeamForGroupSlot(groupLetter, pos) {
+    const rankedByCost = _groupTeamsByCost(groupLetter);
+    return rankedByCost[pos] || rankedByCost[0] || null;
+}
+
+function _fallbackBestThirdTeams() {
+    return 'ABCDEFGHIJKL'
+        .split('')
+        .map((groupLetter) => {
+            const rankedByCost = _groupTeamsByCost(groupLetter);
+            return rankedByCost[2] || rankedByCost[rankedByCost.length - 1] || null;
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name));
+}
+
+function _fallbackResolvedTeam(label, fallbackTeam) {
+    if (!fallbackTeam) return { name: 'TBD', flag: '', status: 'none', fallback: false };
+    return { name: fallbackTeam.name, flag: fallbackTeam.flag, status: 'fallback', fallback: true };
 }
 
 // Returns sorted list of all 3rd-place finishers from groups that have started.
@@ -644,29 +824,309 @@ function _getBestThirdPlaceTeams(standings) {
     Object.values(standings).forEach((g) => {
         if (g.status !== 'none' && g.teams.length >= 3) thirds.push(g.teams[2]);
     });
-    return thirds.sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name));
+    return thirds.sort(_compareStandingRows);
+}
+
+function _getQualifiedBestThirdTeams(standings) {
+    return _getBestThirdPlaceTeams(standings).slice(0, 8);
+}
+
+function _hasAmbiguousBestThirdRanking(allThirds, count) {
+    const limit = Math.min(count, allThirds.length);
+    for (let i = 0; i < limit; i++) {
+        if (_isStandingTie(allThirds[i], allThirds[i - 1]) || _isStandingTie(allThirds[i], allThirds[i + 1])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function _getBestThirdSlots() {
+    return KNOCKOUT_SCHEDULE
+        .filter((match) => match.stage === 'R32')
+        .flatMap((match) => {
+            const slots = [];
+            if (match.home === 'Best 3rd') {
+                slots.push({ key: `${match.slotKey}:home`, side: 'home', allowedGroups: match.homeCandidates || [], match });
+            }
+            if (match.away === 'Best 3rd') {
+                slots.push({ key: `${match.slotKey}:away`, side: 'away', allowedGroups: match.awayCandidates || [], match });
+            }
+            return slots;
+        });
+}
+
+const THIRD_PLACE_WINNER_SLOT_MAP = {
+    '1E': 'r32-09:away',
+    '1I': 'r32-10:away',
+    '1A': 'r32-11:away',
+    '1L': 'r32-12:away',
+    '1D': 'r32-13:away',
+    '1G': 'r32-14:away',
+    '1B': 'r32-15:away',
+    '1K': 'r32-16:away'
+};
+
+function _buildQualifiedBestThirdKey(qualifiedThirds) {
+    return qualifiedThirds
+        .map((team) => team.group)
+        .filter(Boolean)
+        .sort()
+        .join('');
+}
+
+function _getOfficialBestThirdMappingContext(standings) {
+    const slots = _getBestThirdSlots();
+    const allThirds = _getBestThirdPlaceTeams(standings);
+    if (allThirds.length < slots.length) {
+        return { allThirds, qualifiedThirds: [], qualifiedKey: '', mappingEntry: null, isResolvable: false };
+    }
+
+    const qualifiedThirds = allThirds.slice(0, slots.length);
+    if (_hasAmbiguousBestThirdRanking(allThirds, slots.length)) {
+        return { allThirds, qualifiedThirds, qualifiedKey: _buildQualifiedBestThirdKey(qualifiedThirds), mappingEntry: null, isResolvable: false };
+    }
+
+    const qualifiedKey = _buildQualifiedBestThirdKey(qualifiedThirds);
+    const mappingEntry = THIRD_PLACE_MAPPING[qualifiedKey] || null;
+    return {
+        allThirds,
+        qualifiedThirds,
+        qualifiedKey,
+        mappingEntry,
+        isResolvable: Boolean(mappingEntry)
+    };
+}
+
+function _isKnockoutFieldLocked(standings) {
+    const groups = Object.values(standings || {});
+    if (groups.length !== 12) return false;
+    if (groups.some((group) => group.status !== 'complete')) return false;
+    const mappingContext = _getOfficialBestThirdMappingContext(standings);
+    return Boolean(mappingContext.isResolvable && mappingContext.mappingEntry);
+}
+
+function _buildBestThirdAssignments(standings) {
+    const assignments = new Map();
+    const slots = _getBestThirdSlots();
+    const { qualifiedThirds, mappingEntry, isResolvable } = _getOfficialBestThirdMappingContext(standings);
+    if (!isResolvable || !mappingEntry) return assignments;
+
+    const officialAssignments = mappingEntry.assignments || {};
+    const teamByGroup = new Map(qualifiedThirds.map((team) => [team.group, team]));
+    Object.entries(officialAssignments).forEach(([winnerSeed, thirdSeed]) => {
+        const slotKey = THIRD_PLACE_WINNER_SLOT_MAP[winnerSeed];
+        const groupLetter = thirdSeed?.[1];
+        const team = teamByGroup.get(groupLetter);
+        if (slotKey && team) assignments.set(slotKey, team);
+    });
+
+    return assignments.size === slots.length ? assignments : new Map();
+}
+
+function _buildAdminVerifyGroupCards(standings, mappingContext) {
+    const qualifiedThirdSet = new Set(mappingContext.qualifiedThirds.map((team) => team.name));
+    return Object.entries(standings).map(([groupLetter, group]) => `
+        <div class="rounded-2xl border border-gray-700 bg-gray-900/70 overflow-hidden">
+            <div class="flex items-center justify-between border-b border-gray-700 bg-gray-950/80 px-4 py-3">
+                <div class="text-sm font-black uppercase tracking-[0.2em] text-white">Group ${groupLetter}</div>
+                <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-500">${group.status === 'complete' ? 'Complete' : group.status === 'partial' ? 'In Progress' : 'No Matches'}</div>
+            </div>
+            <div class="divide-y divide-gray-800">
+                ${(() => {
+                    const dividerIndex = group.teams.findIndex((team, index) => index >= 2 && !qualifiedThirdSet.has(team.name));
+                    return group.teams.map((team, index) => {
+                    const seedLabel = `${index + 1}${groupLetter}`;
+                    const isAutoAdvance = index < 2;
+                    const isBestThird = index === 2 && qualifiedThirdSet.has(team.name) && mappingContext.isResolvable;
+                    const seedClass = isAutoAdvance || isBestThird ? 'text-emerald-300' : 'text-gray-500';
+                    return `
+                        <div class="flex items-center gap-3 px-4 py-2.5 text-sm ${(isAutoAdvance || isBestThird) ? 'bg-emerald-950/20' : ''} ${(dividerIndex > 0 && group.teams[dividerIndex - 1]?.name === team.name) ? 'border-b-2 border-emerald-300' : ''}">
+                            <div class="w-8 shrink-0 text-[10px] font-black uppercase tracking-[0.18em] ${seedClass}">${seedLabel}</div>
+                            <div class="min-w-0 flex-1 truncate font-black text-white">${_scheduleTeam(team.name).flag} ${team.name}</div>
+                            <div class="shrink-0 text-[11px] font-black uppercase tracking-[0.18em] text-gray-300">${team.pts}</div>
+                        </div>
+                    `;
+                }).join('');
+                })()}
+            </div>
+        </div>
+    `).join('');
+}
+
+async function fetchAdminKnockoutVerify() {
+    const summaryEl = document.getElementById('admin-verify-summary');
+    const advancedEl = document.getElementById('admin-verify-advanced');
+    const thirdsEl = document.getElementById('admin-verify-thirds');
+    const mappingEl = document.getElementById('admin-verify-mapping');
+    if (!summaryEl || !advancedEl || !thirdsEl || !mappingEl) return;
+
+    summaryEl.innerHTML = '<div class="md:col-span-3 rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-8 text-center text-xs font-black uppercase tracking-[0.25em] text-gray-400">Building verification view...</div>';
+    advancedEl.innerHTML = '';
+    thirdsEl.innerHTML = '';
+    mappingEl.innerHTML = '';
+
+    const { data: matches, error } = await supabaseClient
+        .from('matches')
+        .select('*');
+
+    if (error) {
+        summaryEl.innerHTML = `<div class="md:col-span-3 rounded-2xl border border-red-900/40 bg-red-950/30 px-5 py-8 text-center text-xs font-black uppercase tracking-[0.2em] text-red-300">${error.message || 'Unable to load verification data.'}</div>`;
+        return;
+    }
+
+    const standings = computeGroupStandings(matches || []);
+    const mappingContext = _getOfficialBestThirdMappingContext(standings);
+    const bestThirdAssignments = _buildBestThirdAssignments(standings);
+    const qualifiedThirdSet = new Set(mappingContext.qualifiedThirds.map((team) => team.name));
+
+    summaryEl.innerHTML = `
+        <div class="rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-4">
+            <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Qualified 3rd Key</div>
+            <div class="mt-2 text-2xl font-black uppercase text-white">${mappingContext.qualifiedKey || 'TBD'}</div>
+        </div>
+        <div class="rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-4">
+            <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">CSV Row</div>
+            <div class="mt-2 text-2xl font-black uppercase text-white">${mappingContext.mappingEntry?.rowNumber || 'TBD'}</div>
+        </div>
+        <div class="rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-4">
+            <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Mapping Status</div>
+            <div class="mt-2 text-sm font-black uppercase tracking-[0.2em] ${mappingContext.isResolvable ? 'text-emerald-300' : 'text-amber-300'}">${mappingContext.isResolvable ? 'Official Row Applied' : 'Waiting For Clear Top 8'}</div>
+        </div>
+    `;
+
+    advancedEl.innerHTML = _buildAdminVerifyGroupCards(standings, mappingContext);
+
+    thirdsEl.innerHTML = mappingContext.allThirds.map((team, index) => {
+        const isQualified = qualifiedThirdSet.has(team.name) && mappingContext.isResolvable;
+        const isProvisionalQualified = qualifiedThirdSet.has(team.name) && !mappingContext.isResolvable;
+        return `
+            <tr class="${isQualified ? 'bg-emerald-950/25' : ''}">
+                <td class="px-4 py-3 text-gray-400">${index + 1}</td>
+                <td class="px-4 py-3 ${isQualified ? 'text-emerald-300' : 'text-gray-400'}">3${team.group}</td>
+                <td class="px-4 py-3 text-white">${_scheduleTeam(team.name).flag} ${team.name}</td>
+                <td class="px-4 py-3 text-center text-gray-200">${team.pts}</td>
+                <td class="px-4 py-3 text-center text-gray-200">${team.gd}</td>
+                <td class="px-4 py-3 text-center text-gray-200">${team.gf}</td>
+                <td class="px-4 py-3 text-center ${isQualified ? 'text-emerald-300' : isProvisionalQualified ? 'text-amber-300' : 'text-gray-500'}">${isQualified ? 'IN' : isProvisionalQualified ? 'LIVE' : 'OUT'}</td>
+            </tr>
+        `;
+    }).join('') || '<tr><td colspan="7" class="px-4 py-8 text-center text-xs font-black uppercase tracking-[0.2em] text-gray-500">No third-place data yet.</td></tr>';
+
+    const mappingAssignments = mappingContext.mappingEntry?.assignments || {};
+    const winnerSeedOrder = ['1A', '1B', '1D', '1E', '1G', '1I', '1K', '1L'];
+    mappingEl.innerHTML = winnerSeedOrder.map((winnerSeed) => {
+        const csvSeed = mappingAssignments[winnerSeed] || 'TBD';
+        const slotKey = THIRD_PLACE_WINNER_SLOT_MAP[winnerSeed];
+        const assignedTeam = bestThirdAssignments.get(slotKey);
+        const winnerTeam = _resolveKnockoutTeam(winnerSeed, standings, [], 0);
+        const slotLabel = slotKey ? slotKey.split(':')[0].toUpperCase() : 'TBD';
+        return `
+            <tr>
+                <td class="px-4 py-3 text-blue-300">${winnerSeed}</td>
+                <td class="px-4 py-3 text-white">${csvSeed}</td>
+                <td class="px-4 py-3 text-gray-200">${assignedTeam ? `${_scheduleTeam(assignedTeam.name).flag} ${assignedTeam.name}` : 'TBD'}</td>
+                <td class="px-4 py-3 text-gray-200">${winnerTeam?.name && assignedTeam ? `${winnerTeam.flag} ${winnerTeam.name}` : winnerTeam?.name ? `${winnerTeam.flag} ${winnerTeam.name}` : 'TBD'}</td>
+                <td class="px-4 py-3 text-gray-400">${slotLabel}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function _fallbackBestThirdTeamForGroups(allowedGroups, standings) {
+    const liveThird = _getBestThirdPlaceTeams(standings).find((team) => allowedGroups.includes(team.group));
+    if (liveThird) {
+        const liveTeam = teams.find((team) => team.name === liveThird.name);
+        return liveTeam || null;
+    }
+    return _fallbackBestThirdTeams().find((team) => allowedGroups.includes(team.group)) || null;
+}
+
+function _bestThirdSeedLabel(teamName) {
+    const teamData = teams.find((team) => team.name === teamName);
+    return teamData?.group ? `3${teamData.group}` : '3?';
+}
+
+function _seedDisplayLabel(res, rawLabel) {
+    if (res?.seedLabel) return res.seedLabel;
+    if (rawLabel === 'Best 3rd') return '3?';
+    return rawLabel;
+}
+
+function _resolveKnockoutMatchTeam(match, side, standings, bestThirdAssignments) {
+    const label = match[side];
+    if (label !== 'Best 3rd') {
+        return _resolveKnockoutTeam(label, standings, [], 0);
+    }
+
+    const assignmentKey = `${match.slotKey}:${side}`;
+    const assignedTeam = bestThirdAssignments.get(assignmentKey);
+    const allowedGroups = side === 'home' ? (match.homeCandidates || []) : (match.awayCandidates || []);
+    if (!assignedTeam) {
+        const fallbackTeam = _fallbackBestThirdTeamForGroups(allowedGroups, standings);
+        const fallbackResolved = _fallbackResolvedTeam(label, fallbackTeam);
+        return {
+            ...fallbackResolved,
+            seedLabel: fallbackTeam ? _bestThirdSeedLabel(fallbackTeam.name) : '3',
+            qualified: fallbackTeam ? _hasClinchedBestThirdQualification(standings, fallbackTeam.name) : false
+        };
+    }
+
+    const td = _scheduleTeam(assignedTeam.name);
+    const completedGroups = Object.values(standings).filter((group) => group.status === 'complete').length;
+        return {
+            name: assignedTeam.name,
+            flag: td.flag,
+            seedLabel: _bestThirdSeedLabel(assignedTeam.name),
+            status: completedGroups >= 12 ? 'confirmed' : 'provisional',
+            qualified: true,
+            fallback: false
+        };
 }
 
 // Resolve a seeding label like '1A', '2B', 'Best 3rd', 'TBD' to { name, flag, status }.
-// status: 'none' = group not yet started  'provisional' = in progress  'confirmed' = group complete
+// status: 'none' = unresolved  'fallback' = cost-based placeholder  'provisional' = in progress  'confirmed' = group complete
 function _resolveKnockoutTeam(label, standings, best3rdList, best3rdSlot) {
-    if (label === 'TBD') return { name: 'TBD', flag: '❓', status: 'none' };
+    if (label === 'TBD') return { name: 'TBD', flag: '🏳', status: 'none', fallback: false };
     if (label === 'Best 3rd') {
+        const fallbackTeam = _fallbackBestThirdTeams()[best3rdSlot || 0] || _fallbackBestThirdTeams()[0] || null;
         const t = best3rdList[best3rdSlot || 0];
-        if (!t) return { name: 'Best 3rd', flag: '❓', status: 'none' };
+        if (!t) {
+            const fallbackResolved = _fallbackResolvedTeam(label, fallbackTeam);
+            return { ...fallbackResolved, seedLabel: fallbackTeam ? _bestThirdSeedLabel(fallbackTeam.name) : '3?', qualified: fallbackTeam ? _hasClinchedBestThirdQualification(standings, fallbackTeam.name) : false };
+        }
+        const prev = best3rdList[(best3rdSlot || 0) - 1];
+        const next = best3rdList[(best3rdSlot || 0) + 1];
+        if (_isStandingTie(t, prev) || _isStandingTie(t, next)) {
+            const fallbackResolved = _fallbackResolvedTeam(label, fallbackTeam);
+            return { ...fallbackResolved, seedLabel: fallbackTeam ? _bestThirdSeedLabel(fallbackTeam.name) : '3?', qualified: fallbackTeam ? _hasClinchedBestThirdQualification(standings, fallbackTeam.name) : false };
+        }
         const td = _scheduleTeam(t.name);
         const completedGroups = Object.values(standings).filter((g) => g.status === 'complete').length;
-        return { name: t.name, flag: td.flag, status: completedGroups >= 12 ? 'confirmed' : 'provisional' };
+        return { name: t.name, flag: td.flag, seedLabel: _bestThirdSeedLabel(t.name), status: completedGroups >= 12 ? 'confirmed' : 'provisional', qualified: true, fallback: false };
     }
     // '1A' → group A winner, '2B' → group B runner-up, etc.
     const pos = parseInt(label[0], 10) - 1;
     const grp  = label[1];
     const group = standings[grp];
-    if (!group || group.status === 'none') return { name: label, flag: '❓', status: 'none' };
+    const fallbackTeam = _fallbackTeamForGroupSlot(grp, pos);
+    if (!group || group.status === 'none') return { ..._fallbackResolvedTeam(label, fallbackTeam), seedLabel: label };
     const t = group.teams[pos];
-    if (!t) return { name: label, flag: '❓', status: 'none' };
+    if (!t) return { ..._fallbackResolvedTeam(label, fallbackTeam), seedLabel: label };
+    const prev = group.teams[pos - 1];
+    const next = group.teams[pos + 1];
+    if (_isStandingTie(t, prev) || _isStandingTie(t, next)) {
+        return { ..._fallbackResolvedTeam(label, fallbackTeam), seedLabel: label };
+    }
     const td = _scheduleTeam(t.name);
-    return { name: t.name, flag: td.flag, status: group.status === 'complete' ? 'confirmed' : 'provisional' };
+    return {
+        name: t.name,
+        flag: td.flag,
+        seedLabel: label,
+        status: group.status === 'complete' || _hasClinchedGroupSlot(group, pos) ? 'confirmed' : 'provisional',
+        qualified: _hasClinchedTopTwoByPoints(group, t.name),
+        fallback: false
+    };
 }
 
 function renderScheduleBrowser() {
@@ -675,6 +1135,7 @@ function renderScheduleBrowser() {
     if (!filterEl || !cardsEl) return;
 
     const f          = _scheduleBrowserActiveFilter;
+    const currentFilter = _getDefaultScheduleFilter(_scheduleBrowserLoggedCache);
     const allGroups  = ['A','B','C','D','E','F','G','H','I','J','K','L'];
     const koStages   = ['R32', 'R16', 'Quarters', 'Semis', 'Finals'];
     const koLabels   = { R32: 'R32', R16: 'R16', Quarters: 'QF', Semis: 'Semi', Finals: 'Final' };
@@ -682,6 +1143,12 @@ function renderScheduleBrowser() {
 
     const active   = 'border-blue-500 bg-blue-600/30 text-blue-300';
     const inactive = 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-500 hover:text-gray-200';
+    const current  = 'border-[1.5px] border-gray-500 text-gray-100 font-extrabold';
+    const pillClasses = (filter) => {
+        const stateClass = f === filter ? active : inactive;
+        const currentClass = currentFilter === filter && f !== filter ? current : '';
+        return `px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border transition-colors ${stateClass} ${currentClass}`;
+    };
 
     // ── Counts for pill labels ────────────────────────────────────────────────
     const groupDone = GROUP_STAGE_SCHEDULE.filter(_isMatchLogged).length;
@@ -691,24 +1158,24 @@ function renderScheduleBrowser() {
     filterEl.innerHTML = `
         <div class="flex flex-wrap gap-2">
             <button onclick="setScheduleFilter('all')"
-                class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border transition-colors ${f === 'all' ? active : inactive}">
+                class="${pillClasses('all')}">
                 Groups <span class="opacity-60">${groupDone}/${GROUP_STAGE_SCHEDULE.length}</span>
             </button>
             ${allGroups.map((g) => `
                 <button onclick="setScheduleFilter('${g}')"
-                    class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border transition-colors ${f === g ? active : inactive}">
+                    class="${pillClasses(g)}">
                     Grp ${g}
                 </button>
             `).join('')}
         </div>
         <div class="flex flex-wrap gap-2 mt-2 pt-2 border-t border-gray-800">
             <button onclick="setScheduleFilter('knockout-all')"
-                class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border transition-colors ${f === 'knockout-all' ? active : inactive}">
+                class="${pillClasses('knockout-all')}">
                 Knockout <span class="opacity-60">${koDone}/${KNOCKOUT_SCHEDULE.length}</span>
             </button>
             ${koStages.map((s) => `
                 <button onclick="setScheduleFilter('${s}')"
-                    class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border transition-colors ${f === s ? active : inactive}">
+                    class="${pillClasses(s)}">
                     ${koLabels[s]}
                 </button>
             `).join('')}
@@ -739,23 +1206,17 @@ function renderScheduleBrowser() {
 
     // Pre-compute standings so knockout cards can show resolved team names
     const _standings  = computeGroupStandings();
-    const _best3rd    = _getBestThirdPlaceTeams(_standings);
+    const _best3rdAssignments = _buildBestThirdAssignments(_standings);
+    const useSeedStatusColours = !_isKnockoutFieldLocked(_standings);
 
     cardsEl.innerHTML = Object.entries(byDate).map(([date, matches]) => {
         let cards;
 
         if (isKnockout) {
-            // Track how many cards of each stage we've rendered for this date,
-            // so we can map the i-th card to the i-th logged result.
-            const slotCounters = {};
-            // Tracks which Best 3rd team slot we're assigning within this date block.
-            let best3rdIdx = 0;
+            const usedResultIds = new Set();
 
             cards = matches.map((m) => {
-                if (!slotCounters[m.stage]) slotCounters[m.stage] = 0;
-                const slotIdx  = slotCounters[m.stage]++;
-                const dayRes   = _getKnockoutDayResults(m.stage, m.date);
-                const result   = dayRes[slotIdx] || null;
+                const result = _findKnockoutResultForMatch(m, _standings, _best3rdAssignments, usedResultIds);
                 const isLogged = !!result;
 
                 if (isLogged) {
@@ -786,27 +1247,49 @@ function renderScheduleBrowser() {
                 }
 
                 // Unlogged knockout card — resolve seedings from group standings
-                const homeRes = _resolveKnockoutTeam(m.home, _standings, _best3rd,
-                    m.home === 'Best 3rd' ? best3rdIdx++ : 0);
-                const awayRes = _resolveKnockoutTeam(m.away, _standings, _best3rd,
-                    m.away === 'Best 3rd' ? best3rdIdx++ : 0);
+                const homeRes = _resolveKnockoutMatchTeam(m, 'home', _standings, _best3rdAssignments);
+                const awayRes = _resolveKnockoutMatchTeam(m, 'away', _standings, _best3rdAssignments);
 
                 const _seedLabel = (res, raw) => {
+                    const displaySeed = _seedDisplayLabel(res, raw);
+                    const nameTone = res.status === 'confirmed'
+                        ? 'text-white'
+                        : res.qualified
+                            ? 'text-gray-300'
+                            : 'text-gray-400';
+                    const seedTone = res.status === 'confirmed'
+                        ? 'text-gray-500'
+                        : res.qualified
+                            ? 'text-gray-500'
+                            : 'text-gray-600';
                     if (res.status === 'none')
-                        return `<span class="text-gray-600 font-black text-sm">
-                                    <span class="mr-1">❓</span>${raw}
+                        return `<span class="inline-flex items-center gap-1.5 min-w-0 font-black text-sm">
+                                    <span class="text-gray-500 truncate">${raw}</span>
+                                    <span class="shrink-0 text-[10px] font-black text-gray-600">(${displaySeed})</span>
+                                </span>`;
+                    if (res.status === 'fallback')
+                        return `<span class="inline-flex items-center gap-1.5 min-w-0 font-black text-sm">
+                                    <span class="text-base leading-none shrink-0">${res.flag}</span>
+                                    <span class="${nameTone} truncate">${res.name}</span>
+                                    <span class="shrink-0 text-[10px] font-black ${seedTone}">(${displaySeed})</span>
                                 </span>`;
                     if (res.status === 'provisional')
-                        return `<span class="text-gray-400 font-black text-sm">
-                                    <span class="mr-1">${res.flag}</span>${res.name}<span class="text-gray-600">~</span>
+                        return `<span class="inline-flex items-center gap-1.5 min-w-0 font-black text-sm">
+                                    <span class="text-base leading-none shrink-0">${res.flag}</span>
+                                    <span class="${nameTone} truncate">${res.name}</span>
+                                    <span class="shrink-0 text-[10px] font-black ${seedTone}">(${displaySeed})</span>
                                 </span>`;
-                    return `<span class="font-black text-sm text-white">
-                                <span class="mr-1">${res.flag}</span>${res.name}
+                    return `<span class="inline-flex items-center gap-1.5 min-w-0 font-black text-sm text-white">
+                                <span class="text-base leading-none shrink-0">${res.flag}</span>
+                                <span class="truncate">${res.name}</span>
+                                <span class="shrink-0 text-[10px] font-black text-gray-500">(${displaySeed})</span>
                             </span>`;
                 };
+                const enterHomeName = (homeRes && homeRes.status !== 'none' ? homeRes.name : m.home).replace(/'/g,"\\'");
+                const enterAwayName = (awayRes && awayRes.status !== 'none' ? awayRes.name : m.away).replace(/'/g,"\\'");
 
                 return `
-                    <button onclick="prefillFromSchedule('${m.home}','${m.away}','${m.stage}','${m.date}')"
+                    <button onclick="prefillFromSchedule('${enterHomeName}','${enterAwayName}','${m.stage}','${m.date}')"
                         class="w-full text-left rounded-2xl border border-gray-700 bg-gray-800 hover:border-blue-500/50 hover:bg-gray-700 active:scale-[0.99] px-4 py-3 transition-all">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2 min-w-0 flex-1">
@@ -832,7 +1315,7 @@ function renderScheduleBrowser() {
             const stageTag   = koLabels[stageOnDay] || stageOnDay;
 
             return `
-                <div class="space-y-1.5">
+                <div class="space-y-1.5" data-schedule-date="${date}">
                     <div class="flex items-center justify-between px-1 pt-3 pb-1">
                         <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${_formatScheduleDate(date)} <span class="text-gray-600">· ${stageTag}</span></span>
                         <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">${dayDone}/${matches.length} logged</span>
@@ -901,7 +1384,7 @@ function renderScheduleBrowser() {
         }).join('');
 
         return `
-            <div class="space-y-1.5">
+            <div class="space-y-1.5" data-schedule-date="${date}">
                 <div class="flex items-center justify-between px-1 pt-3 pb-1">
                     <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${_formatScheduleDate(date)}</span>
                     <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">${matches.filter(_isMatchLogged).length}/${matches.length} logged</span>
@@ -917,6 +1400,16 @@ function renderScheduleBrowser() {
 function setScheduleFilter(filter) {
     _scheduleBrowserActiveFilter = filter;
     renderScheduleBrowser();
+    requestAnimationFrame(() => _scrollScheduleToTop());
+}
+
+function _syncScheduleBrowserToCurrentProgress() {
+    const latestLogged = _getLatestLoggedScheduleMatch(_scheduleBrowserLoggedCache);
+    _scheduleBrowserActiveFilter = _getDefaultScheduleFilter(_scheduleBrowserLoggedCache);
+    renderScheduleBrowser();
+    if (latestLogged) {
+        requestAnimationFrame(() => _scrollScheduleToDate(latestLogged.match_date_manual));
+    }
 }
 
 // ── Public Knockout Bracket ───────────────────────────────────────────────────
@@ -924,65 +1417,147 @@ function setScheduleFilter(filter) {
 // matchesCache defaults to _publicMatchesCache when called from the public page.
 function renderKnockoutBracket(matchesCache) {
     const container = document.getElementById('bracket-container');
+    const guide = document.getElementById('bracket-guide');
     if (!container) return;
     if (matchesCache === undefined) matchesCache = _publicMatchesCache;
 
     const standings = computeGroupStandings(matchesCache);
-    const best3rd   = _getBestThirdPlaceTeams(standings);
+    const best3rdAssignments = _buildBestThirdAssignments(standings);
+    const useSeedStatusColours = !_isKnockoutFieldLocked(standings);
+    if (guide) guide.classList.toggle('hidden', !useSeedStatusColours);
 
-    // Each R32 "slot unit" is SLOT_H px tall.
-    // Total height = SLOT_H × 16 so every stage column is the same height.
-    const SLOT_H    = 60;  // px
-    const TOTAL_H   = SLOT_H * 16; // 960px
+    const SLOT_H = 68;
+    const TOTAL_H = SLOT_H * 16;
+    const HEADER_H = 64;
+    const CARD_H = 66;
+    const COLUMN_GAP = 20;
+    const COLUMN_W = 196;
+    const CARD_W = 184;
+    const CARD_OFFSET_X = Math.round((COLUMN_W - CARD_W) / 2);
 
     const stageConfigs = [
-        { stage: 'R32',      label: 'Round of 32',     units: 1 },
-        { stage: 'R16',      label: 'Round of 16',     units: 2 },
-        { stage: 'Quarters', label: 'Quarter-finals',  units: 4 },
-        { stage: 'Semis',    label: 'Semi-finals',     units: 8 },
-        { stage: 'Finals',   label: 'Finals',          units: 8 },
+        { stage: 'R32',      label: 'Round of 32',    units: 1 },
+        { stage: 'R16',      label: 'Round of 16',    units: 2 },
+        { stage: 'Quarters', label: 'Quarter-finals', units: 4 },
+        { stage: 'Semis',    label: 'Semi-finals',    units: 8 },
+        { stage: 'Finals',   label: 'Medal Matches',  units: 8 },
     ];
 
-    // Helper: render one match card (logged or unresolved)
-    const matchCard = (logged, homeRes, awayRes) => {
+    const stageLayouts = [];
+    stageConfigs.forEach((config, index) => {
+        const left = index * (COLUMN_W + COLUMN_GAP);
+        stageLayouts.push({ ...config, left, width: COLUMN_W });
+    });
+    const sceneWidth = stageLayouts.length * COLUMN_W + ((stageLayouts.length - 1) * COLUMN_GAP);
+    const sceneHeight = HEADER_H + TOTAL_H;
+
+    const matchCard = (logged, homeRes, awayRes, rawHomeLabel, rawAwayLabel, matchMeta = {}) => {
+        const seedText = (rawLabel, tone = 'neutral') => {
+            if (!rawLabel || rawLabel === 'TBD') return '';
+            const toneClass = !useSeedStatusColours
+                ? tone === 'winner'
+                    ? 'text-gray-700'
+                    : 'text-gray-400'
+                : tone === 'winner'
+                    ? 'text-emerald-700'
+                    : tone === 'qualified'
+                        ? 'text-amber-700'
+                        : tone === 'live'
+                            ? 'text-rose-700'
+                            : 'text-gray-400';
+            return `<span class="shrink-0 text-[8px] font-black uppercase tracking-[0.18em] ${toneClass}">${rawLabel}</span>`;
+        };
+        const wrapperClass = matchMeta.isTitleMatch
+            ? 'rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50 shadow-md'
+            : matchMeta.isThirdPlace
+                ? 'rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 via-white to-slate-50 shadow-sm'
+                : 'rounded-xl border border-gray-200 bg-white shadow-sm';
+        const matchTag = matchMeta.label
+            ? `<div class="px-2.5 pt-2 pb-1 text-[8px] font-black uppercase tracking-[0.2em] ${matchMeta.isTitleMatch ? 'text-amber-600' : matchMeta.isThirdPlace ? 'text-sky-600' : 'text-gray-400'}">${matchMeta.label}</div>`
+            : '';
+
         if (logged) {
             const hWon = logged.score_home > logged.score_away;
             const aWon = logged.score_away > logged.score_home;
             const hFlag = (_scheduleTeam(logged.team_home)).flag;
             const aFlag = (_scheduleTeam(logged.team_away)).flag;
+            const homeSeedLabel = rawHomeLabel === 'Best 3rd' ? _bestThirdSeedLabel(logged.team_home) : rawHomeLabel;
+            const awaySeedLabel = rawAwayLabel === 'Best 3rd' ? _bestThirdSeedLabel(logged.team_away) : rawAwayLabel;
+            const winnerEtTag = (isWinner) => (
+                logged.was_extra_time && isWinner
+                    ? '<span class="shrink-0 text-[8px] font-black uppercase tracking-[0.18em] text-red-400">E/P</span>'
+                    : ''
+            );
             return `
-                <div class="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm" style="width:190px">
+                <div class="${wrapperClass} overflow-hidden" style="width:${matchMeta.width || CARD_W}px">
+                    ${matchTag}
                     <div class="px-2.5 py-1.5 flex items-center justify-between gap-1 ${hWon ? 'bg-green-50' : ''}">
                         <div class="flex items-center gap-1 min-w-0">
+                            ${seedText(homeSeedLabel, hWon ? 'winner' : 'muted')}
                             <span class="text-sm leading-none">${hFlag}</span>
                             <span class="text-[11px] font-black ${hWon ? 'text-gray-900' : 'text-gray-400'} truncate">${logged.team_home}</span>
                         </div>
-                        <span class="text-[11px] font-black ${hWon ? 'text-gray-900' : 'text-gray-400'} shrink-0 ml-1">${logged.score_home}</span>
+                        <div class="flex items-center gap-2 shrink-0 ml-1">
+                            ${winnerEtTag(hWon)}
+                            <span class="text-[11px] font-black ${hWon ? 'text-gray-900' : 'text-gray-400'}">${logged.score_home}</span>
+                        </div>
                     </div>
                     <div class="h-px bg-gray-100"></div>
                     <div class="px-2.5 py-1.5 flex items-center justify-between gap-1 ${aWon ? 'bg-green-50' : ''}">
                         <div class="flex items-center gap-1 min-w-0">
+                            ${seedText(awaySeedLabel, aWon ? 'winner' : 'muted')}
                             <span class="text-sm leading-none">${aFlag}</span>
                             <span class="text-[11px] font-black ${aWon ? 'text-gray-900' : 'text-gray-400'} truncate">${logged.team_away}</span>
                         </div>
-                        <span class="text-[11px] font-black ${aWon ? 'text-gray-900' : 'text-gray-400'} shrink-0 ml-1">${logged.score_away}</span>
+                        <div class="flex items-center gap-2 shrink-0 ml-1">
+                            ${winnerEtTag(aWon)}
+                            <span class="text-[11px] font-black ${aWon ? 'text-gray-900' : 'text-gray-400'}">${logged.score_away}</span>
+                        </div>
                     </div>
-                    ${logged.was_extra_time ? '<div class="px-2.5 pb-1 text-[8px] font-black uppercase text-red-400">ET/Pens</div>' : ''}
                 </div>`;
         }
 
         const _teamRow = (res, rawLabel) => {
+            const displaySeed = _seedDisplayLabel(res, rawLabel);
+            const badgeTone = !useSeedStatusColours
+                ? 'muted'
+                : res.status === 'confirmed'
+                    ? 'winner'
+                    : res.qualified
+                        ? 'qualified'
+                        : 'live';
+            const nameTone = res.status === 'confirmed'
+                ? 'text-gray-700'
+                : res.qualified
+                    ? 'text-gray-500'
+                    : 'text-gray-300';
+            const rowTone = !useSeedStatusColours
+                ? 'bg-transparent'
+                : badgeTone === 'winner'
+                    ? 'bg-emerald-100'
+                    : badgeTone === 'qualified'
+                        ? 'bg-amber-100'
+                        : badgeTone === 'live'
+                            ? 'bg-rose-100'
+                            : 'bg-transparent';
             if (res.status === 'none')
-                return `<div class="flex items-center gap-1 min-w-0">
-                            <span class="text-sm leading-none opacity-40">❓</span>
-                            <span class="text-[11px] font-bold text-gray-300 truncate">${rawLabel}</span>
+                return `<div class="px-2.5 py-1.5 flex items-center gap-1.5 min-w-0">
+                            <span class="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-300 truncate">TBD</span>
+                        </div>`;
+            if (res.status === 'fallback')
+                return `<div class="px-2.5 py-1.5 flex items-center gap-1.5 min-w-0 ${rowTone}">
+                            ${seedText(displaySeed, badgeTone)}
+                            <span class="text-sm leading-none">${res.flag}</span>
+                            <span class="text-[11px] font-black ${nameTone} truncate">${res.name}</span>
                         </div>`;
             if (res.status === 'provisional')
-                return `<div class="flex items-center gap-1 min-w-0">
+                return `<div class="px-2.5 py-1.5 flex items-center gap-1.5 min-w-0 ${rowTone}">
+                            ${seedText(displaySeed, badgeTone)}
                             <span class="text-sm leading-none">${res.flag}</span>
-                            <span class="text-[11px] font-black text-gray-400 truncate">${res.name}<span class="text-gray-300">~</span></span>
+                            <span class="text-[11px] font-black ${nameTone} truncate">${res.name}</span>
                         </div>`;
-            return `<div class="flex items-center gap-1 min-w-0">
+            return `<div class="px-2.5 py-1.5 flex items-center gap-1.5 min-w-0 ${rowTone}">
+                        ${seedText(displaySeed, 'winner')}
                         <span class="text-sm leading-none">${res.flag}</span>
                         <span class="text-[11px] font-black text-gray-700 truncate">${res.name}</span>
                     </div>`;
@@ -990,55 +1565,70 @@ function renderKnockoutBracket(matchesCache) {
 
         const hasAny = homeRes.status !== 'none' || awayRes.status !== 'none';
         return `
-            <div class="rounded-xl overflow-hidden ${hasAny ? 'border border-gray-200 bg-white' : 'border border-dashed border-gray-200 bg-gray-50'}" style="width:190px">
-                <div class="px-2.5 py-1.5">${_teamRow(homeRes, '?')}</div>
+            <div class="${hasAny ? wrapperClass : 'rounded-xl border border-dashed border-gray-200 bg-gray-50'} overflow-hidden" style="width:${matchMeta.width || CARD_W}px">
+                ${matchTag}
+                ${_teamRow(homeRes, rawHomeLabel)}
                 <div class="h-px bg-gray-100"></div>
-                <div class="px-2.5 py-1.5">${_teamRow(awayRes, '?')}</div>
+                ${_teamRow(awayRes, rawAwayLabel)}
             </div>`;
     };
 
-    let best3rdSlot = 0;
-
-    const columns = stageConfigs.map(({ stage, label, units }) => {
-        const schedMatches  = KNOCKOUT_SCHEDULE.filter((m) => m.stage === stage);
-        const loggedStage   = matchesCache.filter((r) => r.stage === stage).sort((a, b) => a.id - b.id);
-        const blockH        = SLOT_H * units;
+    const columnMarkup = stageLayouts.map(({ stage, label, units, width, left }) => {
+        const schedMatches = KNOCKOUT_SCHEDULE.filter((m) => m.stage === stage);
+        const loggedStage = matchesCache.filter((r) => r.stage === stage).sort((a, b) => a.id - b.id);
+        const blockH = SLOT_H * units;
+        const sceneMidY = HEADER_H + (TOTAL_H / 2);
 
         const cards = schedMatches.map((m, slotIdx) => {
             const logged = loggedStage[slotIdx] || null;
             let homeRes, awayRes;
 
             if (!logged) {
-                homeRes = _resolveKnockoutTeam(m.home, standings, best3rd,
-                    m.home === 'Best 3rd' ? best3rdSlot++ : 0);
-                awayRes = _resolveKnockoutTeam(m.away, standings, best3rd,
-                    m.away === 'Best 3rd' ? best3rdSlot++ : 0);
+                homeRes = _resolveKnockoutMatchTeam(m, 'home', standings, best3rdAssignments);
+                awayRes = _resolveKnockoutMatchTeam(m, 'away', standings, best3rdAssignments);
             }
 
-            return `<div style="height:${blockH}px;display:flex;align-items:center;justify-content:center;">
-                        ${matchCard(logged, homeRes, awayRes)}
-                    </div>`;
+            const meta = {
+                width: stage === 'Finals'
+                    ? (slotIdx === 1 ? CARD_W + 12 : CARD_W - 6)
+                    : CARD_W,
+                label: stage === 'Finals'
+                    ? (slotIdx === 0 ? 'Third Place Playoff' : 'World Cup Final')
+                    : '',
+                isThirdPlace: stage === 'Finals' && slotIdx === 0,
+                isTitleMatch: stage === 'Finals' && slotIdx === 1
+            };
+            const centerY = stage === 'Finals'
+                ? (slotIdx === 1 ? sceneMidY - 84 : sceneMidY + 84)
+                : HEADER_H + (slotIdx * blockH) + (blockH / 2);
+            const top = Math.round(centerY - (CARD_H / 2));
+            const cardLeft = Math.round((width - meta.width) / 2);
+
+            return `
+                <div style="position:absolute;left:${stage === 'Finals' ? cardLeft : CARD_OFFSET_X}px;top:${top}px;width:${meta.width}px;">
+                    ${matchCard(logged, homeRes, awayRes, m.home, m.away, meta)}
+                </div>`;
         }).join('');
 
-        // Finals label distinguishes 3rd place play-off vs Grand Final
-        let colLabel = label;
-        if (stage === 'Finals') {
-            colLabel = `<span class="block">3rd Place</span><span class="block opacity-60 mt-0.5">+ Final</span>`;
-        }
-
         return `
-            <div class="flex flex-col" style="width:190px">
-                <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3 text-center leading-tight">${colLabel}</div>
-                <div style="height:${TOTAL_H}px">${cards}</div>
+            <div style="position:absolute;left:${left}px;top:0;width:${width}px;height:${sceneHeight}px;">
+                <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 text-center leading-tight">${label}</div>
+                ${cards}
             </div>`;
     }).join('');
 
-    container.innerHTML = `<div class="flex gap-4 min-w-max pb-4">${columns}</div>`;
+    container.innerHTML = `
+        <div class="min-w-max pb-6">
+            <div class="relative" style="width:${sceneWidth}px;height:${sceneHeight}px">
+                ${columnMarkup}
+            </div>
+        </div>`;
 }
 
 function prefillFromSchedule(homeName, awayName, groupOrStage, date) {
     const knockoutStages = ['R32', 'R16', 'Quarters', 'Semis', 'Finals'];
     const isKnockout = knockoutStages.includes(groupOrStage);
+    const isKnownTeam = (name) => teams.some((team) => team.name === name);
 
     // For group matches, ignore taps on already-logged matches
     if (!isKnockout && _isMatchLogged({ home: homeName, away: awayName })) return;
@@ -1054,10 +1644,8 @@ function prefillFromSchedule(homeName, awayName, groupOrStage, date) {
     const extraTime = document.getElementById('admin-extratime');
 
     if (isKnockout) {
-        // Seedings like '1A' / 'TBD' are not real team names — clear the fields
-        // so the admin can type the actual teams once they're known.
-        if (team1) team1.value = '';
-        if (team2) team2.value = '';
+        if (team1) team1.value = isKnownTeam(homeName) ? homeName : '';
+        if (team2) team2.value = isKnownTeam(awayName) ? awayName : '';
         if (stage) stage.value = groupOrStage;
     } else {
         if (team1) team1.value = homeName;
@@ -1067,15 +1655,46 @@ function prefillFromSchedule(homeName, awayName, groupOrStage, date) {
 
     if (matchDate && date) matchDate.value = date;
     if (extraTime) extraTime.value = 'false';
-    if (score1) { score1.value = ''; score1.focus(); }
+    if (score1) score1.value = '';
     if (score2) score2.value = '';
+    _primeAdminScoresIfReady();
+    if (score1) score1.focus();
 
     window._editingMatchId = null;
     const submitBtn = document.getElementById('admin-submit-btn');
     if (submitBtn) submitBtn.textContent = 'LOG SCORE';
 
     const form = document.getElementById('admin-match-entry-form');
-    if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (form) _scrollAdminFormIntoView(form);
+}
+
+function _scrollAdminFormIntoView(formEl) {
+    if (!formEl) return;
+    const scrollContainer = document.getElementById('page-admin');
+    const stickyHeader = document.getElementById('admin-sticky-header');
+    const headerOffset = (stickyHeader?.offsetHeight || 0) + 20;
+
+    if (scrollContainer) {
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const formRect = formEl.getBoundingClientRect();
+        const nextTop = scrollContainer.scrollTop + (formRect.top - containerRect.top) - headerOffset;
+        scrollContainer.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
+        return;
+    }
+
+    const absoluteTop = window.scrollY + formEl.getBoundingClientRect().top - headerOffset;
+    window.scrollTo({ top: Math.max(0, absoluteTop), behavior: 'smooth' });
+}
+
+function _primeAdminScoresIfReady(force = false) {
+    const team1 = document.getElementById('admin-team1');
+    const team2 = document.getElementById('admin-team2');
+    const score1 = document.getElementById('admin-score1');
+    const score2 = document.getElementById('admin-score2');
+    if (!team1 || !team2 || !score1 || !score2) return;
+    if (!team1.value || !team2.value) return;
+    if (force || score1.value === '') score1.value = '0';
+    if (force || score2.value === '') score2.value = '0';
 }
 
 function editScheduleMatch(_homeName, _awayName, _group, date, matchId) {
@@ -1097,7 +1716,7 @@ function editScheduleMatch(_homeName, _awayName, _group, date, matchId) {
     if (team1) team1.value = result.team_home;
     if (team2) team2.value = result.team_away;
     if (stage) stage.value = result.stage;
-    if (matchDate && date) matchDate.value = date;
+    if (matchDate) matchDate.value = result.match_date_manual || date || '';
     if (extraTime) extraTime.value = result.was_extra_time ? 'true' : 'false';
     if (score1) score1.value = result.score_home;
     if (score2) score2.value = result.score_away;
@@ -1105,8 +1724,9 @@ function editScheduleMatch(_homeName, _awayName, _group, date, matchId) {
 
     window._editingMatchId = matchId;
 
+    _primeAdminScoresIfReady(true);
     score1?.focus();
-    document.getElementById('admin-match-entry-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    _scrollAdminFormIntoView(document.getElementById('admin-match-entry-form'));
 }
 
 function setupAdminPage() {
@@ -1117,7 +1737,6 @@ function setupAdminPage() {
 
     if (teamOneSelect && teamTwoSelect) {
         const options = [...teams]
-            .filter((team) => team.qualified !== false)
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((team) => `<option value="${team.name}">${team.flag} ${team.name}</option>`)
             .join('');
@@ -1126,20 +1745,33 @@ function setupAdminPage() {
         teamTwoSelect.innerHTML = `<option value="">Select Away Team...</option>${options}`;
         attachAlphaJumpToSelect(teamOneSelect);
         attachAlphaJumpToSelect(teamTwoSelect);
+        if (teamOneSelect.dataset.defaultScoreBound !== 'true') {
+            const onSelectTeam = () => _primeAdminScoresIfReady();
+            teamOneSelect.addEventListener('change', onSelectTeam);
+            teamTwoSelect.addEventListener('change', onSelectTeam);
+            teamOneSelect.dataset.defaultScoreBound = 'true';
+            teamTwoSelect.dataset.defaultScoreBound = 'true';
+        }
     }
 
     fetchAdminHistory();
     fetchAdminUsers();
     fetchAdminNotifications();
     fetchAdminAdvancement();
+    fetchAdminKnockoutVerify();
     fetchStats();
     syncAdminToggleControls();
+
+    if (appSettings.autoTeamStatusSync) {
+        syncDerivedTeamStatus({ silent: true }).catch(() => {});
+    }
 }
 
 function syncAdminToggleControls() {
     const lockToggle = document.getElementById('admin-lock-picks-toggle');
     const autoLockToggle = document.getElementById('admin-auto-lock-toggle');
     const hideTeamSelectionToggle = document.getElementById('admin-hide-team-selection-toggle');
+    const autoTeamStatusToggle = document.getElementById('admin-auto-team-status-toggle');
 
     if (lockToggle) {
         lockToggle.checked = Boolean(appSettings.picksLocked);
@@ -1151,6 +1783,10 @@ function syncAdminToggleControls() {
 
     if (hideTeamSelectionToggle) {
         hideTeamSelectionToggle.checked = Boolean(appSettings.hideTeamSelection);
+    }
+
+    if (autoTeamStatusToggle) {
+        autoTeamStatusToggle.checked = Boolean(appSettings.autoTeamStatusSync);
     }
 }
 
@@ -1176,7 +1812,11 @@ function showAdminTab(tabId) {
         activeTab.classList.remove('border-gray-700', 'bg-gray-800', 'text-gray-300');
     }
 
-    if (tabId === 'schedule') _syncScheduleFilterTop();
+    if (tabId === 'schedule') {
+        _syncScheduleFilterTop();
+        _syncScheduleBrowserToCurrentProgress();
+    }
+    if (tabId === 'verify') fetchAdminKnockoutVerify();
 }
 
 function showResultsTab(tabId) {
@@ -1444,6 +2084,97 @@ async function toggleHideTeamSelection(checked) {
     } catch (error) {
         syncAdminToggleControls();
         showToast(error.message || 'Unable to update team visibility.');
+    }
+}
+
+function _buildDerivedTeamStatusRows(matches) {
+    const statusByTeam = new Map(
+        teams
+            .filter((team) => team.qualified !== false)
+            .map((team) => [team.name, { team_name: team.name, advanced_to_knockouts: false, eliminated: false }])
+    );
+
+    const standings = computeGroupStandings(matches);
+    const bestThirdAssignments = _buildBestThirdAssignments(standings);
+    const qualifiedBestThirdTeams = new Set([...bestThirdAssignments.values()].map((team) => team.name));
+    const thirdPlaceResolved = bestThirdAssignments.size === _getBestThirdSlots().length;
+
+    Object.values(standings).forEach((group) => {
+        if (group.status !== 'complete') return;
+        const [first, second, third, fourth] = group.teams;
+        if (first && statusByTeam.has(first.name)) statusByTeam.get(first.name).advanced_to_knockouts = true;
+        if (second && statusByTeam.has(second.name)) statusByTeam.get(second.name).advanced_to_knockouts = true;
+        if (fourth && statusByTeam.has(fourth.name)) statusByTeam.get(fourth.name).eliminated = true;
+
+        if (third && statusByTeam.has(third.name) && thirdPlaceResolved) {
+            const thirdStatus = statusByTeam.get(third.name);
+            if (qualifiedBestThirdTeams.has(third.name)) thirdStatus.advanced_to_knockouts = true;
+            else thirdStatus.eliminated = true;
+        }
+    });
+
+    matches
+        .filter((match) => match.stage !== 'Group' && match.score_home !== match.score_away)
+        .forEach((match) => {
+            const loser = match.score_home > match.score_away ? match.team_away : match.team_home;
+            if (statusByTeam.has(loser)) statusByTeam.get(loser).eliminated = true;
+        });
+
+    return [...statusByTeam.values()];
+}
+
+async function syncDerivedTeamStatus(options = {}) {
+    const { silent = false } = options;
+    const { data, error } = await supabaseClient
+        .from('matches')
+        .select('*');
+
+    if (error) throw error;
+
+    const derivedRows = _buildDerivedTeamStatusRows(data || []);
+    const { error: upsertError } = await supabaseClient
+        .from('team_advancement')
+        .upsert(derivedRows, { onConflict: 'team_name' });
+
+    if (upsertError) throw upsertError;
+
+    await fetchAdvancedTeams();
+    await fetchAdminAdvancement();
+    fetchLeaderboard();
+    fetchPublicTeamResults();
+    setupDashboard();
+
+    if (!silent) {
+        showToast('Team status synced from results.', 'success');
+    }
+}
+
+async function toggleAutoTeamStatusSync(checked) {
+    appSettings.autoTeamStatusSync = Boolean(checked);
+    try {
+        localStorage.setItem('wc_pool_auto_team_status_sync', checked ? 'true' : 'false');
+    } catch (error) {
+        // Ignore localStorage failures and keep the in-memory toggle for this session.
+    }
+
+    if (checked) {
+        try {
+            await syncDerivedTeamStatus({ silent: true });
+            showToast('Auto team sync enabled.', 'success');
+        } catch (error) {
+            appSettings.autoTeamStatusSync = false;
+            try {
+                localStorage.setItem('wc_pool_auto_team_status_sync', 'false');
+            } catch (_storageError) {
+                // Ignore storage cleanup failures.
+            }
+            const toggle = document.getElementById('admin-auto-team-status-toggle');
+            if (toggle) toggle.checked = false;
+            showToast(error.message || 'Unable to enable auto team sync.');
+            return;
+        }
+    } else {
+        showToast('Auto team sync disabled.', 'success');
     }
 }
 
@@ -1998,23 +2729,26 @@ async function setupDashboard() {
             const awayTeam = teams.find((team) => team.name === match.team_away);
             const isHomeMine = squadNames?.has(match.team_home);
             const isAwayMine = squadNames?.has(match.team_away);
+            const stageLabel = _getMatchStageDisplayLabel(match);
             const scoreMarkup = match.is_finished
                 ? `${match.score_home}-${match.score_away}`
                 : (match.match_date_manual || 'TBD');
 
             return `
-                <div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
-                    <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.2em]">${match.match_date_manual || 'TBD'} | ${match.stage}</div>
-                    <div class="mt-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 text-sm font-black text-gray-900">
+                <div class="rounded-2xl border border-gray-100 bg-gray-50 px-3 py-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="theme-accent-text text-[9px] font-black uppercase tracking-[0.18em]">${match.match_date_manual || 'TBD'} | ${stageLabel}</div>
+                        <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 whitespace-nowrap">
+                            ${buildPointsAwardedLabel(match)}
+                        </div>
+                    </div>
+                    <div class="mt-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 text-sm font-black text-gray-900">
                         <div class="min-w-0 text-left ${isHomeMine ? 'font-black' : ''}">
                             <div class="truncate">${homeTeam?.flag || ''} ${match.team_home}</div>
                             ${ownershipMarkup(match.team_home, 'left')}
                         </div>
                         <div class="text-center">
-                            <div class="mb-1 text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">
-                                ${buildPointsAwardedLabel(match)}
-                            </div>
-                            <div class="rounded-xl bg-gray-900 px-3 py-1 font-mono text-white text-center">
+                            <div class="rounded-xl bg-gray-900 px-2.5 py-1 font-mono text-white text-center text-[13px]">
                                 ${scoreMarkup}
                             </div>
                         </div>
@@ -2039,52 +2773,40 @@ async function setupDashboard() {
                     match?.match_date_manual && (squadNames.has(match.team_home) || squadNames.has(match.team_away))
                 )
                 .sort((a, b) => getMatchSortKey(a).localeCompare(getMatchSortKey(b)));
-            const nextUpcoming = squadMatches.find((match) =>
-                match.match_date_manual >= localTodayKey && !match.is_finished
-            );
-            const nextMatchDay = nextUpcoming?.match_date_manual || '';
-            const nextDayMatches = nextMatchDay
-                ? squadMatches.filter((match) => match.match_date_manual === nextMatchDay)
-                : [];
+            const upcomingMatches = squadMatches
+                .filter((match) => match.match_date_manual >= localTodayKey && !match.is_finished)
+                .slice(0, 3);
             const previousMatches = squadMatches
-                .filter((match) => !nextMatchDay || getMatchSortKey(match) < getMatchSortKey(nextUpcoming))
+                .filter((match) => match.is_finished || match.match_date_manual < localTodayKey)
                 .sort((a, b) => getMatchSortKey(b).localeCompare(getMatchSortKey(a)))
                 .slice(0, 3);
 
             if (teamsTodaySection) teamsTodaySection.classList.remove('hidden');
 
-            if (nextDayMatches.length === 0 && previousMatches.length === 0) {
+            if (upcomingMatches.length === 0 && previousMatches.length === 0) {
                 teamsTodayEl.innerHTML = '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No matches found for your squad</div>';
                 if (teamsTodayLabel) {
-                    teamsTodayLabel.textContent = 'Upcoming and recent squad matches';
+                    teamsTodayLabel.textContent = 'Upcoming and recent matches for your squad';
                 }
             } else {
                 if (teamsTodayLabel) {
-                    teamsTodayLabel.textContent = nextMatchDay
-                        ? `Next squad match day: ${nextMatchDay}`
-                        : 'Recent squad matches';
+                    teamsTodayLabel.textContent = 'Three previous and three upcoming matches for your squad';
                 }
 
-                const sections = [];
-                if (nextDayMatches.length > 0) {
-                    sections.push(`
-                        <div class="space-y-3">
-                            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Next Match Day</div>
-                            ${nextDayMatches.map((match) => renderDashboardMatchCard(match, { squadNames })).join('')}
-                        </div>
-                    `);
-                }
-
-                if (previousMatches.length > 0) {
-                    sections.push(`
-                        <div class="space-y-3">
-                            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Previous Three</div>
-                            ${previousMatches.map((match) => renderDashboardMatchCard(match, { squadNames })).join('')}
-                        </div>
-                    `);
-                }
-
-                teamsTodayEl.innerHTML = sections.join('');
+                teamsTodayEl.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Previous Three</div>
+                        ${previousMatches.length > 0
+                            ? previousMatches.map((match) => renderDashboardMatchCard(match, { squadNames })).join('')
+                            : '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No previous squad matches yet</div>'}
+                    </div>
+                    <div class="space-y-3">
+                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Upcoming Three</div>
+                        ${upcomingMatches.length > 0
+                            ? upcomingMatches.map((match) => renderDashboardMatchCard(match, { squadNames })).join('')
+                            : '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No upcoming squad matches</div>'}
+                    </div>
+                `;
             }
         }
 
@@ -2912,6 +3634,9 @@ async function resetAllMatches() {
             .delete()
             .neq('id', 0);
         if (error) throw error;
+        if (appSettings.autoTeamStatusSync) {
+            await syncDerivedTeamStatus({ silent: true });
+        }
         showToast('All matches deleted.', 'success');
     } catch (error) {
         showToast(error.message || 'Unable to delete matches.');
@@ -2919,6 +3644,224 @@ async function resetAllMatches() {
         if (button) {
             button.disabled = false;
             button.textContent = 'Delete All Matches';
+        }
+    }
+}
+
+function _randomInt(maxExclusive) {
+    return Math.floor(Math.random() * maxExclusive);
+}
+
+function _buildRandomScorePair({ knockout = false } = {}) {
+    const weightedScores = [0, 0, 1, 1, 1, 2, 2, 3, 4];
+    let scoreHome = weightedScores[_randomInt(weightedScores.length)];
+    let scoreAway = weightedScores[_randomInt(weightedScores.length)];
+    let wasExtraTime = false;
+
+    if (knockout && scoreHome === scoreAway) {
+        wasExtraTime = true;
+        if (Math.random() < 0.5) scoreHome += 1;
+        else scoreAway += 1;
+    }
+
+    return { scoreHome, scoreAway, wasExtraTime };
+}
+
+function _buildSimulatedMatchRow(teamHome, teamAway, scheduleMatch, rowIndex, knockout = false) {
+    const { scoreHome, scoreAway, wasExtraTime } = _buildRandomScorePair({ knockout });
+    const matchDate = new Date(Date.UTC(2026, 0, 1, 0, 0, rowIndex)).toISOString();
+    return {
+        team_home: teamHome,
+        team_away: teamAway,
+        score_home: scoreHome,
+        score_away: scoreAway,
+        stage: scheduleMatch.stage || 'Group',
+        is_finished: true,
+        match_date: matchDate,
+        match_date_manual: scheduleMatch.date,
+        was_extra_time: wasExtraTime
+    };
+}
+
+function _winnerFromMatchRow(matchRow) {
+    return matchRow.score_home > matchRow.score_away ? matchRow.team_home : matchRow.team_away;
+}
+
+function _loserFromMatchRow(matchRow) {
+    return matchRow.score_home > matchRow.score_away ? matchRow.team_away : matchRow.team_home;
+}
+
+function _simulateKnockoutRoundRows(stage, entrants, rowIndexStart) {
+    const scheduleMatches = KNOCKOUT_SCHEDULE.filter((match) => match.stage === stage);
+    const rows = [];
+    const winners = [];
+    const losers = [];
+
+    entrants.forEach((entry, index) => {
+        const scheduleMatch = scheduleMatches[index];
+        if (!scheduleMatch) return;
+        const row = _buildSimulatedMatchRow(entry.home, entry.away, scheduleMatch, rowIndexStart + index, true);
+        rows.push(row);
+        winners.push(_winnerFromMatchRow(row));
+        losers.push(_loserFromMatchRow(row));
+    });
+
+    return { rows, winners, losers };
+}
+
+const SIMULATION_STAGE_LABELS = {
+    GroupMatchday1: 'group matchday 1',
+    GroupMatchday2: 'group matchday 2',
+    Group: 'group stage',
+    R32: 'Round of 32',
+    R16: 'Round of 16',
+    Quarters: 'quarter-finals',
+    Semis: 'semi-finals',
+    Finals: 'tournament'
+};
+
+function _buildSimulatedGroupRowsThroughMatchday(maxMatchday) {
+    const allowedMatchIds = new Set();
+
+    'ABCDEFGHIJKL'.split('').forEach((groupLetter) => {
+        GROUP_STAGE_SCHEDULE
+            .filter((match) => match.group === groupLetter)
+            .slice(0, Math.max(0, Math.min(3, maxMatchday)) * 2)
+            .forEach((match) => allowedMatchIds.add(`${match.group}:${match.date}:${match.home}:${match.away}`));
+    });
+
+    return GROUP_STAGE_SCHEDULE
+        .filter((match) => allowedMatchIds.has(`${match.group}:${match.date}:${match.home}:${match.away}`))
+        .map((match, index) => _buildSimulatedMatchRow(match.home, match.away, { ...match, stage: 'Group' }, index, false));
+}
+
+async function simulateAllScheduledMatches() {
+    const targetStage = await showSimulationStageModal('Finals');
+    if (!targetStage) return;
+
+    const targetLabel = SIMULATION_STAGE_LABELS[targetStage] || 'tournament';
+    const shouldSimulate = await showConfirmModal({
+        label: 'Testing Tool',
+        icon: '🎲',
+        title: `Simulate To ${targetLabel[0].toUpperCase()}${targetLabel.slice(1)}?`,
+        message: `This will replace all current match results with random scores through the ${targetLabel}.`,
+        detail: 'The bracket, table, and standings will all refresh from the simulated results.',
+        confirmText: 'Run Simulation',
+        cancelText: 'Cancel'
+    });
+
+    if (!shouldSimulate) return;
+
+    const button = document.getElementById('admin-simulate-matches-btn');
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'Simulating...';
+    }
+
+    try {
+        const allQualifiedTeams = teams.filter((team) => team.qualified !== false);
+        const groupMatchdayLimit = targetStage === 'GroupMatchday1' ? 1 : targetStage === 'GroupMatchday2' ? 2 : 3;
+        const groupRows = _buildSimulatedGroupRowsThroughMatchday(groupMatchdayLimit);
+
+        let allRows = [...groupRows];
+
+        const standings = computeGroupStandings(groupRows);
+        const best3rdAssignments = _buildBestThirdAssignments(standings);
+        const r32Entrants = KNOCKOUT_SCHEDULE
+            .filter((match) => match.stage === 'R32')
+            .map((match) => ({
+                home: _resolveKnockoutMatchTeam(match, 'home', standings, best3rdAssignments).name,
+                away: _resolveKnockoutMatchTeam(match, 'away', standings, best3rdAssignments).name
+            }));
+
+        let rowIndex = groupRows.length;
+        if (!['GroupMatchday1', 'GroupMatchday2', 'Group'].includes(targetStage)) {
+            const r32Round = _simulateKnockoutRoundRows('R32', r32Entrants, rowIndex);
+            allRows.push(...r32Round.rows);
+            rowIndex += r32Round.rows.length;
+
+            if (['R16', 'Quarters', 'Semis', 'Finals'].includes(targetStage)) {
+                const r16Entrants = Array.from({ length: 8 }, (_, index) => ({
+                    home: r32Round.winners[index * 2],
+                    away: r32Round.winners[index * 2 + 1]
+                }));
+                const r16Round = _simulateKnockoutRoundRows('R16', r16Entrants, rowIndex);
+                allRows.push(...r16Round.rows);
+                rowIndex += r16Round.rows.length;
+
+                if (['Quarters', 'Semis', 'Finals'].includes(targetStage)) {
+                    const qfEntrants = Array.from({ length: 4 }, (_, index) => ({
+                        home: r16Round.winners[index * 2],
+                        away: r16Round.winners[index * 2 + 1]
+                    }));
+                    const qfRound = _simulateKnockoutRoundRows('Quarters', qfEntrants, rowIndex);
+                    allRows.push(...qfRound.rows);
+                    rowIndex += qfRound.rows.length;
+
+                    if (['Semis', 'Finals'].includes(targetStage)) {
+                        const semiEntrants = Array.from({ length: 2 }, (_, index) => ({
+                            home: qfRound.winners[index * 2],
+                            away: qfRound.winners[index * 2 + 1]
+                        }));
+                        const semiRound = _simulateKnockoutRoundRows('Semis', semiEntrants, rowIndex);
+                        allRows.push(...semiRound.rows);
+                        rowIndex += semiRound.rows.length;
+
+                        if (targetStage === 'Finals') {
+                            const finalsEntrants = [
+                                { home: semiRound.losers[0], away: semiRound.losers[1] },
+                                { home: semiRound.winners[0], away: semiRound.winners[1] }
+                            ];
+                            const finalsRound = _simulateKnockoutRoundRows('Finals', finalsEntrants, rowIndex);
+                            allRows.push(...finalsRound.rows);
+                        }
+                    }
+                }
+            }
+        }
+
+        let error;
+        ({ error } = await supabaseClient.from('matches').delete().neq('id', 0));
+        if (error) throw error;
+
+        ({ error } = await supabaseClient.from('matches').insert(allRows));
+        if (error) throw error;
+
+        const derivedTeamStatusRows = _buildDerivedTeamStatusRows(allRows);
+        const advancementRows = derivedTeamStatusRows.concat(
+            allQualifiedTeams
+                .filter((team) => !derivedTeamStatusRows.some((row) => row.team_name === team.name))
+                .map((team) => ({ team_name: team.name, advanced_to_knockouts: false, eliminated: false }))
+        );
+
+        ({ error } = await supabaseClient
+            .from('team_advancement')
+            .upsert(advancementRows, { onConflict: 'team_name' }));
+        if (error) throw error;
+
+        if (appSettings.autoTeamStatusSync) {
+            await syncDerivedTeamStatus({ silent: true });
+        }
+
+        await fetchAdvancedTeams();
+        await fetchAdminHistory(true);
+        await fetchAdminAdvancement();
+        await Promise.all([
+            fetchPublicResults(),
+            fetchPublicTeamResults(),
+            fetchLeaderboard(),
+            fetchStats(),
+            setupDashboard()
+        ]);
+        renderGroups();
+
+        showToast(`Random simulation complete through the ${targetLabel}.`, 'success');
+    } catch (error) {
+        showToast(error.message || 'Unable to simulate matches.');
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Run Simulation';
         }
     }
 }
@@ -2985,14 +3928,15 @@ async function fetchAdminHistory(highlightLatest = false) {
         { data: picks },
         { data: profiles }
     ] = await Promise.all([
-        supabaseClient.from('matches').select('*').order('match_date_manual', { ascending: false }).limit(100),
+        supabaseClient.from('matches').select('*').order('match_date_manual', { ascending: false }),
         supabaseClient.from('picks').select('user_email, team_name'),
         supabaseClient.from('profiles').select('email')
     ]);
 
     // Keep schedule browser in sync
     _scheduleBrowserLoggedCache = matches || [];
-    renderScheduleBrowser();
+    _syncScheduleBrowserToCurrentProgress();
+    const historyMatches = (matches || []).slice(0, 100);
 
     const selectionStats = buildSelectionStatsSnapshot(picks || [], profiles || []);
     const teamOwnership = new Map();
@@ -3015,33 +3959,51 @@ async function fetchAdminHistory(highlightLatest = false) {
         const pts = getMatchPointsForTeam(match, winner);
         return `${pts} pts awarded`;
     };
+    const groupedMatches = historyMatches.reduce((acc, match, index) => {
+        const dateKey = match.match_date_manual || 'TBD';
+        if (!acc[dateKey]) acc[dateKey] = [];
+        acc[dateKey].push({ match, index });
+        return acc;
+    }, {});
 
-    container.innerHTML = matches?.map((match, i) => {
-        const homeTeam = teams.find((t) => t.name === match.team_home);
-        const awayTeam = teams.find((t) => t.name === match.team_away);
-        return `
-            <div class="bg-gray-800 rounded-3xl border border-gray-700 p-4 md:p-6 ${highlightLatest && i === 0 ? 'result-flash' : ''}">
-                <div class="flex items-center justify-between mb-3">
-                    <div class="theme-accent-text text-[9px] font-black uppercase tracking-[0.15em]">${match.match_date_manual} · ${match.stage}</div>
-                    <button onclick="deleteMatch(${match.id})" class="text-gray-600 hover:text-red-500 text-lg font-black transition-colors leading-none">×</button>
-                </div>
-                <div class="grid grid-cols-[minmax(0,1fr)_100px_minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_140px_minmax(0,1fr)] items-center gap-3">
-                    <div class="text-left">
-                        <div class="text-sm md:text-lg font-black text-white truncate">${homeTeam?.flag || ''} ${match.team_home}</div>
-                        ${ownershipMarkup(match.team_home)}
-                    </div>
-                    <div class="text-center">
-                        <div class="text-[9px] font-black uppercase tracking-[0.12em] text-gray-500 mb-1">${buildPointsLabel(match)}</div>
-                        <div class="bg-gray-950 text-white font-mono font-black text-sm md:text-base tabular-nums px-3 py-1.5 rounded-lg text-center">${match.score_home} – ${match.score_away}</div>
-                        ${match.was_extra_time ? '<div class="mt-1 text-[8px] font-black uppercase text-red-400">ET/Pens</div>' : ''}
-                    </div>
-                    <div class="text-right">
-                        <div class="text-sm md:text-lg font-black text-white truncate">${match.team_away} ${awayTeam?.flag || ''}</div>
-                        ${ownershipMarkup(match.team_away)}
-                    </div>
-                </div>
-            </div>`;
-    }).join('') || '<div class="text-center py-10 text-gray-600 uppercase text-xs font-black">No matches logged yet</div>';
+    container.innerHTML = Object.entries(groupedMatches).map(([date, dateMatches]) => `
+        <div class="space-y-2">
+            <div class="flex items-center gap-3 pt-2">
+                <div class="h-px flex-1 bg-gray-700"></div>
+                <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">${date}</div>
+                <div class="h-px flex-1 bg-gray-700"></div>
+            </div>
+            <div class="space-y-2">
+                ${dateMatches.map(({ match, index }) => {
+                    const homeTeam = teams.find((t) => t.name === match.team_home);
+                    const awayTeam = teams.find((t) => t.name === match.team_away);
+                    const stageLabel = _getMatchStageDisplayLabel(match);
+                    return `
+                        <div class="bg-gray-800 rounded-2xl border border-gray-700 px-4 py-3 ${highlightLatest && index === 0 ? 'result-flash' : ''}">
+                            <div class="grid grid-cols-[minmax(0,1fr)_96px_minmax(0,1fr)_24px] md:grid-cols-[minmax(0,1fr)_128px_minmax(0,1fr)_24px] items-center gap-3">
+                                <div class="text-left min-w-0">
+                                    <div class="text-sm md:text-base font-black text-white truncate">${homeTeam?.flag || ''} ${match.team_home}</div>
+                                    ${ownershipMarkup(match.team_home)}
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-[8px] font-black uppercase tracking-[0.15em] text-gray-500 mb-1">${stageLabel}</div>
+                                    <div class="bg-gray-950 text-white font-mono font-black text-sm md:text-base tabular-nums px-2.5 py-1 rounded-lg text-center">${match.score_home} – ${match.score_away}</div>
+                                    <div class="mt-1 text-[8px] font-black uppercase tracking-[0.12em] text-gray-500">${buildPointsLabel(match)}</div>
+                                    ${match.was_extra_time ? '<div class="mt-0.5 text-[8px] font-black uppercase text-red-400">E/P</div>' : ''}
+                                </div>
+                                <div class="text-right min-w-0">
+                                    <div class="text-sm md:text-base font-black text-white truncate">${match.team_away} ${awayTeam?.flag || ''}</div>
+                                    ${ownershipMarkup(match.team_away)}
+                                </div>
+                                <div class="text-right">
+                                    <button onclick="deleteMatch(${match.id})" class="text-gray-600 hover:text-red-500 text-lg font-black transition-colors leading-none">×</button>
+                                </div>
+                            </div>
+                        </div>`;
+                }).join('')}
+            </div>
+        </div>
+    `).join('') || '<div class="text-center py-10 text-gray-600 uppercase text-xs font-black">No matches logged yet</div>';
 }
 
 async function fetchPublicResults() {
@@ -3117,43 +4079,79 @@ async function fetchPublicResults() {
     _publicMatchesCache = matches || [];
     renderKnockoutBracket(_publicMatchesCache);
 
-    container.innerHTML = matches?.map((match) => {
-        const homeTeam = teams.find((team) => team.name === match.team_home);
-        const awayTeam = teams.find((team) => team.name === match.team_away);
+    const groupedMatches = (matches || []).reduce((acc, match) => {
+        const dateKey = match.match_date_manual || 'TBD';
+        if (!acc[dateKey]) {
+            acc[dateKey] = [];
+        }
+        acc[dateKey].push(match);
+        return acc;
+    }, {});
 
-        return `
-            <div class="bg-white p-3 md:p-6 rounded-3xl border-2 border-gray-100 text-left">
-                <div class="theme-accent-text text-[8px] md:text-[10px] font-black uppercase mb-3">${match.match_date_manual} | ${match.stage}</div>
-                <div class="grid grid-cols-[minmax(0,1fr)_108px_minmax(0,1fr)] items-center gap-3 md:grid-cols-[minmax(220px,1fr)_160px_minmax(220px,1fr)] md:gap-6">
-                    <div class="min-w-0 text-left">
-                        <div class="text-sm md:text-xl font-black truncate">${homeTeam?.flag || ''} ${match.team_home}</div>
-                        ${ownershipMarkup(match.team_home)}
-                    </div>
-                    <div class="text-center">
-                        <div class="mb-1 text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">
-                            ${buildPointsAwardedLabel(match)}
-                        </div>
-                        <div class="bg-gray-900 text-white px-3 md:px-4 py-2 md:py-3 rounded-lg md:rounded-xl font-mono text-center text-base md:text-[1.7rem] font-black tabular-nums min-w-[108px] md:min-w-[160px]">
-                            ${match.score_home} - ${match.score_away}
-                        </div>
-                    </div>
-                    <div class="min-w-0 text-right">
-                        <div class="text-sm md:text-xl font-black truncate">${match.team_away} ${awayTeam?.flag || ''}</div>
-                        ${ownershipMarkup(match.team_away)}
-                    </div>
-                </div>
-                ${match.was_extra_time ? '<div class="mt-3 text-[8px] md:text-[10px] font-black uppercase text-red-500 italic text-right">ET/Pens Result</div>' : ''}
+    container.innerHTML = Object.entries(groupedMatches).map(([date, dateMatches]) => `
+        <section class="space-y-2">
+            <div class="flex items-center gap-3 px-1 pt-1">
+                <div class="h-px flex-1 bg-gray-200"></div>
+                <div class="theme-accent-text text-[9px] font-black uppercase tracking-[0.22em]">${date}</div>
+                <div class="h-px flex-1 bg-gray-200"></div>
             </div>
-        `;
-    }).join('') || '<div class="text-center py-20 text-gray-400 font-bold uppercase text-xs text-center">Tournament results will appear here once matches begin.</div>';
+            <div class="space-y-2">
+                ${dateMatches.map((match) => {
+                    const homeTeam = teams.find((team) => team.name === match.team_home);
+                    const awayTeam = teams.find((team) => team.name === match.team_away);
+                    const stageLabel = _getMatchStageDisplayLabel(match);
+
+                    return `
+                        <div class="rounded-[24px] border border-gray-200 bg-white px-3 py-2.5 md:px-4 md:py-3 text-left">
+                            <div class="grid grid-cols-[minmax(0,1fr)_88px_minmax(0,1fr)] items-center gap-2.5 md:grid-cols-[minmax(180px,1fr)_108px_minmax(180px,1fr)] md:gap-4">
+                                <div class="min-w-0 text-left">
+                                    <div class="text-[13px] md:text-base font-black leading-tight truncate">${homeTeam?.flag || ''} ${match.team_home}</div>
+                                    ${ownershipMarkup(match.team_home)}
+                                </div>
+                                <div class="text-center">
+                                    <div class="mb-1 text-[8px] font-black uppercase tracking-[0.16em] text-gray-400">
+                                        ${stageLabel}
+                                    </div>
+                                    <div class="rounded-lg bg-gray-900 px-2 py-1 text-center font-mono text-sm md:text-lg font-black tabular-nums text-white">
+                                        ${match.score_home} - ${match.score_away}
+                                    </div>
+                                    <div class="mt-1 text-[8px] font-black uppercase tracking-[0.12em] text-gray-400">
+                                        ${buildPointsAwardedLabel(match)}
+                                    </div>
+                                </div>
+                                <div class="min-w-0 text-right">
+                                    <div class="text-[13px] md:text-base font-black leading-tight truncate">${match.team_away} ${awayTeam?.flag || ''}</div>
+                                    ${ownershipMarkup(match.team_away)}
+                                </div>
+                            </div>
+                            ${match.was_extra_time ? '<div class="mt-1.5 text-[8px] font-black uppercase tracking-[0.14em] text-red-500 text-right">ET/Pens Result</div>' : ''}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </section>
+    `).join('') || '<div class="text-center py-20 text-gray-400 font-bold uppercase text-xs text-center">Tournament results will appear here once matches begin.</div>';
 }
 
 async function deleteMatch(id) {
-    if (!confirm('Delete result?')) {
+    const shouldDelete = await showConfirmModal({
+        label: 'Are You Sure?',
+        icon: '🗑️',
+        title: 'Delete Match Result?',
+        message: 'This will remove the saved score for this match.',
+        detail: 'The schedule, standings, bracket, and leaderboard will refresh afterward.',
+        confirmText: 'Delete Result',
+        cancelText: 'Cancel'
+    });
+
+    if (!shouldDelete) {
         return;
     }
 
     await supabaseClient.from('matches').delete().eq('id', id);
+    if (appSettings.autoTeamStatusSync) {
+        await syncDerivedTeamStatus({ silent: true });
+    }
     fetchAdminHistory();
     fetchLeaderboard();
     fetchPublicTeamResults();
@@ -3171,6 +4169,7 @@ async function submitManualResult() {
     const matchDate = document.getElementById('admin-match-date').value;
     const stage = document.getElementById('admin-stage').value;
     const wasExtraTime = document.getElementById('admin-extratime').value === 'true';
+    const knockoutStages = ['R32', 'R16', 'Quarters', 'Semis', 'Finals'];
 
     if (!team1 || !team2 || Number.isNaN(score1) || Number.isNaN(score2) || !matchDate) {
         return showToast('Check all fields!');
@@ -3178,6 +4177,19 @@ async function submitManualResult() {
 
     if (team1 === team2) {
         return showToast('Teams must be different!');
+    }
+
+    if (knockoutStages.includes(stage) && score1 === score2) {
+        await showConfirmModal({
+            label: 'Winner Needed',
+            icon: '⚠️',
+            title: 'Knockout Matches Need A Winner',
+            message: 'A knockout match cannot be saved as a draw.',
+            detail: 'If it went to penalties or extra time, enter the final winning score such as 2-1 and set Extra Time / Pens to Yes.',
+            confirmText: 'Okay',
+            singleAction: true
+        });
+        return;
     }
 
     const button = document.getElementById('admin-submit-btn');
@@ -3236,11 +4248,16 @@ async function submitManualResult() {
         fetchLeaderboard();
         fetchStats();
         setupDashboard();
+        if (appSettings.autoTeamStatusSync) {
+            await syncDerivedTeamStatus({ silent: true });
+        }
 
         // Post a match result system message to the chat so everyone sees the score.
         const getFlag = (name) => (teams.find((t) => t.name === name) || {}).flag || '';
-        const stageLabels = { Group: 'Group Stage', R32: 'Round of 32', R16: 'Round of 16', Quarters: 'Quarter-Final', Semis: 'Semi-Final', Finals: 'Final' };
-        const stageLabel = stageLabels[stage] || stage;
+        const stageLabels = { R32: 'Round of 32', R16: 'Round of 16', Quarters: 'Quarter-Final', Semis: 'Semi-Final', Finals: 'Final' };
+        const stageLabel = stage === 'Group'
+            ? (_findGroupScheduleMatch(team1, team2, matchDate)?.group ? `Group ${_findGroupScheduleMatch(team1, team2, matchDate).group}` : 'Group Stage')
+            : (stageLabels[stage] || stage);
         postSystemMessage('match_result', `${getFlag(team1)} ${team1} ${score1}–${score2} ${team2} ${getFlag(team2)} · ${stageLabel}`);
 
         // For knockout matches with a clear winner, also post an elimination strip.
@@ -4418,10 +5435,12 @@ Object.assign(window, {
     toggleTeamElimination,
     resetAllTeamStatus,
     resetAllMatches,
+    simulateAllScheduledMatches,
     togglePicksLock,
     toggleAutoLock
     ,
     toggleHideTeamSelection,
+    toggleAutoTeamStatusSync,
     renderProfileFavoriteBanner,
     applyPicksAccentTheme,
     toggleEmojiPicker,
@@ -4438,3 +5457,16 @@ Object.assign(window, {
     cancelEditMessage,
     undoSendMessage
 });
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        GROUP_STAGE_SCHEDULE,
+        KNOCKOUT_SCHEDULE,
+        computeGroupStandings,
+        _getBestThirdPlaceTeams,
+        _getBestThirdSlots,
+        _buildBestThirdAssignments,
+        _resolveKnockoutMatchTeam,
+        _buildDerivedTeamStatusRows
+    };
+}

@@ -23,7 +23,9 @@ A browser-based fantasy football pool for the 2026 FIFA World Cup. Players pick 
 | `js/features.js` | UI feature logic — leaderboard, team results table, country banners |
 | `js/ui.js` | DOM rendering helpers |
 | `js/scoring.js` | Pure scoring logic — dual export (browser `window.WorldCupScoring` + Node `module.exports`) |
+| `js/third-place-mapping.js` | Official FIFA Annex C lookup for third-place Round of 32 assignments |
 | `tests/scoring.test.mjs` | Unit tests covering scoring, leaderboard, and best-available-team logic |
+| `tests/tournament-logic.test.mjs` | Tournament logic tests covering advancement, third-place ranking, and R32 mapping |
 
 ## Pool rules
 
@@ -62,3 +64,7 @@ Tests only cover `scoring.js` — it is the only module written to run in Node. 
 ## Key architectural note
 
 `scoring.js` is wrapped in an IIFE that detects its environment and exports accordingly — `window.WorldCupScoring` in the browser, `module.exports` in Node. This is what makes it the only file unit-testable without a bundler. All other `js/` files assume `window` globals and reference each other via globals (`window.WorldCupScoring`, `advancedTeams`, `teams`, etc.) rather than imports.
+
+## Knockout mapping note
+
+Round of 32 placement for third-place teams is not a generic constraint solver. Once the top 8 third-place teams are known, their sorted group combination must be looked up in FIFA Annex C. The repo mirrors that table in `js/third-place-mapping.js`, and knockout assignment should use that lookup directly for the schedule, bracket, and simulations.

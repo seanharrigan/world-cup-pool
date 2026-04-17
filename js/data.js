@@ -8,7 +8,8 @@ let myPicks = [];
 let appSettings = {
     picksLocked: false,
     autoLockAtKickoff: true,
-    hideTeamSelection: false
+    hideTeamSelection: false,
+    autoTeamStatusSync: false
 };
 let advancedTeams = new Set();
 let eliminatedTeams = new Set();

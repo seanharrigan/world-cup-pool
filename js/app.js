@@ -296,6 +296,12 @@ async function fetchAppSettings() {
         appSettings.hideTeamSelection = false;
     }
 
+    try {
+        appSettings.autoTeamStatusSync = localStorage.getItem('wc_pool_auto_team_status_sync') === 'true';
+    } catch (error) {
+        appSettings.autoTeamStatusSync = false;
+    }
+
     refreshLockState();
     return appSettings;
 }
