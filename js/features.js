@@ -552,6 +552,8 @@ const KNOCKOUT_SCHEDULE = [
 
 // Cache of already-logged matches for the schedule browser done/undone state
 let _scheduleBrowserLoggedCache = [];
+// Cache used by the public bracket tab (populated by fetchPublicResults)
+let _publicMatchesCache = [];
 // 'all' | 'A'–'L' | 'knockout-all' | 'R32' | 'R16' | 'Quarters' | 'Semis' | 'Finals'
 let _scheduleBrowserActiveFilter = 'all';
 
@@ -594,6 +596,77 @@ function _getKnockoutDayResults(stage, date) {
     return _scheduleBrowserLoggedCache
         .filter((r) => r.stage === stage && r.match_date_manual === date)
         .sort((a, b) => a.id - b.id);
+}
+
+// ── Group standings + knockout seeding resolution ─────────────────────────────
+
+// Compute standings for every group from a match cache.
+// status: 'none' = 0 matches played, 'partial' = some, 'complete' = all 6 played.
+function computeGroupStandings(matchesCache) {
+    if (matchesCache === undefined) matchesCache = _scheduleBrowserLoggedCache;
+    const result = {};
+    'ABCDEFGHIJKL'.split('').forEach((g) => {
+        const sched = GROUP_STAGE_SCHEDULE.filter((m) => m.group === g);
+        const names = [...new Set(sched.flatMap((m) => [m.home, m.away]))];
+        const stats = {};
+        names.forEach((n) => { stats[n] = { name: n, played: 0, pts: 0, gd: 0, gf: 0 }; });
+        let logged = 0;
+        sched.forEach((m) => {
+            const r = matchesCache.find((r) =>
+                r.stage === 'Group' &&
+                ((r.team_home === m.home && r.team_away === m.away) ||
+                 (r.team_home === m.away && r.team_away === m.home))
+            );
+            if (!r) return;
+            logged++;
+            const h = stats[r.team_home];
+            const a = stats[r.team_away];
+            if (!h || !a) return;
+            h.played++; a.played++;
+            h.gf += r.score_home; h.gd += r.score_home - r.score_away;
+            a.gf += r.score_away; a.gd += r.score_away - r.score_home;
+            if (r.score_home > r.score_away)      { h.pts += 3; }
+            else if (r.score_home < r.score_away) { a.pts += 3; }
+            else                                  { h.pts += 1; a.pts += 1; }
+        });
+        const sorted = Object.values(stats).sort((a, b) =>
+            b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name)
+        );
+        const status = logged === 0 ? 'none' : logged < sched.length ? 'partial' : 'complete';
+        result[g] = { teams: sorted, status };
+    });
+    return result;
+}
+
+// Returns sorted list of all 3rd-place finishers from groups that have started.
+function _getBestThirdPlaceTeams(standings) {
+    const thirds = [];
+    Object.values(standings).forEach((g) => {
+        if (g.status !== 'none' && g.teams.length >= 3) thirds.push(g.teams[2]);
+    });
+    return thirds.sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name));
+}
+
+// Resolve a seeding label like '1A', '2B', 'Best 3rd', 'TBD' to { name, flag, status }.
+// status: 'none' = group not yet started  'provisional' = in progress  'confirmed' = group complete
+function _resolveKnockoutTeam(label, standings, best3rdList, best3rdSlot) {
+    if (label === 'TBD') return { name: 'TBD', flag: '❓', status: 'none' };
+    if (label === 'Best 3rd') {
+        const t = best3rdList[best3rdSlot || 0];
+        if (!t) return { name: 'Best 3rd', flag: '❓', status: 'none' };
+        const td = _scheduleTeam(t.name);
+        const completedGroups = Object.values(standings).filter((g) => g.status === 'complete').length;
+        return { name: t.name, flag: td.flag, status: completedGroups >= 12 ? 'confirmed' : 'provisional' };
+    }
+    // '1A' → group A winner, '2B' → group B runner-up, etc.
+    const pos = parseInt(label[0], 10) - 1;
+    const grp  = label[1];
+    const group = standings[grp];
+    if (!group || group.status === 'none') return { name: label, flag: '❓', status: 'none' };
+    const t = group.teams[pos];
+    if (!t) return { name: label, flag: '❓', status: 'none' };
+    const td = _scheduleTeam(t.name);
+    return { name: t.name, flag: td.flag, status: group.status === 'complete' ? 'confirmed' : 'provisional' };
 }
 
 function renderScheduleBrowser() {
@@ -664,6 +737,10 @@ function renderScheduleBrowser() {
         return;
     }
 
+    // Pre-compute standings so knockout cards can show resolved team names
+    const _standings  = computeGroupStandings();
+    const _best3rd    = _getBestThirdPlaceTeams(_standings);
+
     cardsEl.innerHTML = Object.entries(byDate).map(([date, matches]) => {
         let cards;
 
@@ -671,6 +748,8 @@ function renderScheduleBrowser() {
             // Track how many cards of each stage we've rendered for this date,
             // so we can map the i-th card to the i-th logged result.
             const slotCounters = {};
+            // Tracks which Best 3rd team slot we're assigning within this date block.
+            let best3rdIdx = 0;
 
             cards = matches.map((m) => {
                 if (!slotCounters[m.stage]) slotCounters[m.stage] = 0;
@@ -706,28 +785,38 @@ function renderScheduleBrowser() {
                         </div>`;
                 }
 
-                // Unlogged knockout card — show seedings or TBD
-                const isTBD     = m.home === 'TBD';
-                const is3rd     = m.home === 'Best 3rd';
-                const homeLabel = isTBD ? `<span class="text-gray-600 font-black text-sm">TBD</span>`
-                    : is3rd ? `<span class="text-gray-500 font-black text-sm italic">Best 3rd</span>`
-                    : `<span class="font-black text-sm text-white">${m.home}</span>`;
-                const awayLabel = isTBD ? `<span class="text-gray-600 font-black text-sm">TBD</span>`
-                    : is3rd ? `<span class="text-gray-500 font-black text-sm italic">Best 3rd</span>`
-                    : `<span class="font-black text-sm text-white">${m.away}</span>`;
+                // Unlogged knockout card — resolve seedings from group standings
+                const homeRes = _resolveKnockoutTeam(m.home, _standings, _best3rd,
+                    m.home === 'Best 3rd' ? best3rdIdx++ : 0);
+                const awayRes = _resolveKnockoutTeam(m.away, _standings, _best3rd,
+                    m.away === 'Best 3rd' ? best3rdIdx++ : 0);
+
+                const _seedLabel = (res, raw) => {
+                    if (res.status === 'none')
+                        return `<span class="text-gray-600 font-black text-sm">
+                                    <span class="mr-1">❓</span>${raw}
+                                </span>`;
+                    if (res.status === 'provisional')
+                        return `<span class="text-gray-400 font-black text-sm">
+                                    <span class="mr-1">${res.flag}</span>${res.name}<span class="text-gray-600">~</span>
+                                </span>`;
+                    return `<span class="font-black text-sm text-white">
+                                <span class="mr-1">${res.flag}</span>${res.name}
+                            </span>`;
+                };
 
                 return `
                     <button onclick="prefillFromSchedule('${m.home}','${m.away}','${m.stage}','${m.date}')"
                         class="w-full text-left rounded-2xl border border-gray-700 bg-gray-800 hover:border-blue-500/50 hover:bg-gray-700 active:scale-[0.99] px-4 py-3 transition-all">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2 min-w-0 flex-1">
-                                ${homeLabel}
+                                ${_seedLabel(homeRes, m.home)}
                             </div>
                             <div class="flex items-center shrink-0">
                                 <span class="text-gray-600 font-black text-sm mx-2">vs</span>
                             </div>
                             <div class="flex items-center gap-2 min-w-0 flex-1 justify-end">
-                                ${awayLabel}
+                                ${_seedLabel(awayRes, m.away)}
                                 <span class="text-[9px] font-black uppercase tracking-[0.15em] text-blue-400 ml-1">Enter</span>
                             </div>
                         </div>
@@ -828,6 +917,123 @@ function renderScheduleBrowser() {
 function setScheduleFilter(filter) {
     _scheduleBrowserActiveFilter = filter;
     renderScheduleBrowser();
+}
+
+// ── Public Knockout Bracket ───────────────────────────────────────────────────
+// Renders a horizontally-scrollable bracket grid into #bracket-container.
+// matchesCache defaults to _publicMatchesCache when called from the public page.
+function renderKnockoutBracket(matchesCache) {
+    const container = document.getElementById('bracket-container');
+    if (!container) return;
+    if (matchesCache === undefined) matchesCache = _publicMatchesCache;
+
+    const standings = computeGroupStandings(matchesCache);
+    const best3rd   = _getBestThirdPlaceTeams(standings);
+
+    // Each R32 "slot unit" is SLOT_H px tall.
+    // Total height = SLOT_H × 16 so every stage column is the same height.
+    const SLOT_H    = 60;  // px
+    const TOTAL_H   = SLOT_H * 16; // 960px
+
+    const stageConfigs = [
+        { stage: 'R32',      label: 'Round of 32',     units: 1 },
+        { stage: 'R16',      label: 'Round of 16',     units: 2 },
+        { stage: 'Quarters', label: 'Quarter-finals',  units: 4 },
+        { stage: 'Semis',    label: 'Semi-finals',     units: 8 },
+        { stage: 'Finals',   label: 'Finals',          units: 8 },
+    ];
+
+    // Helper: render one match card (logged or unresolved)
+    const matchCard = (logged, homeRes, awayRes) => {
+        if (logged) {
+            const hWon = logged.score_home > logged.score_away;
+            const aWon = logged.score_away > logged.score_home;
+            const hFlag = (_scheduleTeam(logged.team_home)).flag;
+            const aFlag = (_scheduleTeam(logged.team_away)).flag;
+            return `
+                <div class="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm" style="width:190px">
+                    <div class="px-2.5 py-1.5 flex items-center justify-between gap-1 ${hWon ? 'bg-green-50' : ''}">
+                        <div class="flex items-center gap-1 min-w-0">
+                            <span class="text-sm leading-none">${hFlag}</span>
+                            <span class="text-[11px] font-black ${hWon ? 'text-gray-900' : 'text-gray-400'} truncate">${logged.team_home}</span>
+                        </div>
+                        <span class="text-[11px] font-black ${hWon ? 'text-gray-900' : 'text-gray-400'} shrink-0 ml-1">${logged.score_home}</span>
+                    </div>
+                    <div class="h-px bg-gray-100"></div>
+                    <div class="px-2.5 py-1.5 flex items-center justify-between gap-1 ${aWon ? 'bg-green-50' : ''}">
+                        <div class="flex items-center gap-1 min-w-0">
+                            <span class="text-sm leading-none">${aFlag}</span>
+                            <span class="text-[11px] font-black ${aWon ? 'text-gray-900' : 'text-gray-400'} truncate">${logged.team_away}</span>
+                        </div>
+                        <span class="text-[11px] font-black ${aWon ? 'text-gray-900' : 'text-gray-400'} shrink-0 ml-1">${logged.score_away}</span>
+                    </div>
+                    ${logged.was_extra_time ? '<div class="px-2.5 pb-1 text-[8px] font-black uppercase text-red-400">ET/Pens</div>' : ''}
+                </div>`;
+        }
+
+        const _teamRow = (res, rawLabel) => {
+            if (res.status === 'none')
+                return `<div class="flex items-center gap-1 min-w-0">
+                            <span class="text-sm leading-none opacity-40">❓</span>
+                            <span class="text-[11px] font-bold text-gray-300 truncate">${rawLabel}</span>
+                        </div>`;
+            if (res.status === 'provisional')
+                return `<div class="flex items-center gap-1 min-w-0">
+                            <span class="text-sm leading-none">${res.flag}</span>
+                            <span class="text-[11px] font-black text-gray-400 truncate">${res.name}<span class="text-gray-300">~</span></span>
+                        </div>`;
+            return `<div class="flex items-center gap-1 min-w-0">
+                        <span class="text-sm leading-none">${res.flag}</span>
+                        <span class="text-[11px] font-black text-gray-700 truncate">${res.name}</span>
+                    </div>`;
+        };
+
+        const hasAny = homeRes.status !== 'none' || awayRes.status !== 'none';
+        return `
+            <div class="rounded-xl overflow-hidden ${hasAny ? 'border border-gray-200 bg-white' : 'border border-dashed border-gray-200 bg-gray-50'}" style="width:190px">
+                <div class="px-2.5 py-1.5">${_teamRow(homeRes, '?')}</div>
+                <div class="h-px bg-gray-100"></div>
+                <div class="px-2.5 py-1.5">${_teamRow(awayRes, '?')}</div>
+            </div>`;
+    };
+
+    let best3rdSlot = 0;
+
+    const columns = stageConfigs.map(({ stage, label, units }) => {
+        const schedMatches  = KNOCKOUT_SCHEDULE.filter((m) => m.stage === stage);
+        const loggedStage   = matchesCache.filter((r) => r.stage === stage).sort((a, b) => a.id - b.id);
+        const blockH        = SLOT_H * units;
+
+        const cards = schedMatches.map((m, slotIdx) => {
+            const logged = loggedStage[slotIdx] || null;
+            let homeRes, awayRes;
+
+            if (!logged) {
+                homeRes = _resolveKnockoutTeam(m.home, standings, best3rd,
+                    m.home === 'Best 3rd' ? best3rdSlot++ : 0);
+                awayRes = _resolveKnockoutTeam(m.away, standings, best3rd,
+                    m.away === 'Best 3rd' ? best3rdSlot++ : 0);
+            }
+
+            return `<div style="height:${blockH}px;display:flex;align-items:center;justify-content:center;">
+                        ${matchCard(logged, homeRes, awayRes)}
+                    </div>`;
+        }).join('');
+
+        // Finals label distinguishes 3rd place play-off vs Grand Final
+        let colLabel = label;
+        if (stage === 'Finals') {
+            colLabel = `<span class="block">3rd Place</span><span class="block opacity-60 mt-0.5">+ Final</span>`;
+        }
+
+        return `
+            <div class="flex flex-col" style="width:190px">
+                <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3 text-center leading-tight">${colLabel}</div>
+                <div style="height:${TOTAL_H}px">${cards}</div>
+            </div>`;
+    }).join('');
+
+    container.innerHTML = `<div class="flex gap-4 min-w-max pb-4">${columns}</div>`;
 }
 
 function prefillFromSchedule(homeName, awayName, groupOrStage, date) {
@@ -1000,6 +1206,7 @@ function setupResultsPage() {
     updateResultsSelectionVisibility();
     showResultsTab('groups');
     renderGroups();
+    renderKnockoutBracket([]);
     fetchPublicResults();
     fetchPublicTeamResults();
     fetchPublicSelectionStats();
@@ -2852,7 +3059,7 @@ async function fetchPublicResults() {
             .from('matches')
             .select('*')
             .order('match_date_manual', { ascending: false })
-            .limit(50),
+            .limit(200),
         supabaseClient
             .from('picks')
             .select('user_email, team_name'),
@@ -2905,6 +3112,10 @@ async function fetchPublicResults() {
         const awardedPoints = getMatchPointsForTeam(match, winningTeam);
         return `${awardedPoints} pts awarded`;
     };
+
+    // Keep public bracket in sync
+    _publicMatchesCache = matches || [];
+    renderKnockoutBracket(_publicMatchesCache);
 
     container.innerHTML = matches?.map((match) => {
         const homeTeam = teams.find((team) => team.name === match.team_home);
@@ -4176,6 +4387,7 @@ Object.assign(window, {
     setTeamResultsSort,
     fetchAdminHistory,
     renderScheduleBrowser,
+    renderKnockoutBracket,
     setScheduleFilter,
     prefillFromSchedule,
     editScheduleMatch,

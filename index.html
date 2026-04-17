@@ -633,6 +633,7 @@
                     <button onclick="showResultsTab('pool')" id="results-tab-pool" class="results-tab rounded-2xl border border-gray-300 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Results Table</button>
                     <button onclick="showResultsTab('matches')" id="results-tab-matches" class="results-tab rounded-2xl border border-gray-300 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Match Results</button>
                     <button onclick="showResultsTab('selection')" id="results-tab-selection" class="results-tab rounded-2xl border border-gray-300 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Selection Stats</button>
+                    <button onclick="showResultsTab('bracket')" id="results-tab-bracket" class="results-tab rounded-2xl border border-gray-300 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 transition-colors">Bracket</button>
                 </div>
 
                 <div id="results-panel-groups" class="results-panel space-y-6">
@@ -642,6 +643,18 @@
                             <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Current standings across all groups</p>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 text-left text-gray-900" id="groups-grid"></div>
+                    </section>
+                </div>
+
+                <div id="results-panel-bracket" class="results-panel hidden space-y-6">
+                    <section class="space-y-4">
+                        <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                            <h2 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-gray-900">Knockout Bracket</h2>
+                            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Teams shown as confirmed once their group is complete · <span class="text-gray-300">~</span> = provisional</p>
+                        </div>
+                        <div class="overflow-x-auto" id="bracket-scroll-wrap">
+                            <div id="bracket-container" class="min-w-max"></div>
+                        </div>
                     </section>
                 </div>
 
