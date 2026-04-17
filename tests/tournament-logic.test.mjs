@@ -242,3 +242,38 @@ test('best-third assignments follow the official FIFA mapping table for a qualif
         assert.equal(`3${assignedTeam.group}`, expected[winnerSeed]);
     });
 });
+
+test('later knockout slots can resolve one side as soon as an earlier match is finished', () => {
+    const api = loadTournamentApi();
+    const { matches } = buildCompletedGroupStage(api.GROUP_STAGE_SCHEDULE);
+    const standings = api.computeGroupStandings(matches);
+    const bestThirdAssignments = api._buildBestThirdAssignments(standings);
+
+    const firstR32Match = api.KNOCKOUT_SCHEDULE.find((match) => match.slotKey === 'r32-01');
+    const firstR16Match = api.KNOCKOUT_SCHEDULE.find((match) => match.slotKey === 'r16-01');
+    const r32Home = api._resolveKnockoutMatchTeam(firstR32Match, 'home', standings, bestThirdAssignments, { matchesCache: matches });
+    const r32Away = api._resolveKnockoutMatchTeam(firstR32Match, 'away', standings, bestThirdAssignments, { matchesCache: matches });
+
+    const knockoutMatches = [
+        ...matches,
+        {
+            id: 9999,
+            stage: 'R32',
+            match_date_manual: firstR32Match.date,
+            team_home: r32Home.name,
+            team_away: r32Away.name,
+            score_home: 2,
+            score_away: 1
+        }
+    ];
+
+    const updatedStandings = api.computeGroupStandings(knockoutMatches);
+    const updatedAssignments = api._buildBestThirdAssignments(updatedStandings);
+    const resolvedHome = api._resolveKnockoutMatchTeam(firstR16Match, 'home', updatedStandings, updatedAssignments, { matchesCache: knockoutMatches });
+    const resolvedAway = api._resolveKnockoutMatchTeam(firstR16Match, 'away', updatedStandings, updatedAssignments, { matchesCache: knockoutMatches });
+
+    assert.equal(resolvedHome.name, r32Home.name);
+    assert.equal(resolvedHome.status, 'confirmed');
+    assert.equal(resolvedAway.name, 'TBD');
+    assert.equal(resolvedAway.status, 'none');
+});

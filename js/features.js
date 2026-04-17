@@ -532,26 +532,26 @@ const KNOCKOUT_SCHEDULE = [
     { slotKey: 'r32-15', date: '2026-07-04', stage: 'R32', home: '1B', away: 'Best 3rd', awayCandidates: ['E', 'F', 'G', 'I', 'J'] },
     { slotKey: 'r32-16', date: '2026-07-04', stage: 'R32', home: '1K', away: 'Best 3rd', awayCandidates: ['D', 'E', 'I', 'J', 'L'] },
     // ── Round of 16 ─── July 6–9, 2026 ───────────────────────────────────────
-    { date: '2026-07-06', stage: 'R16', home: 'TBD', away: 'TBD' },
-    { date: '2026-07-06', stage: 'R16', home: 'TBD', away: 'TBD' },
-    { date: '2026-07-07', stage: 'R16', home: 'TBD', away: 'TBD' },
-    { date: '2026-07-07', stage: 'R16', home: 'TBD', away: 'TBD' },
-    { date: '2026-07-08', stage: 'R16', home: 'TBD', away: 'TBD' },
-    { date: '2026-07-08', stage: 'R16', home: 'TBD', away: 'TBD' },
-    { date: '2026-07-09', stage: 'R16', home: 'TBD', away: 'TBD' },
-    { date: '2026-07-09', stage: 'R16', home: 'TBD', away: 'TBD' },
+    { slotKey: 'r16-01', date: '2026-07-06', stage: 'R16', home: 'W:r32-01', away: 'W:r32-02' },
+    { slotKey: 'r16-02', date: '2026-07-06', stage: 'R16', home: 'W:r32-03', away: 'W:r32-04' },
+    { slotKey: 'r16-03', date: '2026-07-07', stage: 'R16', home: 'W:r32-05', away: 'W:r32-06' },
+    { slotKey: 'r16-04', date: '2026-07-07', stage: 'R16', home: 'W:r32-07', away: 'W:r32-08' },
+    { slotKey: 'r16-05', date: '2026-07-08', stage: 'R16', home: 'W:r32-09', away: 'W:r32-10' },
+    { slotKey: 'r16-06', date: '2026-07-08', stage: 'R16', home: 'W:r32-11', away: 'W:r32-12' },
+    { slotKey: 'r16-07', date: '2026-07-09', stage: 'R16', home: 'W:r32-13', away: 'W:r32-14' },
+    { slotKey: 'r16-08', date: '2026-07-09', stage: 'R16', home: 'W:r32-15', away: 'W:r32-16' },
     // ── Quarter-finals ─── July 11–12, 2026 ──────────────────────────────────
-    { date: '2026-07-11', stage: 'Quarters', home: 'TBD', away: 'TBD' },
-    { date: '2026-07-11', stage: 'Quarters', home: 'TBD', away: 'TBD' },
-    { date: '2026-07-12', stage: 'Quarters', home: 'TBD', away: 'TBD' },
-    { date: '2026-07-12', stage: 'Quarters', home: 'TBD', away: 'TBD' },
+    { slotKey: 'qf-01', date: '2026-07-11', stage: 'Quarters', home: 'W:r16-01', away: 'W:r16-02' },
+    { slotKey: 'qf-02', date: '2026-07-11', stage: 'Quarters', home: 'W:r16-03', away: 'W:r16-04' },
+    { slotKey: 'qf-03', date: '2026-07-12', stage: 'Quarters', home: 'W:r16-05', away: 'W:r16-06' },
+    { slotKey: 'qf-04', date: '2026-07-12', stage: 'Quarters', home: 'W:r16-07', away: 'W:r16-08' },
     // ── Semi-finals ─── July 15–16, 2026 ─────────────────────────────────────
-    { date: '2026-07-15', stage: 'Semis', home: 'TBD', away: 'TBD' },
-    { date: '2026-07-16', stage: 'Semis', home: 'TBD', away: 'TBD' },
+    { slotKey: 'sf-01', date: '2026-07-15', stage: 'Semis', home: 'W:qf-01', away: 'W:qf-02' },
+    { slotKey: 'sf-02', date: '2026-07-16', stage: 'Semis', home: 'W:qf-03', away: 'W:qf-04' },
     // ── Third-place play-off ─── July 18, 2026 ───────────────────────────────
-    { date: '2026-07-18', stage: 'Finals', home: 'TBD', away: 'TBD' },
+    { slotKey: 'finals-01', date: '2026-07-18', stage: 'Finals', home: 'L:sf-01', away: 'L:sf-02' },
     // ── Grand Final ─── July 19, 2026 ────────────────────────────────────────
-    { date: '2026-07-19', stage: 'Finals', home: 'TBD', away: 'TBD' },
+    { slotKey: 'finals-02', date: '2026-07-19', stage: 'Finals', home: 'W:sf-01', away: 'W:sf-02' },
 ];
 
 // Cache of already-logged matches for the schedule browser done/undone state
@@ -659,14 +659,58 @@ function _syncScheduleFilterTop() {
 
 // Returns logged results for a knockout stage+date, sorted by id so slot
 // assignment is consistent: the i-th card on a date maps to the i-th result.
-function _getKnockoutDayResults(stage, date) {
-    return _scheduleBrowserLoggedCache
+function _getKnockoutDayResults(stage, date, matchesCache = _scheduleBrowserLoggedCache) {
+    return (matchesCache || [])
         .filter((r) => r.stage === stage && r.match_date_manual === date)
         .sort((a, b) => {
             const dateCompare = String(a.match_date || '').localeCompare(String(b.match_date || ''));
             if (dateCompare !== 0) return dateCompare;
             return (a.id || 0) - (b.id || 0);
         });
+}
+
+function _getKnockoutScheduleMatchBySlot(slotKey) {
+    return KNOCKOUT_SCHEDULE.find((match) => match.slotKey === slotKey) || null;
+}
+
+function _getKnockoutResultForSlot(slotKey, standings, bestThirdAssignments, options = {}) {
+    const {
+        matchesCache = _scheduleBrowserLoggedCache,
+        memo = {}
+    } = options;
+    const memoKey = `result:${slotKey}`;
+    if (Object.prototype.hasOwnProperty.call(memo, memoKey)) {
+        return memo[memoKey];
+    }
+
+    const scheduleMatch = _getKnockoutScheduleMatchBySlot(slotKey);
+    if (!scheduleMatch) {
+        memo[memoKey] = null;
+        return null;
+    }
+
+    const dayResults = _getKnockoutDayResults(scheduleMatch.stage, scheduleMatch.date, matchesCache);
+    const homeRes = _resolveKnockoutMatchTeam(scheduleMatch, 'home', standings, bestThirdAssignments, { matchesCache, memo });
+    const awayRes = _resolveKnockoutMatchTeam(scheduleMatch, 'away', standings, bestThirdAssignments, { matchesCache, memo });
+    const expectedHome = homeRes?.status !== 'none' ? homeRes.name : '';
+    const expectedAway = awayRes?.status !== 'none' ? awayRes.name : '';
+
+    let matched = null;
+    if (expectedHome && expectedAway) {
+        matched = dayResults.find((result) =>
+            (result.team_home === expectedHome && result.team_away === expectedAway) ||
+            (result.team_home === expectedAway && result.team_away === expectedHome)
+        ) || null;
+    }
+
+    if (!matched) {
+        const daySchedule = KNOCKOUT_SCHEDULE.filter((match) => match.stage === scheduleMatch.stage && match.date === scheduleMatch.date);
+        const slotIndex = daySchedule.findIndex((match) => match.slotKey === slotKey);
+        matched = slotIndex >= 0 ? (dayResults[slotIndex] || null) : null;
+    }
+
+    memo[memoKey] = matched;
+    return matched;
 }
 
 function _findKnockoutResultForMatch(scheduleMatch, standings, bestThirdAssignments, usedResultIds) {
@@ -1048,13 +1092,37 @@ function _bestThirdSeedLabel(teamName) {
 }
 
 function _seedDisplayLabel(res, rawLabel) {
+    if (rawLabel?.startsWith('W:') || rawLabel?.startsWith('L:')) return '';
     if (res?.seedLabel) return res.seedLabel;
     if (rawLabel === 'Best 3rd') return '3?';
     return rawLabel;
 }
 
-function _resolveKnockoutMatchTeam(match, side, standings, bestThirdAssignments) {
+function _resolveKnockoutMatchTeam(match, side, standings, bestThirdAssignments, options = {}) {
+    const {
+        matchesCache = _scheduleBrowserLoggedCache,
+        memo = {}
+    } = options;
     const label = match[side];
+    if (label?.startsWith('W:') || label?.startsWith('L:')) {
+        const outcome = label[0];
+        const sourceSlot = label.slice(2);
+        const sourceResult = _getKnockoutResultForSlot(sourceSlot, standings, bestThirdAssignments, { matchesCache, memo });
+        if (!sourceResult) {
+            return { name: 'TBD', flag: '', status: 'none', fallback: false, qualified: false, seedLabel: '' };
+        }
+        const teamName = outcome === 'L'
+            ? _loserFromMatchRow(sourceResult)
+            : _winnerFromMatchRow(sourceResult);
+        return {
+            name: teamName,
+            flag: _scheduleTeam(teamName).flag,
+            seedLabel: '',
+            status: 'confirmed',
+            qualified: true,
+            fallback: false
+        };
+    }
     if (label !== 'Best 3rd') {
         return _resolveKnockoutTeam(label, standings, [], 0);
     }
@@ -1263,9 +1331,8 @@ function renderScheduleBrowser() {
                             ? 'text-gray-500'
                             : 'text-gray-600';
                     if (res.status === 'none')
-                        return `<span class="inline-flex items-center gap-1.5 min-w-0 font-black text-sm">
-                                    <span class="text-gray-500 truncate">${raw}</span>
-                                    <span class="shrink-0 text-[10px] font-black text-gray-600">(${displaySeed})</span>
+                        return `<span class="inline-flex items-center gap-1.5 min-w-0 font-black text-sm uppercase tracking-[0.14em] text-gray-500">
+                                    <span class="truncate">TBD</span>
                                 </span>`;
                     if (res.status === 'fallback')
                         return `<span class="inline-flex items-center gap-1.5 min-w-0 font-black text-sm">
@@ -1285,8 +1352,8 @@ function renderScheduleBrowser() {
                                 <span class="shrink-0 text-[10px] font-black text-gray-500">(${displaySeed})</span>
                             </span>`;
                 };
-                const enterHomeName = (homeRes && homeRes.status !== 'none' ? homeRes.name : m.home).replace(/'/g,"\\'");
-                const enterAwayName = (awayRes && awayRes.status !== 'none' ? awayRes.name : m.away).replace(/'/g,"\\'");
+                const enterHomeName = (homeRes && homeRes.status !== 'none' ? homeRes.name : '').replace(/'/g,"\\'");
+                const enterAwayName = (awayRes && awayRes.status !== 'none' ? awayRes.name : '').replace(/'/g,"\\'");
 
                 return `
                     <button onclick="prefillFromSchedule('${enterHomeName}','${enterAwayName}','${m.stage}','${m.date}')"
