@@ -415,17 +415,17 @@ function renderTopNavFavoriteTheme(currentProfile) {
 const GROUP_STAGE_SCHEDULE = [
     // June 11
     { date: '2026-06-11', group: 'A', home: 'Mexico',         away: 'South Africa' },
-    { date: '2026-06-11', group: 'A', home: 'Korea Republic', away: 'Czechia' },
+    { date: '2026-06-11', group: 'A', home: 'South Korea', away: 'Czechia' },
     // June 12
-    { date: '2026-06-12', group: 'B', home: 'Canada',         away: 'Bosnia and Herzegovina' },
+    { date: '2026-06-12', group: 'B', home: 'Canada',         away: 'Bosnia' },
     { date: '2026-06-12', group: 'D', home: 'United States',  away: 'Paraguay' },
     // June 13
     { date: '2026-06-13', group: 'B', home: 'Qatar',          away: 'Switzerland' },
     { date: '2026-06-13', group: 'C', home: 'Brazil',         away: 'Morocco' },
     { date: '2026-06-13', group: 'C', home: 'Haiti',          away: 'Scotland' },
-    { date: '2026-06-13', group: 'D', home: 'Australia',      away: 'Turkey' },
+    { date: '2026-06-13', group: 'D', home: 'Australia',      away: 'Turkiye' },
     // June 14
-    { date: '2026-06-14', group: 'E', home: 'Germany',        away: 'Curaçao' },
+    { date: '2026-06-14', group: 'E', home: 'Germany',        away: 'Curacao' },
     { date: '2026-06-14', group: 'E', home: 'Ivory Coast',    away: 'Ecuador' },
     { date: '2026-06-14', group: 'F', home: 'Netherlands',    away: 'Japan' },
     { date: '2026-06-14', group: 'F', home: 'Sweden',         away: 'Tunisia' },
@@ -446,17 +446,17 @@ const GROUP_STAGE_SCHEDULE = [
     { date: '2026-06-17', group: 'L', home: 'Ghana',          away: 'Panama' },
     // June 18
     { date: '2026-06-18', group: 'A', home: 'Czechia',        away: 'South Africa' },
-    { date: '2026-06-18', group: 'A', home: 'Mexico',         away: 'Korea Republic' },
-    { date: '2026-06-18', group: 'B', home: 'Switzerland',    away: 'Bosnia and Herzegovina' },
+    { date: '2026-06-18', group: 'A', home: 'Mexico',         away: 'South Korea' },
+    { date: '2026-06-18', group: 'B', home: 'Switzerland',    away: 'Bosnia' },
     { date: '2026-06-18', group: 'B', home: 'Canada',         away: 'Qatar' },
     // June 19
     { date: '2026-06-19', group: 'C', home: 'Scotland',       away: 'Morocco' },
     { date: '2026-06-19', group: 'C', home: 'Brazil',         away: 'Haiti' },
     { date: '2026-06-19', group: 'D', home: 'United States',  away: 'Australia' },
-    { date: '2026-06-19', group: 'D', home: 'Turkey',         away: 'Paraguay' },
+    { date: '2026-06-19', group: 'D', home: 'Turkiye',         away: 'Paraguay' },
     // June 20
     { date: '2026-06-20', group: 'E', home: 'Germany',        away: 'Ivory Coast' },
-    { date: '2026-06-20', group: 'E', home: 'Ecuador',        away: 'Curaçao' },
+    { date: '2026-06-20', group: 'E', home: 'Ecuador',        away: 'Curacao' },
     { date: '2026-06-20', group: 'F', home: 'Netherlands',    away: 'Sweden' },
     { date: '2026-06-20', group: 'F', home: 'Tunisia',        away: 'Japan' },
     // June 21
@@ -476,15 +476,15 @@ const GROUP_STAGE_SCHEDULE = [
     { date: '2026-06-23', group: 'L', home: 'Panama',         away: 'Croatia' },
     // June 24
     { date: '2026-06-24', group: 'A', home: 'Czechia',        away: 'Mexico' },
-    { date: '2026-06-24', group: 'A', home: 'South Africa',   away: 'Korea Republic' },
+    { date: '2026-06-24', group: 'A', home: 'South Africa',   away: 'South Korea' },
     { date: '2026-06-24', group: 'B', home: 'Switzerland',    away: 'Canada' },
-    { date: '2026-06-24', group: 'B', home: 'Bosnia and Herzegovina', away: 'Qatar' },
+    { date: '2026-06-24', group: 'B', home: 'Bosnia', away: 'Qatar' },
     { date: '2026-06-24', group: 'C', home: 'Scotland',       away: 'Brazil' },
     { date: '2026-06-24', group: 'C', home: 'Morocco',        away: 'Haiti' },
     // June 25
-    { date: '2026-06-25', group: 'D', home: 'Turkey',         away: 'United States' },
+    { date: '2026-06-25', group: 'D', home: 'Turkiye',         away: 'United States' },
     { date: '2026-06-25', group: 'D', home: 'Paraguay',       away: 'Australia' },
-    { date: '2026-06-25', group: 'E', home: 'Curaçao',        away: 'Ivory Coast' },
+    { date: '2026-06-25', group: 'E', home: 'Curacao',        away: 'Ivory Coast' },
     { date: '2026-06-25', group: 'E', home: 'Ecuador',        away: 'Germany' },
     { date: '2026-06-25', group: 'F', home: 'Japan',          away: 'Sweden' },
     { date: '2026-06-25', group: 'F', home: 'Tunisia',        away: 'Netherlands' },
