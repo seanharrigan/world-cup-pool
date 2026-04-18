@@ -604,8 +604,6 @@ function updateUI() {
     // Update budget progress bar and spent amount
     const budgetBar = document.getElementById('rule-chip-budget-bar');
     const budgetSpent = document.getElementById('rule-chip-budget-spent');
-    const squadCountEl = document.getElementById('rule-chip-squad-count');
-    const squadChip = document.getElementById('rule-chip-squad');
     if (budgetBar) {
         const pct = Math.min(100, Math.round((spent / 150) * 100));
         budgetBar.style.width = `${pct}%`;
@@ -613,15 +611,6 @@ function updateUI() {
         budgetBar.style.backgroundColor = barColor;
     }
     if (budgetSpent) budgetSpent.textContent = `$${spent}`;
-    if (squadCountEl) {
-        squadCountEl.textContent = myPicks.length;
-        squadCountEl.style.color = myPicks.length === 8 ? '#4ade80' : myPicks.length > 8 ? '#f87171' : '#ffffff';
-    }
-    if (squadChip) {
-        const squadOk = myPicks.length === 8;
-        squadChip.style.borderColor = !hasStarted ? '#374151' : squadOk ? '#166534' : '#992b2b';
-        squadChip.style.backgroundColor = !hasStarted ? '#1f2937' : squadOk ? '#14532d22' : '#7f1d1d22';
-    }
 
     let budgetState = 'neutral';
     if (hasStarted) {

@@ -894,7 +894,7 @@
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-gray-900"><input type="text" id="leaderboard-search" placeholder="Search by name..." oninput="fetchLeaderboard()" class="theme-input w-full p-3 rounded-xl border-2 outline-none font-bold text-sm text-gray-900 text-left"><select id="leaderboard-country-filter" onchange="fetchLeaderboard()" class="theme-input w-full p-3 rounded-xl border-2 outline-none font-bold text-sm bg-white text-left"><option value="">All Countries</option></select></div>
-                <div class="bg-gray-50 rounded-3xl border border-gray-200 overflow-hidden text-left text-gray-900"><div class="overflow-x-auto text-left text-gray-900"><table class="min-w-[1100px] w-full text-left text-gray-900 text-left"><thead class="bg-gray-900 text-white uppercase text-[11px] tracking-[0.2em] font-black text-left"><tr><th class="px-6 py-4 text-center">Rank</th><th class="px-6 py-4 text-center text-white">Points</th><th class="px-6 py-4 text-left">Player & Squad</th><th class="px-4 py-4 text-center">G</th><th class="px-4 py-4 text-center">Bonus</th><th class="px-4 py-4 text-center">R32</th><th class="px-4 py-4 text-center">R16</th><th class="px-4 py-4 text-center">QF</th><th class="px-4 py-4 text-center">SM</th><th class="px-4 py-4 text-center">F</th></tr></thead><tbody id="leaderboard-body" class="font-bold text-left text-gray-900 text-left text-gray-900 text-left"></tbody></table></div></div>
+                <div class="bg-gray-50 rounded-3xl border border-gray-200 overflow-hidden text-left text-gray-900"><div class="overflow-x-auto text-left text-gray-900"><table class="min-w-[1060px] w-full text-left text-gray-900 text-left"><thead class="bg-gray-900 text-white uppercase text-[11px] tracking-[0.2em] font-black text-left"><tr><th class="w-[88px] px-4 py-4 text-center">Rank</th><th class="w-[92px] px-4 py-4 text-center text-white">Points</th><th class="px-6 py-4 text-left">Player & Squad</th><th class="px-4 py-4 text-center">G</th><th class="px-4 py-4 text-center">Bonus</th><th class="px-4 py-4 text-center">R32</th><th class="px-4 py-4 text-center">R16</th><th class="px-4 py-4 text-center">QF</th><th class="px-4 py-4 text-center">SM</th><th class="px-4 py-4 text-center">F</th></tr></thead><tbody id="leaderboard-body" class="font-bold text-left text-gray-900 text-left text-gray-900 text-left"></tbody></table></div></div>
             </div>
         </div>
 
@@ -1369,20 +1369,6 @@
                         <span class="text-xs font-bold text-gray-500 ml-1">used</span>
                     </div>
                     <span id="rule-chip-budget-helper" class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">of $150</span>
-                </div>
-            </div>
-            <!-- Squad size + tier rules -->
-            <div class="grid grid-cols-2 gap-3 mx-6 mb-3">
-                <!-- Squad size -->
-                <div id="rule-chip-squad" class="rounded-2xl border border-gray-700 bg-gray-800 px-4 py-4 col-span-2 flex items-center justify-between">
-                    <div>
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Squad Size</div>
-                        <div class="mt-1 text-[10px] font-bold text-gray-500">Exactly 8 teams required</div>
-                    </div>
-                    <div class="text-right">
-                        <span id="rule-chip-squad-count" class="text-3xl font-black text-white">0</span>
-                        <span class="text-gray-500 font-black text-lg">/8</span>
-                    </div>
                 </div>
             </div>
             <div class="grid grid-cols-3 gap-3 mx-6 mb-5">

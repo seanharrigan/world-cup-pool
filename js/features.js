@@ -2840,12 +2840,53 @@ async function setupDashboard() {
                     match?.match_date_manual && (squadNames.has(match.team_home) || squadNames.has(match.team_away))
                 )
                 .sort((a, b) => getMatchSortKey(a).localeCompare(getMatchSortKey(b)));
-            const upcomingMatches = squadMatches
-                .filter((match) => match.match_date_manual >= localTodayKey && !match.is_finished)
-                .slice(0, 3);
             const previousMatches = squadMatches
                 .filter((match) => match.is_finished || match.match_date_manual < localTodayKey)
                 .sort((a, b) => getMatchSortKey(b).localeCompare(getMatchSortKey(a)))
+                .slice(0, 3);
+            const standings = computeGroupStandings(matches);
+            const bestThirdAssignments = _buildBestThirdAssignments(standings);
+            const loggedKeySet = new Set(
+                matches
+                    .filter((match) => match?.match_date_manual)
+                    .map((match) => `${match.stage}|${match.match_date_manual}|${match.team_home}|${match.team_away}`)
+            );
+            const upcomingGroupMatches = GROUP_STAGE_SCHEDULE
+                .filter((match) =>
+                    match.date >= localTodayKey &&
+                    (squadNames.has(match.home) || squadNames.has(match.away)) &&
+                    !loggedKeySet.has(`Group|${match.date}|${match.home}|${match.away}`) &&
+                    !loggedKeySet.has(`Group|${match.date}|${match.away}|${match.home}`)
+                )
+                .map((match) => ({
+                    stage: 'Group',
+                    match_date_manual: match.date,
+                    team_home: match.home,
+                    team_away: match.away,
+                    is_finished: false,
+                    was_extra_time: false
+                }));
+            const upcomingKnockoutMatches = KNOCKOUT_SCHEDULE
+                .filter((match) => match.date >= localTodayKey)
+                .map((match) => {
+                    const homeRes = _resolveKnockoutMatchTeam(match, 'home', standings, bestThirdAssignments, { matchesCache: matches });
+                    const awayRes = _resolveKnockoutMatchTeam(match, 'away', standings, bestThirdAssignments, { matchesCache: matches });
+                    return {
+                        stage: match.stage,
+                        match_date_manual: match.date,
+                        team_home: homeRes?.status !== 'none' ? homeRes.name : 'TBD',
+                        team_away: awayRes?.status !== 'none' ? awayRes.name : 'TBD',
+                        is_finished: false,
+                        was_extra_time: false
+                    };
+                })
+                .filter((match) =>
+                    (squadNames.has(match.team_home) || squadNames.has(match.team_away)) &&
+                    !loggedKeySet.has(`${match.stage}|${match.match_date_manual}|${match.team_home}|${match.team_away}`) &&
+                    !loggedKeySet.has(`${match.stage}|${match.match_date_manual}|${match.team_away}|${match.team_home}`)
+                );
+            const upcomingMatches = [...upcomingGroupMatches, ...upcomingKnockoutMatches]
+                .sort((a, b) => getMatchSortKey(a).localeCompare(getMatchSortKey(b)))
                 .slice(0, 3);
 
             if (teamsTodaySection) teamsTodaySection.classList.remove('hidden');
@@ -2857,18 +2898,18 @@ async function setupDashboard() {
                 }
             } else {
                 if (teamsTodayLabel) {
-                    teamsTodayLabel.textContent = 'Three previous and three upcoming matches for your squad';
+                    teamsTodayLabel.textContent = 'Recent and upcoming matches for your squad';
                 }
 
                 teamsTodayEl.innerHTML = `
                     <div class="space-y-3">
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Previous Three</div>
+                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Last Games</div>
                         ${previousMatches.length > 0
                             ? previousMatches.map((match) => renderDashboardMatchCard(match, { squadNames })).join('')
                             : '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No previous squad matches yet</div>'}
                     </div>
                     <div class="space-y-3">
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Upcoming Three</div>
+                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Next Games</div>
                         ${upcomingMatches.length > 0
                             ? upcomingMatches.map((match) => renderDashboardMatchCard(match, { squadNames })).join('')
                             : '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No upcoming squad matches</div>'}
@@ -4347,8 +4388,8 @@ async function fetchLeaderboard() {
     const skeletonCell = '<td class="px-4 py-4 text-center"><div class="h-4 w-6 bg-gray-200 rounded animate-pulse mx-auto"></div></td>';
     const skeletonRow = `
         <tr class="border-b border-gray-100">
-            <td class="px-6 py-4 text-center"><div class="h-5 w-6 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
-            <td class="px-6 py-4 text-center"><div class="h-6 w-10 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
+            <td class="w-[88px] px-4 py-4 text-center"><div class="h-5 w-6 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
+            <td class="w-[92px] px-4 py-4 text-center"><div class="h-6 w-10 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
             <td class="px-6 py-4"><div class="space-y-2"><div class="h-4 w-28 bg-gray-200 rounded animate-pulse"></div><div class="h-3 w-20 bg-gray-100 rounded animate-pulse"></div></div></td>
             ${skeletonCell.repeat(7)}
         </tr>`;
@@ -4432,8 +4473,8 @@ async function fetchLeaderboard() {
 
         const bestRowMarkup = bestAvailableTeam ? `
             <tr class="border-b border-gray-100 bg-gray-50 text-left text-gray-700">
-                <td class="px-6 py-4 text-center text-[1.65rem] font-black italic text-gray-400">-</td>
-                <td class="px-6 py-4 text-center font-mono text-[1.65rem] font-black text-gray-500">${bestAvailableTeam.totalPoints}</td>
+                <td class="w-[88px] px-4 py-4 text-center text-[1.45rem] font-black text-gray-400">-</td>
+                <td class="w-[92px] px-4 py-4 text-center font-mono text-[1.45rem] font-black text-gray-500">${bestAvailableTeam.totalPoints}</td>
                 <td class="px-6 py-4 text-left">
                     <div class="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400 text-left">${bestAvailableTeam.nickname}</div>
                     <div class="mt-2 text-left">
@@ -4481,13 +4522,13 @@ async function fetchLeaderboard() {
 
             return `
             <tr class="theme-hover-row ${rowTone} border-b border-gray-100 transition-colors text-left text-gray-900 cursor-pointer" onclick="showPlayerProfile('${user.email}')">
-                <td class="theme-accent-text px-6 py-4 text-center">
-                    <div class="flex items-center justify-center gap-3">
-                        <div class="w-6 text-right">${rankIndicator}</div>
-                        <div class="text-[1.65rem] font-black italic">#${displayRank}</div>
+                <td class="theme-accent-text w-[88px] px-4 py-4 text-center">
+                    <div class="flex items-center justify-center gap-2">
+                        <div class="w-5 text-right">${rankIndicator}</div>
+                        <div class="text-[1.45rem] font-black">#${displayRank}</div>
                     </div>
                 </td>
-                <td class="theme-accent-text px-6 py-4 text-center font-mono text-[1.65rem] font-black">${user.totalPoints}</td>
+                <td class="theme-accent-text w-[92px] px-4 py-4 text-center font-mono text-[1.45rem] font-black">${user.totalPoints}</td>
                 <td class="px-6 py-4 text-left">
                     <div class="text-lg font-black uppercase text-left text-gray-900">${user.nickname}</div>
                     <div class="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400 text-left">${user.realname}</div>
