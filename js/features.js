@@ -1892,20 +1892,18 @@ function showResultsTab(tabId) {
 
     panels.forEach((panel) => panel.classList.add('hidden'));
     tabs.forEach((tab) => {
-        tab.classList.remove('active', 'theme-tab-active');
-        tab.classList.add('border-gray-300', 'bg-white', 'text-gray-500');
+        tab.classList.remove('active', 'style-c-active');
+        tab.classList.add('text-gray-500');
     });
 
     const activePanel = document.getElementById(`results-panel-${tabId}`);
     const activeTab = document.getElementById(`results-tab-${tabId}`);
 
-    if (activePanel) {
-        activePanel.classList.remove('hidden');
-    }
+    if (activePanel) activePanel.classList.remove('hidden');
 
     if (activeTab) {
-        activeTab.classList.add('active', 'theme-tab-active');
-        activeTab.classList.remove('border-gray-300', 'bg-white', 'text-gray-500');
+        activeTab.classList.add('active', 'style-c-active');
+        activeTab.classList.remove('text-gray-500');
     }
 
     const tabLabels = { groups: 'Results by Group', bracket: 'Bracket', pool: 'Results Table', matches: 'Match Results', selection: 'Selection Stats' };
@@ -1919,6 +1917,7 @@ function showResultsTab(tabId) {
         const isActive = btn.dataset.tab === tabId;
         btn.classList.toggle('inactive', !isActive);
     });
+
 }
 
 function toggleResultsTabDropdown() {
