@@ -32,6 +32,42 @@ const stageMultiplierLabels = {
     Finals: 'x12'
 };
 
+const PLAYER_CHIP_DEFINITIONS = {
+    leader: { id: 'leader', emoji: '🥇', label: 'Leader', tone: 'positive', description: 'Ranked #1 overall right now.' },
+    hot: { id: 'hot', emoji: '🔥', label: 'Hot', tone: 'positive', description: 'Most points in the most recently completed stage.' },
+    group_king: { id: 'group_king', emoji: '🌟', label: 'Group King', tone: 'positive', description: 'Most combined group-stage points across Matchdays 1-3.' },
+    all_through: { id: 'all_through', emoji: '⚡', label: 'All Through', tone: 'positive', description: 'Every picked team made it through the group stage and none are currently eliminated.' },
+    big_dog: { id: 'big_dog', emoji: '💎', label: 'Big Dog', tone: 'positive', description: 'Owns the priciest Tier 1 star in the pool.' },
+    on_the_rise: { id: 'on_the_rise', emoji: '📈', label: 'On the Rise', tone: 'positive', description: 'Biggest positive jump in rank since the last leaderboard snapshot.' },
+    sharpshooter: { id: 'sharpshooter', emoji: '🎯', label: 'Sharpshooter', tone: 'positive', description: 'Their squad has scored the most total goals in finished group matches.' },
+    contrarian: { id: 'contrarian', emoji: '🦄', label: 'Contrarian', tone: 'positive', description: 'Holds the most teams that nobody else picked.' },
+    value_pick: { id: 'value_pick', emoji: '💰', label: 'Value Pick', tone: 'positive', description: 'Best points return per budget dollar spent.' },
+    still_standing: { id: 'still_standing', emoji: '🏟️', label: 'Still Standing', tone: 'positive', description: 'Has the most teams still alive in the tournament.' },
+    wiped_out: { id: 'wiped_out', emoji: '💀', label: 'Wiped Out', tone: 'negative', description: 'Every picked team has already been eliminated.' },
+    ice_cold: { id: 'ice_cold', emoji: '❄️', label: 'Ice Cold', tone: 'negative', description: 'Fewest points in the most recently completed stage.' },
+    freefall: { id: 'freefall', emoji: '📉', label: 'Freefall', tone: 'negative', description: 'Biggest drop in rank since the last leaderboard snapshot.' },
+    splurge: { id: 'splurge', emoji: '💸', label: 'Splurge', tone: 'negative', description: 'Spent almost everything while sitting in the bottom half of the table.' },
+    early_graves: { id: 'early_graves', emoji: '⚰️', label: 'Early Graves', tone: 'negative', description: 'Has the most eliminated teams in their squad.' },
+    united_nations: { id: 'united_nations', emoji: '🌍', label: 'United Nations', tone: 'neutral', description: 'Most varied squad by represented World Cup groups.' },
+    crowd_pleaser: { id: 'crowd_pleaser', emoji: '🤝', label: 'Crowd Pleaser', tone: 'neutral', description: 'Carries the most of the pool’s most popular teams.' },
+    all_in: { id: 'all_in', emoji: '🎰', label: 'All-In', tone: 'neutral', description: 'Running a squad right up against the $150 budget cap.' }
+};
+
+const PLAYER_CHIP_TONE_CLASSES = {
+    positive: {
+        row: 'bg-green-100 text-green-700',
+        card: 'bg-green-100 text-green-700'
+    },
+    negative: {
+        row: 'bg-red-100 text-red-700',
+        card: 'bg-red-100 text-red-700'
+    },
+    neutral: {
+        row: 'bg-sky-100 text-sky-700',
+        card: 'bg-sky-100 text-sky-700'
+    }
+};
+
 const FAVORITE_TEAM_BANNERS = {
     Spain: { slogan: 'VAMOS ESPANA', gradient: 'linear-gradient(135deg, #9f1239 0%, #dc2626 26%, #facc15 52%, #dc2626 76%, #9f1239 100%)', textColor: '#ffffff', accentColor: '#dc2626' },
     England: { slogan: "IT'S COMING HOME", gradient: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 42%, #dc2626 47%, #dc2626 53%, #ffffff 58%, #f8fafc 100%)', textColor: '#0f172a', accentColor: '#dc2626' },
@@ -1919,8 +1955,8 @@ function showAdminTab(tabId) {
 
     panels.forEach((panel) => panel.classList.add('hidden'));
     tabs.forEach((tab) => {
-        tab.classList.remove('active', 'border-blue-500/40', 'bg-blue-600/20', 'text-blue-300');
-        tab.classList.add('border-gray-700', 'bg-gray-800', 'text-gray-300');
+        tab.classList.remove('active', 'border-blue-400/40', 'bg-white', 'text-gray-950', 'shadow-lg', 'shadow-blue-500/10');
+        tab.classList.add('border-transparent', 'bg-transparent', 'text-gray-400');
     });
 
     const activePanel = document.getElementById(`admin-panel-${tabId}`);
@@ -1931,8 +1967,8 @@ function showAdminTab(tabId) {
     }
 
     if (activeTab) {
-        activeTab.classList.add('active', 'border-blue-500/40', 'bg-blue-600/20', 'text-blue-300');
-        activeTab.classList.remove('border-gray-700', 'bg-gray-800', 'text-gray-300');
+        activeTab.classList.add('active', 'border-blue-400/40', 'bg-white', 'text-gray-950', 'shadow-lg', 'shadow-blue-500/10');
+        activeTab.classList.remove('border-transparent', 'bg-transparent', 'text-gray-400');
     }
 
     if (tabId === 'schedule') {
@@ -4473,6 +4509,269 @@ async function submitManualResult() {
     }
 }
 
+function _getPlayerDisplayRanks(leaderboardData = []) {
+    const ranks = {};
+    let displayRank = 0;
+    let previousPoints = null;
+
+    leaderboardData.forEach((user, index) => {
+        if (user.totalPoints !== previousPoints) {
+            displayRank = index + 1;
+            previousPoints = user.totalPoints;
+        }
+        ranks[user.email] = displayRank;
+    });
+
+    return ranks;
+}
+
+function _awardPlayerChip(chipsByEmail, emails, chipId) {
+    const chip = PLAYER_CHIP_DEFINITIONS[chipId];
+    if (!chip) {
+        return;
+    }
+
+    [...new Set((emails || []).filter(Boolean))].forEach((email) => {
+        if (!chipsByEmail.has(email)) {
+            chipsByEmail.set(email, []);
+        }
+        const list = chipsByEmail.get(email);
+        if (!list.some((entry) => entry.id === chipId)) {
+            list.push({ ...chip });
+        }
+    });
+}
+
+function _buildTeamGoalsMap(matches = []) {
+    const goalsByTeam = new Map();
+
+    (matches || []).forEach((match) => {
+        if (match.stage !== 'Group') {
+            return;
+        }
+
+        const homeGoals = Number(match.score_home);
+        const awayGoals = Number(match.score_away);
+        if (!Number.isFinite(homeGoals) || !Number.isFinite(awayGoals)) {
+            return;
+        }
+
+        goalsByTeam.set(match.team_home, (goalsByTeam.get(match.team_home) || 0) + homeGoals);
+        goalsByTeam.set(match.team_away, (goalsByTeam.get(match.team_away) || 0) + awayGoals);
+    });
+
+    return goalsByTeam;
+}
+
+function _getLatestCompletedStageKey(leaderboardData = []) {
+    const stageOrder = ['F', 'SM', 'QF', 'R16', 'R32', 'Bonus', 'G3', 'G2', 'G1'];
+    return stageOrder.find((stageKey) => (
+        leaderboardData.some((user) => Number(user.stagePoints?.[stageKey] || 0) > 0)
+    )) || null;
+}
+
+function computePlayerChips(leaderboardData = [], matches = [], previousRanks = {}) {
+    const chipsByEmail = new Map();
+    const currentRanks = _getPlayerDisplayRanks(leaderboardData);
+    const goalsByTeam = _buildTeamGoalsMap(matches);
+    const latestStageKey = _getLatestCompletedStageKey(leaderboardData);
+    const teamOwnershipCounts = new Map();
+
+    leaderboardData.forEach((user) => {
+        chipsByEmail.set(user.email, []);
+        const uniqueTeams = new Set((user.squad || []).map((team) => team.name));
+        uniqueTeams.forEach((teamName) => {
+            teamOwnershipCounts.set(teamName, (teamOwnershipCounts.get(teamName) || 0) + 1);
+        });
+    });
+
+    const squadCostByEmail = new Map();
+    const uniqueTeamCountByEmail = new Map();
+    const mostPopularTeamCount = Math.max(0, ...teamOwnershipCounts.values());
+    const mostPopularTeams = new Set(
+        [...teamOwnershipCounts.entries()]
+            .filter(([, count]) => count === mostPopularTeamCount && count > 0)
+            .map(([teamName]) => teamName)
+    );
+
+    const playerMetrics = leaderboardData.map((user) => {
+        const squad = user.squad || [];
+        const squadCost = squad.reduce((sum, team) => sum + Number(team.cost || 0), 0);
+        const eliminatedCount = squad.filter((team) => eliminatedTeams.has(team.name)).length;
+        const remainingCount = squad.filter((team) => !eliminatedTeams.has(team.name)).length;
+        const tierOneMaxCost = Math.max(0, ...squad.filter((team) => Number(team.tier) === 1).map((team) => Number(team.cost || 0)));
+        const groupPoints = Number(user.stagePoints?.G1 || 0) + Number(user.stagePoints?.G2 || 0) + Number(user.stagePoints?.G3 || 0);
+        const recentStagePoints = latestStageKey ? Number(user.stagePoints?.[latestStageKey] || 0) : null;
+        const uniqueOnlyCount = squad.filter((team) => teamOwnershipCounts.get(team.name) === 1).length;
+        const totalGoals = squad.reduce((sum, team) => sum + Number(goalsByTeam.get(team.name) || 0), 0);
+        const distinctGroups = new Set(squad.map((team) => team.group).filter(Boolean)).size;
+        const crowdPleaserCount = squad.filter((team) => mostPopularTeams.has(team.name)).length;
+        const rank = currentRanks[user.email] || null;
+        const previousRank = Number(previousRanks?.[user.email]);
+        const rankDelta = Number.isFinite(previousRank) ? previousRank - rank : null;
+        const allThrough = squad.length > 0
+            && Number(user.stagePoints?.Bonus || 0) >= squad.length
+            && squad.every((team) => !eliminatedTeams.has(team.name));
+        const wipedOut = squad.length > 0 && eliminatedCount === squad.length;
+
+        squadCostByEmail.set(user.email, squadCost);
+        uniqueTeamCountByEmail.set(user.email, new Set(squad.map((team) => team.name)).size);
+
+        return {
+            user,
+            squad,
+            squadCost,
+            eliminatedCount,
+            remainingCount,
+            tierOneMaxCost,
+            groupPoints,
+            recentStagePoints,
+            uniqueOnlyCount,
+            totalGoals,
+            distinctGroups,
+            crowdPleaserCount,
+            rank,
+            rankDelta,
+            allThrough,
+            wipedOut,
+            valueRatio: squadCost > 0 ? user.totalPoints / squadCost : 0
+        };
+    });
+
+    const awardMax = (chipId, getValue, predicate = (value) => value > 0) => {
+        let best = null;
+        let emails = [];
+
+        playerMetrics.forEach((entry) => {
+            const value = getValue(entry);
+            if (!predicate(value, entry)) {
+                return;
+            }
+
+            if (best === null || value > best) {
+                best = value;
+                emails = [entry.user.email];
+            } else if (value === best) {
+                emails.push(entry.user.email);
+            }
+        });
+
+        _awardPlayerChip(chipsByEmail, emails, chipId);
+    };
+
+    const awardMin = (chipId, getValue, predicate = () => true) => {
+        let best = null;
+        let emails = [];
+
+        playerMetrics.forEach((entry) => {
+            const value = getValue(entry);
+            if (!predicate(value, entry)) {
+                return;
+            }
+
+            if (best === null || value < best) {
+                best = value;
+                emails = [entry.user.email];
+            } else if (value === best) {
+                emails.push(entry.user.email);
+            }
+        });
+
+        _awardPlayerChip(chipsByEmail, emails, chipId);
+    };
+
+    _awardPlayerChip(chipsByEmail, playerMetrics.filter((entry) => entry.rank === 1).map((entry) => entry.user.email), 'leader');
+
+    if (latestStageKey) {
+        awardMax('hot', (entry) => entry.recentStagePoints, (value) => Number.isFinite(value) && value > 0);
+        awardMin('ice_cold', (entry) => entry.recentStagePoints, (value, entry) => Number.isFinite(value) && entry.user.totalPoints > 0);
+    }
+
+    awardMax('group_king', (entry) => entry.groupPoints, (value) => value > 0);
+    _awardPlayerChip(chipsByEmail, playerMetrics.filter((entry) => entry.allThrough).map((entry) => entry.user.email), 'all_through');
+    awardMax('big_dog', (entry) => entry.tierOneMaxCost, (value) => value > 0);
+    awardMax('on_the_rise', (entry) => entry.rankDelta, (value) => Number.isFinite(value) && value > 0);
+    awardMin('freefall', (entry) => entry.rankDelta, (value) => Number.isFinite(value) && value < 0);
+    awardMax('sharpshooter', (entry) => entry.totalGoals, (value) => value > 0);
+    awardMax('contrarian', (entry) => entry.uniqueOnlyCount, (value) => value > 0);
+    awardMax('value_pick', (entry) => entry.valueRatio, (value) => Number.isFinite(value) && value > 0);
+    awardMax('still_standing', (entry) => entry.remainingCount, (value) => value > 0);
+    _awardPlayerChip(chipsByEmail, playerMetrics.filter((entry) => entry.wipedOut).map((entry) => entry.user.email), 'wiped_out');
+    awardMax('early_graves', (entry) => entry.eliminatedCount, (value) => value > 0);
+    awardMax('united_nations', (entry) => entry.distinctGroups, (value) => value > 0);
+    awardMax('crowd_pleaser', (entry) => entry.crowdPleaserCount, (value) => value > 0);
+    awardMax('all_in', (entry) => entry.squadCost, (value) => value >= 145);
+
+    const bottomHalfThreshold = Math.ceil(playerMetrics.length / 2);
+    awardMax('splurge', (entry) => entry.squadCost, (value, entry) => value >= 145 && Number(entry.rank || 0) > bottomHalfThreshold);
+
+    return chipsByEmail;
+}
+
+function renderPlayerChips(chips = [], email = '', variant = 'row') {
+    if (!chips.length) {
+        return '';
+    }
+
+    const toneOrder = { positive: 0, negative: 1, neutral: 2 };
+    const sortedChips = [...chips].sort((a, b) => (
+        (toneOrder[a.tone] ?? 99) - (toneOrder[b.tone] ?? 99) || a.label.localeCompare(b.label)
+    ));
+    const visibleChips = variant === 'row' ? sortedChips.slice(0, 2) : sortedChips;
+    const safeEmail = String(email || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+    if (variant === 'row') {
+        return `
+            <div class="flex flex-wrap gap-1">
+                ${visibleChips.map((chip) => {
+                    const toneClasses = PLAYER_CHIP_TONE_CLASSES[chip.tone]?.row || PLAYER_CHIP_TONE_CLASSES.neutral.row;
+                    return `<button type="button"
+                        title="${escapeHtml(`${chip.label} — ${chip.description}`)}"
+                        onclick="showPlayerChipInfo('${chip.id}', '${safeEmail}', event)"
+                        class="inline-flex h-6 min-w-[24px] items-center justify-center rounded-full px-1.5 text-xs font-black ${toneClasses} transition-transform hover:scale-105">${chip.emoji}</button>`;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    return `
+        <div class="mt-2 flex flex-wrap gap-1.5">
+            ${visibleChips.map((chip) => {
+                const toneClasses = PLAYER_CHIP_TONE_CLASSES[chip.tone]?.card || PLAYER_CHIP_TONE_CLASSES.neutral.card;
+                return `<button type="button"
+                    title="${escapeHtml(`${chip.label} — ${chip.description}`)}"
+                    onclick="showPlayerChipInfo('${chip.id}', '${safeEmail}', event)"
+                    class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black uppercase tracking-[0.08em] ${toneClasses} transition-transform hover:scale-[1.02]">${chip.emoji} <span>${escapeHtml(chip.label)}</span></button>`;
+            }).join('')}
+        </div>
+    `;
+}
+
+async function showPlayerChipInfo(chipId, email, event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    const chip = PLAYER_CHIP_DEFINITIONS[chipId];
+    if (!chip) {
+        return;
+    }
+
+    const leaderboardEntry = (window._leaderboardData || []).find((entry) => entry.email === email);
+    const playerName = leaderboardEntry?.nickname || leaderboardEntry?.realname || email || 'Player';
+
+    await showConfirmModal({
+        label: 'Player Chip',
+        icon: chip.emoji,
+        title: chip.label,
+        message: chip.description,
+        detail: `${playerName} currently holds this stat token.`,
+        confirmText: 'Close',
+        singleAction: true
+    });
+}
+
 async function fetchLeaderboard() {
     const body = document.getElementById('leaderboard-body');
     // Show animated placeholder rows while scores are calculated.
@@ -4512,26 +4811,38 @@ async function fetchLeaderboard() {
 
         await fetchAdvancedTeams();
         const profilesMap = buildProfilesMap(allProfiles);
-        let leaderboardData = buildLeaderboardData(allPicks || [], allMatches || [], profilesMap, teams, advancedTeams, eliminatedTeams);
+        const leaderboardData = buildLeaderboardData(allPicks || [], allMatches || [], profilesMap, teams, advancedTeams, eliminatedTeams);
         const bestAvailableTeam = buildBestAvailableTeamData(allMatches || [], teams, advancedTeams, eliminatedTeams);
         const playerCount = leaderboardData.length;
         const search = document.getElementById('leaderboard-search').value.toLowerCase();
-        const countryFilter = document.getElementById('leaderboard-country-filter');
-        const filter = countryFilter?.value || '';
+        const countryFilterWrap = document.getElementById('leaderboard-country-filter');
+        const filter = countryFilterWrap?.dataset?.value || '';
+        const countryFilterBtn = document.getElementById('country-filter-btn');
+        const previousRanks = JSON.parse(localStorage.getItem('wc_pool_lb_ranks') || '{}');
+        const currentRanks = _getPlayerDisplayRanks(leaderboardData);
+        const playerChips = computePlayerChips(leaderboardData, allMatches || [], previousRanks);
+        const enrichedLeaderboardData = leaderboardData.map((user) => ({
+            ...user,
+            displayRank: currentRanks[user.email] || null,
+            chips: playerChips.get(user.email) || []
+        }));
 
-        if (countryFilter) {
-            countryFilter.disabled = Boolean(appSettings.hideTeamSelection);
-            countryFilter.classList.toggle('opacity-50', Boolean(appSettings.hideTeamSelection));
+        if (countryFilterBtn) {
+            countryFilterBtn.disabled = Boolean(appSettings.hideTeamSelection);
+            countryFilterBtn.classList.toggle('opacity-50', Boolean(appSettings.hideTeamSelection));
+            countryFilterBtn.classList.toggle('pointer-events-none', Boolean(appSettings.hideTeamSelection));
         }
 
+        let filteredLeaderboardData = [...enrichedLeaderboardData];
+
         if (search) {
-            leaderboardData = leaderboardData.filter((user) => (
+            filteredLeaderboardData = filteredLeaderboardData.filter((user) => (
                 user.nickname.toLowerCase().includes(search) || user.realname.toLowerCase().includes(search)
             ));
         }
 
         if (!appSettings.hideTeamSelection && filter) {
-            leaderboardData = leaderboardData.filter((user) => (
+            filteredLeaderboardData = filteredLeaderboardData.filter((user) => (
                 user.squad.some((squadTeam) => teams.find((team) => team.flag === squadTeam.flag).name === filter)
             ));
         }
@@ -4583,46 +4894,38 @@ async function fetchLeaderboard() {
             </tr>
         ` : '';
 
-        let displayRank = 0;
-        let previousPoints = null;
+        const newRanks = { ...currentRanks };
 
-        // Load previous rank snapshot from localStorage for change arrows
-        const previousRanks = JSON.parse(localStorage.getItem('wc_pool_lb_ranks') || '{}');
-        const newRanks = {};
-
-        body.innerHTML = bestRowMarkup + (leaderboardData.map((user, index) => {
-            if (user.totalPoints !== previousPoints) {
-                displayRank = index + 1;
-                previousPoints = user.totalPoints;
-            }
-
-            newRanks[user.email] = displayRank;
-
+        body.innerHTML = bestRowMarkup + (filteredLeaderboardData.map((user) => {
             // Compute rank change indicator
             const prevRank = previousRanks[user.email];
             let rankIndicator;
             if (prevRank === undefined || prevRank === null) {
                 rankIndicator = '';
             } else {
-                const delta = prevRank - displayRank;
+                const delta = prevRank - user.displayRank;
                 if (delta > 0) rankIndicator = `<span class="text-green-500 text-xs font-black">↑${delta}</span>`;
                 else if (delta < 0) rankIndicator = `<span class="text-red-400 text-xs font-black">↓${Math.abs(delta)}</span>`;
                 else rankIndicator = '';
             }
 
-            const rowTone = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+            const rowTone = (Number(user.displayRank || 0) % 2) === 1 ? 'bg-white' : 'bg-gray-50';
+            const safeEmail = user.email.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
             return `
-            <tr class="theme-hover-row ${rowTone} border-b border-gray-100 transition-colors text-left text-gray-900 cursor-pointer" onclick="showPlayerProfile('${user.email}')">
+            <tr class="theme-hover-row ${rowTone} border-b border-gray-100 transition-colors text-left text-gray-900 cursor-pointer" onclick="showPlayerProfile('${safeEmail}')">
                 <td class="theme-accent-text w-[88px] px-4 py-4 text-center">
                     <div class="flex items-center justify-center gap-2">
                         <div class="w-5 text-right">${rankIndicator}</div>
-                        <div class="text-[1.45rem] font-black">#${displayRank}</div>
+                        <div class="text-[1.45rem] font-black">#${user.displayRank}</div>
                     </div>
                 </td>
                 <td class="theme-accent-text w-[92px] px-4 py-4 text-center font-mono text-[1.45rem] font-black">${user.totalPoints}</td>
                 <td class="px-6 py-4 text-left">
-                    <div class="text-lg font-black uppercase text-left text-gray-900">${user.nickname}</div>
+                    <div class="flex flex-wrap items-center gap-2 text-left">
+                        <div class="text-lg font-black uppercase text-left text-gray-900">${user.nickname}</div>
+                        ${renderPlayerChips(user.chips, user.email, 'row')}
+                    </div>
                     <div class="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400 text-left">${user.realname}</div>
                     <div class="mt-2 text-left">
                         ${renderSquadSummary(user)}
@@ -4641,7 +4944,8 @@ async function fetchLeaderboard() {
 
         // Persist ranks for next page load comparison, cache data for player profile modal
         localStorage.setItem('wc_pool_lb_ranks', JSON.stringify(newRanks));
-        window._leaderboardData = leaderboardData;
+        window._leaderboardData = enrichedLeaderboardData;
+        window._playerChipsByEmail = Object.fromEntries(playerChips);
     } catch (error) {
         body.innerHTML = '<tr><td colspan="10" class="p-8 text-center text-red-500 text-gray-900">Error calculating scores</td></tr>';
     }
@@ -5470,6 +5774,7 @@ async function showPlayerProfile(email) {
     const realname = profile?.realname || playerEntry?.realname || '';
     const favTeam = teams.find((t) => t.name === profile?.favorite_team);
     const favFlag = favTeam?.flag || '';
+    const playerChips = playerEntry?.chips || window._playerChipsByEmail?.[email] || [];
 
     // Squad section
     let squadHtml = '';
@@ -5533,6 +5838,7 @@ async function showPlayerProfile(email) {
                 <div class="min-w-0 flex-1">
                     <div class="text-2xl font-black uppercase italic tracking-tight text-white truncate">${escapeHtml(nickname)}</div>
                     ${realname ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${escapeHtml(realname)}</div>` : ''}
+                    ${renderPlayerChips(playerChips, email, 'card')}
                     <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
                         ${profile?.favorite_team ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300">${favFlag} ${escapeHtml(profile.favorite_team)}</span>` : ''}
                         ${profile?.home_country ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-500">${escapeHtml(profile.home_country)}</span>` : ''}
@@ -5568,76 +5874,244 @@ function closePlayerProfile() {
 
 async function showTeamOwners(teamName) {
     const modal = document.getElementById('team-owners-modal');
-    const content = document.getElementById('team-owners-modal-content');
-    if (!modal || !content) return;
+    const headerEl = document.getElementById('team-owners-header');
+    const listEl = document.getElementById('team-owners-list');
+    if (!modal || !headerEl || !listEl) return;
 
     const team = teams.find((t) => t.name === teamName);
     const flag = team?.flag || '';
 
     modal.classList.remove('hidden');
     modal.classList.add('flex');
-    content.innerHTML = '<div class="p-8 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 animate-pulse">Loading...</div>';
+    closeOwnerPlayer(); // reset to single-panel view
+
+    headerEl.innerHTML = `
+        <div class="flex items-center gap-4">
+            <span class="text-5xl leading-none">${flag}</span>
+            <div>
+                <div class="text-xl font-black uppercase italic tracking-tight text-white">${escapeHtml(teamName)}</div>
+                <div class="mt-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Loading…</div>
+            </div>
+        </div>`;
+    listEl.innerHTML = '<div class="p-8 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 animate-pulse">Loading...</div>';
+
     const onEscape = (e) => { if (e.key === 'Escape') { closeTeamOwners(); document.removeEventListener('keydown', onEscape); } };
     document.addEventListener('keydown', onEscape);
 
     let owners = [];
 
-    const lb = window._leaderboardData || [];
+    let lb = window._leaderboardData || [];
     if (lb.length > 0) {
-        // Leaderboard already computed — use it (includes points)
         owners = lb
             .filter((u) => u.squad.some((t) => t.name === teamName))
             .sort((a, b) => b.totalPoints - a.totalPoints || a.nickname.localeCompare(b.nickname))
-            .map((u) => ({ email: u.email, nickname: u.nickname, realname: u.realname, totalPoints: u.totalPoints }));
+            .map((u) => ({ email: u.email, nickname: u.nickname, realname: u.realname || '', totalPoints: u.totalPoints, squad: u.squad, stagePoints: u.stagePoints }));
     } else {
-        // Results tab — fetch picks + profiles directly
         try {
-            const [{ data: picks }, { data: profiles }] = await Promise.all([
-                supabaseClient.from('picks').select('user_email, team_name').eq('team_name', teamName),
-                supabaseClient.from('profiles').select('email, nickname, realname')
+            const [{ data: allPicks }, { data: allProfiles }, { data: allMatches }] = await Promise.all([
+                supabaseClient.from('picks').select('*'),
+                supabaseClient.from('profiles').select('email, nickname, realname'),
+                supabaseClient.from('matches').select('*')
             ]);
-            const profileMap = Object.fromEntries((profiles || []).map((p) => [p.email, p]));
-            owners = (picks || []).map((p) => {
-                const prof = profileMap[p.user_email] || {};
-                return { email: p.user_email, nickname: prof.nickname || p.user_email.split('@')[0], realname: prof.realname || '', totalPoints: null };
-            }).sort((a, b) => a.nickname.localeCompare(b.nickname));
+
+            const profilesMap = window.WorldCupScoring.buildProfilesMap(allProfiles || []);
+            const leaderboardData = window.WorldCupScoring.buildLeaderboardData(
+                allPicks || [], allMatches || [], profilesMap, teams, advancedTeams, eliminatedTeams
+            );
+            // Prime the cache so subsequent opens are instant
+            window._leaderboardData = leaderboardData;
+            lb = leaderboardData;
+
+            owners = leaderboardData
+                .filter((u) => u.squad.some((t) => t.name === teamName))
+                .sort((a, b) => b.totalPoints - a.totalPoints || a.nickname.localeCompare(b.nickname))
+                .map((u) => ({ email: u.email, nickname: u.nickname, realname: u.realname || '', totalPoints: u.totalPoints, squad: u.squad, stagePoints: u.stagePoints }));
         } catch (_) {
-            content.innerHTML = '<div class="p-8 text-center text-[10px] font-black uppercase tracking-[0.2em] text-red-400">Could not load picks.</div>';
+            listEl.innerHTML = '<div class="p-8 text-center text-[10px] font-black uppercase tracking-[0.2em] text-red-400">Could not load picks.</div>';
             return;
         }
     }
 
-    const ownersHtml = owners.length > 0
-        ? owners.map((u) => `
-            <button onclick="closeTeamOwners();showPlayerProfile('${u.email}')"
-                class="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-gray-800 transition-colors border-b border-gray-800 last:border-0">
+    window._teamOwnersState = { teamName, owners };
+
+    headerEl.innerHTML = `
+        <div class="flex items-center gap-4">
+            <span class="text-5xl leading-none">${flag}</span>
+            <div>
+                <div class="text-xl font-black uppercase italic tracking-tight text-white">${escapeHtml(teamName)}</div>
+                <div class="mt-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${owners.length} ${owners.length === 1 ? 'player' : 'players'} picked this team</div>
+            </div>
+        </div>`;
+
+    if (owners.length === 0) {
+        listEl.innerHTML = '<div class="p-8 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">No players have picked this team</div>';
+        return;
+    }
+
+    listEl.innerHTML = owners.map((u) => {
+        const squadFlags = [...u.squad]
+            .sort((a, b) => (b.cost || 0) - (a.cost || 0))
+            .map((t) => `<span class="text-base leading-none${t.eliminated ? ' opacity-30' : ''}">${t.flag || ''}</span>`)
+            .join('');
+        const safeEmail = u.email.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        return `
+            <button data-owner-email="${escapeHtml(u.email)}" onclick="showOwnerPlayer('${safeEmail}')"
+                class="owner-list-row w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-gray-800 transition-colors border-b border-gray-800 last:border-0">
                 <div class="flex-1 min-w-0">
                     <div class="text-sm font-black uppercase text-white truncate">${escapeHtml(u.nickname)}</div>
                     ${u.realname ? `<div class="text-[10px] font-bold text-gray-500 truncate">${escapeHtml(u.realname)}</div>` : ''}
+                    ${squadFlags ? `<div class="mt-1.5 flex flex-wrap gap-0.5">${squadFlags}</div>` : ''}
                 </div>
-                ${u.totalPoints !== null ? `<div class="shrink-0 text-right">
+                ${u.totalPoints !== null ? `<div class="shrink-0 text-right ml-2">
                     <div class="text-lg font-black theme-accent-text">${u.totalPoints}</div>
                     <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">pts</div>
                 </div>` : ''}
-            </button>`).join('')
-        : '<div class="p-8 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">No players have picked this team</div>';
+            </button>`;
+    }).join('');
 
-    content.innerHTML = `
-        <div class="p-6 border-b border-gray-800">
+    // Auto-open the top player
+    if (owners.length > 0) showOwnerPlayer(owners[0].email);
+}
+
+async function showOwnerPlayer(email) {
+    const rightPanel = document.getElementById('team-owners-right');
+    const playerContent = document.getElementById('team-owners-player-content');
+    const container = document.getElementById('team-owners-container');
+    if (!rightPanel || !playerContent || !container) return;
+
+    playerContent.innerHTML = '<div class="p-8 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 animate-pulse">Loading...</div>';
+    rightPanel.classList.remove('hidden');
+    rightPanel.classList.add('flex');
+    container.classList.add('team-owners-expanded');
+
+    // Highlight active row in list
+    document.querySelectorAll('.owner-list-row').forEach((btn) => {
+        const isActive = btn.dataset.ownerEmail === email;
+        btn.classList.toggle('bg-gray-800', isActive);
+        btn.classList.toggle('hover:bg-gray-800', !isActive);
+    });
+
+    // Pull stored squad data (fetched during showTeamOwners)
+    const state = window._teamOwnersState;
+    const ownerData = state?.owners.find((u) => u.email === email);
+
+    const lb = window._leaderboardData || [];
+    const playerEntry = lb.find((u) => u.email === email);
+
+    // Profile fetch
+    const { data: profile } = await supabaseClient
+        .from('profiles')
+        .select('nickname, realname, favorite_team, home_country')
+        .eq('email', email)
+        .single();
+
+    const nickname = profile?.nickname || ownerData?.nickname || email.split('@')[0];
+    const realname = profile?.realname || ownerData?.realname || '';
+    const favTeam = teams.find((t) => t.name === profile?.favorite_team);
+    const favFlag = favTeam?.flag || '';
+
+    const squad = playerEntry?.squad || ownerData?.squad || [];
+    const totalPoints = playerEntry?.totalPoints ?? ownerData?.totalPoints ?? null;
+    const stagePoints = playerEntry?.stagePoints || ownerData?.stagePoints;
+
+    let squadHtml = '';
+    let budgetUsed = 0;
+    if (squad.length > 0) {
+        budgetUsed = squad.reduce((sum, t) => sum + (t.cost || 0), 0);
+        squadHtml = [...squad]
+            .sort((a, b) => (b.cost || 0) - (a.cost || 0) || a.name.localeCompare(b.name))
+            .map((t) => `
+                <div class="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 flex items-center gap-2 ${t.eliminated ? 'opacity-40' : ''}">
+                    <span class="text-xl">${t.flag || ''}</span>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-black uppercase text-white truncate">${escapeHtml(t.name)}</div>
+                        <div class="text-[10px] font-bold text-gray-400">T${t.tier} · $${t.cost}${t.eliminated ? ' · out' : ''}</div>
+                    </div>
+                </div>`).join('');
+    } else {
+        squadHtml = '<div class="col-span-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 py-2">No squad data</div>';
+    }
+
+    let stageBreakdownHtml = '';
+    if (stagePoints) {
+        const sp = stagePoints;
+        const groupPts = (sp.G1 || 0) + (sp.G2 || 0) + (sp.G3 || 0);
+        [
+            { label: 'Group', pts: groupPts },
+            { label: 'Bonus', pts: sp.Bonus || 0 },
+            { label: 'R32',   pts: sp.R32 || 0 },
+            { label: 'R16',   pts: sp.R16 || 0 },
+            { label: 'QF',    pts: sp.QF  || 0 },
+            { label: 'Semi',  pts: sp.SM  || 0 },
+            { label: 'Final', pts: sp.F   || 0 },
+        ].forEach(({ label, pts }) => {
+            stageBreakdownHtml += `
+                <div class="text-center">
+                    <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">${label}</div>
+                    <div class="text-sm font-black text-white">${pts || '—'}</div>
+                </div>`;
+        });
+    }
+
+    const budgetBarHtml = budgetUsed > 0 ? `
+        <div class="px-5 pb-5">
+            <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Budget Used</span>
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">$${budgetUsed} / $150</span>
+            </div>
+            <div class="h-2 rounded-full bg-gray-800 overflow-hidden">
+                <div class="h-full rounded-full" style="width: ${Math.round(budgetUsed / 150 * 100)}%; background-color: var(--theme-accent-primary);"></div>
+            </div>
+        </div>` : '';
+
+    playerContent.innerHTML = `
+        <div class="p-5 space-y-4">
             <div class="flex items-center gap-4">
-                <span class="text-5xl leading-none">${flag}</span>
-                <div>
-                    <div class="text-xl font-black uppercase italic tracking-tight text-white">${escapeHtml(teamName)}</div>
-                    <div class="mt-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${owners.length} ${owners.length === 1 ? 'player' : 'players'} picked this team</div>
+                <div class="h-14 w-14 rounded-2xl flex items-center justify-center text-3xl shrink-0" style="background-color: rgba(var(--theme-accent-primary-rgb), 0.15);">
+                    ${favFlag || '👤'}
                 </div>
+                <div class="min-w-0 flex-1">
+                    <div class="text-xl font-black uppercase italic tracking-tight text-white truncate">${escapeHtml(nickname)}</div>
+                    ${realname ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${escapeHtml(realname)}</div>` : ''}
+                    <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                        ${profile?.favorite_team ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300">${favFlag} ${escapeHtml(profile.favorite_team)}</span>` : ''}
+                        ${profile?.home_country ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-500">${escapeHtml(profile.home_country)}</span>` : ''}
+                    </div>
+                </div>
+                ${totalPoints !== null ? `<div class="ml-auto text-right shrink-0">
+                    <div class="theme-accent-text text-3xl font-black">${totalPoints}</div>
+                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
+                </div>` : ''}
+            </div>
+
+            ${stageBreakdownHtml ? `
+            <div class="rounded-2xl border border-gray-700 bg-gray-800/50 px-4 py-3">
+                <div class="text-[9px] font-black uppercase tracking-[0.25em] text-gray-500 mb-3">Points by Stage</div>
+                <div class="grid grid-cols-7 gap-1">${stageBreakdownHtml}</div>
+            </div>` : ''}
+
+            <div>
+                <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Squad</div>
+                <div class="grid grid-cols-2 gap-2">${squadHtml}</div>
             </div>
         </div>
-        <div>${ownersHtml}</div>`;
+        ${budgetBarHtml}
+    `;
+}
+
+function closeOwnerPlayer() {
+    const rightPanel = document.getElementById('team-owners-right');
+    const container = document.getElementById('team-owners-container');
+    if (!rightPanel) return;
+    rightPanel.classList.add('hidden');
+    rightPanel.classList.remove('flex');
+    if (container) container.classList.remove('team-owners-expanded');
 }
 
 function closeTeamOwners() {
     const modal = document.getElementById('team-owners-modal');
     if (!modal) return;
+    closeOwnerPlayer();
     modal.classList.add('hidden');
     modal.classList.remove('flex');
 }
@@ -5724,6 +6198,7 @@ Object.assign(window, {
     toggleReaction,
     setupLeaderboardRealtime,
     showPlayerProfile,
+    showPlayerChipInfo,
     showProfileByNickname,
     closePlayerProfile,
     clearChatBadge,

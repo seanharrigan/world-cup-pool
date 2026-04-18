@@ -235,25 +235,31 @@ function setupIdentityChangeTracking() {
 }
 
 function populateProfileSelectOptions() {
-    const favoriteTeamSelect = document.getElementById('favorite-team-input');
-    const homeCountrySelect = document.getElementById('home-country-input');
-
-    [favoriteTeamSelect, homeCountrySelect].forEach((select) => {
-        if (!select || select.dataset.optionsLoaded === 'true') {
-            return;
-        }
-
-        const options = [...teams]
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((team) => `<option value="${team.name}">${team.flag} ${team.name}</option>`)
-            .join('');
-
-        select.insertAdjacentHTML('beforeend', options);
-        select.dataset.optionsLoaded = 'true';
+    initializeTeamDropdown({
+        rootId: 'profile-favorite-team-field',
+        inputId: 'favorite-team-input',
+        labelId: 'favorite-team-label',
+        panelId: 'favorite-team-panel',
+        searchId: 'favorite-team-search',
+        listId: 'favorite-team-list',
+        placeholder: 'Select a team',
+        emptyLabel: 'Select a team',
+        includeEmptyOption: true
     });
 
-    attachAlphaJumpToSelect(favoriteTeamSelect);
-    attachAlphaJumpToSelect(homeCountrySelect);
+    initializeTeamDropdown({
+        rootId: 'profile-home-country-field',
+        inputId: 'home-country-input',
+        labelId: 'home-country-label',
+        panelId: 'home-country-panel',
+        searchId: 'home-country-search',
+        listId: 'home-country-list',
+        placeholder: 'Select a country',
+        emptyLabel: 'Select a country',
+        includeEmptyOption: true
+    });
+
+    syncProfileDropdownValues();
 }
 
 function setupProfile() {
@@ -364,20 +370,337 @@ async function saveAppSettings(nextSettings = {}) {
     return appSettings;
 }
 
-function populateCountryFilter() {
-    const select = document.getElementById('leaderboard-country-filter');
+const teamDropdownRegistry = new Map();
+let teamDropdownGlobalHandlersBound = false;
+
+function escapeDropdownHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function buildTeamDropdownOptions({ qualifiedOnly = false, includeEmptyOption = false, emptyLabel = '' } = {}) {
     const sortedTeams = [...teams]
-        .filter((team) => team.qualified !== false)
+        .filter((team) => !qualifiedOnly || team.qualified !== false)
         .sort((a, b) => a.name.localeCompare(b.name));
 
-    sortedTeams.forEach((team) => {
-        const option = document.createElement('option');
-        option.value = team.name;
-        option.innerText = team.name;
-        select.appendChild(option);
+    const options = sortedTeams.map((team) => ({
+        value: team.name,
+        label: team.name,
+        display: `${team.flag} ${team.name}`,
+        flag: team.flag || ''
+    }));
+
+    if (includeEmptyOption) {
+        options.unshift({
+            value: '',
+            label: emptyLabel,
+            display: emptyLabel,
+            flag: '',
+            isEmpty: true
+        });
+    }
+
+    return options;
+}
+
+function bindTeamDropdownGlobalHandlers() {
+    if (teamDropdownGlobalHandlersBound) {
+        return;
+    }
+
+    document.addEventListener('click', (event) => {
+        teamDropdownRegistry.forEach((instance, rootId) => {
+            if (!instance.root.contains(event.target)) {
+                closeTeamDropdown(rootId);
+            }
+        });
     });
 
-    attachAlphaJumpToSelect(select);
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            teamDropdownRegistry.forEach((_, rootId) => closeTeamDropdown(rootId));
+        }
+    });
+
+    teamDropdownGlobalHandlersBound = true;
+}
+
+function getTeamDropdownInstance(rootId) {
+    return teamDropdownRegistry.get(rootId) || null;
+}
+
+function renderTeamDropdownOptions(rootId) {
+    const instance = getTeamDropdownInstance(rootId);
+    if (!instance?.list) {
+        return;
+    }
+
+    const query = (instance.search?.value || '').trim().toLowerCase();
+    const filteredOptions = instance.options.filter((option) => {
+        if (!query) {
+            return true;
+        }
+
+        return `${option.label} ${option.flag}`.toLowerCase().includes(query);
+    });
+
+    if (filteredOptions.length === 0) {
+        instance.list.innerHTML = '<div class="px-4 py-4 text-sm font-bold text-gray-400">No teams found.</div>';
+        return;
+    }
+
+    instance.list.innerHTML = filteredOptions.map((option) => `
+        <button type="button"
+            data-team-dropdown-value="${escapeDropdownHtml(option.value)}"
+            class="team-dropdown-option w-full border-b border-gray-100 px-4 py-2.5 text-left text-sm font-bold transition-colors last:border-0 ${option.value ? 'text-gray-900 hover:bg-gray-50' : 'text-gray-400 hover:bg-gray-50'}">
+            ${option.flag ? `<span class="mr-3 text-lg leading-none">${escapeDropdownHtml(option.flag)}</span>` : ''}
+            <span>${escapeDropdownHtml(option.label)}</span>
+        </button>
+    `).join('');
+
+    instance.list.querySelectorAll('[data-team-dropdown-value]').forEach((button) => {
+        button.addEventListener('click', () => {
+            setTeamDropdownValue(rootId, button.dataset.teamDropdownValue || '');
+        });
+    });
+}
+
+function openTeamDropdown(rootId, initialQuery = '') {
+    const instance = getTeamDropdownInstance(rootId);
+    if (!instance || instance.button?.disabled) {
+        return;
+    }
+
+    teamDropdownRegistry.forEach((_, otherRootId) => {
+        if (otherRootId !== rootId) {
+            closeTeamDropdown(otherRootId);
+        }
+    });
+
+    if (instance.search) {
+        instance.search.value = initialQuery;
+    }
+
+    renderTeamDropdownOptions(rootId);
+    instance.panel.classList.remove('hidden');
+    instance.panel.classList.add('open');
+
+    const chevron = instance.root.querySelector('.team-dropdown-chevron');
+    if (chevron) {
+        chevron.style.transform = 'rotate(180deg)';
+    }
+
+    if (instance.search) {
+        window.setTimeout(() => {
+            instance.search.focus();
+            const len = instance.search.value.length;
+            instance.search.setSelectionRange(len, len);
+        }, 0);
+    }
+}
+
+function closeTeamDropdown(rootId) {
+    const instance = getTeamDropdownInstance(rootId);
+    if (!instance) {
+        return;
+    }
+
+    instance.panel.classList.add('hidden');
+    instance.panel.classList.remove('open');
+    const chevron = instance.root.querySelector('.team-dropdown-chevron');
+    if (chevron) {
+        chevron.style.transform = '';
+    }
+
+    if (instance.search && instance.search.value) {
+        instance.search.value = '';
+        renderTeamDropdownOptions(rootId);
+    }
+}
+
+function setTeamDropdownValue(rootId, value, { silent = false } = {}) {
+    const instance = getTeamDropdownInstance(rootId);
+    if (!instance?.input || !instance?.label) {
+        return;
+    }
+
+    const selected = instance.options.find((option) => option.value === value) || null;
+    instance.root.dataset.value = value;
+    instance.input.value = value;
+
+    if (selected && selected.value) {
+        instance.label.textContent = selected.display;
+        instance.label.classList.remove('text-gray-400');
+        instance.label.classList.add('text-gray-900');
+    } else {
+        instance.label.textContent = instance.placeholder;
+        instance.label.classList.remove('text-gray-900');
+        instance.label.classList.add('text-gray-400');
+    }
+
+    closeTeamDropdown(rootId);
+
+    if (!silent) {
+        instance.input.dispatchEvent(new Event('input', { bubbles: true }));
+        instance.input.dispatchEvent(new Event('change', { bubbles: true }));
+        if (typeof instance.onChange === 'function') {
+            instance.onChange(value);
+        }
+    }
+}
+
+function syncTeamDropdownValue(rootId, value) {
+    setTeamDropdownValue(rootId, value || '', { silent: true });
+}
+
+function toggleTeamDropdown(rootId) {
+    const instance = getTeamDropdownInstance(rootId);
+    if (!instance) {
+        return;
+    }
+
+    if (instance.panel.classList.contains('hidden')) {
+        openTeamDropdown(rootId);
+    } else {
+        closeTeamDropdown(rootId);
+    }
+}
+
+function filterTeamDropdownOptions(rootId) {
+    renderTeamDropdownOptions(rootId);
+}
+
+function handleTeamDropdownSearchKeydown(event, rootId) {
+    const instance = getTeamDropdownInstance(rootId);
+    if (!instance) {
+        return;
+    }
+
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        closeTeamDropdown(rootId);
+        instance.button?.focus();
+        return;
+    }
+
+    if (event.key === 'Enter') {
+        const firstOption = instance.list?.querySelector('[data-team-dropdown-value]');
+        if (firstOption) {
+            event.preventDefault();
+            setTeamDropdownValue(rootId, firstOption.dataset.teamDropdownValue || '');
+        }
+    }
+}
+
+function initializeTeamDropdown({
+    rootId,
+    inputId,
+    labelId,
+    buttonId,
+    panelId,
+    searchId,
+    listId,
+    placeholder,
+    emptyLabel = placeholder,
+    includeEmptyOption = false,
+    qualifiedOnly = false,
+    onChange = null
+}) {
+    const root = document.getElementById(rootId);
+    const input = document.getElementById(inputId);
+    const label = document.getElementById(labelId);
+    const button = document.getElementById(buttonId) || root?.querySelector('button');
+    const panel = document.getElementById(panelId);
+    const search = document.getElementById(searchId);
+    const list = document.getElementById(listId);
+
+    if (!root || !input || !label || !button || !panel || !list) {
+        return;
+    }
+
+    const instance = {
+        root,
+        input,
+        label,
+        button,
+        panel,
+        search,
+        list,
+        placeholder,
+        onChange,
+        options: buildTeamDropdownOptions({ qualifiedOnly, includeEmptyOption, emptyLabel })
+    };
+
+    teamDropdownRegistry.set(rootId, instance);
+    bindTeamDropdownGlobalHandlers();
+
+    if (button.dataset.teamDropdownBound !== 'true') {
+        button.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openTeamDropdown(rootId);
+                return;
+            }
+
+            if (event.ctrlKey || event.metaKey || event.altKey || event.key.length !== 1) {
+                return;
+            }
+
+            openTeamDropdown(rootId, event.key);
+            event.preventDefault();
+        });
+        button.dataset.teamDropdownBound = 'true';
+    }
+
+    if (search && search.dataset.teamDropdownBound !== 'true') {
+        search.addEventListener('input', () => renderTeamDropdownOptions(rootId));
+        search.dataset.teamDropdownBound = 'true';
+    }
+
+    renderTeamDropdownOptions(rootId);
+    syncTeamDropdownValue(rootId, input.value || '');
+}
+
+function populateCountryFilter() {
+    initializeTeamDropdown({
+        rootId: 'leaderboard-country-filter',
+        inputId: 'leaderboard-country-filter-input',
+        labelId: 'country-filter-label',
+        buttonId: 'country-filter-btn',
+        panelId: 'country-filter-panel',
+        searchId: 'country-filter-search',
+        listId: 'country-filter-list',
+        placeholder: 'All Countries',
+        emptyLabel: 'All Countries',
+        includeEmptyOption: true,
+        qualifiedOnly: true,
+        onChange: () => {
+            if (typeof fetchLeaderboard === 'function') {
+                fetchLeaderboard();
+            }
+        }
+    });
+}
+
+function toggleCountryFilter() {
+    toggleTeamDropdown('leaderboard-country-filter');
+}
+
+function closeCountryFilter() {
+    closeTeamDropdown('leaderboard-country-filter');
+}
+
+function selectCountryFilter(value) {
+    setTeamDropdownValue('leaderboard-country-filter', value || '');
+}
+
+function syncProfileDropdownValues() {
+    syncTeamDropdownValue('profile-favorite-team-field', document.getElementById('favorite-team-input')?.value || '');
+    syncTeamDropdownValue('profile-home-country-field', document.getElementById('home-country-input')?.value || '');
 }
 
 async function checkAdminStatus() {
@@ -748,6 +1071,7 @@ async function completeLogin(email, existingProfile = null, options = {}) {
         document.getElementById('home-country-input').value = '';
     }
 
+    syncProfileDropdownValues();
     document.getElementById('favorite-team-input').dataset.savedValue = document.getElementById('favorite-team-input').value || '';
     if (typeof window.renderProfileFavoriteBanner === 'function') {
         window.renderProfileFavoriteBanner();
@@ -1058,6 +1382,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 Object.assign(window, {
     populateCountryFilter,
     populateProfileSelectOptions,
+    toggleTeamDropdown,
+    filterTeamDropdownOptions,
+    handleTeamDropdownSearchKeydown,
     getCurrentProfileIdentity,
     fetchAppSettings,
     saveAppSettings,
