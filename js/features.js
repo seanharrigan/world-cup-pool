@@ -1660,7 +1660,7 @@ function renderKnockoutBracket(matchesCache) {
                     ? (slotIdx === 1 ? CARD_W + 12 : CARD_W - 6)
                     : CARD_W,
                 label: stage === 'Finals'
-                    ? (slotIdx === 0 ? 'Third Place Playoff' : 'World Cup Final')
+                    ? (slotIdx === 0 ? 'Third Place Match' : 'World Cup Final')
                     : '',
                 isThirdPlace: stage === 'Finals' && slotIdx === 0,
                 isTitleMatch: stage === 'Finals' && slotIdx === 1
@@ -1714,11 +1714,27 @@ function renderKnockoutBracket(matchesCache) {
     const qfCY   = (i) => HEADER_H + i * SLOT_H * 4 + SLOT_H * 2;
     const semiCY = (i) => HEADER_H + i * SLOT_H * 8 + SLOT_H * 4;
 
-    const [r32Left, r16Left, qfLeft, semiLeft] = stageLayouts.slice(0, 4).map((s) => s.left);
+    const [r32Left, r16Left, qfLeft, semiLeft, finalsLeft] = stageLayouts.slice(0, 5).map((s) => s.left);
 
     addBracketConnectors(8, r32Left,  r16Left,  r32CY,  r16CY);
     addBracketConnectors(4, r16Left,  qfLeft,   r16CY,  qfCY);
     addBracketConnectors(2, qfLeft,   semiLeft, qfCY,   semiCY);
+
+    // Semis → World Cup Final only (Third Place Match stands alone)
+    {
+        const rx     = CARD_RIGHT_X(semiLeft);               // 838
+        const lx     = finalsLeft;                            // 864 — Final card has cardLeft=0
+        const mx     = Math.round((rx + lx) / 2);            // 851
+        const topY   = semiCY(0);                            // 336
+        const botY   = semiCY(1);                            // 880
+        const finalY = HEADER_H + TOTAL_H / 2 - 84;         // 524 — sceneMidY - 84
+        svgPaths.push(
+            `<line x1="${rx}" y1="${topY}"   x2="${mx}"  y2="${topY}"/>`,
+            `<line x1="${rx}" y1="${botY}"   x2="${mx}"  y2="${botY}"/>`,
+            `<line x1="${mx}" y1="${topY}"   x2="${mx}"  y2="${botY}"/>`,
+            `<line x1="${mx}" y1="${finalY}" x2="${lx}"  y2="${finalY}"/>`
+        );
+    }
 
     const connectorSvg = `<svg style="position:absolute;left:0;top:0;pointer-events:none;overflow:visible" width="${sceneWidth}" height="${sceneHeight}" xmlns="http://www.w3.org/2000/svg"><g stroke="#d1d5db" stroke-width="1.5" fill="none" stroke-linecap="round">${svgPaths.join('')}</g></svg>`;
 
