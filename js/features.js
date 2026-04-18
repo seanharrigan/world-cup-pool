@@ -1558,7 +1558,7 @@ function renderKnockoutBracket(matchesCache) {
             return `
                 <div class="${wrapperClass} overflow-hidden" style="width:${matchMeta.width || CARD_W}px">
                     ${matchTag}
-                    <div onclick="showTeamOwners('${logged.team_home.replace(/'/g, "\\'")}')" class="cursor-pointer px-2.5 py-1.5 flex items-center justify-between gap-1 ${hWon ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'} transition-colors">
+                    <div onclick="showTeamOwners('${logged.team_home.replace(/'/g, "\\'")}')" class="theme-hover-row cursor-pointer px-2.5 py-1.5 flex items-center justify-between gap-1 ${hWon ? 'bg-green-50' : ''} transition-colors">
                         <div class="flex items-center gap-1 min-w-0">
                             ${seedText(homeSeedLabel, hWon ? 'winner' : 'muted')}
                             <span class="text-sm leading-none">${hFlag}</span>
@@ -1570,7 +1570,7 @@ function renderKnockoutBracket(matchesCache) {
                         </div>
                     </div>
                     <div class="h-px bg-gray-100"></div>
-                    <div onclick="showTeamOwners('${logged.team_away.replace(/'/g, "\\'")}')" class="cursor-pointer px-2.5 py-1.5 flex items-center justify-between gap-1 ${aWon ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'} transition-colors">
+                    <div onclick="showTeamOwners('${logged.team_away.replace(/'/g, "\\'")}')" class="theme-hover-row cursor-pointer px-2.5 py-1.5 flex items-center justify-between gap-1 ${aWon ? 'bg-green-50' : ''} transition-colors">
                         <div class="flex items-center gap-1 min-w-0">
                             ${seedText(awaySeedLabel, aWon ? 'winner' : 'muted')}
                             <span class="text-sm leading-none">${aFlag}</span>
@@ -1611,7 +1611,7 @@ function renderKnockoutBracket(matchesCache) {
                 return `<div class="px-2.5 py-1.5 flex items-center gap-1.5 min-w-0">
                             <span class="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-300 truncate">TBD</span>
                         </div>`;
-            const clickAttr = `onclick="showTeamOwners('${res.name.replace(/'/g, "\\'")}')" class="cursor-pointer px-2.5 py-1.5 flex items-center gap-1.5 min-w-0 ${rowTone} hover:brightness-95 transition-all"`;
+            const clickAttr = `onclick="showTeamOwners('${res.name.replace(/'/g, "\\'")}')" class="theme-hover-row cursor-pointer px-2.5 py-1.5 flex items-center gap-1.5 min-w-0 ${rowTone} transition-colors"`;
             if (res.status === 'fallback')
                 return `<div ${clickAttr}>
                             ${seedText(displaySeed, badgeTone)}

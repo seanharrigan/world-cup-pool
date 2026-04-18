@@ -728,7 +728,7 @@ async function renderGroups() {
                 </div>
             </div>
             ${groupTeams.map((team) => `
-                <div onclick="showTeamOwners('${team.name.replace(/'/g, "\\'")}')" class="cursor-pointer -mx-3 px-3 flex items-center justify-between gap-3 py-2.5 hover:bg-gray-50 transition-colors ${team.isAdvancing ? 'bg-emerald-50/80 hover:bg-emerald-100/60' : ''} ${(dividerIndex > 0 && groupTeams[dividerIndex - 1]?.name === team.name) ? 'border-b-2 border-emerald-200' : 'border-b border-gray-50'} last:border-0 text-left text-gray-900">
+                <div onclick="showTeamOwners('${team.name.replace(/'/g, "\\'")}')" class="theme-hover-row cursor-pointer -mx-3 px-3 flex items-center justify-between gap-3 py-2.5 transition-colors ${team.isAdvancing ? 'bg-emerald-50/80' : ''} ${(dividerIndex > 0 && groupTeams[dividerIndex - 1]?.name === team.name) ? 'border-b-2 border-emerald-200' : 'border-b border-gray-50'} last:border-0 text-left text-gray-900">
                     <div class="flex min-w-0 flex-1 items-center gap-3">
                         <div class="w-10 shrink-0 text-center">
                             <div class="text-2xl leading-none">${team.flag}</div>
