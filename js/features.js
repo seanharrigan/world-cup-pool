@@ -5566,7 +5566,7 @@ function closePlayerProfile() {
     modal.classList.remove('flex');
 }
 
-function showTeamOwners(teamName) {
+async function showTeamOwners(teamName) {
     const modal = document.getElementById('team-owners-modal');
     const content = document.getElementById('team-owners-modal-content');
     if (!modal || !content) return;
@@ -5574,10 +5574,38 @@ function showTeamOwners(teamName) {
     const team = teams.find((t) => t.name === teamName);
     const flag = team?.flag || '';
 
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    content.innerHTML = '<div class="p-8 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 animate-pulse">Loading...</div>';
+    const onEscape = (e) => { if (e.key === 'Escape') { closeTeamOwners(); document.removeEventListener('keydown', onEscape); } };
+    document.addEventListener('keydown', onEscape);
+
+    let owners = [];
+
     const lb = window._leaderboardData || [];
-    const owners = lb
-        .filter((u) => u.squad.some((t) => t.name === teamName))
-        .sort((a, b) => b.totalPoints - a.totalPoints || a.nickname.localeCompare(b.nickname));
+    if (lb.length > 0) {
+        // Leaderboard already computed — use it (includes points)
+        owners = lb
+            .filter((u) => u.squad.some((t) => t.name === teamName))
+            .sort((a, b) => b.totalPoints - a.totalPoints || a.nickname.localeCompare(b.nickname))
+            .map((u) => ({ email: u.email, nickname: u.nickname, realname: u.realname, totalPoints: u.totalPoints }));
+    } else {
+        // Results tab — fetch picks + profiles directly
+        try {
+            const [{ data: picks }, { data: profiles }] = await Promise.all([
+                supabaseClient.from('picks').select('user_email, team_name').eq('team_name', teamName),
+                supabaseClient.from('profiles').select('email, nickname, realname')
+            ]);
+            const profileMap = Object.fromEntries((profiles || []).map((p) => [p.email, p]));
+            owners = (picks || []).map((p) => {
+                const prof = profileMap[p.user_email] || {};
+                return { email: p.user_email, nickname: prof.nickname || p.user_email.split('@')[0], realname: prof.realname || '', totalPoints: null };
+            }).sort((a, b) => a.nickname.localeCompare(b.nickname));
+        } catch (_) {
+            content.innerHTML = '<div class="p-8 text-center text-[10px] font-black uppercase tracking-[0.2em] text-red-400">Could not load picks.</div>';
+            return;
+        }
+    }
 
     const ownersHtml = owners.length > 0
         ? owners.map((u) => `
@@ -5587,10 +5615,10 @@ function showTeamOwners(teamName) {
                     <div class="text-sm font-black uppercase text-white truncate">${escapeHtml(u.nickname)}</div>
                     ${u.realname ? `<div class="text-[10px] font-bold text-gray-500 truncate">${escapeHtml(u.realname)}</div>` : ''}
                 </div>
-                <div class="shrink-0 text-right">
+                ${u.totalPoints !== null ? `<div class="shrink-0 text-right">
                     <div class="text-lg font-black theme-accent-text">${u.totalPoints}</div>
                     <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">pts</div>
-                </div>
+                </div>` : ''}
             </button>`).join('')
         : '<div class="p-8 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">No players have picked this team</div>';
 
@@ -5605,11 +5633,6 @@ function showTeamOwners(teamName) {
             </div>
         </div>
         <div>${ownersHtml}</div>`;
-
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    const onEscape = (e) => { if (e.key === 'Escape') { closeTeamOwners(); document.removeEventListener('keydown', onEscape); } };
-    document.addEventListener('keydown', onEscape);
 }
 
 function closeTeamOwners() {
