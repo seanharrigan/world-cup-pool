@@ -1684,9 +1684,48 @@ function renderKnockoutBracket(matchesCache) {
             </div>`;
     }).join('');
 
+    // Connector lines between rounds
+    // Each pair of adjacent-stage matches shares a ┤ bracket: two horizontal stubs,
+    // a vertical join, then an outgoing horizontal to the next card.
+    // Geometry is derived from the same constants used for card placement.
+    const svgPaths = [];
+    const CARD_RIGHT_X = (colLeft) => colLeft + CARD_OFFSET_X + CARD_W;
+    const CARD_LEFT_X  = (colLeft) => colLeft + CARD_OFFSET_X;
+
+    const addBracketConnectors = (numNextStageMatches, srcColLeft, dstColLeft, srcCenterY, dstCenterY) => {
+        const rx   = CARD_RIGHT_X(srcColLeft);
+        const lx   = CARD_LEFT_X(dstColLeft);
+        const mx   = Math.round((rx + lx) / 2);
+        for (let i = 0; i < numNextStageMatches; i++) {
+            const topY  = srcCenterY(2 * i);
+            const botY  = srcCenterY(2 * i + 1);
+            const nextY = dstCenterY(i);
+            svgPaths.push(
+                `<line x1="${rx}" y1="${topY}"  x2="${mx}"  y2="${topY}"/>`,
+                `<line x1="${rx}" y1="${botY}"  x2="${mx}"  y2="${botY}"/>`,
+                `<line x1="${mx}" y1="${topY}"  x2="${mx}"  y2="${botY}"/>`,
+                `<line x1="${mx}" y1="${nextY}" x2="${lx}"  y2="${nextY}"/>`
+            );
+        }
+    };
+
+    const r32CY  = (i) => HEADER_H + i * SLOT_H + SLOT_H / 2;
+    const r16CY  = (i) => HEADER_H + i * SLOT_H * 2 + SLOT_H;
+    const qfCY   = (i) => HEADER_H + i * SLOT_H * 4 + SLOT_H * 2;
+    const semiCY = (i) => HEADER_H + i * SLOT_H * 8 + SLOT_H * 4;
+
+    const [r32Left, r16Left, qfLeft, semiLeft] = stageLayouts.slice(0, 4).map((s) => s.left);
+
+    addBracketConnectors(8, r32Left,  r16Left,  r32CY,  r16CY);
+    addBracketConnectors(4, r16Left,  qfLeft,   r16CY,  qfCY);
+    addBracketConnectors(2, qfLeft,   semiLeft, qfCY,   semiCY);
+
+    const connectorSvg = `<svg style="position:absolute;left:0;top:0;pointer-events:none;overflow:visible" width="${sceneWidth}" height="${sceneHeight}" xmlns="http://www.w3.org/2000/svg"><g stroke="#d1d5db" stroke-width="1.5" fill="none" stroke-linecap="round">${svgPaths.join('')}</g></svg>`;
+
     container.innerHTML = `
         <div class="min-w-max pb-6">
             <div class="relative" style="width:${sceneWidth}px;height:${sceneHeight}px">
+                ${connectorSvg}
                 ${columnMarkup}
             </div>
         </div>`;
@@ -2555,14 +2594,14 @@ async function fetchPublicSelectionStats() {
 
         rosterBox.innerHTML = renderSelectionBarRows(stats.rosterDensityEntries.map((entry) => ({
             ...entry,
-            label: `${entry.size} Teams`,
+            label: `${entry.size} Picks`,
             value: entry.count
         })), {
             emptyMessage: 'No roster density yet.',
             maxValue: Math.max(1, ...stats.rosterDensityEntries.map((entry) => entry.count)),
             valueFormatter: (entry) => `${entry.count}`,
             subFormatter: (entry) => `${entry.count === 1 ? '1 player' : `${entry.count} players`}`,
-            labelFormatter: (entry) => `${entry.size} Teams`
+            labelFormatter: (entry) => `${entry.size} Picks`
         });
 
         groupBox.innerHTML = renderSelectionBarRows(stats.groupDensityEntries.map((entry) => ({
