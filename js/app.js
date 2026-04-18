@@ -70,6 +70,18 @@ function getCurrentProfileIdentity() {
     };
 }
 
+function updateFaviconForTeam(favoriteTeam) {
+    const team = favoriteTeam && typeof teams !== 'undefined'
+        ? teams.find((t) => t.name === favoriteTeam)
+        : null;
+    const emoji = team?.flag || '⚽';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#0b1220"/><text x="50%" y="55%" text-anchor="middle" font-size="34">${emoji}</text></svg>`;
+    const link = document.querySelector('link[rel="icon"]');
+    if (link) {
+        link.href = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+    }
+}
+
 function getLastSeenNotificationId(email = userEmail) {
     const key = getNotificationSeenKey(email);
     if (!key) {
@@ -259,6 +271,7 @@ function setupProfile() {
     if (typeof window.applyPicksAccentTheme === 'function') {
         window.applyPicksAccentTheme(getCurrentProfileIdentity());
     }
+    updateFaviconForTeam(getCurrentProfileIdentity().favoriteTeam);
 
     if (favoriteTeamInput && favoriteTeamInput.dataset.profileBannerBound !== 'true') {
         favoriteTeamInput.addEventListener('change', () => {
@@ -268,6 +281,7 @@ function setupProfile() {
             if (typeof window.applyPicksAccentTheme === 'function') {
                 window.applyPicksAccentTheme(getCurrentProfileIdentity());
             }
+            updateFaviconForTeam(favoriteTeamInput.value);
         });
         favoriteTeamInput.dataset.profileBannerBound = 'true';
     }
@@ -903,6 +917,7 @@ async function saveIdentityOnly() {
         if (typeof window.applyPicksAccentTheme === 'function') {
             window.applyPicksAccentTheme(getCurrentProfileIdentity());
         }
+        updateFaviconForTeam(favoriteTeam);
         setupDashboard();
         fetchLeaderboard();
         fetchAdminUsers();

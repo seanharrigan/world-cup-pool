@@ -1651,8 +1651,8 @@ function renderKnockoutBracket(matchesCache) {
             let homeRes, awayRes;
 
             if (!logged) {
-                homeRes = _resolveKnockoutMatchTeam(m, 'home', standings, best3rdAssignments);
-                awayRes = _resolveKnockoutMatchTeam(m, 'away', standings, best3rdAssignments);
+                homeRes = _resolveKnockoutMatchTeam(m, 'home', standings, best3rdAssignments, { matchesCache });
+                awayRes = _resolveKnockoutMatchTeam(m, 'away', standings, best3rdAssignments, { matchesCache });
             }
 
             const meta = {
@@ -1907,7 +1907,44 @@ function showResultsTab(tabId) {
         activeTab.classList.add('active', 'theme-tab-active');
         activeTab.classList.remove('border-gray-300', 'bg-white', 'text-gray-500');
     }
+
+    const tabLabels = { groups: 'Results by Group', bracket: 'Bracket', pool: 'Results Table', matches: 'Match Results', selection: 'Selection Stats' };
+    const dropdownLabel = document.getElementById('results-tab-dropdown-label');
+    const dropdownPanel = document.getElementById('results-tab-dropdown-panel');
+    const dropdownChevron = document.getElementById('results-tab-dropdown-chevron');
+    if (dropdownLabel) dropdownLabel.textContent = tabLabels[tabId] || tabId;
+    if (dropdownPanel) { dropdownPanel.classList.add('hidden'); dropdownPanel.classList.remove('open'); }
+    if (dropdownChevron) dropdownChevron.style.transform = '';
+    document.querySelectorAll('.results-tab-option').forEach((btn) => {
+        const isActive = btn.dataset.tab === tabId;
+        btn.classList.toggle('inactive', !isActive);
+    });
 }
+
+function toggleResultsTabDropdown() {
+    const panel = document.getElementById('results-tab-dropdown-panel');
+    const chevron = document.getElementById('results-tab-dropdown-chevron');
+    if (!panel) return;
+    const isOpen = !panel.classList.contains('hidden');
+    if (isOpen) {
+        panel.classList.add('hidden');
+        panel.classList.remove('open');
+        chevron.style.transform = '';
+    } else {
+        panel.classList.remove('hidden');
+        panel.classList.add('open');
+        chevron.style.transform = 'rotate(180deg)';
+    }
+}
+
+document.addEventListener('click', (e) => {
+    const wrap = document.getElementById('results-tab-dropdown-wrap');
+    if (!wrap || wrap.contains(e.target)) return;
+    const panel = document.getElementById('results-tab-dropdown-panel');
+    const chevron = document.getElementById('results-tab-dropdown-chevron');
+    if (panel) { panel.classList.add('hidden'); panel.classList.remove('open'); }
+    if (chevron) chevron.style.transform = '';
+});
 
 function setupResultsPage() {
     updateResultsSelectionVisibility();
