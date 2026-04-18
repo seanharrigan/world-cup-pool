@@ -670,7 +670,7 @@
 
                 <div id="results-panel-groups" class="results-panel space-y-6">
                     <section class="space-y-4">
-                        <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                        <div class="border-l-[3px] border-gray-300 pl-3">
                             <h2 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-gray-900">Group Standings</h2>
                             <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Group-stage table only · points and goal differential with bracket seeds</p>
                         </div>
@@ -680,9 +680,9 @@
 
                 <div id="results-panel-bracket" class="results-panel hidden space-y-6">
                     <section class="space-y-4">
-                        <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                        <div class="border-l-[3px] border-gray-300 pl-3">
                             <h2 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-gray-900">Knockout Bracket</h2>
-                            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Teams shown as confirmed once their group is complete or their seed is clinched</p>
+                            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Updates as results come in · fills from group stage through to the final</p>
                         </div>
                         <div id="bracket-guide" class="rounded-[28px] border border-gray-200 bg-white p-4 shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
                             <div class="flex flex-wrap items-center gap-3 border-b border-gray-100 pb-3">
@@ -715,6 +715,10 @@
                 </div>
 
                 <div id="results-panel-pool" class="results-panel hidden space-y-6">
+                    <div class="border-l-[3px] border-gray-300 pl-3">
+                        <h2 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-gray-900">Results Table</h2>
+                        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Points earned by each team, broken down by stage</p>
+                    </div>
                     <div class="bg-white rounded-3xl border border-gray-200 overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="min-w-[1160px] w-full text-left">
@@ -809,6 +813,16 @@
                 </div>
 
                 <div id="results-panel-selection" class="results-panel hidden space-y-6">
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="border-l-[3px] border-gray-300 pl-3">
+                            <h2 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-gray-900">Selection Stats</h2>
+                            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Live ownership, squad shape &amp; group lean</p>
+                        </div>
+                        <div class="shrink-0 rounded-2xl border border-gray-200 bg-white px-5 py-3 text-right">
+                            <div class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Entries</div>
+                            <div id="public-selection-entry-count" class="text-2xl font-black text-gray-900">0</div>
+                        </div>
+                    </div>
                     <div id="results-selection-locked" class="hidden rounded-3xl border border-gray-200 bg-white px-8 py-12 text-center">
                         <div class="mx-auto max-w-xl">
                             <div class="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400">Selection Hidden</div>
@@ -816,42 +830,25 @@
                         </div>
                     </div>
                     <div id="results-selection-content" class="space-y-6">
-                        <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm relative overflow-hidden">
-                            <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl" style="background-color: var(--theme-accent-primary);"></div>
-                            <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                                <div>
-                                    <h2 class="text-3xl font-black uppercase italic tracking-tight text-gray-900">Selection Stats</h2>
-                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Live ownership, squad shape &amp; group lean</p>
-                                </div>
-                                <div class="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4 text-left lg:text-right">
-                                    <div class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Entries</div>
-                                    <div id="public-selection-entry-count" class="mt-1 text-3xl font-black text-gray-900">0</div>
-                                </div>
-                            </div>
-                        </section>
-
                         <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                            <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm relative overflow-hidden">
-                                <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl" style="background-color: var(--theme-accent-primary);"></div>
-                                <div class="mb-6">
+                            <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
+                                <div class="mb-6 border-l-[3px] border-gray-300 pl-3">
                                     <h2 class="text-3xl font-black uppercase italic tracking-tight text-gray-900">Ownership</h2>
                                     <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Most popular teams across all entries</p>
                                 </div>
                                 <div id="public-country-pick-stats"></div>
                             </section>
 
-                            <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm relative overflow-hidden">
-                                <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl" style="background-color: var(--theme-accent-primary);"></div>
-                                <div class="mb-6">
+                            <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
+                                <div class="mb-6 border-l-[3px] border-gray-300 pl-3">
                                     <h2 class="text-3xl font-black uppercase italic tracking-tight text-gray-900">Squad Sizes</h2>
                                     <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">How many teams each player is carrying</p>
                                 </div>
                                 <div id="public-roster-size-stats"></div>
                             </section>
 
-                            <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm relative overflow-hidden">
-                                <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl" style="background-color: var(--theme-accent-primary);"></div>
-                                <div class="mb-6">
+                            <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
+                                <div class="mb-6 border-l-[3px] border-gray-300 pl-3">
                                     <h2 class="text-3xl font-black uppercase italic tracking-tight text-gray-900">Group Lean</h2>
                                     <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Which groups the pool is leaning on hardest</p>
                                 </div>
@@ -861,7 +858,11 @@
                     </div>
                 </div>
 
-                <div id="results-panel-matches" class="results-panel hidden">
+                <div id="results-panel-matches" class="results-panel hidden space-y-6">
+                    <div class="border-l-[3px] border-gray-300 pl-3">
+                        <h2 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-gray-900">Match Results</h2>
+                        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">All completed matches in chronological order</p>
+                    </div>
                     <div id="public-history-log" class="space-y-4 text-left"></div>
                 </div>
             </div>
