@@ -1558,7 +1558,7 @@ function renderKnockoutBracket(matchesCache) {
             return `
                 <div class="${wrapperClass} overflow-hidden" style="width:${matchMeta.width || CARD_W}px">
                     ${matchTag}
-                    <div class="px-2.5 py-1.5 flex items-center justify-between gap-1 ${hWon ? 'bg-green-50' : ''}">
+                    <div onclick="showTeamOwners('${logged.team_home.replace(/'/g, "\\'")}')" class="cursor-pointer px-2.5 py-1.5 flex items-center justify-between gap-1 ${hWon ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'} transition-colors">
                         <div class="flex items-center gap-1 min-w-0">
                             ${seedText(homeSeedLabel, hWon ? 'winner' : 'muted')}
                             <span class="text-sm leading-none">${hFlag}</span>
@@ -1570,7 +1570,7 @@ function renderKnockoutBracket(matchesCache) {
                         </div>
                     </div>
                     <div class="h-px bg-gray-100"></div>
-                    <div class="px-2.5 py-1.5 flex items-center justify-between gap-1 ${aWon ? 'bg-green-50' : ''}">
+                    <div onclick="showTeamOwners('${logged.team_away.replace(/'/g, "\\'")}')" class="cursor-pointer px-2.5 py-1.5 flex items-center justify-between gap-1 ${aWon ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'} transition-colors">
                         <div class="flex items-center gap-1 min-w-0">
                             ${seedText(awaySeedLabel, aWon ? 'winner' : 'muted')}
                             <span class="text-sm leading-none">${aFlag}</span>
@@ -1611,19 +1611,20 @@ function renderKnockoutBracket(matchesCache) {
                 return `<div class="px-2.5 py-1.5 flex items-center gap-1.5 min-w-0">
                             <span class="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-300 truncate">TBD</span>
                         </div>`;
+            const clickAttr = `onclick="showTeamOwners('${res.name.replace(/'/g, "\\'")}')" class="cursor-pointer px-2.5 py-1.5 flex items-center gap-1.5 min-w-0 ${rowTone} hover:brightness-95 transition-all"`;
             if (res.status === 'fallback')
-                return `<div class="px-2.5 py-1.5 flex items-center gap-1.5 min-w-0 ${rowTone}">
+                return `<div ${clickAttr}>
                             ${seedText(displaySeed, badgeTone)}
                             <span class="text-sm leading-none">${res.flag}</span>
                             <span class="text-[11px] font-black ${nameTone} truncate">${res.name}</span>
                         </div>`;
             if (res.status === 'provisional')
-                return `<div class="px-2.5 py-1.5 flex items-center gap-1.5 min-w-0 ${rowTone}">
+                return `<div ${clickAttr}>
                             ${seedText(displaySeed, badgeTone)}
                             <span class="text-sm leading-none">${res.flag}</span>
                             <span class="text-[11px] font-black ${nameTone} truncate">${res.name}</span>
                         </div>`;
-            return `<div class="px-2.5 py-1.5 flex items-center gap-1.5 min-w-0 ${rowTone}">
+            return `<div ${clickAttr}>
                         ${seedText(displaySeed, 'winner')}
                         <span class="text-sm leading-none">${res.flag}</span>
                         <span class="text-[11px] font-black text-gray-700 truncate">${res.name}</span>
@@ -5560,6 +5561,59 @@ async function showPlayerProfile(email) {
 
 function closePlayerProfile() {
     const modal = document.getElementById('player-profile-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function showTeamOwners(teamName) {
+    const modal = document.getElementById('team-owners-modal');
+    const content = document.getElementById('team-owners-modal-content');
+    if (!modal || !content) return;
+
+    const team = teams.find((t) => t.name === teamName);
+    const flag = team?.flag || '';
+
+    const lb = window._leaderboardData || [];
+    const owners = lb
+        .filter((u) => u.squad.some((t) => t.name === teamName))
+        .sort((a, b) => b.totalPoints - a.totalPoints || a.nickname.localeCompare(b.nickname));
+
+    const ownersHtml = owners.length > 0
+        ? owners.map((u) => `
+            <button onclick="closeTeamOwners();showPlayerProfile('${u.email}')"
+                class="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-gray-800 transition-colors border-b border-gray-800 last:border-0">
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-black uppercase text-white truncate">${escapeHtml(u.nickname)}</div>
+                    ${u.realname ? `<div class="text-[10px] font-bold text-gray-500 truncate">${escapeHtml(u.realname)}</div>` : ''}
+                </div>
+                <div class="shrink-0 text-right">
+                    <div class="text-lg font-black theme-accent-text">${u.totalPoints}</div>
+                    <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">pts</div>
+                </div>
+            </button>`).join('')
+        : '<div class="p-8 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">No players have picked this team</div>';
+
+    content.innerHTML = `
+        <div class="p-6 border-b border-gray-800">
+            <div class="flex items-center gap-4">
+                <span class="text-5xl leading-none">${flag}</span>
+                <div>
+                    <div class="text-xl font-black uppercase italic tracking-tight text-white">${escapeHtml(teamName)}</div>
+                    <div class="mt-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${owners.length} ${owners.length === 1 ? 'player' : 'players'} picked this team</div>
+                </div>
+            </div>
+        </div>
+        <div>${ownersHtml}</div>`;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    const onEscape = (e) => { if (e.key === 'Escape') { closeTeamOwners(); document.removeEventListener('keydown', onEscape); } };
+    document.addEventListener('keydown', onEscape);
+}
+
+function closeTeamOwners() {
+    const modal = document.getElementById('team-owners-modal');
     if (!modal) return;
     modal.classList.add('hidden');
     modal.classList.remove('flex');

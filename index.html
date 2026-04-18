@@ -1431,6 +1431,15 @@
         </div>
     </div>
 
+    <div id="team-owners-modal" class="hidden fixed inset-0 z-[114] bg-black/80 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closeTeamOwners()">
+        <div class="w-full max-w-sm rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div id="team-owners-modal-content" class="overflow-y-auto flex-1"></div>
+            <div class="border-t border-gray-800 bg-gray-950/70 p-4 shrink-0">
+                <button onclick="closeTeamOwners()" class="w-full rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-gray-300 hover:bg-gray-700 transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
+
     <div id="player-profile-modal" class="hidden fixed inset-0 z-[115] bg-black/80 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closePlayerProfile()">
         <div class="w-full max-w-lg rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div id="player-profile-modal-content" class="overflow-y-auto flex-1"></div>
