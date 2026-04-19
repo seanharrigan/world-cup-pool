@@ -330,9 +330,16 @@ function applyFavoriteBanner(banner, bannerText, favoriteTeam) {
     const rightFlag = team?.flag || '🌍';
     const { backgroundColor } = getThemeColorContext(config);
 
-    banner.className = 'rounded-3xl px-6 py-5 text-center shadow-sm';
+    const statsBar = document.getElementById('dashboard-stats-bar');
+    banner.className = statsBar ? 'rounded-t-3xl px-6 py-5 text-center shadow-sm' : 'rounded-3xl px-6 py-5 text-center shadow-sm';
     banner.classList.remove('hidden');
     banner.style.background = `linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)), ${config.gradient}`;
+
+    if (statsBar) {
+        statsBar.classList.remove('hidden');
+        statsBar.style.background = `linear-gradient(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.55)), ${config.gradient}`;
+        statsBar.style.color = getContrastingThemeTextColor(config, getThemeColorContext(config).backgroundColor);
+    }
     bannerText.className = 'text-xl md:text-2xl font-black uppercase italic tracking-[0.08em]';
     bannerText.style.color = getContrastingThemeTextColor(config, backgroundColor);
     bannerText.textContent = `${leftFlag} ${config.slogan} ${rightFlag}`;
@@ -3457,6 +3464,110 @@ async function toggleTeamElimination(teamName, checked) {
 let _dashMatchCache = null;
 let _dashMatchMode = 'squad';
 
+function showDashPointsModal() {
+    const modal = document.getElementById('dash-points-modal');
+    const body = document.getElementById('dash-points-modal-body');
+    if (!modal || !body) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    const lb = window._leaderboardData || [];
+    const myEntry = lb.find((u) => u.email === userEmail);
+    if (!myEntry) {
+        body.innerHTML = '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 text-center py-4">No data yet</div>';
+        return;
+    }
+
+    const sp = myEntry.stagePoints || {};
+    const stages = [
+        { label: 'Group Stage', key: 'group', pts: (sp.G1 || 0) + (sp.G2 || 0) + (sp.G3 || 0), mult: '×1' },
+        { label: 'Bonus (advancing)', key: 'bonus', pts: sp.Bonus || 0, mult: '+1' },
+        { label: 'Round of 32', key: 'r32', pts: sp.R32 || 0, mult: '×2' },
+        { label: 'Round of 16', key: 'r16', pts: sp.R16 || 0, mult: '×3' },
+        { label: 'Quarter-Finals', key: 'qf', pts: sp.QF || 0, mult: '×5' },
+        { label: 'Semi-Finals', key: 'sm', pts: sp.SM || 0, mult: '×8' },
+        { label: 'Final', key: 'f', pts: sp.F || 0, mult: '×12' },
+    ];
+
+    body.innerHTML = `
+        <div class="mb-4 flex items-baseline gap-2">
+            <div class="text-4xl font-black text-white">${myEntry.totalPoints}</div>
+            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">total pts</div>
+        </div>
+        ${stages.map((s) => `
+            <div class="flex items-center justify-between rounded-xl border border-gray-800 bg-gray-800 px-4 py-3 ${s.pts === 0 ? 'opacity-40' : ''}">
+                <div>
+                    <div class="text-xs font-black uppercase text-white">${s.label}</div>
+                    <div class="text-[10px] font-bold text-gray-400">multiplier ${s.mult}</div>
+                </div>
+                <div class="text-lg font-black text-white">${s.pts || '—'}</div>
+            </div>
+        `).join('')}
+        <div class="mt-3 rounded-xl border border-gray-700 bg-gray-800/50 px-4 py-3">
+            <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Team Contributions</div>
+            ${myEntry.squad ? [...myEntry.squad].sort((a, b) => ((window._dashTeamPointsMap?.[b.name] || 0) - (window._dashTeamPointsMap?.[a.name] || 0))).map((t) => {
+            const tPts = window._dashTeamPointsMap?.[t.name] || 0;
+            return `
+                <div class="flex items-center justify-between py-1.5 border-b border-gray-700 last:border-0">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">${t.flag || ''}</span>
+                        <span class="text-[11px] font-black uppercase text-white">${escapeHtml(t.name)}</span>
+                        ${t.eliminated ? '<span class="text-[8px] font-black uppercase text-red-400 ml-1">out</span>' : ''}
+                    </div>
+                    <div class="text-[11px] font-black text-gray-300">${tPts} pts</div>
+                </div>
+            `;
+        }).join('') : ''}
+        </div>
+    `;
+}
+
+function closeDashPointsModal() {
+    const modal = document.getElementById('dash-points-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function showDashRankModal() {
+    const modal = document.getElementById('dash-rank-modal');
+    const body = document.getElementById('dash-rank-modal-body');
+    if (!modal || !body) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    const lb = window._leaderboardData || [];
+    if (!lb.length) {
+        body.innerHTML = '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 text-center py-4">No data yet</div>';
+        return;
+    }
+
+    const medals = ['🥇', '🥈', '🥉'];
+    body.innerHTML = lb.map((entry, i) => {
+        const isMe = entry.email === userEmail;
+        const medal = medals[i] || '';
+        return `
+            <div class="flex items-center justify-between rounded-xl px-4 py-3 ${isMe ? 'bg-gray-700 border border-gray-600' : 'bg-gray-800 border border-gray-800'}">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-8 text-center shrink-0">${medal || `<span class="text-[10px] font-black text-gray-500">#${i + 1}</span>`}</div>
+                    <div class="min-w-0">
+                        <div class="text-sm font-black uppercase italic text-white truncate">${escapeHtml(entry.nickname)}</div>
+                        ${isMe ? '<div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">You</div>' : ''}
+                    </div>
+                </div>
+                <div class="text-base font-black text-white shrink-0">${entry.totalPoints} <span class="text-[9px] font-black text-gray-400">pts</span></div>
+            </div>
+        `;
+    }).join('');
+}
+
+function closeDashRankModal() {
+    const modal = document.getElementById('dash-rank-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
 function setDashMatchMode(mode) {
     _dashMatchMode = mode;
     ['squad', 'all'].forEach((m) => {
@@ -3474,15 +3585,25 @@ function renderDashMatches() {
     const body = document.getElementById('dashboard-matches-body');
     if (!body || !_dashMatchCache) return;
     const data = _dashMatchCache[_dashMatchMode];
-    const empty = '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No matches found</div>';
+    const emptyPrev = `<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">No recent matches</div>`;
+    const emptyNext = `<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">No upcoming matches</div>`;
     body.innerHTML = `
-        <div class="space-y-3">
-            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Last 3 Games</div>
-            ${data.prevHtml || empty}
-        </div>
-        <div class="space-y-3">
-            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Next 3 Games</div>
-            ${data.nextHtml || empty}
+        <div class="flex flex-col gap-0">
+            <div class="flex items-center gap-2 mb-2">
+                <div class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Last Match</div>
+                <div class="flex-1 h-px bg-gray-100"></div>
+            </div>
+            ${data.prevHtml || emptyPrev}
+            <div class="flex items-center gap-3 my-3">
+                <div class="flex-1 h-px bg-gray-100"></div>
+                <div class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-300">·</div>
+                <div class="flex-1 h-px bg-gray-100"></div>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+                <div class="flex-1 h-px bg-gray-100"></div>
+                <div class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Next Match</div>
+            </div>
+            ${data.nextHtml || emptyNext}
         </div>
     `;
 }
@@ -3494,11 +3615,9 @@ async function setupDashboard() {
     const myRankEl = document.getElementById('dashboard-my-rank');
     const squadSizeEl = document.getElementById('dashboard-squad-size');
     const budgetLeftEl = document.getElementById('dashboard-budget-left');
-    const squadStripEl = document.getElementById('dashboard-squad-strip');
     const prizePotEl = document.getElementById('dashboard-prize-pot');
     const playerCountEl = document.getElementById('dashboard-player-count');
     const leaderboardEl = document.getElementById('dashboard-leaderboard');
-    const ctaButton = document.getElementById('dashboard-primary-cta');
 
     // Skeleton loading states
     const dashSkeletonCard = `
@@ -3510,7 +3629,6 @@ async function setupDashboard() {
             <div class="h-6 w-12 bg-gray-200 rounded animate-pulse"></div>
         </div>`;
     if (leaderboardEl) leaderboardEl.innerHTML = dashSkeletonCard.repeat(3);
-    if (squadStripEl) squadStripEl.innerHTML = '<div class="col-span-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Loading squad...</div>';
 
     try {
         const [
@@ -3548,7 +3666,9 @@ async function setupDashboard() {
         });
         await fetchAdvancedTeams();
         const teamPointsMap = buildTeamPointsMap(matches, teams, advancedTeams);
+        window._dashTeamPointsMap = teamPointsMap;
         const leaderboardData = buildLeaderboardData(picks, matches, profilesMap, teams, advancedTeams, eliminatedTeams);
+        if (!window._leaderboardData) window._leaderboardData = leaderboardData;
         const currentUserRows = picks.filter((pick) => pick.user_email === userEmail);
         const currentProfile = getDisplayProfile(userEmail, profilesMap);
         renderDashboardFavoriteBanner(currentProfile);
@@ -3632,7 +3752,6 @@ async function setupDashboard() {
         };
 
         const spent = liveSquad.reduce((sum, team) => sum + team.cost, 0);
-        const tierThreeCount = liveSquad.filter((team) => team.tier === 3).length;
         const myPoints = currentUserRows.reduce((sum, pick) => sum + (teamPointsMap[pick.team_name] || 0), 0);
         const myRank = leaderboardData.findIndex((entry) => entry.email === userEmail);
 
@@ -3641,24 +3760,63 @@ async function setupDashboard() {
         if (squadSizeEl) squadSizeEl.textContent = `${liveSquad.length}`;
         if (budgetLeftEl) budgetLeftEl.textContent = `$${150 - spent}`;
 
-        // FIFA-style squad cards
-        if (squadStripEl) {
-            squadStripEl.innerHTML = liveSquad.length > 0
+        // Player-card-style squad
+        const favTeamObj = teams.find((t) => t.name === currentProfile?.favoriteTeam);
+        const favFlag = favTeamObj?.flag || '';
+        const cardAccent = getPlayerCardAccentStyle(currentProfile?.favoriteTeam || '');
+        const squadCard = document.getElementById('dashboard-squad-card');
+        const squadInner = document.getElementById('dashboard-squad-inner');
+        const squadBudgetBar = document.getElementById('dashboard-squad-budget-bar');
+        if (squadCard) {
+            squadCard.style.cssText = `${cardAccent.style}; background-color: #0f172a;`;
+        }
+        if (squadInner) {
+            const headerHtml = `
+                <div class="flex items-center gap-4 mb-5">
+                    <div class="h-12 w-12 rounded-2xl flex items-center justify-center text-2xl shrink-0" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.15);">
+                        ${favFlag || '⚽'}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-xl font-black uppercase italic tracking-tight text-white truncate">${escapeHtml(currentProfile?.nickname || '')}</div>
+                        <div class="text-[10px] font-black uppercase tracking-[0.18em] text-gray-400">${currentProfile?.realname ? escapeHtml(currentProfile.realname) : ''}</div>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <div class="text-2xl font-black" style="color: var(--player-card-accent-text);">${myPoints}</div>
+                        <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
+                    </div>
+                </div>
+            `;
+            squadInner.innerHTML = headerHtml + `<div id="dashboard-squad-strip" class="grid grid-cols-2 gap-2"></div>`;
+        }
+        const freshStripEl = document.getElementById('dashboard-squad-strip');
+        if (freshStripEl) {
+            freshStripEl.innerHTML = liveSquad.length > 0
                 ? liveSquad
-                    .sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name))
+                    .sort((a, b) => (b.cost || 0) - (a.cost || 0) || a.name.localeCompare(b.name))
                     .map((team) => `
-                        <div class="rounded-2xl border-2 border-gray-100 bg-white p-2 text-center shadow-sm">
-                            <div class="text-3xl leading-none">${team.flag}</div>
-                            <div class="mt-1.5 text-[8px] font-black uppercase tracking-tight truncate text-gray-900">${team.name}</div>
-                            <div class="mt-0.5 flex items-center justify-center gap-1">
-                                <span class="text-[7px] font-black uppercase tracking-wide text-gray-400">T${team.tier}</span>
-                                <span class="text-[7px] text-gray-300">·</span>
-                                <span class="text-[7px] font-black uppercase tracking-wide text-gray-400">$${team.cost}</span>
+                        <div class="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 flex items-center gap-2 ${team.eliminated ? 'opacity-40' : ''}">
+                            <span class="text-xl">${team.flag || ''}</span>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-black uppercase text-white truncate">${escapeHtml(team.name)}</div>
+                                <div class="text-[10px] font-bold text-gray-400">T${team.tier} · $${team.cost}${team.eliminated ? ' · out' : ''}</div>
                             </div>
+                            <div class="text-xs font-black shrink-0" style="color: var(--player-card-accent-text);">${teamPointsMap[team.name] || 0} pts</div>
                         </div>
                     `)
                     .join('')
-                : '<div class="col-span-4 text-center py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No squad selected — <button onclick="showPage(\'picks\')" class="underline">pick your teams</button></div>';
+                : `<div class="col-span-2 text-center py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">No squad yet — <button onclick="showPage('picks')" class="underline text-gray-400">pick teams</button></div>`;
+        }
+        if (squadBudgetBar && spent > 0) {
+            squadBudgetBar.classList.remove('hidden');
+            squadBudgetBar.innerHTML = `
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Budget Used</span>
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">$${spent} / $150</span>
+                </div>
+                <div class="h-2 rounded-full overflow-hidden" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.18);">
+                    <div class="h-full rounded-full" style="width: ${Math.round(spent / 150 * 100)}%; background-color: var(--player-card-accent-primary);"></div>
+                </div>
+            `;
         }
 
         // Leaderboard with prize badges for P1/P2/P3
@@ -3669,13 +3827,11 @@ async function setupDashboard() {
         const prizes = [Math.floor(pot * 0.65), Math.floor(pot * 0.25), Math.floor(pot * 0.10)];
 
         if (leaderboardEl) {
-            const leaders = leaderboardData.slice(0, 5);
+            const leaders = leaderboardData.slice(0, 3);
             const rankStyles = [
                 { border: 'border-yellow-200', bg: '#fffbeb', bar: '#f59e0b', rankColor: '#b45309', medal: '🥇' },
                 { border: 'border-gray-200',   bg: '#f8fafc', bar: '#94a3b8', rankColor: '#475569', medal: '🥈' },
                 { border: 'border-orange-100', bg: '#fff7f0', bar: '#f97316', rankColor: '#c2410c', medal: '🥉' },
-                { border: 'border-gray-100',   bg: '#ffffff', bar: '#d1d5db', rankColor: '#6b7280', medal: '' },
-                { border: 'border-gray-100',   bg: '#ffffff', bar: '#d1d5db', rankColor: '#6b7280', medal: '' },
             ];
             leaderboardEl.innerHTML = leaders.map((entry, index) => {
                 const s = rankStyles[index] || rankStyles[4];
@@ -3725,7 +3881,7 @@ async function setupDashboard() {
         const allUpcoming = [...upcomingGroupAll, ...upcomingKnockoutAll].sort((a, b) => getMatchSortKey(a).localeCompare(getMatchSortKey(b)));
         const squadUpcoming = allUpcoming.filter((m) => squadNames.has(m.team_home) || squadNames.has(m.team_away));
 
-        const toHtml = (arr, opts) => arr.slice(0, 3).map((m) => renderDashboardMatchCard(m, opts)).join('');
+        const toHtml = (arr, opts) => arr.slice(0, 1).map((m) => renderDashboardMatchCard(m, opts)).join('');
         _dashMatchCache = {
             squad: {
                 prevHtml: toHtml(squadFinished, { squadNames }),
@@ -3737,16 +3893,6 @@ async function setupDashboard() {
             },
         };
         renderDashMatches();
-
-        if (ctaButton) {
-            if (!myEntry && liveSquad.length === 0) {
-                ctaButton.textContent = 'Start My Picks';
-            } else if (liveSquad.length < 4 || tierThreeCount < 3 || spent > 150) {
-                ctaButton.textContent = 'Finish My Picks';
-            } else {
-                ctaButton.textContent = 'View My Squad';
-            }
-        }
     } catch (error) {
         if (leaderboardEl) leaderboardEl.innerHTML = '<div class="rounded-2xl border border-red-100 bg-red-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Could not load leaderboard</div>';
     }
@@ -7242,6 +7388,10 @@ Object.assign(window, {
     showResultsTab,
     setupDashboard,
     setDashMatchMode,
+    showDashPointsModal,
+    closeDashPointsModal,
+    showDashRankModal,
+    closeDashRankModal,
     setupResultsPage,
     setupStatsPage,
     setTeamResultsSort,
