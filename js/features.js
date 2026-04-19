@@ -6660,14 +6660,13 @@ function renderPlayerChips(chips = [], email = '', variant = 'row', scopeId = ''
                 const toneClasses = PLAYER_CHIP_TONE_CLASSES[chip.tone]?.card || PLAYER_CHIP_TONE_CLASSES.neutral.card;
                 return `<button type="button"
                     title="${escapeHtml(`${chip.label} — ${chip.description}`)}"
-                    onclick="togglePlayerChipInline('${safeScopeId}', '${chip.id}', '${safeEmail}', event)"
-                    class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.06em] ${toneClasses} transition-transform hover:scale-[1.02]">
+                    onclick="showProfileChipsPopup('${safeEmail}', event)"
+                    class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] md:text-[10px] font-black uppercase tracking-[0.06em] ${toneClasses} transition-transform hover:scale-[1.02]">
                     <span class="text-xs">${chip.emoji}</span>
                     <span>${escapeHtml(chip.label)}</span>
                 </button>`;
             }).join('')}
             </div>
-            <div id="${escapeHtml(scopeId)}-chip-inline" class="chip-inline-panel"></div>
         </div>
     `;
 }
@@ -7876,25 +7875,23 @@ async function showPlayerProfile(email) {
         </div>` : '';
 
     content.innerHTML = `
-        <div class="p-6 space-y-5" style="${cardAccent.style}">
-            <div class="flex items-center gap-4">
-                <div class="h-14 w-14 rounded-2xl flex items-center justify-center text-3xl shrink-0" style="background-color: ${rgbaFromHex(cardAccent.tokens.primary, 0.15)};">
+        <div class="p-6 space-y-4" style="${cardAccent.style}">
+            <div class="flex items-center gap-3">
+                <div class="h-11 w-11 rounded-2xl flex items-center justify-center text-2xl shrink-0" style="background-color: ${rgbaFromHex(cardAccent.tokens.primary, 0.15)};">
                     ${favFlag || '👤'}
                 </div>
-                <div class="min-w-0 flex-1">
-                    <div class="text-2xl font-black uppercase italic tracking-tight text-white truncate">${escapeHtml(nickname)}</div>
-                    ${realname ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${escapeHtml(realname)}</div>` : ''}
-                    ${renderPlayerChips(playerChips, email, 'card', 'player-profile')}
-                    <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                        ${profile?.favorite_team ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300">${favFlag} ${escapeHtml(profile.favorite_team)}</span>` : ''}
-                        ${profile?.home_country ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-500">${escapeHtml(profile.home_country)}</span>` : ''}
-                    </div>
+                <div class="min-w-0 flex-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <span class="text-lg font-black uppercase italic tracking-tight text-white">${escapeHtml(nickname)}</span>
+                    ${realname ? `<span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${escapeHtml(realname)}</span>` : ''}
+                    ${profile?.favorite_team ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300">${favFlag} ${escapeHtml(profile.favorite_team)}</span>` : ''}
+                    ${profile?.home_country ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-500">${escapeHtml(profile.home_country)}</span>` : ''}
                 </div>
-                ${playerEntry ? `<div class="ml-auto text-right shrink-0">
-                    <div class="text-3xl font-black" style="color: var(--player-card-accent-on-dark);">${playerEntry.totalPoints}</div>
+                ${playerEntry ? `<div class="text-right shrink-0">
+                    <div class="text-2xl font-black" style="color: var(--player-card-accent-on-dark);">${playerEntry.totalPoints}</div>
                     <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
                 </div>` : ''}
             </div>
+            ${renderPlayerChips(playerChips, email, 'card', 'player-profile')}
 
             ${playerEntry && stageBreakdownHtml ? `
             <div class="rounded-2xl border px-4 py-3" style="border-color: var(--player-card-accent-soft-strong); background-color: ${rgbaFromHex(cardAccent.tokens.primary, 0.12)};">
@@ -7909,6 +7906,53 @@ async function showPlayerProfile(email) {
         </div>
         ${budgetBarHtml}
     `;
+}
+
+function showProfileChipsPopup(email, event) {
+    if (event) { event.preventDefault(); event.stopPropagation(); }
+    const modal = document.getElementById('profile-chips-popup');
+    const titleEl = document.getElementById('profile-chips-popup-title');
+    const body = document.getElementById('profile-chips-popup-body');
+    if (!modal || !body) return;
+
+    const lb = window._leaderboardData || [];
+    const player = lb.find((e) => e.email === email);
+    const chips = player?.chips || (window._playerChipsByEmail || {})[email] || [];
+    const nickname = player?.nickname || email;
+    const isMe = email === userEmail;
+    if (titleEl) titleEl.textContent = isMe ? 'Your Chips' : `${nickname}'s Chips`;
+
+    const toneStyle = {
+        positive: 'bg-green-500/15 border-green-500/60 text-green-300',
+        negative: 'bg-red-500/15 border-red-500/60 text-red-300',
+        neutral: 'bg-sky-500/15 border-sky-500/60 text-sky-300'
+    };
+    const chipToneOrder = { positive: 0, neutral: 1, negative: 2 };
+    const sortedChips = [...chips].sort((a, b) => (chipToneOrder[a.tone] ?? 1) - (chipToneOrder[b.tone] ?? 1));
+
+    body.innerHTML = sortedChips.length === 0
+        ? `<div class="text-gray-500 text-sm text-center py-12">No chips earned yet.<br><span class="text-[10px] text-gray-600 mt-1 block">Chips are awarded based on performance as the tournament progresses.</span></div>`
+        : `<div class="space-y-2">${sortedChips.map((chip) => {
+            const cls = toneStyle[chip.tone] || toneStyle.neutral;
+            const circleCls = cls.includes('green') ? 'bg-green-100 border-green-600' : cls.includes('red') ? 'bg-red-100 border-red-600' : 'bg-sky-100 border-sky-600';
+            return `<div class="rounded-xl border-2 px-4 py-3 flex items-center gap-3 ${cls}">
+                <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-2xl ${circleCls}">${chip.emoji}</span>
+                <div>
+                    <div class="text-sm font-black">${escapeHtml(chip.label)}</div>
+                    <div class="text-[11px] opacity-75 mt-0.5">${escapeHtml(chip.description)}</div>
+                </div>
+            </div>`;
+        }).join('')}</div>`;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeProfileChipsPopup() {
+    const modal = document.getElementById('profile-chips-popup');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
 }
 
 function closePlayerProfile() {
@@ -8367,22 +8411,20 @@ async function showOwnerPlayer(email) {
 
     playerContent.innerHTML = `
         <div class="p-5 space-y-4" style="${cardAccent.style}">
-            <div class="space-y-2">
-                <div class="flex items-start gap-3">
-                    <span class="text-4xl leading-tight shrink-0 mt-0.5">${favFlag || '👤'}</span>
-                    <div class="min-w-0 flex-1">
-                        <div class="text-xl font-black uppercase italic tracking-tight text-white truncate leading-tight">${escapeHtml(nickname)}</div>
-                        ${realname ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 leading-snug">${escapeHtml(realname)}</div>` : ''}
+            <div>
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl shrink-0">${favFlag || '👤'}</span>
+                    <div class="min-w-0 flex-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <span class="text-lg font-black uppercase italic tracking-tight text-white">${escapeHtml(nickname)}</span>
+                        ${realname ? `<span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${escapeHtml(realname)}</span>` : ''}
+                        ${profile?.favorite_team ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300">${favFlag} ${escapeHtml(profile.favorite_team)}</span>` : ''}
+                        ${profile?.home_country ? `<span class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">${escapeHtml(profile.home_country)}</span>` : ''}
                     </div>
                     ${totalPoints !== null ? `<div class="text-right shrink-0">
-                        <div class="text-3xl font-black leading-none" style="color: var(--player-card-accent-on-dark);">${totalPoints}</div>
+                        <div class="text-2xl font-black leading-none" style="color: var(--player-card-accent-on-dark);">${totalPoints}</div>
                         <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
                     </div>` : ''}
                 </div>
-                ${(profile?.favorite_team || profile?.home_country) ? `<div class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                    ${profile?.favorite_team ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300">${favFlag} ${escapeHtml(profile.favorite_team)}</span>` : ''}
-                    ${profile?.home_country ? `<span class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">${escapeHtml(profile.home_country)}</span>` : ''}
-                </div>` : ''}
                 ${renderPlayerChips(playerChips, email, 'card', 'owner-player')}
             </div>
 
@@ -8524,6 +8566,8 @@ Object.assign(window, {
     showPlayerProfile,
     togglePlayerChipInline,
     showPlayerChipInfo,
+    showProfileChipsPopup,
+    closeProfileChipsPopup,
     closeChipPopover,
     showProfileByNickname,
     closePlayerProfile,

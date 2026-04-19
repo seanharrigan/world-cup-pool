@@ -1884,6 +1884,16 @@
         </div>
     </div>
 
+    <div id="profile-chips-popup" class="hidden fixed inset-0 z-[118] bg-black/60 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closeProfileChipsPopup()">
+        <div class="w-full max-w-sm rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div class="shrink-0 flex items-center justify-between px-5 py-4 border-b border-gray-800">
+                <div id="profile-chips-popup-title" class="text-[11px] font-black uppercase tracking-[0.25em] text-gray-300"></div>
+                <button onclick="closeProfileChipsPopup()" class="text-gray-500 hover:text-white transition-colors text-xl leading-none">×</button>
+            </div>
+            <div id="profile-chips-popup-body" class="overflow-y-auto flex-1 p-5"></div>
+        </div>
+    </div>
+
     <div id="r32-seating-modal" class="hidden fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closeR32SeatingInfo()">
         <div class="w-full max-w-2xl rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-5 border-b border-gray-800 flex items-center justify-between gap-4 shrink-0">
