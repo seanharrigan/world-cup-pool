@@ -751,6 +751,32 @@ async function renderGroups() {
     });
 }
 
+const TOURNAMENT_PHASES = [
+    { label: 'Kick Off',       date: new Date('2026-06-11T16:00:00') },
+    { label: 'Round of 32',    date: new Date('2026-07-04T12:00:00') },
+    { label: 'Round of 16',    date: new Date('2026-07-11T12:00:00') },
+    { label: 'Quarter Finals', date: new Date('2026-07-17T12:00:00') },
+    { label: 'Semi Finals',    date: new Date('2026-07-22T12:00:00') },
+    { label: 'The Final',      date: new Date('2026-07-26T15:00:00') },
+];
+
+function _getActivePhase() {
+    const now = new Date();
+    for (let i = 0; i < TOURNAMENT_PHASES.length; i++) {
+        if (now < TOURNAMENT_PHASES[i].date) return TOURNAMENT_PHASES[i];
+    }
+    return null;
+}
+
+function _formatCountdownCompact(distance) {
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+}
+
 function startCountdown() {
     if (countdownStarted) {
         return;
@@ -761,45 +787,69 @@ function startCountdown() {
     const updateCountdownDisplays = async () => {
         const distance = LOCK_DATE.getTime() - new Date().getTime();
 
-        if (distance <= 0) {
-            if (!kickoffLockSyncAttempted) {
-                kickoffLockSyncAttempted = true;
-                if (appSettings.autoLockAtKickoff) {
-                    appSettings.picksLocked = true;
-                    try {
-                        await saveAppSettings({
-                            picksLocked: true,
-                            autoLockAtKickoff: appSettings.autoLockAtKickoff
-                        });
-                    } catch (error) {
-                        // Keep local lock even if remote persistence fails.
-                    }
+        if (distance <= 0 && !kickoffLockSyncAttempted) {
+            kickoffLockSyncAttempted = true;
+            if (appSettings.autoLockAtKickoff) {
+                appSettings.picksLocked = true;
+                try {
+                    await saveAppSettings({
+                        picksLocked: true,
+                        autoLockAtKickoff: appSettings.autoLockAtKickoff
+                    });
+                } catch (error) {
+                    // Keep local lock even if remote persistence fails.
                 }
-
-                refreshLockState();
-                renderPool();
-                updateUI();
             }
+            refreshLockState();
+            renderPool();
+            updateUI();
+        }
 
+        // Legacy picks-page countdown (remove once kicked off)
+        if (distance > 0) {
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+            if (document.getElementById('days')) {
+                document.getElementById('days').innerText = days;
+                document.getElementById('hours').innerText = hours;
+                document.getElementById('minutes').innerText = minutes;
+            }
+        } else {
             document.getElementById('countdown')?.remove();
-            document.getElementById('dashboard-countdown')?.remove();
-            return;
         }
 
-        const days = Math.floor(distance / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
-        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+        // Old standalone dashboard countdown (remove)
+        document.getElementById('dashboard-countdown')?.remove();
 
-        if (document.getElementById('days')) {
-            document.getElementById('days').innerText = days;
-            document.getElementById('hours').innerText = hours;
-            document.getElementById('minutes').innerText = minutes;
-        }
-
-        if (document.getElementById('dashboard-days')) {
-            document.getElementById('dashboard-days').innerText = days;
-            document.getElementById('dashboard-hours').innerText = hours;
-            document.getElementById('dashboard-minutes').innerText = minutes;
+        // Stats bar phase countdown (segmented display)
+        const phase = _getActivePhase();
+        const labelEl = document.getElementById('dashboard-countdown-label');
+        const daysEl = document.getElementById('dash-cd-days');
+        const hoursEl = document.getElementById('dash-cd-hours');
+        const minsEl = document.getElementById('dash-cd-mins');
+        if (labelEl) {
+            if (phase) {
+                const phaseDistance = phase.date.getTime() - new Date().getTime();
+                labelEl.textContent = phase.label;
+                if (phaseDistance > 0) {
+                    const pd = Math.floor(phaseDistance / (1000 * 60 * 60 * 24));
+                    const ph = Math.floor((phaseDistance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const pm = Math.floor((phaseDistance % (1000 * 60 * 60)) / (1000 * 60));
+                    if (daysEl) daysEl.textContent = String(pd).padStart(2, '0');
+                    if (hoursEl) hoursEl.textContent = String(ph).padStart(2, '0');
+                    if (minsEl) minsEl.textContent = String(pm).padStart(2, '0');
+                } else {
+                    if (daysEl) daysEl.textContent = '00';
+                    if (hoursEl) hoursEl.textContent = '00';
+                    if (minsEl) minsEl.textContent = '00';
+                }
+            } else {
+                labelEl.textContent = 'Tournament';
+                if (daysEl) daysEl.textContent = 'All';
+                if (hoursEl) hoursEl.textContent = 'Done';
+                if (minsEl) minsEl.textContent = '🏆';
+            }
         }
     };
 

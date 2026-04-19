@@ -55,16 +55,16 @@ const PLAYER_CHIP_DEFINITIONS = {
 
 const PLAYER_CHIP_TONE_CLASSES = {
     positive: {
-        row: 'bg-green-100 text-green-700',
-        card: 'bg-green-100 text-green-700'
+        row: 'bg-green-100 text-green-700 border border-green-400',
+        card: 'bg-green-100 text-green-700 border border-green-400'
     },
     negative: {
-        row: 'bg-red-100 text-red-700',
-        card: 'bg-red-100 text-red-700'
+        row: 'bg-red-100 text-red-700 border border-red-400',
+        card: 'bg-red-100 text-red-700 border border-red-400'
     },
     neutral: {
-        row: 'bg-sky-100 text-sky-700',
-        card: 'bg-sky-100 text-sky-700'
+        row: 'bg-sky-100 text-sky-700 border border-sky-400',
+        card: 'bg-sky-100 text-sky-700 border border-sky-400'
     }
 };
 
@@ -332,10 +332,12 @@ function applyFavoriteBanner(banner, bannerText, favoriteTeam) {
     const { backgroundColor } = getThemeColorContext(config);
 
     const statsBar = document.getElementById('dashboard-stats-bar');
-    banner.className = statsBar ? 'rounded-t-3xl px-6 py-5 text-center shadow-sm' : 'rounded-3xl px-6 py-5 text-center shadow-sm';
+    banner.className = 'px-6 py-5 text-center';
     banner.classList.remove('hidden');
     banner.style.background = `linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)), ${config.gradient}`;
 
+    const glowDividerBottom = document.getElementById('dashboard-glow-divider-bottom');
+    if (glowDividerBottom) glowDividerBottom.classList.remove('hidden');
     if (statsBar) {
         statsBar.classList.remove('hidden');
         statsBar.style.background = '#f3f4f6';
@@ -513,6 +515,49 @@ const TEAM_REPORT_DATA = {
     'Haiti':        { winProb: 0.05,  fifaRank: 83, dk: 300000, espn: 150000, betmgm: null  },
 };
 
+const _HOST_TEAMS = new Set(['USA', 'Canada', 'Mexico']);
+const _CONTRARIAN_TEAMS = new Set(['Cape Verde', 'Curacao', 'Uzbekistan', 'Jordan', 'Haiti']);
+
+function _computeFlavorText(squadData) {
+    const names = squadData.map((t) => t.name);
+    const profile = window._dashCurrentProfile;
+    const favTeam = profile?.favoriteTeam || '';
+
+    if (favTeam && names.includes(favTeam)) {
+        return `Picking ${favTeam}? Not biased at all. Totally objective.`;
+    }
+    const hostPicks = names.filter((n) => _HOST_TEAMS.has(n));
+    if (hostPicks.length >= 2) {
+        return `${hostPicks.join(' and ')} at a home World Cup — brave, or just patriotic?`;
+    }
+    if (hostPicks.length === 1) {
+        return `${hostPicks[0]} at home. Heart says yes. Odds say… we'll see.`;
+    }
+    const contrarian = names.filter((n) => _CONTRARIAN_TEAMS.has(n));
+    if (contrarian.length >= 2) {
+        return `${contrarian[0]} and ${contrarian[1]}? The scout reports must be incredible.`;
+    }
+    if (contrarian.length === 1) {
+        return `${contrarian[0]} in the squad. Bold. Very bold.`;
+    }
+    const tier1 = squadData.filter((t) => t.tier === 1);
+    if (tier1.length === 0) {
+        return `No tier 1 team? Either a bold contrarian or a strict budget hawk.`;
+    }
+    const eliminated = squadData.filter((t) => t.eliminated);
+    if (eliminated.length >= 3) {
+        return `${eliminated.length} teams already eliminated. Respect the commitment.`;
+    }
+    const totalCost = squadData.reduce((s, t) => s + t.cost, 0);
+    if (totalCost <= 80) {
+        return `Under $80 total? Either genius budgeting or a very optimistic outlook.`;
+    }
+    if (totalCost >= 140) {
+        return `Nearly maxing the budget — all in on quality. No room for sentiment.`;
+    }
+    return `Solid, unremarkable, reliable. The Switzerland of fantasy squads.`;
+}
+
 function _computeReportCard(squad) {
     if (!squad || squad.length === 0) return null;
 
@@ -529,34 +574,61 @@ function _computeReportCard(squad) {
     const avgValue = squadData.reduce((s, t) => s + t.valueRatio, 0) / squadData.length;
     const avgRank = squadData.reduce((s, t) => s + t.rankScore, 0) / squadData.length;
 
-    // Normalise value (Spain = 18.18/50 = 0.3636 is theoretical max for a single pick)
-    const valueNorm = Math.min(avgValue / 0.3636 * 100, 100);
+    // Normalise value against the best achievable legal 8-team squad avg ratio (~0.106)
+    const valueNorm = Math.min(avgValue / 0.106 * 100, 100);
 
-    // Balance: reward tier diversity and required Tier 3 depth
-    const tier3Count = squad.filter((t) => t.tier === 3).length;
-    const tier1Count = squad.filter((t) => t.tier === 1).length;
-    const balanceScore = Math.min(
-        (tier3Count >= 3 ? 40 : tier3Count * 10) +
-        (tier1Count === 1 ? 35 : tier1Count === 0 ? 25 : 10) +
-        (squad.length === 8 ? 25 : squad.length * 3),
-        100
-    );
+    // Balance: tier 2 quality (50%) + tier 3 quality (30%) + tier 1 usage (20%)
+    // Tier 2 is the key differentiator — huge range from Netherlands (35%) down to Canada (6%)
+    const tier1Count = squadData.filter((t) => t.tier === 1).length;
+    const tier2InSquad = squadData.filter((t) => t.tier === 2);
+    const tier3InSquad = squadData.filter((t) => t.tier === 3);
 
-    const total = valueNorm * 0.4 + avgRank * 0.3 + balanceScore * 0.3;
+    // Tier 2 quality: compare avg win% against the top possible tier 2 picks (best 4)
+    const allTier2WinProbs = teams
+        .filter((t) => t.tier === 2)
+        .map((t) => (TEAM_REPORT_DATA[t.name] || {}).winProb || 0)
+        .sort((a, b) => b - a);
+    const bestTier2Avg = allTier2WinProbs.slice(0, 4).reduce((s, v) => s + v, 0) / 4;
+    const myTier2Avg = tier2InSquad.length > 0
+        ? tier2InSquad.reduce((s, t) => s + t.winProb, 0) / tier2InSquad.length
+        : 0;
+    const tier2Quality = bestTier2Avg > 0 ? Math.min(100, (myTier2Avg / bestTier2Avg) * 100) : 50;
+
+    // Tier 3 quality: compare avg win% against best 3 tier 3s
+    const allTier3WinProbs = teams
+        .filter((t) => t.tier === 3)
+        .map((t) => (TEAM_REPORT_DATA[t.name] || {}).winProb || 0)
+        .sort((a, b) => b - a);
+    const bestTier3Avg = allTier3WinProbs.slice(0, 3).reduce((s, v) => s + v, 0) / 3;
+    const myTier3Avg = tier3InSquad.length > 0
+        ? tier3InSquad.reduce((s, t) => s + t.winProb, 0) / tier3InSquad.length
+        : 0;
+    const tier3Quality = bestTier3Avg > 0 ? Math.min(100, (myTier3Avg / bestTier3Avg) * 100) : 0;
+
+    // Tier 1 slot: using it (one elite team) is better
+    const tier1Score = tier1Count === 1 ? 85 : 40;
+
+    const balanceScore = tier2Quality * 0.50 + tier3Quality * 0.30 + tier1Score * 0.20;
+
+    const rawTotal = valueNorm * 0.4 + avgRank * 0.3 + balanceScore * 0.3;
+    const total = Math.min(100, rawTotal);
 
     const grades = [
-        [78, 'A+', 'Scouting genius — the bookies can\'t hide value from you.'],
-        [68, 'A',  'Sharp picks. Strong odds awareness throughout.'],
-        [58, 'B+', 'Solid squad — you know what you\'re doing.'],
-        [48, 'B',  'Good mix. A couple of picks really stand out.'],
-        [38, 'C+', 'Decent effort. Some value, some faith-based selections.'],
-        [28, 'C',  'Respectable. The mid-table manager.'],
-        [15, 'D',  'Brave choices. The market disagrees, but you might be right.'],
+        [90, 'A+', 'Scouting genius — the bookies can\'t hide value from you.'],
+        [85, 'A',  'Elite squad. Sharp picks from top to bottom.'],
+        [80, 'A-', 'Very strong. Almost everything here has a real case.'],
+        [75, 'B+', 'Solid squad — you clearly know what you\'re doing.'],
+        [70, 'B',  'Good mix. A couple of picks really stand out.'],
+        [65, 'B-', 'Decent foundation. A few tweaks could push you higher.'],
+        [58, 'C+', 'Some value here, some faith-based selections.'],
+        [50, 'C',  'Mid-table manager. Serviceable but not scary.'],
+        [40, 'C-', 'A few head-scratchers in here.'],
+        [25, 'D',  'Brave choices. The market disagrees, strongly.'],
         [0,  'F',  'Pure heart, zero stats. Good luck — you\'ll need it.'],
     ];
     const [, grade, tagline] = grades.find(([threshold]) => total >= threshold) || grades[grades.length - 1];
 
-    return { grade, total, valueNorm, avgRank, balanceScore, squadData, tagline };
+    return { grade, total, valueNorm, avgRank, balanceScore, squadData, tagline, flavorText: _computeFlavorText(squadData) };
 }
 
 // ── 2026 World Cup Group Stage Schedule ──────────────────────────────────────
@@ -2876,7 +2948,7 @@ function _matchResult(m, teamName) {
     return { result: 'L', pts: 0 };
 }
 
-function _matchRowHtml(m, teamNames, accentColor) {
+function _matchRowHtml(m, teamNames) {
     const played = m.score_home != null && m.score_away != null;
     const homeT = teams.find((t) => t.name === m.team_home);
     const awayT = teams.find((t) => t.name === m.team_away);
@@ -2885,48 +2957,29 @@ function _matchRowHtml(m, teamNames, accentColor) {
 
     const scoreEl = played
         ? `<span class="text-sm font-black text-gray-900 tabular-nums">${m.score_home}–${m.score_away}</span>`
-        : `<span class="text-[10px] font-black text-gray-400">vs</span>`;
+        : `<span class="text-[10px] font-black text-gray-300">vs</span>`;
 
-    const dateStr = m.match_date_manual
-        ? new Date(m.match_date_manual + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-        : '';
-
-    // Stage label: for group matches show "Grp X", otherwise stage name
     const stageLabel = m.stage === 'Group'
-        ? (m.group ? `Grp ${m.group}` : 'Group')
+        ? `Group ${m.group || ''}`
         : (m.stage || '');
 
-    // Points badges for highlighted teams
     let ptsHtml = '';
-    if (played) {
-        const badges = [];
-        if (hHighlight) {
-            const r = _matchResult(m, m.team_home);
-            if (r) {
-                const c = r.result === 'W' ? '#16a34a' : r.result === 'D' ? '#9ca3af' : '#ef4444';
-                const ptsLabel = r.pts > 0 ? `+${r.pts}pts` : '—';
-                const prefix = teamNames.size > 1 ? `${m.team_home}: ` : '';
-                badges.push(`<span style="color:${c}" class="text-[9px] font-black">${prefix}${r.result} ${ptsLabel}</span>`);
+    if (played && (hHighlight || aHighlight)) {
+        const isDraw = m.score_home === m.score_away;
+        const multiplier = { Group: 1, R32: 2, R16: 3, Quarters: 5, Semis: 8, Finals: 12 }[m.stage] || 1;
+        if (isDraw) {
+            ptsHtml = `<div class="text-[9px] text-gray-400 mt-0.5 text-center">1 pt each</div>`;
+        } else {
+            const winner = m.score_home > m.score_away ? m.team_home : m.team_away;
+            if (teamNames.has(winner)) {
+                ptsHtml = `<div class="text-[9px] text-gray-400 mt-0.5 text-center">${3 * multiplier} pts awarded</div>`;
             }
         }
-        if (aHighlight) {
-            const r = _matchResult(m, m.team_away);
-            if (r) {
-                const c = r.result === 'W' ? '#16a34a' : r.result === 'D' ? '#9ca3af' : '#ef4444';
-                const ptsLabel = r.pts > 0 ? `+${r.pts}pts` : '—';
-                const prefix = teamNames.size > 1 ? `${m.team_away}: ` : '';
-                badges.push(`<span style="color:${c}" class="text-[9px] font-black">${prefix}${r.result} ${ptsLabel}</span>`);
-            }
-        }
-        if (badges.length) ptsHtml = `<div class="mt-1 flex flex-wrap gap-x-3 justify-center">${badges.join('')}</div>`;
     }
 
     return `
-        <div class="px-2.5 py-2.5 rounded-xl hover:bg-gray-50 transition-colors ${played ? '' : 'border-l-2 border-dashed border-gray-200'}">
-            <div class="flex items-center justify-between mb-1.5">
-                <span class="text-[8px] text-gray-400">${dateStr}</span>
-                <span class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-400">${stageLabel}</span>
-            </div>
+        <div class="py-2 px-1 rounded-xl hover:bg-gray-50 transition-colors">
+            <div class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-400 text-center mb-1">${stageLabel}</div>
             <div class="flex items-center gap-1">
                 <div class="flex items-center gap-1 flex-1 justify-end min-w-0">
                     <span class="text-[10px] font-black text-gray-900 truncate">${escapeHtml(m.team_home)}</span>
@@ -2991,17 +3044,38 @@ function renderMapSideTable() {
             return;
         }
 
-        const sectionHeader = (label) =>
-            `<div class="px-2.5 pt-3 pb-1 text-[8px] font-black uppercase tracking-[0.25em] text-gray-400 border-b border-gray-100">${label}</div>`;
+        const dateHeader = (dateStr) =>
+            `<div class="flex items-center gap-2 px-1 pt-3 pb-1">
+                <div class="flex-1 h-px bg-gray-100"></div>
+                <span class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-300 shrink-0">${dateStr}</span>
+                <div class="flex-1 h-px bg-gray-100"></div>
+            </div>`;
+
+        const groupByDate = (arr) => {
+            const groups = [];
+            let lastDate = null;
+            arr.forEach((m) => {
+                const d = m.match_date_manual
+                    ? new Date(m.match_date_manual + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+                    : 'TBD';
+                if (d !== lastDate) { groups.push({ date: d, matches: [] }); lastDate = d; }
+                groups[groups.length - 1].matches.push(m);
+            });
+            return groups;
+        };
 
         let html = '';
         if (upcoming.length) {
-            html += sectionHeader(`Upcoming · Next ${upcoming.length}`);
-            html += upcoming.map((m) => _matchRowHtml(m, teamNames, accentColor)).join('');
+            groupByDate(upcoming).forEach(({ date, matches }) => {
+                html += dateHeader(date);
+                html += matches.map((m) => _matchRowHtml(m, teamNames)).join('');
+            });
         }
         if (previous.length) {
-            html += sectionHeader('Previous');
-            html += previous.map((m) => _matchRowHtml(m, teamNames, accentColor)).join('');
+            groupByDate(previous).forEach(({ date, matches }) => {
+                html += dateHeader(date);
+                html += matches.map((m) => _matchRowHtml(m, teamNames)).join('');
+            });
         }
         containers.forEach((el) => { el.innerHTML = html; });
         return;
@@ -3567,6 +3641,10 @@ async function toggleTeamElimination(teamName, checked) {
 
 let _dashMatchCache = null;
 let _dashMatchMode = 'squad';
+let _dashReportRanked = null;
+let _dashReportSelectedEmail = null;
+let _dashChipsPlayerList = null;
+let _dashChipsSelectedEmail = null;
 
 function showDashPointsModal() {
     const modal = document.getElementById('dash-points-modal');
@@ -3598,15 +3676,17 @@ function showDashPointsModal() {
             <div class="text-4xl font-black text-white">${myEntry.totalPoints}</div>
             <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">total pts</div>
         </div>
+        <div class="grid grid-cols-2 gap-2 mb-3">
         ${stages.map((s) => `
-            <div class="flex items-center justify-between rounded-xl border border-gray-800 bg-gray-800 px-4 py-3 ${s.pts === 0 ? 'opacity-40' : ''}">
+            <div class="flex items-center justify-between rounded-xl border border-gray-800 bg-gray-800 px-3 py-2.5 ${s.pts === 0 ? 'opacity-40' : ''} ${s.key === 'f' ? 'col-span-2' : ''}">
                 <div>
-                    <div class="text-xs font-black uppercase text-white">${s.label}</div>
-                    <div class="text-[10px] font-bold text-gray-400">multiplier ${s.mult}</div>
+                    <div class="text-[11px] font-black uppercase text-white">${s.label}</div>
+                    <div class="text-[9px] font-bold text-gray-400">${s.mult}</div>
                 </div>
-                <div class="text-lg font-black text-white">${s.pts || '—'}</div>
+                <div class="text-base font-black text-white">${s.pts || '—'}</div>
             </div>
         `).join('')}
+        </div>
         <div class="mt-3 rounded-xl border border-gray-700 bg-gray-800/50 px-4 py-3">
             <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Team Contributions</div>
             ${myEntry.squad ? [...myEntry.squad].sort((a, b) => ((window._dashTeamPointsMap?.[b.name] || 0) - (window._dashTeamPointsMap?.[a.name] || 0))).map((t) => {
@@ -3672,24 +3752,91 @@ function closeDashRankModal() {
     modal.classList.remove('flex');
 }
 
+const _RC_GRADE_COLORS = {
+    'A+': '#22c55e', 'A': '#4ade80', 'A-': '#86efac',
+    'B+': '#bef264', 'B': '#facc15', 'B-': '#fbbf24',
+    'C+': '#fb923c', 'C': '#f97316', 'C-': '#ef4444',
+    'D': '#f87171', 'F': '#dc2626'
+};
+
 function showDashReportCard() {
     const modal = document.getElementById('dash-report-modal');
-    const body = document.getElementById('dash-report-modal-body');
-    if (!modal || !body) return;
+    if (!modal) return;
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 
-    const rc = window._dashReportCard;
-    if (!rc) {
-        body.innerHTML = '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 text-center py-6">Save your picks first to generate a report card.</div>';
+    const allEntries = window._leaderboardData || [];
+    _dashReportRanked = allEntries
+        .map((entry) => ({ entry, rc: _computeReportCard(entry.squad) }))
+        .filter(({ rc }) => rc)
+        .sort((a, b) => b.rc.total - a.rc.total);
+
+    _dashReportSelectedEmail = userEmail;
+    _renderReportSidebar();
+    _renderReportCardDetail(userEmail);
+}
+
+function _renderReportSidebar() {
+    const sidebar = document.getElementById('dash-report-sidebar');
+    if (!sidebar) return;
+    if (!_dashReportRanked || _dashReportRanked.length === 0) {
+        sidebar.innerHTML = '';
         return;
     }
+    sidebar.innerHTML = _dashReportRanked.map(({ entry, rc }) => {
+        const isMe = entry.email === userEmail;
+        const isSelected = entry.email === _dashReportSelectedEmail;
+        const color = _RC_GRADE_COLORS[rc.grade] || '#9ca3af';
+        return `<button data-email="${escapeHtml(entry.email)}" onclick="selectDashReportCard('${escapeHtml(entry.email)}')"
+            class="w-full text-left rounded-xl px-3 py-2 transition-colors ${isSelected ? 'bg-gray-700' : 'hover:bg-gray-800'}">
+            <div class="flex items-center justify-between gap-1">
+                <div class="text-[11px] font-black text-white truncate">${isMe ? '★ ' + escapeHtml(entry.nickname) : escapeHtml(entry.nickname)}</div>
+                <div class="text-sm font-black italic shrink-0" style="color:${color};">${rc.grade}</div>
+            </div>
+            <div class="text-[9px] text-gray-500">${Math.round(rc.total)}/100</div>
+        </button>`;
+    }).join('');
+}
 
-    const gradeColor = { 'A+': '#22c55e', A: '#4ade80', 'B+': '#86efac', B: '#bef264', 'C+': '#facc15', C: '#fb923c', D: '#f87171', F: '#ef4444' };
-    const color = gradeColor[rc.grade] || '#9ca3af';
+function selectDashReportCard(email) {
+    _dashReportSelectedEmail = email;
+    const sidebar = document.getElementById('dash-report-sidebar');
+    if (sidebar) {
+        sidebar.querySelectorAll('button[data-email]').forEach((btn) => {
+            const sel = btn.dataset.email === email;
+            btn.classList.toggle('bg-gray-700', sel);
+            btn.classList.toggle('hover:bg-gray-800', !sel);
+        });
+    }
+    _renderReportCardDetail(email);
+}
 
+function _renderReportCardDetail(email) {
+    const body = document.getElementById('dash-report-modal-body');
+    if (!body) return;
+
+    let rc = null;
+    let label = 'Your Picks';
+    if (_dashReportRanked) {
+        const item = _dashReportRanked.find(({ entry }) => entry.email === email);
+        if (item) {
+            rc = item.rc;
+            label = email === userEmail ? 'Your Picks' : `${item.entry.nickname}'s Picks`;
+        }
+    } else if (email === userEmail) {
+        rc = window._dashReportCard;
+    }
+
+    if (!rc) {
+        body.innerHTML = '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 text-center py-10">No picks found.</div>';
+        return;
+    }
+    _renderReportCardHtml(body, rc, label);
+}
+
+function _renderReportCardHtml(body, rc, label) {
+    const color = _RC_GRADE_COLORS[rc.grade] || '#9ca3af';
     const bar = (pct, col) => `<div class="h-2 rounded-full overflow-hidden bg-gray-800"><div class="h-full rounded-full transition-all" style="width:${Math.round(pct)}%;background-color:${col};"></div></div>`;
-
     const oddsStr = (d) => {
         const parts = [];
         if (d.dk)     parts.push(`<a href="https://sportsbook.draftkings.com/leagues/soccer/world-cup-2026" target="_blank" class="text-blue-400 hover:underline">DK +${d.dk.toLocaleString()}</a>`);
@@ -3697,61 +3844,62 @@ function showDashReportCard() {
         if (d.betmgm) parts.push(`<a href="https://sports.betmgm.com/en/blog/world-cup/fifa-world-cup-odds-to-win-bm16/" target="_blank" class="text-blue-400 hover:underline">MGM +${d.betmgm.toLocaleString()}</a>`);
         return parts.join('<span class="text-gray-600 mx-1">·</span>');
     };
-
     body.innerHTML = `
-        <div class="flex items-center gap-5 mb-6">
+        <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3">${escapeHtml(label)}</div>
+        <div class="flex items-center gap-5 mb-4">
             <div class="text-7xl font-black italic shrink-0" style="color:${color};">${rc.grade}</div>
             <div>
-                <div class="text-white text-sm font-black uppercase tracking-[0.1em]">${rc.tagline}</div>
-                <div class="text-gray-500 text-[10px] font-black uppercase tracking-[0.18em] mt-1">Score: ${Math.round(rc.total)}/100</div>
+                <div class="text-white text-base font-black uppercase tracking-[0.1em]">${rc.tagline}</div>
+                ${rc.flavorText ? `<div class="text-gray-400 text-xs italic mt-1 leading-relaxed">${escapeHtml(rc.flavorText)}</div>` : ''}
+                <div class="text-gray-500 text-xs font-black uppercase tracking-[0.18em] mt-1">Score: ${Math.round(rc.total)}/100</div>
             </div>
         </div>
-
+        <div class="rounded-xl bg-gray-800 border border-gray-700 px-3 py-2.5 mb-5 text-[10px] text-gray-400 leading-relaxed">
+            <span class="font-black text-gray-300 uppercase tracking-[0.15em]">Score = weighted average of three components, each 0–100 · </span>
+            <span class="font-semibold text-blue-400">40% Odds Value</span> — win probability per budget point spent.
+            <span class="font-semibold text-purple-400"> 30% FIFA Rankings</span> — how well-ranked your teams are on average.
+            <span class="font-semibold text-emerald-400"> 30% Squad Balance</span> — quality of your tier 2 picks (the key differentiator), your tier 3s, and using your tier 1 slot.
+        </div>
         <div class="space-y-3 mb-6">
             <div>
-                <div class="flex justify-between mb-1"><span class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Odds Value</span><span class="text-[9px] font-black text-gray-400">${Math.round(rc.valueNorm)}/100</span></div>
+                <div class="flex justify-between mb-1"><span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Odds Value</span><span class="text-[10px] font-black text-gray-400">${Math.round(rc.valueNorm)}/100</span></div>
                 ${bar(rc.valueNorm, '#60a5fa')}
             </div>
             <div>
-                <div class="flex justify-between mb-1"><span class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">FIFA Rankings</span><span class="text-[9px] font-black text-gray-400">${Math.round(rc.avgRank)}/100</span></div>
+                <div class="flex justify-between mb-1"><span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">FIFA Rankings</span><span class="text-[10px] font-black text-gray-400">${Math.round(rc.avgRank)}/100</span></div>
                 ${bar(rc.avgRank, '#a78bfa')}
             </div>
             <div>
-                <div class="flex justify-between mb-1"><span class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Squad Balance</span><span class="text-[9px] font-black text-gray-400">${Math.round(rc.balanceScore)}/100</span></div>
+                <div class="flex justify-between mb-1"><span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Squad Balance</span><span class="text-[10px] font-black text-gray-400">${Math.round(rc.balanceScore)}/100</span></div>
                 ${bar(rc.balanceScore, '#34d399')}
             </div>
         </div>
-
-        <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 mb-2">Your Picks</div>
-        <div class="space-y-2">
+        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-2">Picks</div>
+        <div class="grid grid-cols-2 gap-2">
             ${rc.squadData.sort((a, b) => b.winProb - a.winProb).map((t) => {
-                const val = t.valueRatio / 0.3636 * 100;
+                const val = t.valueRatio / 0.106 * 100;
                 const valColor = val >= 50 ? '#34d399' : val >= 25 ? '#facc15' : '#f87171';
-                return `
-                <div class="rounded-xl border border-gray-800 bg-gray-800 px-3 py-2.5 ${t.eliminated ? 'opacity-40' : ''}">
-                    <div class="flex items-center justify-between mb-1.5">
-                        <div class="flex items-center gap-2">
-                            <span class="text-base">${t.flag || ''}</span>
-                            <div>
-                                <div class="text-[11px] font-black uppercase text-white">${escapeHtml(t.name)}</div>
-                                <div class="text-[9px] text-gray-500">FIFA #${t.fifaRank}</div>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-[10px] font-black" style="color:${valColor};">${t.winProb.toFixed(2)}% win</div>
-                            <div class="text-[9px] text-gray-500">$${t.cost} cost</div>
+                return `<div class="rounded-xl border border-gray-800 bg-gray-800 px-3 py-2.5 ${t.eliminated ? 'opacity-40' : ''}">
+                    <div class="flex items-center gap-1.5 mb-1.5">
+                        <span class="text-lg">${t.flag || ''}</span>
+                        <div>
+                            <div class="text-xs font-black uppercase text-white leading-tight">${escapeHtml(t.name)}</div>
+                            <div class="text-[10px] text-gray-500">FIFA #${t.fifaRank}</div>
                         </div>
                     </div>
-                    <div class="text-[9px] text-gray-600 leading-relaxed">${oddsStr(t.data)}</div>
+                    <div class="flex items-center justify-between">
+                        <div class="text-[10px] font-black" style="color:${valColor};">${t.winProb.toFixed(2)}% win</div>
+                        <div class="text-[10px] text-gray-500">$${t.cost}</div>
+                    </div>
+                    <div class="text-[9px] text-gray-600 leading-relaxed mt-1">${oddsStr(t.data)}</div>
                 </div>`;
             }).join('')}
         </div>
-
         <div class="mt-5 pt-4 border-t border-gray-800 text-[9px] text-gray-600 space-y-1">
             <div class="font-black uppercase tracking-[0.15em] text-gray-500 mb-2">Sources</div>
             <div><a href="https://sportsbook.draftkings.com/leagues/soccer/world-cup-2026" target="_blank" class="text-blue-500 hover:underline">DraftKings Sportsbook</a> · <a href="https://www.espn.com/espn/betting/story/_/id/48386952" target="_blank" class="text-blue-500 hover:underline">ESPN/bet365</a> · <a href="https://sports.betmgm.com/en/blog/world-cup/fifa-world-cup-odds-to-win-bm16/" target="_blank" class="text-blue-500 hover:underline">BetMGM</a></div>
             <div><a href="https://inside.fifa.com/fifa-world-ranking/men" target="_blank" class="text-blue-500 hover:underline">FIFA World Rankings (April 2026)</a></div>
-            <div class="text-gray-700 mt-1">Odds averaged Apr 2026. For entertainment — not financial advice.</div>
+            <div class="text-gray-700 mt-1">Odds averaged Apr 2026. For entertainment only.</div>
         </div>
     `;
 }
@@ -3764,7 +3912,120 @@ function closeDashReportCard() {
 }
 
 function showDashChips() {
-    showPlayerProfile(userEmail);
+    const modal = document.getElementById('dash-chips-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    const allEntries = window._leaderboardData || [];
+    const chipsMap = window._playerChipsByEmail || {};
+    _dashChipsPlayerList = allEntries
+        .map((entry) => ({
+            entry,
+            chips: entry.chips || chipsMap[entry.email] || []
+        }))
+        .sort((a, b) => b.chips.length - a.chips.length);
+
+    _dashChipsSelectedEmail = userEmail;
+    _renderChipsSidebar();
+    _renderChipsDetail(userEmail);
+}
+
+function _renderChipsSidebar() {
+    const sidebar = document.getElementById('dash-chips-sidebar');
+    if (!sidebar || !_dashChipsPlayerList) return;
+    sidebar.innerHTML = _dashChipsPlayerList.map(({ entry, chips }) => {
+        const isMe = entry.email === userEmail;
+        const isSelected = entry.email === _dashChipsSelectedEmail;
+        const preview = chips.length > 0
+            ? chips.slice(0, 4).map((c) => c.emoji).join('') + (chips.length > 4 ? ` +${chips.length - 4}` : '')
+            : '—';
+        return `<button data-email="${escapeHtml(entry.email)}" onclick="selectDashChips('${escapeHtml(entry.email)}')"
+            class="w-full text-left rounded-xl px-3 py-2 transition-colors ${isSelected ? 'bg-gray-700' : 'hover:bg-gray-800'}">
+            <div class="text-[11px] font-black text-white truncate">${isMe ? '★ ' + escapeHtml(entry.nickname) : escapeHtml(entry.nickname)}</div>
+            <div class="text-[11px] text-gray-400">${preview}</div>
+        </button>`;
+    }).join('');
+}
+
+function selectDashChips(email) {
+    _dashChipsSelectedEmail = email;
+    const sidebar = document.getElementById('dash-chips-sidebar');
+    if (sidebar) {
+        sidebar.querySelectorAll('button[data-email]').forEach((btn) => {
+            const sel = btn.dataset.email === email;
+            btn.classList.toggle('bg-gray-700', sel);
+            btn.classList.toggle('hover:bg-gray-800', !sel);
+        });
+    }
+    _renderChipsDetail(email);
+}
+
+function _renderChipsDetail(email) {
+    const body = document.getElementById('dash-chips-body');
+    if (!body) return;
+
+    const player = _dashChipsPlayerList?.find((p) => p.entry.email === email);
+    const chips = player?.chips
+        || (window._leaderboardData?.find((e) => e.email === email))?.chips
+        || (window._playerChipsByEmail || {})[email]
+        || [];
+    const nickname = player?.entry?.nickname || email;
+    const isMe = email === userEmail;
+    const label = isMe ? 'Your Chips' : `${nickname}'s Chips`;
+
+    const toneStyle = {
+        positive: 'bg-green-500/15 border-green-500/50 text-green-300',
+        negative: 'bg-red-500/15 border-red-500/50 text-red-300',
+        neutral: 'bg-sky-500/15 border-sky-500/50 text-sky-300'
+    };
+
+    body.innerHTML = `
+        <div class="text-sm font-black text-white uppercase tracking-[0.1em] mb-4">${escapeHtml(label)}</div>
+        ${chips.length === 0
+            ? `<div class="text-gray-500 text-sm text-center py-12">No chips earned yet.<br><span class="text-[10px] text-gray-600 mt-1 block">Chips are awarded based on performance as the tournament progresses.</span></div>`
+            : `<div class="space-y-2">
+                ${chips.map((chip) => {
+                    const cls = toneStyle[chip.tone] || toneStyle.neutral;
+                    return `<div class="rounded-xl border px-4 py-3 flex items-center gap-3 ${cls}">
+                        <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-2xl ${cls.includes('green') ? 'border-green-400' : cls.includes('red') ? 'border-red-400' : 'border-sky-400'}">${chip.emoji}</span>
+                        <div>
+                            <div class="text-sm font-black">${escapeHtml(chip.label)}</div>
+                            <div class="text-[11px] opacity-75 mt-0.5">${escapeHtml(chip.description)}</div>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>`
+        }
+    `;
+}
+
+function closeDashChips() {
+    const modal = document.getElementById('dash-chips-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function setDashRightTab(tab) {
+    ['board', 'matches', 'rankings', 'groups', 'map', 'odds'].forEach((t) => {
+        const content = document.getElementById(`dash-tab-content-${t}`);
+        const btn = document.getElementById(`dash-tab-btn-${t}`);
+        if (content) content.classList.toggle('hidden', t !== tab);
+        if (btn) {
+            btn.classList.toggle('border-gray-900', t === tab);
+            btn.classList.toggle('border-transparent', t !== tab);
+            btn.classList.toggle('text-gray-900', t === tab);
+            btn.classList.toggle('text-gray-400', t !== tab);
+        }
+    });
+    const toggle = document.getElementById('dash-match-mode-toggle');
+    if (toggle) toggle.classList.toggle('hidden', tab !== 'matches');
+    if (tab === 'matches') renderDashMatchesTab();
+    if (tab === 'rankings') renderDashRankingsTab();
+    if (tab === 'groups') renderDashGroupsTab();
+    if (tab === 'map') renderDashMapTab();
+    if (tab === 'odds') renderDashOddsTab();
 }
 
 function setDashMatchMode(mode) {
@@ -3777,31 +4038,128 @@ function setDashMatchMode(mode) {
         btn.classList.toggle('text-gray-900', m === mode);
         btn.classList.toggle('text-gray-500', m !== mode);
     });
-    renderDashMatches();
+    renderDashMatchesTab();
 }
 
-function renderDashMatches() {
-    const body = document.getElementById('dashboard-matches-body');
-    if (!body || !_dashMatchCache) return;
+function renderDashMatchesTab() {
+    const pastBody = document.getElementById('dash-matches-past-body');
+    const nextBody = document.getElementById('dash-matches-next-body');
+    if (!pastBody || !nextBody || !_dashMatchCache) return;
     const data = _dashMatchCache[_dashMatchMode];
-    const emptyPrev = `<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">No recent matches</div>`;
-    const emptyNext = `<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">No upcoming matches</div>`;
+    const emptyPast = `<div class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300 text-center py-4">No results yet</div>`;
+    const emptyNext = `<div class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300 text-center py-4">No upcoming</div>`;
+    pastBody.innerHTML = data.prevHtml || emptyPast;
+    nextBody.innerHTML = data.nextHtml || emptyNext;
+}
+
+function renderDashRankingsTab() {
+    const body = document.getElementById('dash-rankings-body');
+    if (!body) return;
+    const sorted = [...teams]
+        .filter((t) => t.name in TEAM_REPORT_DATA)
+        .sort((a, b) => (TEAM_REPORT_DATA[a.name].fifaRank || 999) - (TEAM_REPORT_DATA[b.name].fifaRank || 999));
+    const tierLabel = { 1: 'T1', 2: 'T2', 3: 'T3' };
+    const tierColor = { 1: 'bg-amber-100 text-amber-700', 2: 'bg-blue-100 text-blue-600', 3: 'bg-gray-100 text-gray-500' };
+    body.innerHTML = `<div class="space-y-1">
+        ${sorted.map((t) => {
+            const d = TEAM_REPORT_DATA[t.name];
+            const tCls = tierColor[t.tier] || tierColor[3];
+            return `<div class="flex items-center gap-2 py-1.5 border-b border-gray-50">
+                <div class="text-[10px] font-black text-gray-300 w-5 text-right shrink-0">#${d.fifaRank}</div>
+                <span class="text-base shrink-0">${t.flag}</span>
+                <div class="flex-1 text-xs font-black text-gray-800 truncate">${escapeHtml(t.name)}</div>
+                <span class="text-[9px] font-black px-1.5 py-0.5 rounded-full ${tCls} shrink-0">${tierLabel[t.tier]}</span>
+                <div class="text-[10px] font-black text-gray-500 shrink-0 w-16 text-right">${d.winProb.toFixed(2)}% win</div>
+            </div>`;
+        }).join('')}
+    </div>`;
+}
+
+function renderDashGroupsTab() {
+    const body = document.getElementById('dash-groups-body');
+    if (!body) return;
+    const groupMap = {};
+    teams.forEach((t) => {
+        if (!t.group) return;
+        if (!groupMap[t.group]) groupMap[t.group] = [];
+        groupMap[t.group].push(t);
+    });
+    const groupKeys = Object.keys(groupMap).sort();
+    body.innerHTML = `<div class="grid grid-cols-2 gap-3">
+        ${groupKeys.map((g) => `
+            <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Group ${g}</div>
+                <div class="space-y-1.5">
+                    ${groupMap[g].map((t) => `
+                        <div class="flex items-center gap-2">
+                            <span class="text-base">${t.flag}</span>
+                            <div class="text-[11px] font-black text-gray-800 truncate flex-1">${escapeHtml(t.name)}</div>
+                            <div class="text-[9px] text-gray-400">$${t.cost}</div>
+                        </div>`).join('')}
+                </div>
+            </div>`).join('')}
+    </div>`;
+}
+
+function renderDashMapTab() {
+    const body = document.getElementById('dash-map-body');
+    if (!body) return;
+    const stats = window._dashSelectionStats;
+    if (!stats) {
+        body.innerHTML = `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center py-8">Loading…</div>`;
+        return;
+    }
+    const entries = stats.sortedCountryCounts.filter((e) => e.pickedCount > 0);
+    const maxPct = Math.max(1, ...entries.map((e) => e.percentage));
+    body.innerHTML = `<div class="space-y-1.5">
+        ${entries.map((entry) => {
+            const team = teams.find((t) => t.name === entry.teamName);
+            const flag = team?.flag || '🌍';
+            const barWidth = Math.round((entry.percentage / maxPct) * 100);
+            const tierColor = team?.tier === 1 ? '#f59e0b' : team?.tier === 2 ? '#60a5fa' : '#9ca3af';
+            return `<div class="flex items-center gap-2">
+                <span class="text-sm shrink-0">${flag}</span>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between mb-0.5">
+                        <div class="text-[10px] font-black text-gray-800 truncate">${escapeHtml(entry.teamName)}</div>
+                        <div class="text-[9px] font-black text-gray-500 ml-1 shrink-0">${entry.pickedCount}</div>
+                    </div>
+                    <div class="h-1.5 rounded-full overflow-hidden bg-gray-100">
+                        <div class="h-full rounded-full transition-all" style="width:${barWidth}%;background-color:${tierColor};"></div>
+                    </div>
+                </div>
+            </div>`;
+        }).join('')}
+    </div>`;
+}
+
+function renderDashOddsTab() {
+    const body = document.getElementById('dash-odds-body');
+    if (!body) return;
+    const sorted = [...teams]
+        .filter((t) => TEAM_REPORT_DATA[t.name])
+        .sort((a, b) => (TEAM_REPORT_DATA[b.name].winProb || 0) - (TEAM_REPORT_DATA[a.name].winProb || 0));
+    const tierColor = { 1: 'bg-amber-100 text-amber-700', 2: 'bg-blue-100 text-blue-600', 3: 'bg-gray-100 text-gray-500' };
+    const tierLabel = { 1: 'T1', 2: 'T2', 3: 'T3' };
     body.innerHTML = `
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div class="space-y-3">
-                <div class="flex items-center gap-2">
-                    <div class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Last 3 Games</div>
-                    <div class="flex-1 h-px bg-gray-100"></div>
-                </div>
-                ${data.prevHtml || emptyPrev}
-            </div>
-            <div class="space-y-3">
-                <div class="flex items-center gap-2">
-                    <div class="flex-1 h-px bg-gray-100"></div>
-                    <div class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Next 3 Games</div>
-                </div>
-                ${data.nextHtml || emptyNext}
-            </div>
+        <div class="grid grid-cols-[1fr_auto_auto_auto] text-[9px] font-black uppercase tracking-[0.12em] text-gray-400 border-b border-gray-100 pb-1.5 mb-1.5 gap-x-2">
+            <div>Team</div><div class="text-right">Win%</div><div class="text-right">Cost</div><div class="text-right">FIFA</div>
+        </div>
+        <div class="space-y-0.5">
+            ${sorted.map((t) => {
+                const d = TEAM_REPORT_DATA[t.name];
+                const tCls = tierColor[t.tier] || tierColor[3];
+                return `<div class="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-2 py-1 border-b border-gray-50">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <span class="text-sm shrink-0">${t.flag}</span>
+                        <div class="text-[10px] font-black text-gray-800 truncate">${escapeHtml(t.name)}</div>
+                        <span class="text-[8px] font-black px-1 py-0.5 rounded-full ${tCls} shrink-0">${tierLabel[t.tier]}</span>
+                    </div>
+                    <div class="text-[10px] font-black text-gray-600 text-right">${d.winProb.toFixed(1)}%</div>
+                    <div class="text-[10px] font-black text-gray-600 text-right">$${t.cost}</div>
+                    <div class="text-[10px] font-black text-gray-500 text-right">#${d.fifaRank}</div>
+                </div>`;
+            }).join('')}
         </div>
     `;
 }
@@ -3855,6 +4213,7 @@ async function setupDashboard() {
         const matches = allMatches || [];
         const profilesMap = buildProfilesMap(allProfiles);
         const selectionStats = buildSelectionStatsSnapshot(picks, allProfiles || []);
+        window._dashSelectionStats = selectionStats;
         const teamOwnership = new Map();
         selectionStats.sortedCountryCounts.forEach((entry) => {
             teamOwnership.set(entry.teamName, {
@@ -3866,9 +4225,17 @@ async function setupDashboard() {
         const teamPointsMap = buildTeamPointsMap(matches, teams, advancedTeams);
         window._dashTeamPointsMap = teamPointsMap;
         const leaderboardData = buildLeaderboardData(picks, matches, profilesMap, teams, advancedTeams, eliminatedTeams);
-        if (!window._leaderboardData) window._leaderboardData = leaderboardData;
+        const previousRanks = JSON.parse(localStorage.getItem('wc_pool_lb_ranks') || '{}');
+        const dashPlayerChips = computePlayerChips(leaderboardData, matches, previousRanks);
+        const enrichedLeaderboardData = leaderboardData.map((user) => ({
+            ...user,
+            chips: dashPlayerChips.get(user.email) || []
+        }));
+        window._playerChipsByEmail = Object.fromEntries(dashPlayerChips);
+        window._leaderboardData = enrichedLeaderboardData;
         const currentUserRows = picks.filter((pick) => pick.user_email === userEmail);
         const currentProfile = getDisplayProfile(userEmail, profilesMap);
+        window._dashCurrentProfile = currentProfile;
         renderDashboardFavoriteBanner(currentProfile);
         renderTopNavFavoriteTheme(currentProfile);
         const myEntry = leaderboardData.find((entry) => entry.email === userEmail);
@@ -3979,6 +4346,12 @@ async function setupDashboard() {
         const squadBudgetBar = document.getElementById('dashboard-squad-budget-bar');
         if (squadCard) {
             squadCard.style.cssText = `${cardAccent.style}; background-color: #0f172a;`;
+        }
+        // Glow effect on outer pill using accent primary color
+        const outerPill = squadCard?.closest('.rounded-3xl');
+        if (outerPill) {
+            const rgb = cardAccent.tokens.primaryRgb;
+            outerPill.style.boxShadow = `0 0 60px -15px rgba(${rgb.r},${rgb.g},${rgb.b},0.45), 0 25px 50px -12px rgba(0,0,0,0.5)`;
         }
         if (squadInner) {
             const headerHtml = `
@@ -4102,7 +4475,7 @@ async function setupDashboard() {
                 nextHtml: toHtml(allUpcoming, {}),
             },
         };
-        renderDashMatches();
+        renderDashMatchesTab();
     } catch (error) {
         if (leaderboardEl) leaderboardEl.innerHTML = '<div class="rounded-2xl border border-red-100 bg-red-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Could not load leaderboard</div>';
     }
@@ -7598,6 +7971,7 @@ Object.assign(window, {
     showAdminTab,
     showResultsTab,
     setupDashboard,
+    setDashRightTab,
     setDashMatchMode,
     showDashPointsModal,
     closeDashPointsModal,
@@ -7605,7 +7979,10 @@ Object.assign(window, {
     closeDashRankModal,
     showDashReportCard,
     closeDashReportCard,
+    selectDashReportCard,
     showDashChips,
+    closeDashChips,
+    selectDashChips,
     setupResultsPage,
     setupStatsPage,
     setTeamResultsSort,
