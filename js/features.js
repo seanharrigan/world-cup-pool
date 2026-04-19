@@ -4066,10 +4066,10 @@ function setMobileDashPanel(panel) {
     const btnTabs = document.getElementById('mob-dash-btn-tabs');
     const btnSquad = document.getElementById('mob-dash-btn-squad');
     if (!card || !tabs) return;
+    if (window.innerWidth >= 1024) return;
     const isSquad = panel === 'squad';
-    card.classList.toggle('hidden', !isSquad);
-    card.classList.toggle('flex', isSquad);
-    tabs.classList.toggle('hidden', isSquad);
+    card.style.display = isSquad ? 'flex' : 'none';
+    tabs.style.display = isSquad ? 'none' : 'flex';
     if (btnTabs) {
         btnTabs.classList.toggle('theme-primary-button', !isSquad);
         btnTabs.classList.toggle('text-gray-500', isSquad);

@@ -305,6 +305,10 @@
             font-weight: 600;
             pointer-events: none;
         }
+        @media (min-width: 1024px) {
+            #dashboard-squad-card { display: flex !important; }
+            #dashboard-tabs-panel { display: flex !important; }
+        }
     </style>
 </head>
 <body class="bg-gray-950 text-white h-screen overflow-hidden font-sans flex flex-col text-left">
@@ -496,11 +500,11 @@
                             </button>
                             <div class="flex-1 py-3 text-center flex flex-col items-center gap-1.5">
                                 <div id="dashboard-countdown-label" class="text-[9px] font-black uppercase tracking-[0.2em] opacity-60 leading-none">Kick Off</div>
-                                <div class="h-8 flex items-center justify-center gap-1.5">
+                                <div class="flex items-end justify-center gap-0.5 sm:gap-1">
                                     <div class="text-center"><div id="dash-cd-days" class="text-lg font-black leading-none">—</div><div class="text-[7px] font-bold uppercase opacity-50">Days</div></div>
-                                    <div class="text-sm font-bold opacity-30">:</div>
+                                    <div class="text-sm font-bold opacity-30 mb-[11px]">:</div>
                                     <div class="text-center"><div id="dash-cd-hours" class="text-lg font-black leading-none">—</div><div class="text-[7px] font-bold uppercase opacity-50">Hrs</div></div>
-                                    <div class="text-sm font-bold opacity-30">:</div>
+                                    <div class="text-sm font-bold opacity-30 mb-[11px]">:</div>
                                     <div class="text-center"><div id="dash-cd-mins" class="text-lg font-black leading-none">—</div><div class="text-[7px] font-bold uppercase opacity-50">Min</div></div>
                                 </div>
                             </div>
@@ -518,7 +522,7 @@
                     <!-- Player card + tabbed panel -->
                     <div class="flex flex-col lg:flex-row">
                         <!-- Left: player card (hidden on mobile by default, toggled in) -->
-                        <div id="dashboard-squad-card" class="hidden lg:flex lg:w-[44%] lg:flex-shrink-0 flex-col" style="background-color: #0f172a;">
+                        <div id="dashboard-squad-card" class="lg:w-[44%] lg:flex-shrink-0 flex-col" style="display:none; background-color: #0f172a;">
                             <div class="p-6 flex-1" id="dashboard-squad-inner">
                                 <div id="dashboard-squad-strip" class="grid grid-cols-2 gap-2"></div>
                             </div>
@@ -603,7 +607,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                     <!-- 1. Entry & Prizes -->
-                    <div class="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 shadow-sm">
+                    <div class="bg-white rounded-2xl border border-gray-200 p-6 flex flex-col gap-4 shadow-sm">
                         <div class="space-y-1.5">
                             <div class="flex items-center gap-3">
                                 <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-black shrink-0 theme-accent-text" style="border-color: var(--theme-accent-primary); background-color: var(--theme-accent-soft);">1</div>
@@ -611,55 +615,55 @@
                             </div>
                             <p class="text-sm font-medium text-gray-400 leading-relaxed pl-0">Entry is $40 CAD — contact the Commissioner to e-transfer.<br>The pot is split across the top three finishers.</p>
                         </div>
-                        <div class="space-y-0 divide-y divide-gray-100">
-                            <div class="flex items-center justify-between py-2.5">
+                        <div class="flex-1 flex flex-col divide-y divide-gray-100">
+                            <div class="flex-1 flex items-center justify-between">
                                 <span class="text-2xl font-black text-gray-800">🥇 1st</span>
                                 <span class="text-2xl font-black text-emerald-500">65%</span>
                             </div>
-                            <div class="flex items-center justify-between py-2.5">
+                            <div class="flex-1 flex items-center justify-between">
                                 <span class="text-2xl font-black text-gray-800">🥈 2nd</span>
                                 <span class="text-2xl font-black text-gray-500">25%</span>
                             </div>
-                            <div class="flex items-center justify-between py-2.5">
+                            <div class="flex-1 flex items-center justify-between">
                                 <span class="text-2xl font-black text-gray-800">🥉 3rd</span>
                                 <span class="text-2xl font-black text-amber-500">10%</span>
                             </div>
                         </div>
-                        <p class="text-xs italic text-gray-400 leading-relaxed">Tied players split the combined prize for their positions — two tied 1st places split 1st &amp; 2nd equally, and 3rd keeps their share.</p>
+                        <p class="text-xs italic text-gray-400 leading-relaxed mt-auto">Tied players split the combined prize for their positions — two tied 1st places split 1st &amp; 2nd equally, and 3rd keeps their share.</p>
                     </div>
 
                     <!-- 2. Squad Selection -->
-                    <div class="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 shadow-sm">
+                    <div class="bg-white rounded-2xl border border-gray-200 p-6 flex flex-col gap-4 shadow-sm">
                         <div class="space-y-1.5">
                             <div class="flex items-center gap-3">
                                 <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-black shrink-0 theme-accent-text" style="border-color: var(--theme-accent-primary); background-color: var(--theme-accent-soft);">2</div>
                                 <div class="text-xl font-black uppercase tracking-[0.15em] text-gray-800">Squad Selection</div>
                             </div>
-                            <p class="text-sm font-medium text-gray-400 leading-relaxed">Pick a squad within a $150 budget.<br>Favourites cost more — prices are based on odds. Use the tier system to build smart.</p>
+                            <p class="text-sm font-medium text-gray-400 leading-relaxed">Pick a squad within a $150 budget.<br>Favourites cost more — prices are based on odds.<br>The tier system is designed to allow for balanced squads.</p>
                         </div>
-                        <div class="space-y-0 divide-y divide-gray-100">
-                            <div class="flex items-center justify-between py-2.5">
+                        <div class="flex-1 flex flex-col divide-y divide-gray-100">
+                            <div class="flex-1 flex items-center justify-between">
                                 <div>
                                     <span class="text-sm font-black text-gray-700">Budget</span>
                                     <div class="text-[10px] text-gray-400 mt-0.5">Max total cost across all picks</div>
                                 </div>
                                 <span class="w-24 text-center bg-green-700 text-green-50 border border-green-800 text-xs font-black py-1 rounded-full shrink-0">$150 max</span>
                             </div>
-                            <div class="flex items-center justify-between gap-4 py-2.5">
+                            <div class="flex-1 flex items-center justify-between gap-4">
                                 <div>
                                     <span class="text-sm font-black text-gray-700">Tier 1</span>
                                     <div class="text-[10px] text-gray-400 mt-0.5">Spain, England, France…</div>
                                 </div>
                                 <span class="w-24 text-center bg-gray-100 text-gray-700 text-xs font-black py-1 rounded-full shrink-0">0 or 1</span>
                             </div>
-                            <div class="flex items-center justify-between gap-4 py-2.5">
+                            <div class="flex-1 flex items-center justify-between gap-4">
                                 <div>
                                     <span class="text-sm font-black text-gray-700">Tier 2</span>
                                     <div class="text-[10px] text-gray-400 mt-0.5">Netherlands, Norway…</div>
                                 </div>
                                 <span class="w-24 text-center bg-gray-100 text-gray-700 text-xs font-black py-1 rounded-full shrink-0">No limit</span>
                             </div>
-                            <div class="flex items-center justify-between gap-4 py-2.5">
+                            <div class="flex-1 flex items-center justify-between gap-4">
                                 <div>
                                     <span class="text-sm font-black text-gray-700">Tier 3</span>
                                     <div class="text-[10px] text-gray-400 mt-0.5">Egypt, South Korea…</div>
@@ -674,7 +678,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                     <!-- 3. How Points Work -->
-                    <div class="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 shadow-sm">
+                    <div class="bg-white rounded-2xl border border-gray-200 p-6 flex flex-col gap-4 shadow-sm">
                         <div class="space-y-1.5">
                             <div class="flex items-center gap-3">
                                 <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-black shrink-0 theme-accent-text" style="border-color: var(--theme-accent-primary); background-color: var(--theme-accent-soft);">3</div>
@@ -682,24 +686,24 @@
                             </div>
                             <p class="text-sm font-medium text-gray-400 leading-relaxed">Your teams earn points for every match result.<br>The advance bonus is a one-time reward when a team survives the group stage.</p>
                         </div>
-                        <div class="space-y-0 divide-y divide-gray-100">
-                            <div class="flex items-center justify-between py-2">
+                        <div class="flex-1 flex flex-col divide-y divide-gray-100">
+                            <div class="flex-1 flex items-center justify-between">
                                 <span class="text-sm font-black text-gray-700">Win</span>
                                 <span class="w-24 text-center bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-black py-1 rounded-full">3 pts</span>
                             </div>
-                            <div class="flex items-center justify-between py-2">
+                            <div class="flex-1 flex items-center justify-between">
                                 <span class="text-sm font-black text-gray-700">Draw</span>
                                 <span class="w-24 text-center bg-blue-50 text-blue-700 border border-blue-200 text-xs font-black py-1 rounded-full">1 pt</span>
                             </div>
-                            <div class="flex items-center justify-between py-2">
+                            <div class="flex-1 flex items-center justify-between">
                                 <span class="text-sm font-black text-gray-700">Loss</span>
                                 <span class="w-24 text-center bg-red-50 text-red-400 border border-red-200 text-xs font-black py-1 rounded-full">0 pts</span>
                             </div>
-                            <div class="flex items-center justify-between py-2">
+                            <div class="flex-1 flex items-center justify-between">
                                 <span class="text-sm font-black text-gray-700">Advance</span>
                                 <span class="w-24 text-center bg-amber-50 text-amber-700 border border-amber-200 text-xs font-black py-1 rounded-full">1 pt</span>
                             </div>
-                            <div class="flex items-center justify-between py-2">
+                            <div class="flex-1 flex items-center justify-between">
                                 <span class="text-sm font-black text-gray-700">Bronze match</span>
                                 <span class="w-24 text-center bg-gray-50 text-gray-400 border border-gray-200 text-xs font-black py-1 rounded-full">No points</span>
                             </div>
@@ -707,15 +711,15 @@
                     </div>
 
                     <!-- 4. Stage Multipliers -->
-                    <div class="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 shadow-sm">
+                    <div class="bg-white rounded-2xl border border-gray-200 p-6 flex flex-col gap-4 shadow-sm">
                         <div class="space-y-1.5">
                             <div class="flex items-center gap-3">
                                 <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-black shrink-0 theme-accent-text" style="border-color: var(--theme-accent-primary); background-color: var(--theme-accent-soft);">4</div>
                                 <div class="text-xl font-black uppercase tracking-[0.15em] text-gray-800">Stage Multipliers</div>
                             </div>
-                            <p class="text-sm font-medium text-gray-400 leading-relaxed">Points scale with the round — a Final win is worth 12× a group match.<br>Picking the winner is critical. Among those who do, the dark horses who go deep are what separate the top squads.</p>
+                            <p class="text-sm font-medium text-gray-400 leading-relaxed">Points scale up with the round.<br>Picking the winner is critical.</p>
                         </div>
-                        <div class="grid grid-cols-3 gap-2">
+                        <div class="flex-1 flex items-center"><div class="grid grid-cols-3 gap-2 w-full">
                             <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 text-center">
                                 <div class="text-[8px] font-black uppercase tracking-[0.1em] text-gray-400 mb-1">Groups</div>
                                 <div class="text-lg font-black text-gray-500">×1</div>
@@ -740,7 +744,7 @@
                                 <div class="text-[8px] font-black uppercase tracking-[0.1em] text-amber-500 mb-1">Final</div>
                                 <div class="text-lg font-black text-amber-600">×12</div>
                             </div>
-                        </div>
+                        </div></div>
                     </div>
                 </div>
 
