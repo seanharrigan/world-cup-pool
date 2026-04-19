@@ -342,6 +342,10 @@
         @media (min-width: 1024px) {
             #dashboard-squad-card { display: flex !important; }
             #dashboard-tabs-panel { overflow: visible; }
+            #dash-tab-content-board:not(.hidden) { display: flex !important; flex-direction: column; }
+            #dash-tab-content-board:not(.hidden) > .flex { flex-shrink: 0; padding-bottom: 8px; }
+            #dashboard-leaderboard { flex: 1; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+            #dashboard-leaderboard:empty { flex: 0; }
         }
     </style>
 </head>
@@ -583,12 +587,12 @@
                                 </div>
                             </div>
                             <!-- Tab: Board -->
-                            <div id="dash-tab-content-board" class="flex-1 overflow-y-auto px-2 py-3 space-y-3 lg:flex lg:flex-col lg:space-y-0">
-                                <div class="flex items-center justify-between lg:shrink-0 lg:pb-2">
+                            <div id="dash-tab-content-board" class="flex-1 overflow-y-auto px-2 py-3 space-y-3">
+                                <div class="flex items-center justify-between">
                                     <p class="text-sm font-black uppercase tracking-[0.12em] text-gray-700"><span id="dashboard-prize-pot">$0</span> pot · <span id="dashboard-player-count">0 entries</span></p>
                                     <button onclick="showPage('leaderboard')" class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400 hover:text-gray-600">Full →</button>
                                 </div>
-                                <div id="dashboard-leaderboard" class="space-y-2 lg:flex-1 lg:flex lg:flex-col lg:space-y-0 lg:gap-1.5 lg:min-h-0"></div>
+                                <div id="dashboard-leaderboard" class="space-y-2"></div>
                             </div>
                             <!-- Tab: Matches -->
                             <div id="dash-tab-content-matches" class="hidden flex-1 flex flex-col overflow-hidden">
