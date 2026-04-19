@@ -3641,6 +3641,7 @@ async function toggleTeamElimination(teamName, checked) {
 
 let _dashMatchCache = null;
 let _dashMatchMode = 'squad';
+let _dashMapMode = 'picks';
 let _dashRankingsSort = { col: 'fifaRank', dir: 'asc' };
 let _dashReportRanked = null;
 let _dashReportSelectedEmail = null;
@@ -3986,24 +3987,33 @@ function _renderChipsDetail(email) {
 
     const squad = player?.entry?.squad || [];
     const teamPointsMap = window._dashTeamPointsMap || {};
-    const squadHtml = squad.length > 0
-        ? `<div class="mb-4 rounded-xl border border-gray-700 bg-gray-800/60 p-3">
-            <div class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-500 mb-2">Squad</div>
-            <div class="grid grid-cols-4 gap-2">
-                ${[...squad].sort((a, b) => (b.cost || 0) - (a.cost || 0)).map((t) => {
-                    const pts = teamPointsMap[t.name] || 0;
-                    const teamDef = teams.find((td) => td.name === t.name);
-                    const group = t.group || teamDef?.group || '';
-                    return `<div class="flex flex-col items-center text-center ${t.eliminated ? 'opacity-40' : ''}">
-                        <span class="text-xl mb-0.5">${t.flag || teamDef?.flag || ''}</span>
-                        <div class="text-[10px] font-black text-white truncate w-full">${escapeHtml(t.name)}</div>
-                        <div class="text-[9px] text-gray-500">${group ? `Grp ${group}` : `$${t.cost}`}</div>
-                        <div class="text-[11px] font-black text-gray-300">${pts} pts</div>
-                    </div>`;
-                }).join('')}
+
+    const renderSquadTeam = (t) => {
+        const pts = teamPointsMap[t.name] || 0;
+        const teamDef = teams.find((td) => td.name === t.name);
+        const group = t.group || teamDef?.group || '';
+        return `<div class="flex flex-col items-center text-center ${t.eliminated ? 'opacity-40' : ''}">
+            <span class="text-xl mb-0.5">${t.flag || teamDef?.flag || ''}</span>
+            <div class="text-[10px] font-black text-white truncate w-full leading-snug">${escapeHtml(t.name)}</div>
+            <div class="text-[9px] leading-snug mt-0.5">
+                <span class="font-black text-gray-300">${pts}pts</span>${group ? `<span class="font-normal text-gray-400"> · Grp ${group}</span>` : ''}
             </div>
-        </div>`
-        : '';
+        </div>`;
+    };
+
+    let squadHtml = '';
+    if (squad.length > 0) {
+        const sortedSquad = [...squad].sort((a, b) => (b.cost || 0) - (a.cost || 0));
+        const firstRow = sortedSquad.slice(0, 4);
+        const secondRow = sortedSquad.slice(4);
+        squadHtml = `<div class="mb-4 rounded-xl border border-gray-600/50 bg-gray-800/60 p-3">
+            <div class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-500 mb-2">Squad</div>
+            <div class="grid grid-cols-4 gap-x-2">${firstRow.map(renderSquadTeam).join('')}</div>
+            ${secondRow.length > 0 ? `<div class="border-t border-gray-700/60 mt-3 pt-3">
+                <div class="grid grid-cols-4 gap-x-2">${secondRow.map(renderSquadTeam).join('')}</div>
+            </div>` : ''}
+        </div>`;
+    }
 
     body.innerHTML = `
         <div class="text-sm font-black text-white uppercase tracking-[0.1em] mb-3">${escapeHtml(label)}</div>
@@ -4170,9 +4180,9 @@ function renderDashGroupsTab() {
             <div class="rounded-xl border border-gray-100 bg-gray-50 p-2.5">
                 <div class="grid grid-cols-[1fr_20px_20px_24px] items-center gap-x-1.5 mb-1.5">
                     <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-600">Group ${g}</div>
-                    <span class="text-[7px] font-black uppercase tracking-[0.08em] text-gray-500 text-center">GF</span>
-                    <span class="text-[7px] font-black uppercase tracking-[0.08em] text-gray-500 text-center">GA</span>
-                    <span class="text-[7px] font-black uppercase tracking-[0.08em] text-gray-500 text-center">Pts</span>
+                    <span class="text-[9px] font-black uppercase tracking-[0.12em] text-gray-500 text-center">GF</span>
+                    <span class="text-[9px] font-black uppercase tracking-[0.12em] text-gray-500 text-center">GA</span>
+                    <span class="text-[9px] font-black uppercase tracking-[0.12em] text-gray-600 text-center">Pts</span>
                 </div>
                 <div class="space-y-1">
                     ${sorted.map((teamRow) => {
@@ -4197,30 +4207,201 @@ function renderDashGroupsTab() {
     </div>`;
 }
 
-function renderDashMapTab() {
+function setDashMapMode(mode) {
+    _dashMapMode = mode;
+    ['groups', 'picks'].forEach((m) => {
+        const btn = document.getElementById(`dash-map-mode-${m}`);
+        if (!btn) return;
+        const active = m === mode;
+        btn.className = `px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wide transition-all ${active ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`;
+    });
+    _renderDashMapSvg(_mapCachedData?.worldData);
+}
+
+async function renderDashMapTab() {
     const body = document.getElementById('dash-map-body');
     if (!body) return;
 
-    const groupKeys = Object.keys(GROUP_COLORS).sort();
-    body.innerHTML = `<div class="grid grid-cols-3 gap-2">
-        ${groupKeys.map((g) => {
-            const color = GROUP_COLORS[g];
-            const groupTeams = teams.filter((t) => t.group === g);
-            return `
-            <div class="rounded-xl p-2.5" style="background-color: ${color}18; border: 1.5px solid ${color}55;">
-                <div class="text-[8px] font-black uppercase tracking-[0.22em] mb-1.5" style="color: ${color};">${g}</div>
-                <div class="space-y-0.5">
-                    ${groupTeams.map((t) => {
-                        const isElim = eliminatedTeams.has(t.name);
-                        return `<div class="flex items-center gap-1 ${isElim ? 'opacity-40' : ''}">
-                            <span class="text-xs leading-none">${t.flag}</span>
-                            <span class="text-[9px] font-black text-gray-800 truncate">${escapeHtml(t.name)}</span>
-                        </div>`;
-                    }).join('')}
+    body.innerHTML = `
+        <div class="flex items-center justify-between mb-3">
+            <div class="flex rounded-lg bg-gray-100 p-0.5 gap-0.5">
+                <button id="dash-map-mode-picks" onclick="setDashMapMode('picks')"
+                    class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wide transition-all ${_dashMapMode === 'picks' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}">Picks</button>
+                <button id="dash-map-mode-groups" onclick="setDashMapMode('groups')"
+                    class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wide transition-all ${_dashMapMode === 'groups' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}">Groups</button>
+            </div>
+        </div>
+        <div id="dash-map-svg-container" class="relative w-full rounded-xl overflow-hidden bg-gray-50" style="aspect-ratio: 2 / 1;">
+            <div id="dash-map-loading" class="absolute inset-0 flex items-center justify-center text-xs text-gray-400">Loading map…</div>
+            <div id="dash-map-tooltip" class="pointer-events-none absolute hidden z-50 rounded-lg bg-white shadow-lg border border-gray-100 px-2.5 py-1.5 text-xs leading-snug" style="max-width: 150px; top: 0; left: 0;"></div>
+        </div>
+        <div id="dash-map-legend" class="mt-2"></div>
+    `;
+
+    let worldData = _mapCachedData?.worldData;
+    if (!worldData) {
+        try {
+            const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+            worldData = await res.json();
+            if (!_mapCachedData) window._mapCachedData = {};
+            _mapCachedData = _mapCachedData || {};
+            _mapCachedData.worldData = worldData;
+        } catch (_) {
+            const loading = document.getElementById('dash-map-loading');
+            if (loading) loading.textContent = 'Map unavailable.';
+            return;
+        }
+    }
+
+    _renderDashMapSvg(worldData);
+}
+
+function _renderDashMapSvg(worldDataArg) {
+    const worldData = worldDataArg || _mapCachedData?.worldData;
+    const container = document.getElementById('dash-map-svg-container');
+    if (!container || !worldData) return;
+    if (typeof d3 === 'undefined' || typeof topojson === 'undefined') {
+        container.innerHTML = '<div class="flex h-full items-center justify-center text-xs text-gray-400">Map libraries not loaded.</div>';
+        return;
+    }
+
+    const loading = document.getElementById('dash-map-loading');
+    if (loading) loading.classList.add('hidden');
+
+    const existingSvg = container.querySelector('svg');
+    if (existingSvg) existingSvg.remove();
+
+    const isoToColor = {};
+    const isoToTeamName = {};
+    const qualifiedIsos = new Set();
+
+    const sortedTeams = [...teams].filter((t) => t.qualified !== false).sort((a, b) => (b.cost || 0) - (a.cost || 0));
+
+    if (_dashMapMode === 'groups') {
+        sortedTeams.forEach((t) => {
+            const iso = TEAM_ISO_NUMERIC[t.name];
+            if (iso !== undefined && !isoToColor[iso]) {
+                isoToColor[iso] = GROUP_COLORS[t.group] || '#9ca3af';
+                isoToTeamName[iso] = t.name;
+                qualifiedIsos.add(iso);
+            }
+        });
+    } else {
+        const entries = window._leaderboardData || [];
+        const total = entries.length || 1;
+        const pickCount = {};
+        entries.forEach((e) => { (e.squad || []).forEach((t) => { pickCount[t.name] = (pickCount[t.name] || 0) + 1; }); });
+
+        const accentTokens = getActiveThemeAccentTokens();
+        const accentColor = accentTokens.primary;
+        const maxPct = Math.max(1, ...Object.values(pickCount).map((c) => (c / total) * 100));
+        const ZERO_TINT = d3.interpolateRgb('#ffffff', accentColor)(0.12);
+        const colorScale = d3.scaleSequential().domain([0, maxPct]).interpolator(d3.interpolateRgb(ZERO_TINT, accentColor));
+
+        sortedTeams.forEach((t) => {
+            const iso = TEAM_ISO_NUMERIC[t.name];
+            if (iso !== undefined && !isoToColor[iso]) {
+                const pct = ((pickCount[t.name] || 0) / total) * 100;
+                isoToColor[iso] = colorScale(pct);
+                isoToTeamName[iso] = t.name;
+                qualifiedIsos.add(iso);
+            }
+        });
+    }
+
+    const W = 960, H = 480;
+    const OCEAN = '#f9fafb';
+    const NOT_QUALIFIED = '#e2e8f0';
+    const BORDER = '#e5e7eb';
+
+    const svg = d3.select(container).append('svg')
+        .attr('viewBox', `0 0 ${W} ${H}`)
+        .attr('width', '100%')
+        .attr('height', '100%')
+        .attr('preserveAspectRatio', 'xMidYMid meet')
+        .style('display', 'block');
+
+    svg.append('rect').attr('width', W).attr('height', H).attr('fill', OCEAN);
+
+    const projection = d3.geoNaturalEarth1().scale(W / 6.3).translate([W / 2, H / 2]);
+    const path = d3.geoPath().projection(projection);
+    const countries = topojson.feature(worldData, worldData.objects.countries);
+
+    const tooltip = document.getElementById('dash-map-tooltip');
+
+    svg.append('g')
+        .selectAll('path')
+        .data(countries.features)
+        .join('path')
+        .attr('d', path)
+        .attr('fill', (d) => isoToColor[+d.id] || NOT_QUALIFIED)
+        .attr('stroke', BORDER)
+        .attr('stroke-width', 0.5)
+        .style('cursor', (d) => qualifiedIsos.has(+d.id) ? 'pointer' : 'default')
+        .on('mouseenter', function (event, d) {
+            const iso = +d.id;
+            const teamName = isoToTeamName[iso];
+            if (!teamName || !tooltip) return;
+            const team = teams.find((t) => t.name === teamName);
+            if (!team) return;
+            if (_dashMapMode === 'picks') {
+                const entries = window._leaderboardData || [];
+                const total = entries.length || 1;
+                const count = entries.filter((e) => (e.squad || []).some((t) => t.name === teamName)).length;
+                const pct = Math.round((count / total) * 100);
+                tooltip.innerHTML = `<span class="font-black">${team.flag} ${escapeHtml(teamName)}</span><br><span class="text-gray-500">${pct}% · ${count} picks</span>`;
+            } else {
+                const color = GROUP_COLORS[team.group] || '#9ca3af';
+                tooltip.innerHTML = `<span class="font-black">${team.flag} ${escapeHtml(teamName)}</span><br><span class="font-black" style="color:${color}">Group ${escapeHtml(team.group)}</span>`;
+            }
+            tooltip.classList.remove('hidden');
+            const fill = isoToColor[iso] || NOT_QUALIFIED;
+            d3.select(this).attr('fill', d3.color(fill)?.brighter(0.35)?.toString() || fill);
+        })
+        .on('mousemove', function (event) {
+            if (!tooltip) return;
+            const rect = container.getBoundingClientRect();
+            const x = event.clientX - rect.left + 10;
+            const y = event.clientY - rect.top - 10;
+            tooltip.style.left = `${Math.min(x, rect.width - 155)}px`;
+            tooltip.style.top = `${Math.max(4, y)}px`;
+        })
+        .on('mouseleave', function (event, d) {
+            const iso = +d.id;
+            d3.select(this).attr('fill', isoToColor[iso] || NOT_QUALIFIED);
+            if (tooltip) tooltip.classList.add('hidden');
+        })
+        .on('click', function (event, d) {
+            const teamName = isoToTeamName[+d.id];
+            if (teamName) showTeamOwners(teamName);
+        });
+
+    // Legend
+    const legendEl = document.getElementById('dash-map-legend');
+    if (legendEl) {
+        if (_dashMapMode === 'groups') {
+            const groupKeys = Object.keys(GROUP_COLORS).sort();
+            legendEl.innerHTML = `<div class="flex flex-wrap justify-center gap-x-3 gap-y-1">
+                ${groupKeys.map((g) => {
+                    const color = GROUP_COLORS[g];
+                    return `<span class="flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.1em] text-gray-600">
+                        <span class="inline-block w-2 h-2 rounded-full shrink-0" style="background-color:${color};"></span>${g}
+                    </span>`;
+                }).join('')}
+            </div>`;
+        } else {
+            const accentTokens = getActiveThemeAccentTokens();
+            const accentColor = accentTokens.primary;
+            const ZERO_TINT = d3.interpolateRgb('#ffffff', accentColor)(0.12);
+            legendEl.innerHTML = `<div class="flex flex-col items-center gap-1">
+                <div class="w-36 h-2 rounded-full" style="background: linear-gradient(to right, ${ZERO_TINT}, ${accentColor});"></div>
+                <div class="flex justify-between w-36">
+                    <span class="text-[8px] font-black uppercase tracking-[0.1em] text-gray-400">Low picks</span>
+                    <span class="text-[8px] font-black uppercase tracking-[0.1em] text-gray-400">High picks</span>
                 </div>
             </div>`;
-        }).join('')}
-    </div>`;
+        }
+    }
 }
 
 function renderDashOddsTab() {
@@ -6288,14 +6469,14 @@ function renderPlayerChips(chips = [], email = '', variant = 'row', scopeId = ''
 
     return `
         <div class="mt-2">
-            <div class="flex flex-wrap gap-1.5">
+            <div class="flex flex-wrap gap-1">
             ${visibleChips.map((chip) => {
                 const toneClasses = PLAYER_CHIP_TONE_CLASSES[chip.tone]?.card || PLAYER_CHIP_TONE_CLASSES.neutral.card;
                 return `<button type="button"
                     title="${escapeHtml(`${chip.label} — ${chip.description}`)}"
                     onclick="togglePlayerChipInline('${safeScopeId}', '${chip.id}', '${safeEmail}', event)"
-                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-black uppercase tracking-[0.08em] ${toneClasses} transition-transform hover:scale-[1.02]">
-                    <span class="text-sm">${chip.emoji}</span>
+                    class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.06em] ${toneClasses} transition-transform hover:scale-[1.02]">
+                    <span class="text-xs">${chip.emoji}</span>
                     <span>${escapeHtml(chip.label)}</span>
                 </button>`;
             }).join('')}
@@ -8000,23 +8181,27 @@ async function showOwnerPlayer(email) {
 
     playerContent.innerHTML = `
         <div class="p-5 space-y-4" style="${cardAccent.style}">
-            <div class="flex items-center gap-4">
-                <div class="h-14 w-14 rounded-2xl flex items-center justify-center text-3xl shrink-0" style="background-color: ${rgbaFromHex(cardAccent.tokens.primary, 0.15)};">
-                    ${favFlag || '👤'}
-                </div>
-                <div class="min-w-0 flex-1">
-                    <div class="text-xl font-black uppercase italic tracking-tight text-white truncate">${escapeHtml(nickname)}</div>
-                    ${realname ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${escapeHtml(realname)}</div>` : ''}
-                    ${renderPlayerChips(playerChips, email, 'card', 'owner-player')}
-                    <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                        ${profile?.favorite_team ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300">${favFlag} ${escapeHtml(profile.favorite_team)}</span>` : ''}
-                        ${profile?.home_country ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-500">${escapeHtml(profile.home_country)}</span>` : ''}
+            <div>
+                <div class="flex items-center gap-3">
+                    <div class="h-12 w-12 rounded-2xl flex items-center justify-center text-2xl shrink-0" style="background-color: ${rgbaFromHex(cardAccent.tokens.primary, 0.15)};">
+                        ${favFlag || '👤'}
                     </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <div class="text-xl font-black uppercase italic tracking-tight text-white truncate">${escapeHtml(nickname)}</div>
+                            ${realname ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 shrink-0">${escapeHtml(realname)}</div>` : ''}
+                        </div>
+                        <div class="flex flex-wrap items-center gap-x-2 gap-y-0 mt-0.5">
+                            ${profile?.favorite_team ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300">${favFlag} ${escapeHtml(profile.favorite_team)}</span>` : ''}
+                            ${profile?.home_country ? `<span class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">${escapeHtml(profile.home_country)}</span>` : ''}
+                        </div>
+                    </div>
+                    ${totalPoints !== null ? `<div class="ml-auto text-right shrink-0">
+                        <div class="text-3xl font-black" style="color: var(--player-card-accent-on-dark);">${totalPoints}</div>
+                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
+                    </div>` : ''}
                 </div>
-                ${totalPoints !== null ? `<div class="ml-auto text-right shrink-0">
-                    <div class="text-3xl font-black" style="color: var(--player-card-accent-on-dark);">${totalPoints}</div>
-                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
-                </div>` : ''}
+                ${renderPlayerChips(playerChips, email, 'card', 'owner-player')}
             </div>
 
             ${stageBreakdownHtml ? `
