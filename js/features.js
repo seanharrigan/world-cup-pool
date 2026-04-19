@@ -6551,7 +6551,7 @@ async function fetchLeaderboard() {
         const bestRowMarkup = bestAvailableTeam ? `
             <tr class="border-b border-gray-100 bg-gray-50 text-left text-gray-700">
                 <td class="w-[72px] px-2 py-2.5 text-center text-lg font-black text-gray-400">-</td>
-                <td class="w-[72px] px-2 py-2.5 text-center font-mono text-lg font-black text-gray-500">${bestAvailableTeam.totalPoints}</td>
+                <td class="w-[72px] px-2 py-2.5 text-center text-lg font-black text-gray-500">${bestAvailableTeam.totalPoints}</td>
                 <td class="px-4 py-2.5 text-left">
                     <div class="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400 text-left">${bestAvailableTeam.nickname}</div>
                     <div class="mt-1.5 text-left">
@@ -6599,7 +6599,7 @@ async function fetchLeaderboard() {
                         <div class="text-lg font-black text-gray-900">#${user.displayRank}</div>
                     </div>
                 </td>
-                <td class="w-[72px] px-2 py-2.5 text-center font-mono text-lg font-black text-gray-900">${user.totalPoints}</td>
+                <td class="w-[72px] px-2 py-2.5 text-center text-lg font-black text-gray-900">${user.totalPoints}</td>
                 <td class="px-4 py-2.5 text-left">
                     <div class="flex flex-wrap items-center gap-1.5 text-left">
                         <div class="text-lg font-black uppercase text-left text-gray-900">${user.nickname}</div>
