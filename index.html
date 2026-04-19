@@ -195,6 +195,18 @@
             50% { box-shadow: 0 0 0 6px rgba(234,179,8,0); }
         }
 
+        /* Modal pop-in / pop-out animations */
+        @keyframes modal-pop-in {
+            from { opacity: 0; transform: scale(0.93); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+        @keyframes modal-pop-out {
+            from { opacity: 1; transform: scale(1); }
+            to   { opacity: 0; transform: scale(0.93); }
+        }
+        .modal-card { animation: modal-pop-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        .modal-card.modal-exiting { animation: modal-pop-out 0.13s ease-in both; }
+
         /* Player profile two-panel */
         #player-profile-container { transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
         #player-profile-container.profile-team-open { max-width: 48rem; }
@@ -323,6 +335,8 @@
         @keyframes pageFadeIn { from { opacity: 0; } to { opacity: 1; } }
         .page-content:not(.hidden) { animation: pageFadeIn 0.15s ease; }
         .page-content.hidden { display: none !important; }
+        /* Force flex column on results page — tab bar must always sit above the scroll area */
+        #page-results:not(.hidden) { display: flex !important; flex-direction: column; }
 
         @keyframes messageEnter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .message-enter { animation: messageEnter 0.18s ease forwards; }
@@ -1603,13 +1617,12 @@
                 </header>
 
                 <section class="theme-soft-card rounded-3xl border p-6 space-y-5 relative overflow-visible">
-                    <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl" style="background-color: var(--theme-accent-primary);"></div>
                     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
                             <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.25em]">Account Email</div>
                             <div id="profile-email-display" class="mt-2 text-2xl font-black italic text-gray-900 break-all">-</div>
                         </div>
-                        <button onclick="signOutUser()" class="self-start rounded-2xl border border-gray-300 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-700 transition-colors hover:bg-gray-100">Sign Out</button>
+                        <button onclick="signOutUser()" class="hidden md:flex self-start rounded-2xl border border-gray-300 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-700 transition-colors hover:bg-gray-100">Sign Out</button>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -1657,7 +1670,10 @@
                     </div>
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                         <p class="text-sm font-bold text-gray-500">This profile powers your leaderboard name, chat identity, and personal details.</p>
-                        <button onclick="saveIdentityOnly()" class="theme-primary-button rounded-2xl px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] transition-colors self-start md:self-auto">Save Profile</button>
+                        <div class="flex items-center gap-2 self-start md:self-auto">
+                            <button onclick="signOutUser()" class="md:hidden rounded-2xl border border-gray-300 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-700 transition-colors hover:bg-gray-100">Sign Out</button>
+                            <button onclick="saveIdentityOnly()" class="theme-primary-button rounded-2xl px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] transition-colors">Save Profile</button>
+                        </div>
                     </div>
                 </section>
 
@@ -1673,7 +1689,7 @@
 
     <div id="toast-container" class="fixed bottom-40 md:bottom-10 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-2 pointer-events-none"></div>
     <div id="confirm-modal" class="hidden fixed inset-0 z-[110] bg-black/80 backdrop-blur-sm items-center justify-center p-4">
-        <div class="w-full max-w-md rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden">
+        <div class="modal-card w-full max-w-md rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden">
             <div class="p-6 md:p-8">
                 <div class="flex items-center gap-3 mb-5">
                     <div id="confirm-modal-icon" class="theme-modal-icon h-11 w-11 rounded-2xl border flex items-center justify-center text-xl">✉️</div>
@@ -1693,7 +1709,7 @@
     </div>
 
     <div id="simulation-stage-modal" class="hidden fixed inset-0 z-[111] bg-black/80 backdrop-blur-sm items-center justify-center p-4">
-        <div class="w-full max-w-md rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden">
+        <div class="modal-card w-full max-w-md rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden">
             <div class="p-6 md:p-8">
                 <div class="flex items-center gap-3 mb-5">
                     <div class="theme-modal-icon h-11 w-11 rounded-2xl border flex items-center justify-center text-xl">🎲</div>
@@ -1784,7 +1800,7 @@
     </div>
 
     <div id="team-owners-modal" class="hidden fixed inset-0 z-[114] bg-black/80 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closeTeamOwners()">
-        <div id="team-owners-container" class="relative w-full max-w-sm rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[85vh]">
+        <div id="team-owners-container" class="modal-card relative w-full max-w-sm rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[85vh]">
             <!-- Left panel: team header + player list -->
             <div id="team-owners-left" class="flex flex-col min-w-0 flex-1 md:w-[360px] md:flex-none overflow-hidden">
                 <div id="team-owners-header" class="p-6 border-b border-gray-800 shrink-0"></div>
@@ -1807,7 +1823,7 @@
     </div>
 
     <div id="player-profile-modal" class="hidden fixed inset-0 z-[115] bg-black/80 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closePlayerProfile()">
-        <div id="player-profile-container" class="relative w-full max-w-lg rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
+        <div id="player-profile-container" class="modal-card relative w-full max-w-lg rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
             <!-- Left panel: team detail (hidden by default) -->
             <div id="player-profile-team-panel" class="hidden flex-col min-w-0 overflow-hidden border-b md:border-b-0 md:border-r border-gray-800 md:w-[320px] md:flex-none">
                 <div class="shrink-0 flex items-center px-4 py-3 border-b border-gray-800">
@@ -1887,7 +1903,7 @@
     </div>
 
     <div id="profile-chips-popup" class="hidden fixed inset-0 z-[118] bg-black/60 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closeProfileChipsPopup()">
-        <div class="w-full max-w-sm rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+        <div class="modal-card w-full max-w-sm rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
             <div class="shrink-0 flex items-center justify-between px-5 py-4 border-b border-gray-800">
                 <div id="profile-chips-popup-title" class="text-[11px] font-black uppercase tracking-[0.25em] text-gray-300"></div>
                 <button onclick="closeProfileChipsPopup()" class="text-gray-500 hover:text-white transition-colors text-xl leading-none">×</button>
@@ -1897,7 +1913,7 @@
     </div>
 
     <div id="r32-seating-modal" class="hidden fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closeR32SeatingInfo()">
-        <div class="w-full max-w-2xl rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="modal-card w-full max-w-2xl rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-5 border-b border-gray-800 flex items-center justify-between gap-4 shrink-0">
                 <div class="flex items-center gap-3">
                     <div class="flex items-center justify-center w-9 h-9 rounded-full border-2 border-yellow-400 bg-yellow-400/10 text-yellow-400 font-black text-lg shrink-0">!</div>

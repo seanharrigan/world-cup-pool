@@ -159,16 +159,26 @@ function showConfirmModal({
 
     return new Promise((resolve) => {
         const cleanup = (result) => {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            cancelButton.classList.remove('hidden');
-            confirmButton.classList.remove('w-full');
-            confirmButton.classList.add('flex-1');
-            confirmButton.removeEventListener('click', handleConfirm);
-            cancelButton.removeEventListener('click', handleCancel);
-            modal.removeEventListener('click', handleBackdrop);
-            document.removeEventListener('keydown', handleEscape);
-            resolve(result);
+            const card = modal.querySelector('.modal-card');
+            const finish = () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                if (card) card.classList.remove('modal-exiting');
+                cancelButton.classList.remove('hidden');
+                confirmButton.classList.remove('w-full');
+                confirmButton.classList.add('flex-1');
+                confirmButton.removeEventListener('click', handleConfirm);
+                cancelButton.removeEventListener('click', handleCancel);
+                modal.removeEventListener('click', handleBackdrop);
+                document.removeEventListener('keydown', handleEscape);
+                resolve(result);
+            };
+            if (card) {
+                card.classList.add('modal-exiting');
+                card.addEventListener('animationend', finish, { once: true });
+            } else {
+                finish();
+            }
         };
 
         const handleConfirm = () => cleanup(true);
@@ -346,7 +356,10 @@ function showProfileSetupModal(email, defaults = {}) {
 }
 
 function showPage(pageId) {
-    document.querySelectorAll('.page-content').forEach((page) => page.classList.add('hidden'));
+    document.querySelectorAll('.page-content').forEach((page) => {
+        page.classList.add('hidden');
+        page.hidden = true;
+    });
     document.querySelectorAll('.nav-link').forEach((link) => link.classList.remove('active'));
     const mobileMenu = document.getElementById('mobile-menu');
     const wasMobileMenuOpen = mobileMenu?.classList.contains('open');
@@ -355,12 +368,17 @@ function showPage(pageId) {
     const section = document.getElementById(`page-${pageId}`);
     if (section) {
         section.classList.remove('hidden');
+        section.hidden = false;
     }
 
     const navLinks = document.querySelectorAll(`[id^='nav-${pageId}']`);
     navLinks.forEach((link) => link.classList.add('active'));
 
     if (pageId === 'instructions') setupDashboard();
+    if (pageId === 'results') {
+        const resultsContent = document.querySelector('#page-results .overflow-y-auto');
+        if (resultsContent) resultsContent.scrollTop = 0;
+    }
     if (pageId !== 'picks') {
         togglePicksRulesBar(false); // close modal if open when leaving picks page
     }

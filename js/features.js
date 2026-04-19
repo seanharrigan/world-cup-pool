@@ -50,7 +50,9 @@ const PLAYER_CHIP_DEFINITIONS = {
     early_graves: { id: 'early_graves', emoji: '⚰️', label: 'Early Graves', tone: 'negative', description: 'Has the most eliminated teams in their squad.' },
     united_nations: { id: 'united_nations', emoji: '🌍', label: 'United Nations', tone: 'neutral', description: 'Most varied squad by represented World Cup groups.' },
     crowd_pleaser: { id: 'crowd_pleaser', emoji: '🤝', label: 'Crowd Pleaser', tone: 'neutral', description: 'Carries the most of the pool’s most popular teams.' },
-    all_in: { id: 'all_in', emoji: '🎰', label: 'All-In', tone: 'neutral', description: 'Running a squad right up against the $150 budget cap.' }
+    all_in: { id: 'all_in', emoji: '🎰', label: 'All-In', tone: 'neutral', description: 'Running a squad right up against the $150 budget cap.' },
+    best_student: { id: 'best_student', emoji: '🎓', label: 'Best Student', tone: 'positive', description: 'Highest pre-tournament report card score in the pool.' },
+    worst_student: { id: 'worst_student', emoji: '📝', label: 'Worst Student', tone: 'negative', description: 'Lowest pre-tournament report card score in the pool.' }
 };
 
 const PLAYER_CHIP_TONE_CLASSES = {
@@ -6599,6 +6601,30 @@ function computePlayerChips(leaderboardData = [], matches = [], previousRanks = 
         (entry) => ({ description: `$${entry.squadCost} spent while sitting ${entry.rank}${entry.rank === 1 ? 'st' : entry.rank === 2 ? 'nd' : entry.rank === 3 ? 'rd' : 'th'} overall.` })
     );
 
+    const reportCardScores = playerMetrics.map((entry) => {
+        const rc = _computeReportCard(entry.squad);
+        return { email: entry.user.email, total: rc ? rc.total : null };
+    }).filter((e) => e.total !== null);
+
+    awardMax(
+        'best_student',
+        (entry) => { const r = reportCardScores.find((e) => e.email === entry.user.email); return r ? r.total : -1; },
+        (value) => value >= 0,
+        (entry) => {
+            const r = reportCardScores.find((e) => e.email === entry.user.email);
+            return { description: `Report card score of ${r ? Math.round(r.total) : '?'}/100 — highest pre-tournament grade in the pool.` };
+        }
+    );
+    awardMin(
+        'worst_student',
+        (entry) => { const r = reportCardScores.find((e) => e.email === entry.user.email); return r ? r.total : Infinity; },
+        (value) => Number.isFinite(value),
+        (entry) => {
+            const r = reportCardScores.find((e) => e.email === entry.user.email);
+            return { description: `Report card score of ${r ? Math.round(r.total) : '?'}/100 — lowest pre-tournament grade in the pool.` };
+        }
+    );
+
     return chipsByEmail;
 }
 
@@ -6989,6 +7015,9 @@ async function fetchLeaderboard() {
         localStorage.setItem('wc_pool_lb_ranks', JSON.stringify(newRanks));
         window._leaderboardData = enrichedLeaderboardData;
         window._playerChipsByEmail = Object.fromEntries(playerChips);
+        window._matchesCache = allMatches || [];
+        window._picksCache = allPicks || [];
+        window._profilesTotalCount = new Set((allProfiles || []).map((p) => p.email).filter(Boolean)).size;
     } catch (error) {
         body.innerHTML = '<tr><td colspan="10" class="p-8 text-center text-red-500 text-gray-900">Error calculating scores</td></tr>';
     }
@@ -7825,18 +7854,23 @@ async function showPlayerProfile(email) {
     let budgetUsed = 0;
     if (playerEntry?.squad?.length > 0) {
         budgetUsed = playerEntry.squad.reduce((sum, t) => sum + (t.cost || 0), 0);
+        const teamBreakdownMap = buildTeamStageBreakdownMap(window._matchesCache || [], teams, advancedTeams);
         squadHtml = playerEntry.squad
             .sort((a, b) => (b.cost || 0) - (a.cost || 0) || a.name.localeCompare(b.name))
-            .map((t) => `
+            .map((t) => {
+                const teamPts = teamBreakdownMap[t.name]?.total || 0;
+                const ptsLabel = teamPts > 0 ? ` · <span class="font-black text-gray-200">${teamPts} PTS</span>` : '';
+                return `
                 <div class="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 flex items-center gap-2 ${t.eliminated ? 'opacity-40' : ''} cursor-pointer hover:border-gray-500 hover:bg-gray-750 transition-colors" onclick="showProfileTeam('${t.name.replace(/'/g, "\\'")}')">
                     <span class="text-xl">${t.flag || ''}</span>
                     <div class="flex-1 min-w-0">
                         <div class="text-xs font-black uppercase text-white truncate">${escapeHtml(t.name)}</div>
-                        <div class="text-[10px] font-bold text-gray-400">T${t.tier} · $${t.cost}${t.eliminated ? ' · out' : ''}</div>
+                        <div class="text-[10px] font-bold text-gray-400">T${t.tier} · $${t.cost}${t.eliminated ? ' · out' : ''}${ptsLabel}</div>
                     </div>
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-gray-600 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
                 </div>
-            `).join('');
+                `;
+            }).join('');
     } else {
         squadHtml = '<div class="col-span-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 py-2">No squad saved yet</div>';
     }
@@ -7880,11 +7914,15 @@ async function showPlayerProfile(email) {
                 <div class="h-11 w-11 rounded-2xl flex items-center justify-center text-2xl shrink-0" style="background-color: ${rgbaFromHex(cardAccent.tokens.primary, 0.15)};">
                     ${favFlag || '👤'}
                 </div>
-                <div class="min-w-0 flex-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    <span class="text-lg font-black uppercase italic tracking-tight text-white">${escapeHtml(nickname)}</span>
-                    ${realname ? `<span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${escapeHtml(realname)}</span>` : ''}
-                    ${profile?.favorite_team ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300">${favFlag} ${escapeHtml(profile.favorite_team)}</span>` : ''}
-                    ${profile?.home_country ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-500">${escapeHtml(profile.home_country)}</span>` : ''}
+                <div class="min-w-0 flex-1 flex flex-col gap-0.5">
+                    <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0">
+                        <span class="text-lg font-black uppercase italic tracking-tight text-white">${escapeHtml(nickname)}</span>
+                        ${realname ? `<span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${escapeHtml(realname)}</span>` : ''}
+                    </div>
+                    ${(profile?.favorite_team || profile?.home_country) ? `<div class="flex flex-wrap items-center gap-x-2 gap-y-0">
+                        ${profile?.favorite_team ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300">${favFlag} ${escapeHtml(profile.favorite_team)}</span>` : ''}
+                        ${profile?.home_country ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-500">${escapeHtml(profile.home_country)}</span>` : ''}
+                    </div>` : ''}
                 </div>
                 ${playerEntry ? `<div class="text-right shrink-0">
                     <div class="text-2xl font-black" style="color: var(--player-card-accent-on-dark);">${playerEntry.totalPoints}</div>
@@ -7948,20 +7986,31 @@ function showProfileChipsPopup(email, event) {
     modal.classList.add('flex');
 }
 
+function _closeModalWithAnimation(modalId, onDone) {
+    const modal = document.getElementById(modalId);
+    if (!modal) { if (onDone) onDone(); return; }
+    const card = modal.querySelector('.modal-card');
+    const finish = () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        if (card) card.classList.remove('modal-exiting');
+        if (onDone) onDone();
+    };
+    if (card) {
+        card.classList.add('modal-exiting');
+        card.addEventListener('animationend', finish, { once: true });
+    } else {
+        finish();
+    }
+}
+
 function closeProfileChipsPopup() {
-    const modal = document.getElementById('profile-chips-popup');
-    if (!modal) return;
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    _closeModalWithAnimation('profile-chips-popup');
 }
 
 function closePlayerProfile() {
-    const modal = document.getElementById('player-profile-modal');
-    if (!modal) return;
     closeChipPopover();
-    closeProfileTeam();
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    _closeModalWithAnimation('player-profile-modal', () => closeProfileTeam());
 }
 
 function closeProfileTeam() {
@@ -7982,7 +8031,6 @@ async function showProfileTeam(teamName) {
     panel.classList.remove('hidden');
     panel.classList.add('flex');
     container.classList.add('profile-team-open');
-    content.innerHTML = '<div class="p-8 text-center text-gray-400 font-black uppercase tracking-[0.2em] text-[10px] animate-pulse">Loading...</div>';
 
     const team = teams.find((t) => t.name === teamName);
     if (!team) {
@@ -7992,17 +8040,29 @@ async function showProfileTeam(teamName) {
 
     await fetchAdvancedTeams();
 
-    const [
-        { data: matches },
-        { data: picks },
-        { data: profiles }
-    ] = await Promise.all([
-        supabaseClient.from('matches').select('*').order('match_date_manual', { ascending: true }),
-        supabaseClient.from('picks').select('user_email, team_name'),
-        supabaseClient.from('profiles').select('email')
-    ]);
+    const hasCachedData = window._matchesCache && window._picksCache;
+    let matches, picks, totalPlayers;
 
-    const totalPlayers = new Set((profiles || []).map((p) => p.email).filter(Boolean)).size;
+    if (hasCachedData) {
+        matches = window._matchesCache;
+        picks = window._picksCache.map((p) => ({ user_email: p.user_email, team_name: p.team_name }));
+        totalPlayers = window._profilesTotalCount || 0;
+    } else {
+        content.innerHTML = '<div class="p-8 text-center text-gray-400 font-black uppercase tracking-[0.2em] text-[10px] animate-pulse">Loading...</div>';
+        const [
+            { data: matchData },
+            { data: picksData },
+            { data: profilesData }
+        ] = await Promise.all([
+            supabaseClient.from('matches').select('*').order('match_date_manual', { ascending: true }),
+            supabaseClient.from('picks').select('user_email, team_name'),
+            supabaseClient.from('profiles').select('email')
+        ]);
+        matches = matchData || [];
+        picks = picksData || [];
+        totalPlayers = new Set((profilesData || []).map((p) => p.email).filter(Boolean)).size;
+    }
+
     const pickedSet = (picks || []).reduce((set, p) => { if (p.team_name === teamName) set.add(p.user_email); return set; }, new Set());
     const pickedCount = pickedSet.size;
     const pickedPct = totalPlayers > 0 ? Math.round(pickedCount / totalPlayers * 100) : 0;
@@ -8199,10 +8259,7 @@ function showR32SeatingInfo() {
 }
 
 function closeR32SeatingInfo() {
-    const modal = document.getElementById('r32-seating-modal');
-    if (!modal) return;
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    _closeModalWithAnimation('r32-seating-modal');
 }
 
 async function showTeamOwners(teamName) {
@@ -8454,12 +8511,8 @@ function closeOwnerPlayer() {
 }
 
 function closeTeamOwners() {
-    const modal = document.getElementById('team-owners-modal');
-    if (!modal) return;
     closeChipPopover();
-    closeOwnerPlayer();
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    _closeModalWithAnimation('team-owners-modal', () => closeOwnerPlayer());
 }
 
 // ── Real-time Leaderboard ─────────────────────────────────────────────────────
