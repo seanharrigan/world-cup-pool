@@ -4066,8 +4066,15 @@ function toggleDashSheet() {
     const helper = document.getElementById('dash-sheet-helper');
     if (!panel) return;
     const isMinimized = panel.classList.toggle('dash-sheet-minimized');
+    if (!isMinimized && window.innerWidth < 1024) {
+        // Cap to parent height so the handle never escapes above the flex row on iOS Safari
+        const parentH = panel.parentElement ? panel.parentElement.offsetHeight : 600;
+        panel.style.maxHeight = parentH + 'px';
+    } else {
+        panel.style.maxHeight = '';
+    }
     if (arrow) arrow.textContent = isMinimized ? '▲' : '▼';
-    if (helper) helper.textContent = isMinimized ? 'Click to view' : 'Click to close';
+    if (helper) helper.textContent = isMinimized ? 'Tap to view' : 'Tap to close';
 }
 
 function toggleDashMatchMode() {
