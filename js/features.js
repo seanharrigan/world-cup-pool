@@ -2055,6 +2055,7 @@ function setupStatsPage() {
     fetchSelectionMap();
     renderMapIfNeeded();
     syncMapPanelHeight();
+    syncMapSearchPlaceholder();
 }
 
 function syncMapPanelHeight() {
@@ -2065,7 +2066,13 @@ function syncMapPanelHeight() {
     if (h > 0) leftPanel.style.height = h + 'px';
 }
 
-window.addEventListener('resize', syncMapPanelHeight);
+function syncMapSearchPlaceholder() {
+    const input = document.getElementById('map-country-search-input');
+    if (!input) return;
+    input.placeholder = window.innerWidth >= 768 ? 'Select a team…' : 'Team…';
+}
+
+window.addEventListener('resize', () => { syncMapPanelHeight(); syncMapSearchPlaceholder(); });
 
 function escapeCsvValue(value) {
     const stringValue = value == null ? '' : String(value);
