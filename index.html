@@ -207,6 +207,24 @@
         .modal-card { animation: modal-pop-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both; }
         .modal-card.modal-exiting { animation: modal-pop-out 0.13s ease-in both; }
 
+        /* Upside two-panel modal */
+        #upside-container { transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        #upside-container.upside-expanded { max-width: 42rem; }
+        @keyframes upside-panel-slide-in {
+            from { opacity: 0; transform: translateX(-14px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes upside-panel-slide-up {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        #upside-players-panel.flex { animation: upside-panel-slide-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        @media (max-width: 767px) {
+            #upside-players-panel.flex { animation: upside-panel-slide-up 0.24s cubic-bezier(0.16, 1, 0.3, 1) both; }
+            #upside-container.upside-expanded { max-width: 24rem; overflow-y: auto; flex-direction: column; }
+            #upside-container.upside-expanded #upside-players-panel { max-height: 210px; }
+        }
+
         /* Player profile two-panel */
         #player-profile-container { transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
         #player-profile-container.profile-team-open { max-width: 48rem; }
@@ -1914,9 +1932,23 @@
     </div>
 
     <div id="upside-modal" class="hidden fixed inset-0 z-[118] bg-black/60 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closeUpsideModal()">
-        <div class="modal-card w-full max-w-sm rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-            <div id="upside-modal-header" class="shrink-0 flex items-center justify-between px-5 py-4 border-b border-gray-800"></div>
-            <div id="upside-modal-body" class="overflow-y-auto flex-1"></div>
+        <div id="upside-container" class="modal-card relative w-full max-w-sm rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-row max-h-[85vh]">
+            <!-- Left panel: all players list (hidden by default, slides in from left) -->
+            <div id="upside-players-panel" class="hidden flex-col border-r border-gray-800 w-[220px] flex-none overflow-hidden">
+                <div class="shrink-0 flex items-center gap-2 px-4 py-3 border-b border-gray-800">
+                    <button onclick="closeUpsidePlayersPanel()" class="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400 hover:text-white transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                        Back
+                    </button>
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-300">All Players</span>
+                </div>
+                <div id="upside-players-list" class="overflow-y-auto flex-1"></div>
+            </div>
+            <!-- Right panel: player breakdown -->
+            <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
+                <div id="upside-modal-header" class="shrink-0 flex items-center justify-between px-5 py-4 border-b border-gray-800"></div>
+                <div id="upside-modal-body" class="overflow-y-auto flex-1"></div>
+            </div>
         </div>
     </div>
 

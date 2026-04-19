@@ -8361,54 +8361,69 @@ function _upsideTeamRows(squad) {
     `;
 }
 
-function showMyUpsideCard() {
-    const modal = document.getElementById('upside-modal');
+function _renderUpsideCard(email) {
     const header = document.getElementById('upside-modal-header');
     const body = document.getElementById('upside-modal-body');
-    if (!modal || !header || !body) return;
-
+    if (!header || !body) return;
     const lb = window._leaderboardData || [];
     const upsideMap = window._poolUpsideMap || _buildUpsideMap(lb);
-    const myUpside = upsideMap.get(userEmail) ?? 0;
-    const myEntry = lb.find((e) => e.email === userEmail);
-    const squad = myEntry?.squad || window._dashUpsideSquad || [];
+    const entry = lb.find((e) => e.email === email);
+    const isMe = email === userEmail;
+    const upside = upsideMap.get(email) ?? 0;
+    const squad = entry?.squad || (isMe ? window._dashUpsideSquad : null) || [];
+    const nickname = entry?.nickname || email.split('@')[0];
 
     header.innerHTML = `
-        <div>
-            <div class="text-[11px] font-black uppercase tracking-[0.25em] text-gray-300">Your Upside</div>
-            <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500 mt-0.5">Remaining squad potential</div>
+        <div class="flex items-center gap-2 min-w-0">
+            <button onclick="showUpsideDetail()" class="shrink-0 flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400 hover:text-white transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                All Players
+            </button>
         </div>
-        <button onclick="closeUpsideModal()" class="text-gray-500 hover:text-white transition-colors text-xl leading-none">×</button>
+        <button onclick="closeUpsideModal()" class="shrink-0 text-gray-500 hover:text-white transition-colors text-xl leading-none">×</button>
     `;
 
     body.innerHTML = `
         <div class="p-5 space-y-4">
-            <div class="flex items-center justify-between">
-                <div class="text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 leading-relaxed max-w-[200px]">
-                    Combined win odds of your surviving teams vs the pool leader.
+            <div class="flex items-center justify-between gap-3">
+                <div>
+                    <div class="text-base font-black uppercase italic text-white">${isMe ? 'Your Upside' : escapeHtml(nickname)}</div>
+                    <div class="text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 mt-0.5 leading-relaxed">
+                        ${isMe ? 'Combined win odds of your surviving teams vs the pool leader.' : 'Combined win odds of surviving teams vs the pool leader.'}
+                    </div>
                 </div>
                 <div class="text-right shrink-0">
-                    <div class="text-4xl font-black text-white">${myUpside}</div>
+                    <div class="text-4xl font-black text-white">${upside}</div>
                     <div class="text-[10px] font-black uppercase text-gray-400">/ 100</div>
                 </div>
             </div>
             ${_upsideTeamRows(squad)}
-            <button onclick="showUpsideDetail()" class="w-full mt-2 rounded-2xl border border-gray-700 bg-gray-800 hover:bg-gray-700 px-4 py-3 flex items-center justify-between transition-colors">
-                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-300">All Players</span>
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-            </button>
         </div>
     `;
+}
+
+function showMyUpsideCard() {
+    const modal = document.getElementById('upside-modal');
+    const panel = document.getElementById('upside-players-panel');
+    const container = document.getElementById('upside-container');
+    if (!modal) return;
+
+    // Close left panel if open
+    if (panel) { panel.classList.add('hidden'); panel.classList.remove('flex'); }
+    if (container) container.classList.remove('upside-expanded');
+
+    _renderUpsideCard(userEmail);
 
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 }
 
 function showUpsideDetail() {
+    const panel = document.getElementById('upside-players-panel');
+    const list = document.getElementById('upside-players-list');
+    const container = document.getElementById('upside-container');
     const modal = document.getElementById('upside-modal');
-    const header = document.getElementById('upside-modal-header');
-    const body = document.getElementById('upside-modal-body');
-    if (!modal || !header || !body) return;
+    if (!panel || !list || !container || !modal) return;
 
     const lb = window._leaderboardData || [];
     const upsideMap = window._poolUpsideMap || _buildUpsideMap(lb);
@@ -8416,53 +8431,63 @@ function showUpsideDetail() {
         .map((e) => ({ ...e, upside: upsideMap.get(e.email) ?? 0 }))
         .sort((a, b) => b.upside - a.upside || b.totalPoints - a.totalPoints);
 
-    header.innerHTML = `
-        <div class="flex items-center gap-2">
-            <button onclick="showMyUpsideCard()" class="text-gray-500 hover:text-white transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.15em]">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
-                Back
-            </button>
-            <div>
-                <div class="text-[11px] font-black uppercase tracking-[0.25em] text-gray-300">All Players</div>
-                <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500 mt-0.5">Upside · high to low</div>
-            </div>
-        </div>
-        <button onclick="closeUpsideModal()" class="text-gray-500 hover:text-white transition-colors text-xl leading-none">×</button>
-    `;
+    window._upsideRanked = ranked;
 
-    body.innerHTML = ranked.map((u, i) => {
+    list.innerHTML = ranked.map((u, i) => {
         const isMe = u.email === userEmail;
+        const safeEmail = u.email.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const aliveFlags = u.squad
             .filter((t) => !eliminatedTeams.has(t.name))
             .sort((a, b) => (TEAM_REPORT_DATA[b.name]?.winProb || 0) - (TEAM_REPORT_DATA[a.name]?.winProb || 0))
-            .map((t) => `<span class="text-base leading-none">${t.flag || ''}</span>`)
+            .map((t) => `<span class="text-sm leading-none">${t.flag || ''}</span>`)
             .join('');
         const barColor = i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : i === 2 ? '#f97316' : isMe ? '#3b82f6' : '#4b5563';
         return `
-            <div data-upside-me="${isMe}" class="relative flex items-center gap-3 px-5 py-3.5 border-b border-gray-800 last:border-0 ${isMe ? 'bg-blue-950/40' : ''}">
+            <button data-upside-email="${escapeHtml(u.email)}" onclick="showUpsidePlayerCard('${safeEmail}')"
+                class="upside-player-row w-full relative flex items-center gap-2 px-4 py-3 text-left border-b border-gray-800 last:border-0 hover:bg-gray-800 transition-colors ${isMe ? 'bg-blue-950/30' : ''}">
                 <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color: ${barColor};"></div>
-                <span class="text-[10px] font-black text-gray-500 shrink-0 w-5 text-right">${i + 1}</span>
+                <span class="text-[9px] font-black text-gray-500 shrink-0 w-4 text-right">${i + 1}</span>
                 <div class="flex-1 min-w-0">
-                    <div class="text-sm font-black uppercase ${isMe ? 'text-blue-300' : 'text-white'} truncate">${escapeHtml(u.nickname)}${isMe ? ' · you' : ''}</div>
-                    <div class="mt-1 flex flex-wrap gap-0.5">${aliveFlags || '<span class="text-[9px] text-gray-600 uppercase font-black">all out</span>'}</div>
+                    <div class="text-xs font-black uppercase ${isMe ? 'text-blue-300' : 'text-white'} truncate">${escapeHtml(u.nickname)}</div>
+                    <div class="mt-0.5 flex flex-wrap gap-0.5">${aliveFlags || '<span class="text-[9px] text-gray-600">all out</span>'}</div>
                 </div>
                 <div class="shrink-0 text-right">
-                    <div class="text-lg font-black text-white">${u.upside}</div>
-                    <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">/ 100</div>
+                    <div class="text-sm font-black text-white">${u.upside}</div>
+                    <div class="text-[8px] font-black uppercase text-gray-500">/ 100</div>
                 </div>
-            </div>`;
+            </button>`;
     }).join('');
 
+    panel.classList.remove('hidden');
+    panel.classList.add('flex');
+    container.classList.add('upside-expanded');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 
     requestAnimationFrame(() => {
-        const myRow = body.querySelector('[data-upside-me="true"]');
+        const myRow = list.querySelector(`[data-upside-email="${CSS.escape(userEmail)}"]`);
         if (myRow) myRow.scrollIntoView({ block: 'center' });
     });
 }
 
+function showUpsidePlayerCard(email) {
+    // Highlight selected row
+    document.querySelectorAll('.upside-player-row').forEach((btn) => {
+        const active = btn.dataset.upsideEmail === email;
+        btn.classList.toggle('bg-gray-800', active);
+    });
+    _renderUpsideCard(email);
+}
+
+function closeUpsidePlayersPanel() {
+    const panel = document.getElementById('upside-players-panel');
+    const container = document.getElementById('upside-container');
+    if (panel) { panel.classList.add('hidden'); panel.classList.remove('flex'); }
+    if (container) container.classList.remove('upside-expanded');
+}
+
 function closeUpsideModal() {
+    closeUpsidePlayersPanel();
     _closeModalWithAnimation('upside-modal');
 }
 
