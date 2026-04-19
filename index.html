@@ -305,11 +305,11 @@
             font-weight: 600;
             pointer-events: none;
         }
-        #dashboard-tabs-panel { transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
+        #dashboard-tabs-panel { transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; max-height: 600px; }
         .dash-sheet-minimized { max-height: 56px; }
         @media (min-width: 1024px) {
             #dashboard-squad-card { display: flex !important; }
-            .dash-sheet-minimized { max-height: none; overflow: visible; }
+            #dashboard-tabs-panel { max-height: none !important; overflow: visible; }
         }
     </style>
 </head>
@@ -515,7 +515,7 @@
                     <!-- Glow divider (below stats bar) -->
                     <div id="dashboard-glow-divider-bottom" class="hidden h-px w-full opacity-60" style="background: linear-gradient(90deg, transparent 0%, var(--theme-accent-primary) 20%, var(--theme-accent-primary) 80%, transparent 100%); box-shadow: 0 0 6px 2px var(--theme-accent-primary);"></div>
                     <!-- Player card + tabbed panel -->
-                    <div class="flex flex-col lg:flex-row">
+                    <div class="relative flex flex-col lg:flex-row">
                         <!-- Left: player card (always visible) -->
                         <div id="dashboard-squad-card" class="flex lg:w-[44%] lg:flex-shrink-0 flex-col" style="background-color: #0f172a;">
                             <div class="p-6 flex-1" id="dashboard-squad-inner">
@@ -524,11 +524,11 @@
                             <div id="dashboard-squad-budget-bar" class="hidden px-6 pb-5"></div>
                         </div>
                         <!-- Right: tabbed panel — collapsible on mobile, inline on desktop -->
-                        <div id="dashboard-tabs-panel" class="dash-sheet-minimized lg:flex-1 bg-white flex flex-col h-[400px] lg:h-[480px]">
+                        <div id="dashboard-tabs-panel" class="dash-sheet-minimized absolute bottom-0 left-0 right-0 z-10 lg:static lg:flex-1 bg-white flex flex-col lg:h-[480px]">
                             <!-- Handle bar (mobile only) -->
                             <button onclick="toggleDashSheet()" class="lg:hidden h-14 shrink-0 w-full flex items-center justify-between px-4 bg-gray-100 border-t border-gray-200">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-sm font-black uppercase italic tracking-widest text-gray-700">Table &amp; Stats</span>
+                                    <span class="text-sm font-black uppercase italic tracking-widest text-gray-700">Pool Overview</span>
                                     <span id="dash-sheet-helper" class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Tap to view</span>
                                 </div>
                                 <span id="dash-sheet-arrow" class="text-xs text-gray-500">▲</span>
@@ -720,7 +720,7 @@
                                 <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-black shrink-0 theme-accent-text" style="border-color: var(--theme-accent-primary); background-color: var(--theme-accent-soft);">4</div>
                                 <div class="text-xl font-black uppercase tracking-[0.15em] text-gray-800">Stage Multipliers</div>
                             </div>
-                            <p class="text-sm font-medium text-gray-400 leading-relaxed">Points scale up with the round.<br>Picking the winner is critical.</p>
+                            <p class="text-sm font-medium text-gray-400 leading-relaxed">Points scale up with the round. Picking the winner is critical.<br>Dark horses and strong tier 2 teams that go deep can make all the difference.</p>
                         </div>
                         <div class="flex-1 flex items-center"><div class="grid grid-cols-3 gap-2 w-full">
                             <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 text-center">

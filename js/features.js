@@ -4102,11 +4102,11 @@ function renderDashMatchesTab() {
     body.innerHTML = `
         <div class="grid grid-cols-2 divide-x divide-gray-100 h-full overflow-hidden">
             <div class="flex flex-col h-full overflow-hidden">
-                <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 px-3 pt-1 pb-1.5 shrink-0">Recent Scores</div>
+                <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 px-3 pt-1 pb-1.5 shrink-0 text-center">Recent Scores</div>
                 <div class="flex-1 flex flex-col px-3 pb-3 gap-2 overflow-hidden">${data.prevHtml || empty('No results yet')}</div>
             </div>
             <div class="flex flex-col h-full overflow-hidden">
-                <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 px-3 pt-1 pb-1.5 shrink-0">Upcoming Fixtures</div>
+                <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 px-3 pt-1 pb-1.5 shrink-0 text-center">Upcoming Fixtures</div>
                 <div class="flex-1 flex flex-col px-3 pb-3 gap-2 overflow-hidden">${data.nextHtml || empty('No upcoming fixtures')}</div>
             </div>
         </div>
@@ -4646,14 +4646,14 @@ async function setupDashboard() {
                         <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">${stageLabel}</span>
                         ${ptsLabel ? `<span class="text-[9px] font-black uppercase tracking-[0.12em] theme-accent-text">${ptsLabel}</span>` : ''}
                     </div>
-                    <div class="grid grid-cols-[minmax(0,1fr)_3rem_minmax(0,1fr)] items-center gap-3">
+                    <div class="grid grid-cols-[minmax(0,1fr)_2.5rem_minmax(0,1fr)] items-center gap-2">
                         <div class="min-w-0 text-right">
-                            <div onclick="showTeamOwners('${safeHome}')" class="truncate text-xs font-black text-gray-900 cursor-pointer hover:text-gray-500 transition-colors leading-snug">${isHomeMine ? '<span class="text-amber-400">★</span> ' : ''}${homeTeam?.flag || ''} ${escapeHtml(match.team_home)}</div>
+                            <div onclick="showTeamOwners('${safeHome}')" class="truncate text-sm font-black text-gray-900 cursor-pointer hover:text-gray-500 transition-colors leading-snug">${isHomeMine ? '<span class="text-amber-400">★</span> ' : ''}${homeTeam?.flag || ''}<span class="hidden sm:inline"> ${escapeHtml(match.team_home)}</span></div>
                             ${ownershipMarkup(match.team_home, 'right')}
                         </div>
-                        <div class="shrink-0 text-sm font-black text-gray-700 text-center tabular-nums leading-none bg-white border border-gray-200 rounded-lg py-1.5">${scoreMarkup}</div>
+                        <div class="shrink-0 text-base font-black text-gray-700 text-center tabular-nums leading-none">${scoreMarkup}</div>
                         <div class="min-w-0 text-left">
-                            <div onclick="showTeamOwners('${safeAway}')" class="truncate text-xs font-black text-gray-900 cursor-pointer hover:text-gray-500 transition-colors leading-snug">${escapeHtml(match.team_away)} ${awayTeam?.flag || ''}${isAwayMine ? ' <span class="text-amber-400">★</span>' : ''}</div>
+                            <div onclick="showTeamOwners('${safeAway}')" class="truncate text-sm font-black text-gray-900 cursor-pointer hover:text-gray-500 transition-colors leading-snug"><span class="hidden sm:inline">${escapeHtml(match.team_away)} </span>${awayTeam?.flag || ''}${isAwayMine ? ' <span class="text-amber-400">★</span>' : ''}</div>
                             ${ownershipMarkup(match.team_away, 'left')}
                         </div>
                     </div>
