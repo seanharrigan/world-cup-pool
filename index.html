@@ -908,19 +908,19 @@
                         <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Colour by ownership or group · click any country</p>
                     </div>
                     <!-- 25 / 75 layout: side table + map -->
-                    <div class="flex gap-5 items-start">
-                        <!-- Left: team stats table (desktop only) -->
-                        <div class="hidden md:flex flex-col w-64 xl:w-72 shrink-0 rounded-3xl border border-gray-200 bg-white shadow-sm" style="max-height:560px;">
+                    <div class="flex gap-5 items-stretch">
+                        <!-- Left: team stats table (desktop only, stretches to match right column) -->
+                        <div class="hidden md:flex flex-col w-64 xl:w-72 shrink-0 rounded-3xl border border-gray-200 bg-white shadow-sm">
                             <div class="p-4 border-b border-gray-100 shrink-0">
-                                <div id="map-table-title" class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2.5">All Teams</div>
+                                <div class="map-table-title text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2.5">All Teams</div>
                                 <div class="flex rounded-xl bg-gray-100 p-0.5 gap-0.5">
-                                    <button id="map-sort-picked" onclick="setMapTableSort('picked')" class="flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide bg-white shadow-sm text-gray-900 transition-all">Picked</button>
-                                    <button id="map-sort-points" onclick="setMapTableSort('points')" class="flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Points</button>
-                                    <button id="map-sort-goals" onclick="setMapTableSort('goals')" class="flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Goals</button>
-                                    <button id="map-sort-matches" onclick="setMapTableSort('matches')" class="flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Matches</button>
+                                    <button data-sort="picked" onclick="setMapTableSort('picked')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide bg-white shadow-sm text-gray-900 transition-all">Picked</button>
+                                    <button data-sort="points" onclick="setMapTableSort('points')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Points</button>
+                                    <button data-sort="goals" onclick="setMapTableSort('goals')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Goals</button>
+                                    <button data-sort="matches" onclick="setMapTableSort('matches')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Matches</button>
                                 </div>
                             </div>
-                            <div id="map-side-table" class="flex-1 overflow-y-auto p-2 space-y-0.5"></div>
+                            <div class="map-side-table-content flex-1 overflow-y-auto p-2 space-y-0.5"></div>
                         </div>
                         <!-- Right: controls + map + legend -->
                         <div class="flex-1 min-w-0 space-y-3">
@@ -1020,34 +1020,18 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Bottom two-column grid -->
-                    <div class="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6">
-                        <!-- Left: Full ownership ranking -->
-                        <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                            <div class="mb-4 border-l-[3px] border-gray-300 pl-3">
-                                <h3 class="text-xl font-black uppercase italic tracking-tight text-gray-900">Ownership Ranking</h3>
-                                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Top 10 qualified teams · click to see who picked them</p>
-                            </div>
-                            <div id="map-ownership-ranking" class="space-y-1"></div>
-                        </div>
-                        <!-- Right: Group heat + Squad shape -->
-                        <div class="space-y-6">
-                            <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                                <div class="mb-4 border-l-[3px] border-gray-300 pl-3">
-                                    <h3 class="text-xl font-black uppercase italic tracking-tight text-gray-900">Group Heat</h3>
-                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Total picks per group · darker = more popular</p>
-                                </div>
-                                <div id="map-group-heat" class="grid grid-cols-4 gap-2"></div>
-                            </div>
-                            <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                                <div class="mb-4 border-l-[3px] border-gray-300 pl-3">
-                                    <h3 class="text-xl font-black uppercase italic tracking-tight text-gray-900">Squad Shape</h3>
-                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">How many teams per entry</p>
-                                </div>
-                                <div id="map-squad-shape" class="space-y-2"></div>
+                    <!-- Mobile table panel (below map) -->
+                    <div class="md:hidden mt-5 rounded-3xl border border-gray-200 bg-white shadow-sm">
+                        <div class="p-4 border-b border-gray-100">
+                            <div class="map-table-title text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2.5">All Teams</div>
+                            <div class="flex rounded-xl bg-gray-100 p-0.5 gap-0.5">
+                                <button data-sort="picked" onclick="setMapTableSort('picked')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide bg-white shadow-sm text-gray-900 transition-all">Picked</button>
+                                <button data-sort="points" onclick="setMapTableSort('points')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Points</button>
+                                <button data-sort="goals" onclick="setMapTableSort('goals')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Goals</button>
+                                <button data-sort="matches" onclick="setMapTableSort('matches')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Matches</button>
                             </div>
                         </div>
+                        <div class="map-side-table-content p-2 space-y-0.5"></div>
                     </div>
                 </div>
 

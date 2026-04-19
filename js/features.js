@@ -2725,21 +2725,96 @@ function buildTeamMatchStats(matches) {
 
 function setMapTableSort(sort) {
     _mapTableSort = sort;
-    ['picked', 'points', 'goals', 'matches'].forEach((s) => {
-        const btn = document.getElementById(`map-sort-${s}`);
-        if (!btn) return;
-        btn.classList.toggle('bg-white', s === sort);
-        btn.classList.toggle('shadow-sm', s === sort);
-        btn.classList.toggle('text-gray-900', s === sort);
-        btn.classList.toggle('text-gray-500', s !== sort);
+    document.querySelectorAll('.map-sort-btn').forEach((btn) => {
+        const active = btn.dataset.sort === sort;
+        btn.classList.toggle('bg-white', active);
+        btn.classList.toggle('shadow-sm', active);
+        btn.classList.toggle('text-gray-900', active);
+        btn.classList.toggle('text-gray-500', !active);
     });
     renderMapSideTable();
 }
 
+function _matchResult(m, teamName) {
+    if (m.score_home == null || m.score_away == null) return null;
+    const mult = _STAGE_MULT[m.stage] || 1;
+    const isHome = m.team_home === teamName;
+    const scored = isHome ? +m.score_home : +m.score_away;
+    const conceded = isHome ? +m.score_away : +m.score_home;
+    if (scored > conceded) return { result: 'W', pts: 3 * mult };
+    if (scored === conceded) return { result: 'D', pts: mult };
+    return { result: 'L', pts: 0 };
+}
+
+function _matchRowHtml(m, teamNames, accentColor) {
+    const played = m.score_home != null && m.score_away != null;
+    const homeT = teams.find((t) => t.name === m.team_home);
+    const awayT = teams.find((t) => t.name === m.team_away);
+    const hHighlight = teamNames.has(m.team_home);
+    const aHighlight = teamNames.has(m.team_away);
+
+    const scoreEl = played
+        ? `<span class="text-sm font-black text-gray-900 tabular-nums">${m.score_home}–${m.score_away}</span>`
+        : `<span class="text-[10px] font-black text-gray-400">vs</span>`;
+
+    const dateStr = m.match_date_manual
+        ? new Date(m.match_date_manual + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+        : '';
+
+    // Stage label: for group matches show "Grp X", otherwise stage name
+    const stageLabel = m.stage === 'Group'
+        ? (m.group ? `Grp ${m.group}` : 'Group')
+        : (m.stage || '');
+
+    // Points badges for highlighted teams
+    let ptsHtml = '';
+    if (played) {
+        const badges = [];
+        if (hHighlight) {
+            const r = _matchResult(m, m.team_home);
+            if (r) {
+                const c = r.result === 'W' ? '#16a34a' : r.result === 'D' ? '#9ca3af' : '#ef4444';
+                const ptsLabel = r.pts > 0 ? `+${r.pts}pts` : '—';
+                const prefix = teamNames.size > 1 ? `${m.team_home}: ` : '';
+                badges.push(`<span style="color:${c}" class="text-[9px] font-black">${prefix}${r.result} ${ptsLabel}</span>`);
+            }
+        }
+        if (aHighlight) {
+            const r = _matchResult(m, m.team_away);
+            if (r) {
+                const c = r.result === 'W' ? '#16a34a' : r.result === 'D' ? '#9ca3af' : '#ef4444';
+                const ptsLabel = r.pts > 0 ? `+${r.pts}pts` : '—';
+                const prefix = teamNames.size > 1 ? `${m.team_away}: ` : '';
+                badges.push(`<span style="color:${c}" class="text-[9px] font-black">${prefix}${r.result} ${ptsLabel}</span>`);
+            }
+        }
+        if (badges.length) ptsHtml = `<div class="mt-1 flex flex-wrap gap-x-3 justify-center">${badges.join('')}</div>`;
+    }
+
+    return `
+        <div class="px-2.5 py-2.5 rounded-xl hover:bg-gray-50 transition-colors ${played ? '' : 'border-l-2 border-dashed border-gray-200'}">
+            <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[8px] text-gray-400">${dateStr}</span>
+                <span class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-400">${stageLabel}</span>
+            </div>
+            <div class="flex items-center gap-1">
+                <div class="flex items-center gap-1 flex-1 justify-end min-w-0">
+                    <span class="text-[10px] font-black text-gray-900 truncate">${escapeHtml(m.team_home)}</span>
+                    <span class="shrink-0 text-base leading-none">${homeT?.flag || ''}</span>
+                </div>
+                <div class="shrink-0 w-9 text-center">${scoreEl}</div>
+                <div class="flex items-center gap-1 flex-1 min-w-0">
+                    <span class="shrink-0 text-base leading-none">${awayT?.flag || ''}</span>
+                    <span class="text-[10px] font-black text-gray-900 truncate">${escapeHtml(m.team_away)}</span>
+                </div>
+            </div>
+            ${ptsHtml}
+        </div>`;
+}
+
 function renderMapSideTable() {
-    const el = document.getElementById('map-side-table');
-    const titleEl = document.getElementById('map-table-title');
-    if (!el || !_mapCachedData) return;
+    const containers = document.querySelectorAll('.map-side-table-content');
+    if (!containers.length || !_mapCachedData) return;
 
     const { stats, matchStats, matchRows } = _mapCachedData;
     const accentTokens = getActiveThemeAccentTokens();
@@ -2761,64 +2836,43 @@ function renderMapSideTable() {
         visibleTeams = teams.filter((t) => t.qualified !== false);
     }
 
-    if (titleEl) titleEl.textContent = titleText;
+    document.querySelectorAll('.map-table-title').forEach((el) => { el.textContent = titleText; });
 
     // ── Matches view ─────────────────────────────────────────────────────────
     if (_mapTableSort === 'matches') {
         const teamNames = new Set(visibleTeams.map((t) => t.name));
         if (teamNames.size === 0) {
-            el.innerHTML = '<div class="px-4 py-6 text-center text-[10px] text-gray-400 uppercase font-black tracking-widest">Select a team or group</div>';
+            const msg = '<div class="px-4 py-6 text-center text-[10px] text-gray-400 uppercase font-black tracking-widest">Select a team or group</div>';
+            containers.forEach((el) => { el.innerHTML = msg; });
             return;
         }
-        const relevant = (matchRows || [])
-            .filter((m) => teamNames.has(m.team_home) || teamNames.has(m.team_away))
-            .sort((a, b) => {
-                const aPlayed = a.score_home != null && a.score_away != null;
-                const bPlayed = b.score_home != null && b.score_away != null;
-                const da = a.match_date_manual || '';
-                const db = b.match_date_manual || '';
-                // Upcoming first (ascending), then played (descending)
-                if (!aPlayed && !bPlayed) return da.localeCompare(db);
-                if (aPlayed && bPlayed) return db.localeCompare(da);
-                return aPlayed ? 1 : -1;
-            });
-        if (relevant.length === 0) {
-            el.innerHTML = '<div class="px-4 py-6 text-center text-[10px] text-gray-400 uppercase font-black tracking-widest">No matches</div>';
+        const all = (matchRows || []).filter((m) => teamNames.has(m.team_home) || teamNames.has(m.team_away));
+        const upcoming = all
+            .filter((m) => m.score_home == null || m.score_away == null)
+            .sort((a, b) => (a.match_date_manual || '').localeCompare(b.match_date_manual || ''))
+            .slice(0, 3);
+        const previous = all
+            .filter((m) => m.score_home != null && m.score_away != null)
+            .sort((a, b) => (b.match_date_manual || '').localeCompare(a.match_date_manual || ''));
+
+        if (!all.length) {
+            containers.forEach((el) => { el.innerHTML = '<div class="px-4 py-6 text-center text-[10px] text-gray-400 uppercase font-black tracking-widest">No matches</div>'; });
             return;
         }
-        el.innerHTML = relevant.map((m) => {
-            const played = m.score_home != null && m.score_away != null;
-            const homeT = teams.find((t) => t.name === m.team_home);
-            const awayT = teams.find((t) => t.name === m.team_away);
-            const hHighlight = teamNames.has(m.team_home);
-            const aHighlight = teamNames.has(m.team_away);
-            const scoreEl = played
-                ? `<span class="text-sm font-black text-gray-900 tabular-nums">${m.score_home}–${m.score_away}</span>`
-                : `<span class="text-[10px] font-black text-gray-400">vs</span>`;
-            const dateStr = m.match_date_manual
-                ? new Date(m.match_date_manual + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-                : '';
-            const hColor = hHighlight ? `color:${accentColor}` : 'color:#111827';
-            const aColor = aHighlight ? `color:${accentColor}` : 'color:#111827';
-            return `
-                <div class="px-2.5 py-2.5 rounded-xl hover:bg-gray-50 transition-colors ${played ? '' : 'border-l-2 border-dashed border-gray-200'}">
-                    <div class="flex items-center justify-between mb-1.5">
-                        <span class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-400">${m.stage || ''}</span>
-                        <span class="text-[8px] text-gray-400">${dateStr}</span>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <div class="flex items-center gap-1 flex-1 justify-end min-w-0">
-                            <span class="text-[10px] font-black truncate" style="${hColor}">${escapeHtml(m.team_home)}</span>
-                            <span class="shrink-0 text-base leading-none">${homeT?.flag || ''}</span>
-                        </div>
-                        <div class="shrink-0 w-9 text-center">${scoreEl}</div>
-                        <div class="flex items-center gap-1 flex-1 min-w-0">
-                            <span class="shrink-0 text-base leading-none">${awayT?.flag || ''}</span>
-                            <span class="text-[10px] font-black truncate" style="${aColor}">${escapeHtml(m.team_away)}</span>
-                        </div>
-                    </div>
-                </div>`;
-        }).join('');
+
+        const sectionHeader = (label) =>
+            `<div class="px-2.5 pt-3 pb-1 text-[8px] font-black uppercase tracking-[0.25em] text-gray-400 border-b border-gray-100">${label}</div>`;
+
+        let html = '';
+        if (upcoming.length) {
+            html += sectionHeader(`Upcoming · Next ${upcoming.length}`);
+            html += upcoming.map((m) => _matchRowHtml(m, teamNames, accentColor)).join('');
+        }
+        if (previous.length) {
+            html += sectionHeader('Previous');
+            html += previous.map((m) => _matchRowHtml(m, teamNames, accentColor)).join('');
+        }
+        containers.forEach((el) => { el.innerHTML = html; });
         return;
     }
 
@@ -2840,7 +2894,7 @@ function renderMapSideTable() {
     const maxVal = Math.max(1, ...rows.map((r) => r[_mapTableSort]));
     const tierColors = { 1: 'text-yellow-600', 2: 'text-blue-500', 3: 'text-gray-400' };
 
-    el.innerHTML = rows.map((row, i) => {
+    const html = rows.map((row, i) => {
         const val = row[_mapTableSort];
         const barW = Math.max(3, Math.round((val / maxVal) * 100));
         const label = _mapTableSort === 'picked' ? `${val}%` : `${val}`;
@@ -2867,6 +2921,7 @@ function renderMapSideTable() {
                 </div>
             </div>`;
     }).join('') || '<div class="px-4 py-6 text-center text-[10px] text-gray-400 uppercase font-black tracking-widest">No data</div>';
+    containers.forEach((el) => { el.innerHTML = html; });
 }
 
 const GROUP_COLORS = {
@@ -3255,86 +3310,9 @@ function renderChoroplethMap(stats, worldData) {
         .attr('stroke', BORDER)
         .attr('stroke-width', 0.4);
 
-    renderMapBottomStats(stats);
     renderMapSideTable();
 }
 
-function renderMapBottomStats(stats) {
-    const { sortedCountryCounts, groupDensityEntries, maxGroupCount, rosterDensityEntries } = stats;
-    const accentTokens = getActiveThemeAccentTokens();
-
-    // ── Left: Full ownership ranking ──────────────────────────────────────────
-    const rankingEl = document.getElementById('map-ownership-ranking');
-    if (rankingEl) {
-        const allQualified = teams
-            .filter((t) => t.qualified !== false)
-            .map((t) => {
-                const entry = sortedCountryCounts.find((e) => e.teamName === t.name);
-                return { team: t, pct: entry?.percentage || 0, pickedCount: entry?.pickedCount || 0 };
-            })
-            .sort((a, b) => b.pct - a.pct || a.team.name.localeCompare(b.team.name));
-
-        const maxPct = Math.max(1, ...allQualified.map((r) => r.pct));
-        const tierColors = { 1: 'bg-yellow-100 text-yellow-700', 2: 'bg-blue-100 text-blue-700', 3: 'bg-gray-100 text-gray-600' };
-
-        rankingEl.innerHTML = allQualified.slice(0, 10).map((row) => `
-            <div onclick="showTeamOwners('${row.team.name.replace(/'/g, "\\'")}')"
-                 class="flex items-center gap-3 rounded-xl px-2 py-1.5 cursor-pointer hover:bg-gray-50 transition-colors">
-                <span class="text-xl leading-none w-7 text-center">${row.team.flag}</span>
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-1.5 mb-1">
-                        <span class="text-[11px] font-black uppercase text-gray-900 truncate">${escapeHtml(row.team.name)}</span>
-                        <span class="shrink-0 text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${tierColors[row.team.tier] || tierColors[3]}">T${row.team.tier}</span>
-                    </div>
-                    <div class="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                        <div class="h-full rounded-full transition-all" style="width:${Math.max(2, Math.round((row.pct / maxPct) * 100))}%; background:${accentTokens.primary};"></div>
-                    </div>
-                </div>
-                <div class="text-right shrink-0 min-w-[40px]">
-                    <div class="text-sm font-black text-gray-900">${row.pct}%</div>
-                    <div class="text-[9px] text-gray-400">${row.pickedCount}</div>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    // ── Right top: Group heat grid (4×3) ──────────────────────────────────────
-    const groupHeatEl = document.getElementById('map-group-heat');
-    if (groupHeatEl) {
-        const maxCount = Math.max(1, maxGroupCount);
-        groupHeatEl.innerHTML = groupDensityEntries.map((g) => {
-            const intensity = g.count / maxCount;
-            const bg = `rgba(${hexToRgb(accentTokens.primary).r},${hexToRgb(accentTokens.primary).g},${hexToRgb(accentTokens.primary).b},${(0.1 + intensity * 0.85).toFixed(2)})`;
-            const textColor = intensity > 0.55 ? 'text-white' : 'text-gray-700';
-            return `
-                <div data-group-heat="${g.group}" onclick="selectMapGroup('${g.group}')"
-                     class="rounded-xl p-2.5 text-center cursor-pointer transition-all hover:brightness-110" style="background:${bg};">
-                    <div class="text-[10px] font-black uppercase tracking-[0.15em] ${textColor} opacity-80">Grp</div>
-                    <div class="text-lg font-black ${textColor}">${g.group}</div>
-                    <div class="text-[10px] font-bold ${textColor} opacity-80">${g.count}</div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    // ── Right bottom: Squad shape ──────────────────────────────────────────────
-    const squadShapeEl = document.getElementById('map-squad-shape');
-    if (squadShapeEl) {
-        const maxCount = Math.max(1, ...rosterDensityEntries.map((e) => e.count));
-        squadShapeEl.innerHTML = rosterDensityEntries.map((entry) => {
-            const w = Math.max(6, Math.round((entry.count / maxCount) * 100));
-            return `
-                <div class="flex items-center gap-3">
-                    <div class="w-14 text-right text-[11px] font-black text-gray-700 shrink-0">${entry.size} picks</div>
-                    <div class="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
-                        <div class="h-full rounded-full" style="width:${w}%; background:${accentTokens.primary};"></div>
-                    </div>
-                    <div class="w-8 text-left text-[11px] font-black text-gray-900 shrink-0">${entry.count}</div>
-                </div>
-            `;
-        }).join('') || '<div class="text-[10px] text-gray-400">No data yet.</div>';
-    }
-}
 
 function buildAdvancementGroupsMarkup() {
     return ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'].map((group) => {
