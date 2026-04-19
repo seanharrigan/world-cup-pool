@@ -55,16 +55,16 @@ const PLAYER_CHIP_DEFINITIONS = {
 
 const PLAYER_CHIP_TONE_CLASSES = {
     positive: {
-        row: 'bg-green-100 text-green-700 border border-green-400',
-        card: 'bg-green-100 text-green-700 border border-green-400'
+        row: 'bg-green-100 border-2 border-green-600',
+        card: 'bg-green-100 text-green-800 border-2 border-green-600'
     },
     negative: {
-        row: 'bg-red-100 text-red-700 border border-red-400',
-        card: 'bg-red-100 text-red-700 border border-red-400'
+        row: 'bg-red-100 border-2 border-red-600',
+        card: 'bg-red-100 text-red-800 border-2 border-red-600'
     },
     neutral: {
-        row: 'bg-sky-100 text-sky-700 border border-sky-400',
-        card: 'bg-sky-100 text-sky-700 border border-sky-400'
+        row: 'bg-sky-100 border-2 border-sky-600',
+        card: 'bg-sky-100 text-sky-800 border-2 border-sky-600'
     }
 };
 
@@ -3975,9 +3975,9 @@ function _renderChipsDetail(email) {
     const label = isMe ? 'Your Chips' : `${nickname}'s Chips`;
 
     const toneStyle = {
-        positive: 'bg-green-500/15 border-green-500/50 text-green-300',
-        negative: 'bg-red-500/15 border-red-500/50 text-red-300',
-        neutral: 'bg-sky-500/15 border-sky-500/50 text-sky-300'
+        positive: 'bg-green-500/15 border-green-500/60 text-green-300',
+        negative: 'bg-red-500/15 border-red-500/60 text-red-300',
+        neutral: 'bg-sky-500/15 border-sky-500/60 text-sky-300'
     };
 
     body.innerHTML = `
@@ -3987,8 +3987,8 @@ function _renderChipsDetail(email) {
             : `<div class="space-y-2">
                 ${chips.map((chip) => {
                     const cls = toneStyle[chip.tone] || toneStyle.neutral;
-                    return `<div class="rounded-xl border px-4 py-3 flex items-center gap-3 ${cls}">
-                        <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-2xl ${cls.includes('green') ? 'border-green-400' : cls.includes('red') ? 'border-red-400' : 'border-sky-400'}">${chip.emoji}</span>
+                    return `<div class="rounded-xl border-2 px-4 py-3 flex items-center gap-3 ${cls}">
+                        <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-2xl ${cls.includes('green') ? 'bg-green-100 border-green-600' : cls.includes('red') ? 'bg-red-100 border-red-600' : 'bg-sky-100 border-sky-600'}">${chip.emoji}</span>
                         <div>
                             <div class="text-sm font-black">${escapeHtml(chip.label)}</div>
                             <div class="text-[11px] opacity-75 mt-0.5">${escapeHtml(chip.description)}</div>
@@ -4288,18 +4288,20 @@ async function setupDashboard() {
                 ? `${match.score_home}–${match.score_away}`
                 : 'TBD';
             const ptsLabel = match.is_finished ? buildPointsAwardedLabel(match) : '';
+            const safeHome = match.team_home.replace(/'/g, "\\'");
+            const safeAway = match.team_away.replace(/'/g, "\\'");
 
             return `
-                <div class="py-2.5 border-b border-gray-100 last:border-0">
-                    <div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-400 text-center mb-1.5">${stageLabel}${ptsLabel ? ` · ${ptsLabel}` : ''}</div>
-                    <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1">
+                <div class="py-3 border-b border-gray-100 last:border-0">
+                    <div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-400 text-center mb-2">${stageLabel}${ptsLabel ? ` · ${ptsLabel}` : ''}</div>
+                    <div class="grid grid-cols-[minmax(0,1fr)_2rem_minmax(0,1fr)] items-center gap-3">
                         <div class="min-w-0 text-right">
-                            <div class="truncate text-[11px] font-black text-gray-900 ${isHomeMine ? 'underline underline-offset-2' : ''}">${homeTeam?.flag || ''} ${escapeHtml(match.team_home)}</div>
+                            <div onclick="showTeamOwners('${safeHome}')" class="truncate text-xs font-black text-gray-900 cursor-pointer hover:opacity-70 transition-opacity">${isHomeMine ? '★ ' : ''}${homeTeam?.flag || ''} ${escapeHtml(match.team_home)}</div>
                             ${ownershipMarkup(match.team_home, 'right')}
                         </div>
-                        <div class="shrink-0 w-10 text-sm font-black text-gray-900 text-center tabular-nums">${scoreMarkup}</div>
+                        <div class="shrink-0 text-sm font-black text-gray-900 text-center tabular-nums">${scoreMarkup}</div>
                         <div class="min-w-0 text-left">
-                            <div class="truncate text-[11px] font-black text-gray-900 ${isAwayMine ? 'underline underline-offset-2' : ''}">${escapeHtml(match.team_away)} ${awayTeam?.flag || ''}</div>
+                            <div onclick="showTeamOwners('${safeAway}')" class="truncate text-xs font-black text-gray-900 cursor-pointer hover:opacity-70 transition-opacity">${escapeHtml(match.team_away)} ${awayTeam?.flag || ''}${isAwayMine ? ' ★' : ''}</div>
                             ${ownershipMarkup(match.team_away, 'left')}
                         </div>
                     </div>
@@ -6163,9 +6165,9 @@ function renderPlayerChips(chips = [], email = '', variant = 'row', scopeId = ''
                     return `<button type="button"
                         title="${escapeHtml(`${chip.label} — ${chip.description}`)}"
                         onclick="showPlayerChipInfo('${chip.id}', '${safeEmail}', event)"
-                        class="inline-flex h-6 min-w-[24px] items-center justify-center rounded-full px-1.5 text-xs font-black ${toneClasses} transition-transform hover:scale-105">${chip.emoji}</button>`;
+                        class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${toneClasses} transition-transform hover:scale-110 shrink-0">${chip.emoji}</button>`;
                 }).join('')}
-                ${overflowCount > 0 ? `<span class="inline-flex h-6 items-center justify-center rounded-full bg-gray-200 px-2 text-[10px] font-black uppercase tracking-[0.08em] text-gray-600">+${overflowCount}</span>` : ''}
+                ${overflowCount > 0 ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 border-2 border-gray-400 text-[10px] font-black text-gray-600">+${overflowCount}</span>` : ''}
             </div>
         `;
     }
@@ -6178,7 +6180,10 @@ function renderPlayerChips(chips = [], email = '', variant = 'row', scopeId = ''
                 return `<button type="button"
                     title="${escapeHtml(`${chip.label} — ${chip.description}`)}"
                     onclick="togglePlayerChipInline('${safeScopeId}', '${chip.id}', '${safeEmail}', event)"
-                    class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black uppercase tracking-[0.08em] ${toneClasses} transition-transform hover:scale-[1.02]">${chip.emoji} <span>${escapeHtml(chip.label)}</span></button>`;
+                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-black uppercase tracking-[0.08em] ${toneClasses} transition-transform hover:scale-[1.02]">
+                    <span class="text-sm">${chip.emoji}</span>
+                    <span>${escapeHtml(chip.label)}</span>
+                </button>`;
             }).join('')}
             </div>
             <div id="${escapeHtml(scopeId)}-chip-inline" class="chip-inline-panel"></div>
