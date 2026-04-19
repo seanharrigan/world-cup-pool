@@ -2061,7 +2061,7 @@ function syncMapPanelHeight() {
     const mapCard = document.getElementById('map-aspect-card');
     const leftPanel = document.getElementById('map-left-panel');
     if (!mapCard || !leftPanel) return;
-    const h = mapCard.getBoundingClientRect().height;
+    const h = mapCard.getBoundingClientRect().bottom - leftPanel.getBoundingClientRect().top;
     if (h > 0) leftPanel.style.height = h + 'px';
 }
 
