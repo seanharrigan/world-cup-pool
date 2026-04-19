@@ -3641,6 +3641,7 @@ async function toggleTeamElimination(teamName, checked) {
 
 let _dashMatchCache = null;
 let _dashMatchMode = 'squad';
+let _dashRankingsSort = { col: 'fifaRank', dir: 'asc' };
 let _dashReportRanked = null;
 let _dashReportSelectedEmail = null;
 let _dashChipsPlayerList = null;
@@ -4052,27 +4053,84 @@ function renderDashMatchesTab() {
     nextBody.innerHTML = data.nextHtml || emptyNext;
 }
 
+function setDashRankingsSort(col) {
+    const defaultDir = { fifaRank: 'asc', name: 'asc', cost: 'desc', tier: 'asc', winProb: 'desc', dk: 'asc', espn: 'asc' };
+    if (_dashRankingsSort.col === col) {
+        _dashRankingsSort.dir = _dashRankingsSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+        _dashRankingsSort = { col, dir: defaultDir[col] || 'asc' };
+    }
+    renderDashRankingsTab();
+}
+
 function renderDashRankingsTab() {
     const body = document.getElementById('dash-rankings-body');
     if (!body) return;
-    const sorted = [...teams]
-        .filter((t) => t.name in TEAM_REPORT_DATA)
-        .sort((a, b) => (TEAM_REPORT_DATA[a.name].fifaRank || 999) - (TEAM_REPORT_DATA[b.name].fifaRank || 999));
-    const tierLabel = { 1: 'T1', 2: 'T2', 3: 'T3' };
-    const tierColor = { 1: 'bg-amber-100 text-amber-700', 2: 'bg-blue-100 text-blue-600', 3: 'bg-gray-100 text-gray-500' };
-    body.innerHTML = `<div class="space-y-1">
-        ${sorted.map((t) => {
-            const d = TEAM_REPORT_DATA[t.name];
-            const tCls = tierColor[t.tier] || tierColor[3];
-            return `<div class="flex items-center gap-2 py-1.5 border-b border-gray-50">
-                <div class="text-[10px] font-black text-gray-300 w-5 text-right shrink-0">#${d.fifaRank}</div>
-                <span class="text-base shrink-0">${t.flag}</span>
-                <div class="flex-1 text-xs font-black text-gray-800 truncate">${escapeHtml(t.name)}</div>
-                <span class="text-[9px] font-black px-1.5 py-0.5 rounded-full ${tCls} shrink-0">${tierLabel[t.tier]}</span>
-                <div class="text-[10px] font-black text-gray-500 shrink-0 w-16 text-right">${d.winProb.toFixed(2)}% win</div>
-            </div>`;
-        }).join('')}
-    </div>`;
+
+    const { col, dir } = _dashRankingsSort;
+    const mult = dir === 'asc' ? 1 : -1;
+
+    const rows = [...teams]
+        .filter((t) => TEAM_REPORT_DATA[t.name])
+        .map((t) => ({ t, d: TEAM_REPORT_DATA[t.name] }))
+        .sort((a, b) => {
+            let va, vb;
+            if (col === 'name')     { va = a.t.name; vb = b.t.name; return va.localeCompare(vb) * mult; }
+            if (col === 'fifaRank') { va = a.d.fifaRank || 999; vb = b.d.fifaRank || 999; }
+            else if (col === 'cost')    { va = a.t.cost; vb = b.t.cost; }
+            else if (col === 'tier')    { va = a.t.tier; vb = b.t.tier; }
+            else if (col === 'winProb') { va = a.d.winProb; vb = b.d.winProb; }
+            else if (col === 'dk')      { va = a.d.dk || 999999; vb = b.d.dk || 999999; }
+            else if (col === 'espn')    { va = a.d.espn || 999999; vb = b.d.espn || 999999; }
+            else { va = 0; vb = 0; }
+            return (va - vb) * mult;
+        });
+
+    const tierBadge = (tier) => {
+        const cls = tier === 1 ? 'bg-amber-100 text-amber-700' : tier === 2 ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500';
+        return `<span class="text-[8px] font-black px-1 py-0.5 rounded-full ${cls}">T${tier}</span>`;
+    };
+
+    const arrow = (c) => {
+        if (_dashRankingsSort.col !== c) return `<span class="text-gray-300 ml-0.5">↕</span>`;
+        return `<span class="ml-0.5">${_dashRankingsSort.dir === 'asc' ? '↑' : '↓'}</span>`;
+    };
+
+    const th = (c, label, align = 'right') =>
+        `<th class="text-[8px] font-black uppercase tracking-[0.12em] text-gray-400 cursor-pointer hover:text-gray-700 select-none pb-2 ${align === 'left' ? 'text-left' : 'text-right'}" onclick="setDashRankingsSort('${c}')">${label}${arrow(c)}</th>`;
+
+    body.innerHTML = `
+        <table class="w-full border-collapse">
+            <thead class="sticky top-0 bg-white z-10">
+                <tr>
+                    ${th('fifaRank', '#')}
+                    ${th('name', 'Country', 'left')}
+                    ${th('cost', '$')}
+                    ${th('tier', 'T')}
+                    ${th('winProb', 'Win%')}
+                    ${th('dk', 'DK')}
+                    ${th('espn', 'ESPN')}
+                </tr>
+                <tr><td colspan="7" class="pb-1"><div class="h-px bg-gray-100"></div></td></tr>
+            </thead>
+            <tbody>
+                ${rows.map(({ t, d }) => `
+                    <tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors" onclick="showTeamOwners('${t.name.replace(/'/g, "\\'")}')">
+                        <td class="py-1.5 text-[10px] font-black text-gray-300 text-right pr-2 tabular-nums">${d.fifaRank}</td>
+                        <td class="py-1.5 min-w-0 max-w-0">
+                            <div class="flex items-center gap-1">
+                                <span class="shrink-0">${t.flag}</span>
+                                <span class="text-[10px] font-black text-gray-900 truncate">${escapeHtml(t.name)}</span>
+                            </div>
+                        </td>
+                        <td class="py-1.5 text-[10px] font-black text-gray-600 text-right pr-2 tabular-nums">$${t.cost}</td>
+                        <td class="py-1.5 text-center">${tierBadge(t.tier)}</td>
+                        <td class="py-1.5 text-[10px] font-black text-gray-600 text-right pr-1 tabular-nums">${d.winProb.toFixed(1)}%</td>
+                        <td class="py-1.5 text-[10px] text-gray-500 text-right pr-1 tabular-nums">+${(d.dk / 100).toFixed(0)}k</td>
+                        <td class="py-1.5 text-[10px] text-gray-500 text-right tabular-nums">+${(d.espn / 100).toFixed(0)}k</td>
+                    </tr>`).join('')}
+            </tbody>
+        </table>`;
 }
 
 function renderDashGroupsTab() {
@@ -7969,6 +8027,7 @@ Object.assign(window, {
     showResultsTab,
     setupDashboard,
     setDashRightTab,
+    setDashRankingsSort,
     setDashMatchMode,
     showDashPointsModal,
     closeDashPointsModal,
