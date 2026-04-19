@@ -456,6 +456,109 @@ function renderTopNavFavoriteTheme(currentProfile) {
     }
 }
 
+// ── Team Report Card Data ─────────────────────────────────────────────────────
+// winProb: avg implied win% from DraftKings + ESPN/bet365 + BetMGM (Apr 2026)
+// fifaRank: official FIFA ranking, April 1 2026 update
+// dk/espn/betmgm: American odds (+xxx). betmgm null where only top-15 published.
+// Sources: draftkings.com, espn.com/espn/betting, betmgm.com
+
+const TEAM_REPORT_DATA = {
+    'Spain':        { winProb: 18.18, fifaRank: 2,  dk: 450,    espn: 450,    betmgm: 450   },
+    'France':       { winProb: 15.02, fifaRank: 1,  dk: 600,    espn: 550,    betmgm: 550   },
+    'England':      { winProb: 13.33, fifaRank: 4,  dk: 650,    espn: 650,    betmgm: 650   },
+    'Brazil':       { winProb: 10.72, fifaRank: 6,  dk: 850,    espn: 850,    betmgm: 800   },
+    'Argentina':    { winProb: 10.72, fifaRank: 3,  dk: 850,    espn: 850,    betmgm: 800   },
+    'Portugal':     { winProb: 8.37,  fifaRank: 5,  dk: 1200,   espn: 1100,   betmgm: 1000  },
+    'Germany':      { winProb: 6.67,  fifaRank: 10, dk: 1400,   espn: 1400,   betmgm: 1400  },
+    'Netherlands':  { winProb: 4.62,  fifaRank: 7,  dk: 2200,   espn: 2000,   betmgm: 2000  },
+    'Norway':       { winProb: 3.51,  fifaRank: 31, dk: 3000,   espn: 2800,   betmgm: 2500  },
+    'Belgium':      { winProb: 2.83,  fifaRank: 9,  dk: 3500,   espn: 3500,   betmgm: 3300  },
+    'Colombia':     { winProb: 2.28,  fifaRank: 13, dk: 5000,   espn: 4000,   betmgm: 4000  },
+    'Morocco':      { winProb: 1.57,  fifaRank: 8,  dk: 6600,   espn: 6000,   betmgm: null  },
+    'USA':          { winProb: 1.83,  fifaRank: 16, dk: 6500,   espn: 6500,   betmgm: 4000  },
+    'Japan':        { winProb: 1.75,  fifaRank: 18, dk: 7500,   espn: 5000,   betmgm: 5000  },
+    'Mexico':       { winProb: 1.38,  fifaRank: 15, dk: 8000,   espn: 7000,   betmgm: 6600  },
+    'Switzerland':  { winProb: 0.99,  fifaRank: 19, dk: 10000,  espn: 10000,  betmgm: null  },
+    'Uruguay':      { winProb: 1.57,  fifaRank: 17, dk: 8000,   espn: 6500,   betmgm: 5000  },
+    'Ecuador':      { winProb: 1.11,  fifaRank: 23, dk: 10000,  espn: 8000,   betmgm: null  },
+    'Croatia':      { winProb: 1.04,  fifaRank: 11, dk: 10000,  espn: 9000,   betmgm: null  },
+    'Austria':      { winProb: 0.83,  fifaRank: 24, dk: 15000,  espn: 10000,  betmgm: null  },
+    'Senegal':      { winProb: 0.89,  fifaRank: 14, dk: 12500,  espn: 10000,  betmgm: null  },
+    'Turkiye':      { winProb: 1.25,  fifaRank: 22, dk: 10000,  espn: 6500,   betmgm: null  },
+    'Sweden':       { winProb: 0.95,  fifaRank: 38, dk: 15000,  espn: 8000,   betmgm: null  },
+    'Bosnia':       { winProb: 0.40,  fifaRank: 65, dk: 25000,  espn: 25000,  betmgm: null  },
+    'Canada':       { winProb: 0.50,  fifaRank: 30, dk: 20000,  espn: 20000,  betmgm: null  },
+    'Paraguay':     { winProb: 0.50,  fifaRank: 40, dk: 20000,  espn: 20000,  betmgm: null  },
+    'Scotland':     { winProb: 0.45,  fifaRank: 43, dk: 25000,  espn: 20000,  betmgm: null  },
+    'Egypt':        { winProb: 0.33,  fifaRank: 29, dk: 30000,  espn: 30000,  betmgm: null  },
+    'Czechia':      { winProb: 0.50,  fifaRank: 41, dk: 30000,  espn: 15000,  betmgm: null  },
+    'Ivory Coast':  { winProb: 0.37,  fifaRank: 34, dk: 30000,  espn: 25000,  betmgm: null  },
+    'Algeria':      { winProb: 0.27,  fifaRank: 28, dk: 40000,  espn: 35000,  betmgm: null  },
+    'Ghana':        { winProb: 0.27,  fifaRank: 74, dk: 40000,  espn: 35000,  betmgm: null  },
+    'Australia':    { winProb: 0.21,  fifaRank: 27, dk: 50000,  espn: 45000,  betmgm: null  },
+    'Tunisia':      { winProb: 0.20,  fifaRank: 44, dk: 50000,  espn: 50000,  betmgm: null  },
+    'Iran':         { winProb: 0.27,  fifaRank: 21, dk: 50000,  espn: 30000,  betmgm: null  },
+    'South Korea':  { winProb: 0.24,  fifaRank: 25, dk: 50000,  espn: 35000,  betmgm: null  },
+    'DR Congo':     { winProb: 0.14,  fifaRank: 46, dk: 75000,  espn: 70000,  betmgm: null  },
+    'Qatar':        { winProb: 0.10,  fifaRank: 55, dk: 100000, espn: 100000, betmgm: null  },
+    'South Africa': { winProb: 0.11,  fifaRank: 60, dk: 100000, espn: 80000,  betmgm: null  },
+    'Saudi Arabia': { winProb: 0.10,  fifaRank: 61, dk: 100000, espn: 100000, betmgm: null  },
+    'Panama':       { winProb: 0.08,  fifaRank: 33, dk: 150000, espn: 100000, betmgm: null  },
+    'New Zealand':  { winProb: 0.07,  fifaRank: 85, dk: 200000, espn: 100000, betmgm: null  },
+    'Iraq':         { winProb: 0.08,  fifaRank: 57, dk: 150000, espn: 100000, betmgm: null  },
+    'Cape Verde':   { winProb: 0.07,  fifaRank: 69, dk: 200000, espn: 100000, betmgm: null  },
+    'Uzbekistan':   { winProb: 0.06,  fifaRank: 50, dk: 200000, espn: 150000, betmgm: null  },
+    'Curacao':      { winProb: 0.05,  fifaRank: 82, dk: 250000, espn: 150000, betmgm: null  },
+    'Jordan':       { winProb: 0.05,  fifaRank: 63, dk: 250000, espn: 150000, betmgm: null  },
+    'Haiti':        { winProb: 0.05,  fifaRank: 83, dk: 300000, espn: 150000, betmgm: null  },
+};
+
+function _computeReportCard(squad) {
+    if (!squad || squad.length === 0) return null;
+
+    const squadData = squad.map((team) => {
+        const d = TEAM_REPORT_DATA[team.name] || {};
+        const winProb = d.winProb || 0;
+        const cost = team.cost || 1;
+        const valueRatio = winProb / cost;
+        const fifaRank = d.fifaRank || 90;
+        const rankScore = Math.max(0, Math.round((1 - (fifaRank - 1) / 89) * 100));
+        return { ...team, winProb, valueRatio, fifaRank, rankScore, data: d };
+    });
+
+    const avgValue = squadData.reduce((s, t) => s + t.valueRatio, 0) / squadData.length;
+    const avgRank = squadData.reduce((s, t) => s + t.rankScore, 0) / squadData.length;
+
+    // Normalise value (Spain = 18.18/50 = 0.3636 is theoretical max for a single pick)
+    const valueNorm = Math.min(avgValue / 0.3636 * 100, 100);
+
+    // Balance: reward tier diversity and required Tier 3 depth
+    const tier3Count = squad.filter((t) => t.tier === 3).length;
+    const tier1Count = squad.filter((t) => t.tier === 1).length;
+    const balanceScore = Math.min(
+        (tier3Count >= 3 ? 40 : tier3Count * 10) +
+        (tier1Count === 1 ? 35 : tier1Count === 0 ? 25 : 10) +
+        (squad.length === 8 ? 25 : squad.length * 3),
+        100
+    );
+
+    const total = valueNorm * 0.4 + avgRank * 0.3 + balanceScore * 0.3;
+
+    const grades = [
+        [78, 'A+', 'Scouting genius — the bookies can\'t hide value from you.'],
+        [68, 'A',  'Sharp picks. Strong odds awareness throughout.'],
+        [58, 'B+', 'Solid squad — you know what you\'re doing.'],
+        [48, 'B',  'Good mix. A couple of picks really stand out.'],
+        [38, 'C+', 'Decent effort. Some value, some faith-based selections.'],
+        [28, 'C',  'Respectable. The mid-table manager.'],
+        [15, 'D',  'Brave choices. The market disagrees, but you might be right.'],
+        [0,  'F',  'Pure heart, zero stats. Good luck — you\'ll need it.'],
+    ];
+    const [, grade, tagline] = grades.find(([threshold]) => total >= threshold) || grades[grades.length - 1];
+
+    return { grade, total, valueNorm, avgRank, balanceScore, squadData, tagline };
+}
+
 // ── 2026 World Cup Group Stage Schedule ──────────────────────────────────────
 // All 72 group stage matches. Dates are "YYYY-MM-DD". Teams match the names in
 // the global `teams` array exactly so flag lookups work automatically.
@@ -3569,6 +3672,101 @@ function closeDashRankModal() {
     modal.classList.remove('flex');
 }
 
+function showDashReportCard() {
+    const modal = document.getElementById('dash-report-modal');
+    const body = document.getElementById('dash-report-modal-body');
+    if (!modal || !body) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    const rc = window._dashReportCard;
+    if (!rc) {
+        body.innerHTML = '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 text-center py-6">Save your picks first to generate a report card.</div>';
+        return;
+    }
+
+    const gradeColor = { 'A+': '#22c55e', A: '#4ade80', 'B+': '#86efac', B: '#bef264', 'C+': '#facc15', C: '#fb923c', D: '#f87171', F: '#ef4444' };
+    const color = gradeColor[rc.grade] || '#9ca3af';
+
+    const bar = (pct, col) => `<div class="h-2 rounded-full overflow-hidden bg-gray-800"><div class="h-full rounded-full transition-all" style="width:${Math.round(pct)}%;background-color:${col};"></div></div>`;
+
+    const oddsStr = (d) => {
+        const parts = [];
+        if (d.dk)     parts.push(`<a href="https://sportsbook.draftkings.com/leagues/soccer/world-cup-2026" target="_blank" class="text-blue-400 hover:underline">DK +${d.dk.toLocaleString()}</a>`);
+        if (d.espn)   parts.push(`<a href="https://www.espn.com/espn/betting/story/_/id/48386952" target="_blank" class="text-blue-400 hover:underline">ESPN +${d.espn.toLocaleString()}</a>`);
+        if (d.betmgm) parts.push(`<a href="https://sports.betmgm.com/en/blog/world-cup/fifa-world-cup-odds-to-win-bm16/" target="_blank" class="text-blue-400 hover:underline">MGM +${d.betmgm.toLocaleString()}</a>`);
+        return parts.join('<span class="text-gray-600 mx-1">·</span>');
+    };
+
+    body.innerHTML = `
+        <div class="flex items-center gap-5 mb-6">
+            <div class="text-7xl font-black italic shrink-0" style="color:${color};">${rc.grade}</div>
+            <div>
+                <div class="text-white text-sm font-black uppercase tracking-[0.1em]">${rc.tagline}</div>
+                <div class="text-gray-500 text-[10px] font-black uppercase tracking-[0.18em] mt-1">Score: ${Math.round(rc.total)}/100</div>
+            </div>
+        </div>
+
+        <div class="space-y-3 mb-6">
+            <div>
+                <div class="flex justify-between mb-1"><span class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Odds Value</span><span class="text-[9px] font-black text-gray-400">${Math.round(rc.valueNorm)}/100</span></div>
+                ${bar(rc.valueNorm, '#60a5fa')}
+            </div>
+            <div>
+                <div class="flex justify-between mb-1"><span class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">FIFA Rankings</span><span class="text-[9px] font-black text-gray-400">${Math.round(rc.avgRank)}/100</span></div>
+                ${bar(rc.avgRank, '#a78bfa')}
+            </div>
+            <div>
+                <div class="flex justify-between mb-1"><span class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Squad Balance</span><span class="text-[9px] font-black text-gray-400">${Math.round(rc.balanceScore)}/100</span></div>
+                ${bar(rc.balanceScore, '#34d399')}
+            </div>
+        </div>
+
+        <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 mb-2">Your Picks</div>
+        <div class="space-y-2">
+            ${rc.squadData.sort((a, b) => b.winProb - a.winProb).map((t) => {
+                const val = t.valueRatio / 0.3636 * 100;
+                const valColor = val >= 50 ? '#34d399' : val >= 25 ? '#facc15' : '#f87171';
+                return `
+                <div class="rounded-xl border border-gray-800 bg-gray-800 px-3 py-2.5 ${t.eliminated ? 'opacity-40' : ''}">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-base">${t.flag || ''}</span>
+                            <div>
+                                <div class="text-[11px] font-black uppercase text-white">${escapeHtml(t.name)}</div>
+                                <div class="text-[9px] text-gray-500">FIFA #${t.fifaRank}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-[10px] font-black" style="color:${valColor};">${t.winProb.toFixed(2)}% win</div>
+                            <div class="text-[9px] text-gray-500">$${t.cost} cost</div>
+                        </div>
+                    </div>
+                    <div class="text-[9px] text-gray-600 leading-relaxed">${oddsStr(t.data)}</div>
+                </div>`;
+            }).join('')}
+        </div>
+
+        <div class="mt-5 pt-4 border-t border-gray-800 text-[9px] text-gray-600 space-y-1">
+            <div class="font-black uppercase tracking-[0.15em] text-gray-500 mb-2">Sources</div>
+            <div><a href="https://sportsbook.draftkings.com/leagues/soccer/world-cup-2026" target="_blank" class="text-blue-500 hover:underline">DraftKings Sportsbook</a> · <a href="https://www.espn.com/espn/betting/story/_/id/48386952" target="_blank" class="text-blue-500 hover:underline">ESPN/bet365</a> · <a href="https://sports.betmgm.com/en/blog/world-cup/fifa-world-cup-odds-to-win-bm16/" target="_blank" class="text-blue-500 hover:underline">BetMGM</a></div>
+            <div><a href="https://inside.fifa.com/fifa-world-ranking/men" target="_blank" class="text-blue-500 hover:underline">FIFA World Rankings (April 2026)</a></div>
+            <div class="text-gray-700 mt-1">Odds averaged Apr 2026. For entertainment — not financial advice.</div>
+        </div>
+    `;
+}
+
+function closeDashReportCard() {
+    const modal = document.getElementById('dash-report-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function showDashChips() {
+    showPlayerProfile(userEmail);
+}
+
 function setDashMatchMode(mode) {
     _dashMatchMode = mode;
     ['squad', 'all'].forEach((m) => {
@@ -3613,8 +3811,8 @@ async function setupDashboard() {
     if (!myPointsEl) return;
 
     const myRankEl = document.getElementById('dashboard-my-rank');
-    const squadSizeEl = document.getElementById('dashboard-squad-size');
-    const budgetLeftEl = document.getElementById('dashboard-budget-left');
+    const reportGradeEl = document.getElementById('dashboard-report-grade');
+    const chipsPreviewEl = document.getElementById('dashboard-chips-preview');
     const prizePotEl = document.getElementById('dashboard-prize-pot');
     const playerCountEl = document.getElementById('dashboard-player-count');
     const leaderboardEl = document.getElementById('dashboard-leaderboard');
@@ -3757,8 +3955,20 @@ async function setupDashboard() {
 
         if (myPointsEl) myPointsEl.textContent = `${myPoints}`;
         if (myRankEl) myRankEl.textContent = myRank >= 0 ? `#${myRank + 1}` : '-';
-        if (squadSizeEl) squadSizeEl.textContent = `${liveSquad.length}`;
-        if (budgetLeftEl) budgetLeftEl.textContent = `$${150 - spent}`;
+        // Report card grade
+        if (reportGradeEl && liveSquad.length > 0) {
+            const rc = _computeReportCard(liveSquad);
+            reportGradeEl.textContent = rc ? rc.grade : '—';
+            window._dashReportCard = rc;
+        }
+        // Chips preview
+        const myLbEntry = leaderboardData.find((e) => e.email === userEmail);
+        const chips = myLbEntry?.chips || window._playerChipsByEmail?.[userEmail] || [];
+        if (chipsPreviewEl) {
+            chipsPreviewEl.textContent = chips.length > 0
+                ? chips.slice(0, 3).map((c) => c.emoji).join('') + (chips.length > 3 ? ` +${chips.length - 3}` : '')
+                : '—';
+        }
 
         // Player-card-style squad
         const favTeamObj = teams.find((t) => t.name === currentProfile?.favoriteTeam);
@@ -3780,9 +3990,12 @@ async function setupDashboard() {
                         <div class="text-xl font-black uppercase italic tracking-tight text-white truncate">${escapeHtml(currentProfile?.nickname || '')}</div>
                         <div class="text-[10px] font-black uppercase tracking-[0.18em] text-gray-400">${currentProfile?.realname ? escapeHtml(currentProfile.realname) : ''}</div>
                     </div>
-                    <div class="text-right shrink-0">
-                        <div class="text-2xl font-black" style="color: var(--player-card-accent-on-dark);">${myPoints}</div>
-                        <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
+                    <div class="text-right shrink-0 flex flex-col items-end gap-2">
+                        <div>
+                            <div class="text-2xl font-black" style="color: var(--player-card-accent-on-dark);">${myPoints}</div>
+                            <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
+                        </div>
+                        ${!isLocked ? `<button onclick="showPage('picks')" class="rounded-xl bg-gray-700 hover:bg-gray-600 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-white transition-colors">Edit Picks</button>` : ''}
                     </div>
                 </div>
             `;
@@ -3837,14 +4050,17 @@ async function setupDashboard() {
                 const s = rankStyles[index];
                 const prize = prizes[index] > 0 ? `$${prizes[index].toLocaleString()}` : '';
                 return `
-                <div class="relative flex items-center gap-3 rounded-2xl border ${s.border} overflow-hidden px-4 py-3.5 w-full" style="background-color: ${s.bg};">
+                <div class="relative flex items-center gap-3 rounded-2xl border ${s.border} overflow-hidden px-4 py-5 w-full" style="background-color: ${s.bg};">
                     <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color: ${s.bar};"></div>
-                    <span class="text-lg leading-none shrink-0 pl-1">${s.medal}</span>
+                    <span class="text-2xl leading-none shrink-0 pl-1">${s.medal}</span>
                     <div class="min-w-0 flex-1">
-                        <div class="truncate text-sm font-black uppercase italic text-gray-900 leading-tight">${escapeHtml(entry.nickname)}</div>
-                        ${prize ? `<div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">${prize} prize</div>` : ''}
+                        <div class="truncate text-base font-black uppercase italic text-gray-900 leading-tight">${escapeHtml(entry.nickname)}</div>
+                        ${prize ? `<div class="text-sm font-black mt-0.5" style="color: ${s.bar};">${prize}</div>` : ''}
                     </div>
-                    <div class="shrink-0 text-xl font-black text-gray-900">${entry.totalPoints}<span class="text-[10px] font-black text-gray-400 ml-0.5">pts</span></div>
+                    <div class="shrink-0 text-right">
+                        <div class="text-2xl font-black text-gray-900">${entry.totalPoints}</div>
+                        <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">pts</div>
+                    </div>
                 </div>`;
             }).join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No leaderboard data yet</div>';
         }
@@ -7387,6 +7603,9 @@ Object.assign(window, {
     closeDashPointsModal,
     showDashRankModal,
     closeDashRankModal,
+    showDashReportCard,
+    closeDashReportCard,
+    showDashChips,
     setupResultsPage,
     setupStatsPage,
     setTeamResultsSort,
