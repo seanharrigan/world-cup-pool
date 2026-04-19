@@ -438,14 +438,14 @@ function togglePicksRulesBar(forceExpanded = null) {
     if (shouldExpand) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
-        // Close on Escape
+        requestAnimationFrame(() => requestAnimationFrame(() => modal.classList.remove('picks-modal-out')));
         const onEscape = (e) => {
             if (e.key === 'Escape') { togglePicksRulesBar(false); document.removeEventListener('keydown', onEscape); }
         };
         document.addEventListener('keydown', onEscape);
     } else {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+        modal.classList.add('picks-modal-out');
+        setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 280);
     }
 }
 
