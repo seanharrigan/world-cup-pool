@@ -6643,10 +6643,12 @@ function renderPlayerChips(chips = [], email = '', variant = 'row', scopeId = ''
             <div class="flex flex-wrap gap-1">
                 ${visibleChips.map((chip) => {
                     const toneClasses = PLAYER_CHIP_TONE_CLASSES[chip.tone]?.row || PLAYER_CHIP_TONE_CLASSES.neutral.row;
+                    const cardClasses = PLAYER_CHIP_TONE_CLASSES[chip.tone]?.card || PLAYER_CHIP_TONE_CLASSES.neutral.card;
                     return `<button type="button"
                         title="${escapeHtml(`${chip.label} — ${chip.description}`)}"
                         onclick="showPlayerChipInfo('${chip.id}', '${safeEmail}', event)"
-                        class="inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${toneClasses} transition-transform hover:scale-110 shrink-0">${chip.emoji}</button>`;
+                        class="inline-flex items-center justify-center rounded-full transition-transform hover:scale-110 shrink-0 h-5 w-5 md:h-auto md:w-auto md:gap-0.5 md:px-1.5 md:py-0.5 text-[11px] md:text-[8px] md:font-black md:uppercase md:tracking-[0.06em] ${toneClasses} md:${cardClasses}">
+                        <span>${chip.emoji}</span><span class="hidden md:inline">${escapeHtml(chip.label)}</span></button>`;
                 }).join('')}
                 ${overflowCount > 0 ? `<span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 border border-gray-400 text-[8px] font-black text-gray-600">+${overflowCount}</span>` : ''}
             </div>
@@ -6661,7 +6663,7 @@ function renderPlayerChips(chips = [], email = '', variant = 'row', scopeId = ''
                 return `<button type="button"
                     title="${escapeHtml(`${chip.label} — ${chip.description}`)}"
                     onclick="showProfileChipsPopup('${safeEmail}', event)"
-                    class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] md:text-[10px] font-black uppercase tracking-[0.06em] ${toneClasses} transition-transform hover:scale-[1.02]">
+                    class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[8px] md:text-[9px] font-black uppercase tracking-[0.06em] ${toneClasses} transition-transform hover:scale-[1.02]">
                     <span class="text-xs">${chip.emoji}</span>
                     <span>${escapeHtml(chip.label)}</span>
                 </button>`;
