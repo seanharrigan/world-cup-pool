@@ -517,6 +517,26 @@ const TEAM_REPORT_DATA = {
     'Haiti':        { winProb: 0.05,  fifaRank: 83, dk: 300000, espn: 150000, betmgm: null  },
 };
 
+function _computeRawUpside(squad) {
+    return (squad || [])
+        .filter((t) => !eliminatedTeams.has(t.name))
+        .reduce((s, t) => s + (TEAM_REPORT_DATA[t.name]?.winProb || 0), 0);
+}
+
+// Returns Map<email, 0-100> normalised so the pool leader = 100.
+function _buildUpsideMap(leaderboardData) {
+    const raws = (leaderboardData || []).map((e) => ({ email: e.email, raw: _computeRawUpside(e.squad) }));
+    const maxRaw = Math.max(...raws.map((r) => r.raw), 0.001);
+    const map = new Map();
+    raws.forEach(({ email, raw }) => map.set(email, Math.round(raw / maxRaw * 100)));
+    return map;
+}
+
+function _computeUpside(squad) {
+    // Legacy single-squad call — returns raw winProb sum (use _buildUpsideMap for pool-relative scores)
+    return _computeRawUpside(squad);
+}
+
 const _HOST_TEAMS = new Set(['USA', 'Canada', 'Mexico']);
 const _CONTRARIAN_TEAMS = new Set(['Cape Verde', 'Curacao', 'Uzbekistan', 'Jordan', 'Haiti']);
 
@@ -4807,13 +4827,14 @@ async function setupDashboard() {
                 ? liveSquad
                     .sort((a, b) => (b.cost || 0) - (a.cost || 0) || a.name.localeCompare(b.name))
                     .map((team) => `
-                        <div class="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 flex items-center gap-2 ${team.eliminated ? 'opacity-40' : ''}">
+                        <div class="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 flex items-center gap-2 cursor-pointer hover:border-gray-500 transition-colors ${team.eliminated ? 'opacity-40' : ''}" onclick="showDashTeamStats('${team.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">
                             <span class="text-xl">${team.flag || ''}</span>
                             <div class="flex-1 min-w-0">
                                 <div class="text-xs font-black uppercase text-white truncate">${escapeHtml(team.name)}</div>
                                 <div class="text-[10px] font-bold text-gray-400">${team.group ? `Grp ${team.group} · ` : ''}$${team.cost}${team.eliminated ? ' · out' : ''}</div>
                             </div>
                             <div class="text-xs font-black shrink-0" style="color: var(--player-card-accent-on-dark);">${teamPointsMap[team.name] || 0} pts</div>
+                            <svg class="w-3 h-3 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                         </div>
                     `)
                     .join('')
@@ -4828,6 +4849,53 @@ async function setupDashboard() {
                 </div>
                 <div class="h-2 rounded-full overflow-hidden" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.18);">
                     <div class="h-full rounded-full" style="width: ${Math.round(spent / 150 * 100)}%; background-color: var(--player-card-accent-primary);"></div>
+                </div>
+            `;
+        }
+
+        // Build pool-relative upside map (used by score bar + leaderboard rows)
+        const poolUpsideMap = _buildUpsideMap(leaderboardData);
+        window._poolUpsideMap = poolUpsideMap;
+
+        // Score position bar + Upside bar
+        const squadScoreBar = document.getElementById('dashboard-squad-score-bar');
+        if (squadScoreBar && leaderboardData.length > 1) {
+            const allPts = leaderboardData.map((e) => e.totalPoints);
+            const maxPts = Math.max(...allPts);
+            const minPts = Math.min(...allPts);
+            const myEntry = leaderboardData.find((e) => e.email === userEmail);
+            const myPts = myEntry?.totalPoints ?? 0;
+            const range = maxPts - minPts || 1;
+            const pct = Math.round(((myPts - minPts) / range) * 100);
+            const upside = poolUpsideMap.get(userEmail) ?? 0;
+            window._dashUpsideSquad = myEntry?.squad || liveSquad;
+            squadScoreBar.classList.remove('hidden');
+            squadScoreBar.innerHTML = `
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Your Score</span>
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">${myPts} pts</span>
+                </div>
+                <div class="relative h-2 rounded-full overflow-visible" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.18);">
+                    <div class="h-full rounded-full" style="width: ${pct}%; background-color: var(--player-card-accent-primary);"></div>
+                    ${pct > 0 && pct < 100 ? `<div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-gray-900 shadow" style="left: calc(${pct}% - 6px); background-color: var(--player-card-accent-primary);"></div>` : ''}
+                </div>
+                <div class="flex items-center justify-between mt-1 mb-3">
+                    <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">${minPts} min</span>
+                    <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">${maxPts} max</span>
+                </div>
+                <div class="cursor-pointer hover:opacity-80 transition-opacity" onclick="showMyUpsideCard()">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Upside <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg></span>
+                        <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">${upside} / 100</span>
+                    </div>
+                    <div class="relative h-2 rounded-full overflow-visible" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.18);">
+                        <div class="h-full rounded-full" style="width: ${upside}%; background-color: var(--player-card-accent-primary);"></div>
+                        <div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-gray-900 shadow" style="left: calc(${upside}% - 6px); background-color: var(--player-card-accent-primary);"></div>
+                    </div>
+                    <div class="flex items-center justify-between mt-1">
+                        <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">0 worst</span>
+                        <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">100 best</span>
+                    </div>
                 </div>
             `;
         }
@@ -4870,7 +4938,9 @@ async function setupDashboard() {
 
             const renderRow = (entry, rank, prize) => {
                 const s = rankStyleMap[rank] || defaultStyle;
-                return `<div class="dash-lb-row relative flex items-center gap-3 rounded-xl border ${s.border} overflow-hidden px-3 py-2 w-full" style="background-color: ${s.bg};">
+                const safeEmail = (entry.email || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                const upside = poolUpsideMap.get(entry.email) ?? 0;
+                return `<div class="dash-lb-row relative flex items-center gap-3 rounded-xl border ${s.border} overflow-hidden px-3 py-2 w-full cursor-pointer hover:opacity-90 transition-opacity" style="background-color: ${s.bg};" onclick="showPlayerProfile('${safeEmail}')">
                     <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color: ${s.bar};"></div>
                     ${s.medal ? `<span class="text-xl leading-none shrink-0 pl-1">${s.medal}</span>` : `<span class="text-sm font-black text-gray-400 pl-1 shrink-0 w-6 text-center">#${rank}</span>`}
                     <div class="min-w-0 flex-1">
@@ -4880,6 +4950,7 @@ async function setupDashboard() {
                     <div class="shrink-0 text-right">
                         <div class="text-xl font-black text-gray-900">${entry.totalPoints}</div>
                         <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">pts</div>
+                        <div class="text-[9px] font-black uppercase tracking-[0.15em] mt-0.5" style="color: ${s.bar};">↑ ${upside}</div>
                     </div>
                 </div>`;
             };
@@ -8260,6 +8331,267 @@ function showR32SeatingInfo() {
 
 function closeR32SeatingInfo() {
     _closeModalWithAnimation('r32-seating-modal');
+}
+
+function _upsideTeamRows(squad) {
+    const aliveTeams = squad
+        .filter((t) => !eliminatedTeams.has(t.name))
+        .sort((a, b) => (TEAM_REPORT_DATA[b.name]?.winProb || 0) - (TEAM_REPORT_DATA[a.name]?.winProb || 0));
+    const elimTeams = squad.filter((t) => eliminatedTeams.has(t.name));
+    const maxProb = Math.max(...aliveTeams.map((t) => TEAM_REPORT_DATA[t.name]?.winProb || 0), 0.001);
+
+    const row = (t, dim) => {
+        const prob = TEAM_REPORT_DATA[t.name]?.winProb || 0;
+        const barPct = Math.min(100, Math.round(prob / maxProb * 100));
+        return `<div class="flex items-center gap-3 ${dim ? 'opacity-35' : ''}">
+            <span class="text-lg leading-none shrink-0">${t.flag || ''}</span>
+            <div class="flex-1 min-w-0">
+                <div class="text-xs font-black uppercase text-white truncate">${escapeHtml(t.name)}</div>
+                ${!dim ? `<div class="mt-1 h-1 rounded-full bg-gray-700 overflow-hidden"><div class="h-full rounded-full bg-blue-400" style="width:${barPct}%;"></div></div>` : ''}
+            </div>
+            <div class="shrink-0 text-right">
+                ${!dim ? `<div class="text-xs font-black text-white">${prob.toFixed(1)}%</div><div class="text-[9px] font-black uppercase text-gray-500">win odds</div>` : `<div class="text-[9px] font-black uppercase text-gray-500">eliminated</div>`}
+            </div>
+        </div>`;
+    };
+
+    return `
+        ${aliveTeams.length > 0 ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Still Alive</div><div class="space-y-3">${aliveTeams.map((t) => row(t, false)).join('')}</div>` : ''}
+        ${elimTeams.length > 0 ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 mt-4 mb-3">Eliminated</div><div class="space-y-3">${elimTeams.map((t) => row(t, true)).join('')}</div>` : ''}
+    `;
+}
+
+function showMyUpsideCard() {
+    const modal = document.getElementById('upside-modal');
+    const header = document.getElementById('upside-modal-header');
+    const body = document.getElementById('upside-modal-body');
+    if (!modal || !header || !body) return;
+
+    const lb = window._leaderboardData || [];
+    const upsideMap = window._poolUpsideMap || _buildUpsideMap(lb);
+    const myUpside = upsideMap.get(userEmail) ?? 0;
+    const myEntry = lb.find((e) => e.email === userEmail);
+    const squad = myEntry?.squad || window._dashUpsideSquad || [];
+
+    header.innerHTML = `
+        <div>
+            <div class="text-[11px] font-black uppercase tracking-[0.25em] text-gray-300">Your Upside</div>
+            <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500 mt-0.5">Remaining squad potential</div>
+        </div>
+        <button onclick="closeUpsideModal()" class="text-gray-500 hover:text-white transition-colors text-xl leading-none">×</button>
+    `;
+
+    body.innerHTML = `
+        <div class="p-5 space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 leading-relaxed max-w-[200px]">
+                    Combined win odds of your surviving teams vs the pool leader.
+                </div>
+                <div class="text-right shrink-0">
+                    <div class="text-4xl font-black text-white">${myUpside}</div>
+                    <div class="text-[10px] font-black uppercase text-gray-400">/ 100</div>
+                </div>
+            </div>
+            ${_upsideTeamRows(squad)}
+            <button onclick="showUpsideDetail()" class="w-full mt-2 rounded-2xl border border-gray-700 bg-gray-800 hover:bg-gray-700 px-4 py-3 flex items-center justify-between transition-colors">
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-300">All Players</span>
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </button>
+        </div>
+    `;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function showUpsideDetail() {
+    const modal = document.getElementById('upside-modal');
+    const header = document.getElementById('upside-modal-header');
+    const body = document.getElementById('upside-modal-body');
+    if (!modal || !header || !body) return;
+
+    const lb = window._leaderboardData || [];
+    const upsideMap = window._poolUpsideMap || _buildUpsideMap(lb);
+    const ranked = [...lb]
+        .map((e) => ({ ...e, upside: upsideMap.get(e.email) ?? 0 }))
+        .sort((a, b) => b.upside - a.upside || b.totalPoints - a.totalPoints);
+
+    header.innerHTML = `
+        <div class="flex items-center gap-2">
+            <button onclick="showMyUpsideCard()" class="text-gray-500 hover:text-white transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.15em]">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                Back
+            </button>
+            <div>
+                <div class="text-[11px] font-black uppercase tracking-[0.25em] text-gray-300">All Players</div>
+                <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500 mt-0.5">Upside · high to low</div>
+            </div>
+        </div>
+        <button onclick="closeUpsideModal()" class="text-gray-500 hover:text-white transition-colors text-xl leading-none">×</button>
+    `;
+
+    body.innerHTML = ranked.map((u, i) => {
+        const isMe = u.email === userEmail;
+        const aliveFlags = u.squad
+            .filter((t) => !eliminatedTeams.has(t.name))
+            .sort((a, b) => (TEAM_REPORT_DATA[b.name]?.winProb || 0) - (TEAM_REPORT_DATA[a.name]?.winProb || 0))
+            .map((t) => `<span class="text-base leading-none">${t.flag || ''}</span>`)
+            .join('');
+        const barColor = i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : i === 2 ? '#f97316' : isMe ? '#3b82f6' : '#4b5563';
+        return `
+            <div data-upside-me="${isMe}" class="relative flex items-center gap-3 px-5 py-3.5 border-b border-gray-800 last:border-0 ${isMe ? 'bg-blue-950/40' : ''}">
+                <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color: ${barColor};"></div>
+                <span class="text-[10px] font-black text-gray-500 shrink-0 w-5 text-right">${i + 1}</span>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-black uppercase ${isMe ? 'text-blue-300' : 'text-white'} truncate">${escapeHtml(u.nickname)}${isMe ? ' · you' : ''}</div>
+                    <div class="mt-1 flex flex-wrap gap-0.5">${aliveFlags || '<span class="text-[9px] text-gray-600 uppercase font-black">all out</span>'}</div>
+                </div>
+                <div class="shrink-0 text-right">
+                    <div class="text-lg font-black text-white">${u.upside}</div>
+                    <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">/ 100</div>
+                </div>
+            </div>`;
+    }).join('');
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    requestAnimationFrame(() => {
+        const myRow = body.querySelector('[data-upside-me="true"]');
+        if (myRow) myRow.scrollIntoView({ block: 'center' });
+    });
+}
+
+function closeUpsideModal() {
+    _closeModalWithAnimation('upside-modal');
+}
+
+async function showDashTeamStats(teamName) {
+    const modal = document.getElementById('team-owners-modal');
+    const headerEl = document.getElementById('team-owners-header');
+    const listEl = document.getElementById('team-owners-list');
+    if (!modal || !headerEl || !listEl) return;
+
+    const team = teams.find((t) => t.name === teamName);
+    if (!team) return;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    headerEl.innerHTML = `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 animate-pulse">Loading…</div>`;
+    listEl.innerHTML = '';
+
+    await fetchAdvancedTeams();
+
+    const hasCachedData = window._matchesCache && window._picksCache;
+    let matches, picks, totalPlayers;
+    if (hasCachedData) {
+        matches = window._matchesCache;
+        picks = window._picksCache.map((p) => ({ user_email: p.user_email, team_name: p.team_name }));
+        totalPlayers = window._profilesTotalCount || 0;
+    } else {
+        const [{ data: matchData }, { data: picksData }, { data: profilesData }] = await Promise.all([
+            supabaseClient.from('matches').select('*').order('match_date_manual', { ascending: true }),
+            supabaseClient.from('picks').select('user_email, team_name'),
+            supabaseClient.from('profiles').select('email')
+        ]);
+        matches = matchData || [];
+        picks = picksData || [];
+        totalPlayers = new Set((profilesData || []).map((p) => p.email).filter(Boolean)).size;
+    }
+
+    const pickedSet = (picks || []).reduce((set, p) => { if (p.team_name === teamName) set.add(p.user_email); return set; }, new Set());
+    const pickedCount = pickedSet.size;
+    const pickedPct = totalPlayers > 0 ? Math.round(pickedCount / totalPlayers * 100) : 0;
+    const teamBreakdownMap = buildTeamStageBreakdownMap(matches || [], teams, advancedTeams);
+    const stageBreakdown = teamBreakdownMap[teamName] || { G1: 0, G2: 0, G3: 0, Bonus: 0, R32: 0, R16: 0, QF: 0, SM: 0, F: 0, total: 0 };
+    const knockoutStageMap = { R32: 'R32', R16: 'R16', Quarters: 'QF', Semis: 'Semi', Finals: 'Final' };
+    const teamMatches = (matches || [])
+        .filter((m) => m.team_home === teamName || m.team_away === teamName)
+        .sort((a, b) => (a.match_date_manual || '').localeCompare(b.match_date_manual || '') || (a.id || 0) - (b.id || 0));
+
+    const matchesHtml = teamMatches.length > 0
+        ? teamMatches.map((match) => {
+            const isHome = match.team_home === teamName;
+            const oppName = isHome ? match.team_away : match.team_home;
+            const opp = teams.find((t) => t.name === oppName);
+            const stageLabel = match.stage === 'Group' ? 'Group' : (knockoutStageMap[match.stage] || match.stage);
+            const pts = getMatchPointsForTeam(match, teamName);
+            const myScore = isHome ? match.score_home : match.score_away;
+            const oppScore = isHome ? match.score_away : match.score_home;
+            const won = myScore > oppScore;
+            const drew = myScore === oppScore;
+            const resultColor = won ? 'text-green-400' : drew ? 'text-yellow-400' : 'text-gray-500';
+            const resultLabel = won ? 'W' : drew ? 'D' : 'L';
+            return `
+                <div class="rounded-xl border border-gray-700 bg-gray-800/50 px-3 py-2.5">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">${stageLabel}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-black ${resultColor}">${resultLabel}</span>
+                            <span class="text-xs font-black text-white">${pts} pts</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-bold text-gray-200">
+                        <span class="text-base">${team.flag}</span>
+                        <span class="font-black">${myScore}–${oppScore}</span>
+                        <span class="text-base">${opp?.flag || ''}</span>
+                        <span class="truncate text-gray-400">${escapeHtml(oppName)}</span>
+                    </div>
+                </div>`;
+        }).join('')
+        : '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 py-2">No matches yet</div>';
+
+    const isElim = eliminatedTeams.has(teamName);
+    const isAdv = advancedTeams.has(teamName);
+    const statusHtml = isElim
+        ? '<span class="text-[9px] font-black uppercase tracking-[0.12em] px-2 py-0.5 rounded-full bg-red-900/40 text-red-400">Eliminated</span>'
+        : isAdv ? '<span class="text-[9px] font-black uppercase tracking-[0.12em] px-2 py-0.5 rounded-full bg-green-900/40 text-green-400">Advanced</span>'
+        : '';
+
+    const stageRows = [
+        { label: 'Group', pts: (stageBreakdown.G1 || 0) + (stageBreakdown.G2 || 0) + (stageBreakdown.G3 || 0) },
+        { label: 'Bonus', pts: stageBreakdown.Bonus || 0 },
+        { label: 'R32', pts: stageBreakdown.R32 || 0 },
+        { label: 'R16', pts: stageBreakdown.R16 || 0 },
+        { label: 'QF', pts: stageBreakdown.QF || 0 },
+        { label: 'Semi', pts: stageBreakdown.SM || 0 },
+        { label: 'Final', pts: stageBreakdown.F || 0 },
+    ].map(({ label, pts }) => `
+        <div class="text-center">
+            <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">${label}</div>
+            <div class="text-sm font-black text-white">${pts || '—'}</div>
+        </div>`).join('');
+
+    headerEl.innerHTML = `
+        <div class="flex items-center gap-3">
+            <span class="text-4xl leading-none">${team.flag}</span>
+            <div class="flex-1 min-w-0">
+                <div class="text-base font-black uppercase text-white truncate">${escapeHtml(team.name)}</div>
+                <div class="flex flex-wrap items-center gap-2 mt-0.5">
+                    <span class="text-[10px] font-black uppercase tracking-[0.12em] text-gray-400">T${team.tier} · $${team.cost} · Grp ${team.group}</span>
+                    ${statusHtml}
+                </div>
+            </div>
+            <div class="text-right shrink-0">
+                <div class="text-2xl font-black text-white">${stageBreakdown.total}</div>
+                <div class="text-[10px] font-black uppercase text-gray-400">pts</div>
+            </div>
+        </div>
+        <div class="rounded-2xl border border-gray-700 bg-gray-800/50 px-4 py-3 mt-4">
+            <div class="flex items-center justify-between mb-2.5">
+                <span class="text-[9px] font-black uppercase tracking-[0.25em] text-gray-500">Points by Stage</span>
+                <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">${pickedPct}% picked · ${pickedCount} players</span>
+            </div>
+            <div class="grid grid-cols-4 gap-x-2 gap-y-2">${stageRows}</div>
+        </div>
+    `;
+    listEl.innerHTML = `
+        <div class="px-6 pb-4">
+            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Matches</div>
+            <div class="space-y-2">${matchesHtml}</div>
+        </div>
+    `;
 }
 
 async function showTeamOwners(teamName) {
