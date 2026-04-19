@@ -308,13 +308,16 @@
         #dashboard-tabs-panel { transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; height: 56px; }
         #dashboard-tabs-panel.dash-sheet-minimized { height: 56px; }
         @keyframes dash-sheet-nudge {
-            0%,100% { transform: translateY(0); }
-            20%     { transform: translateY(-10px); }
-            40%     { transform: translateY(0); }
-            60%     { transform: translateY(-10px); }
-            80%     { transform: translateY(0); }
+            0%   { transform: translateY(0); }
+            18%  { transform: translateY(-9px); }
+            36%  { transform: translateY(0); }
+            50%  { transform: translateY(-5px); }
+            64%  { transform: translateY(0); }
+            76%  { transform: translateY(-2px); }
+            88%  { transform: translateY(0); }
+            100% { transform: translateY(0); }
         }
-        #dashboard-tabs-panel.dash-sheet-nudge { animation: dash-sheet-nudge 0.7s ease-in-out; }
+        #dashboard-tabs-panel.dash-sheet-nudge { animation: dash-sheet-nudge 1.6s ease-in-out; }
         @media (min-width: 1024px) {
             #dashboard-squad-card { display: flex !important; }
             #dashboard-tabs-panel { height: auto !important; overflow: visible; }
@@ -472,7 +475,7 @@
 
     <div id="main-app" class="hidden h-[calc(100vh-60px)] w-full opacity-0 transition-opacity duration-700 text-gray-900">
         
-        <div id="page-instructions" class="page-content h-full w-full overflow-y-auto pt-2 px-3 pb-3 md:p-12 bg-white text-gray-900 text-left flex flex-col md:block">
+        <div id="page-instructions" class="page-content h-full w-full overflow-y-auto pt-4 px-3 pb-3 md:p-12 bg-white text-gray-900 text-left flex flex-col md:block">
             <div class="flex-1 flex flex-col md:block md:max-w-6xl md:mx-auto md:space-y-6">
                 <!-- Title + countdown -->
                 <div class="hidden md:flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -524,6 +527,8 @@
                     <div id="dashboard-glow-divider-bottom" class="hidden h-px w-full opacity-60" style="background: linear-gradient(90deg, transparent 0%, var(--theme-accent-primary) 20%, var(--theme-accent-primary) 80%, transparent 100%); box-shadow: 0 0 6px 2px var(--theme-accent-primary);"></div>
                     <!-- Player card + tabbed panel -->
                     <div class="relative flex-1 flex flex-col lg:flex-row overflow-hidden lg:overflow-visible">
+                        <!-- White backing strip so nudge animation doesn't flash the dark card background -->
+                        <div class="lg:hidden absolute bottom-0 left-0 right-0 h-6 bg-white z-[9]"></div>
                         <!-- Left: player card (always visible) -->
                         <div id="dashboard-squad-card" class="flex-1 lg:flex-none flex lg:w-[44%] lg:flex-shrink-0 flex-col pb-14 lg:pb-0" style="background-color: #0f172a;">
                             <div class="p-6 flex-1 flex flex-col" id="dashboard-squad-inner">
