@@ -4861,7 +4861,7 @@ async function setupDashboard() {
 
         // Score position bar + Upside bar (locked only)
         const squadScoreBar = document.getElementById('dashboard-squad-score-bar');
-        if (squadScoreBar && isLocked && leaderboardData.length > 1) {
+        if (squadScoreBar && isLocked && spent > 0) {
             const allPts = leaderboardData.map((e) => e.totalPoints);
             const maxPts = Math.max(...allPts);
             const minPts = Math.min(...allPts);
