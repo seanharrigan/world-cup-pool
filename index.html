@@ -870,9 +870,9 @@
             </div>
         </div>
 
-        <div id="page-results" class="page-content hidden h-full w-full overflow-y-auto bg-gray-50 text-gray-900 text-left">
+        <div id="page-results" class="page-content hidden h-full w-full flex flex-col bg-gray-50 text-gray-900 text-left">
                 <!-- Sticky sub-tab bar — first child of scroll container so top-0 is truly the top -->
-                <div class="sticky top-0 z-30 bg-gray-50 px-6 md:px-12 py-2 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+                <div class="shrink-0 z-30 bg-gray-50 px-6 md:px-12 py-2 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
                 <!-- Mobile: custom animated dropdown -->
                 <div class="relative md:hidden" id="results-tab-dropdown-wrap">
                     <button onclick="toggleResultsTabDropdown()" id="results-tab-dropdown-btn" class="w-full flex items-center justify-between rounded-2xl border border-gray-300 bg-white px-5 py-4 text-[10px] font-black uppercase tracking-[0.25em] text-gray-900 shadow-sm transition-colors">
@@ -896,7 +896,7 @@
                     <button onclick="showResultsTab('matches')" id="results-tab-matches" class="results-tab results-tab-c flex-1 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 transition-all duration-200 hover:text-gray-700">Match Results</button>
                 </div>
                 </div><!-- end sticky sub-tab bar -->
-            <div class="p-6 md:p-12">
+            <div class="flex-1 overflow-y-auto p-6 md:p-12">
             <div class="max-w-6xl mx-auto space-y-10 text-left text-gray-900">
                 <header class="text-left">
                     <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
