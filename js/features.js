@@ -4615,8 +4615,8 @@ async function setupDashboard() {
             const percentage = teamOwnership.get(teamName)?.percentage || 0;
             const alignClass = align === 'right' ? 'text-right' : 'text-left';
             return `
-                <div class="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-gray-400 ${alignClass}">
-                    ${pickedCount} picked${selectionStats.totalPlayers > 0 ? ` · ${percentage}%` : ''}
+                <div class="mt-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-gray-400 ${alignClass}">
+                    ${pickedCount}${selectionStats.totalPlayers > 0 ? ` (${percentage}%)` : ''}
                 </div>
             `;
         };
@@ -4649,22 +4649,18 @@ async function setupDashboard() {
 
             return `
                 <div class="flex-1 flex flex-col justify-center bg-gray-50 border border-gray-100 rounded-xl px-3 py-3 min-h-0">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">${stageLabel}</span>
-                        ${ptsLabel ? `<span class="text-[9px] font-black uppercase tracking-[0.12em] theme-accent-text">${ptsLabel}</span>` : ''}
-                    </div>
+                    <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 mb-1.5">${stageLabel}</div>
                     <div class="grid grid-cols-[minmax(0,1fr)_2.5rem_minmax(0,1fr)] items-center gap-2">
-                        <div class="min-w-0 text-right">
-                            <div onclick="showTeamOwners('${safeHome}')" class="truncate text-sm font-black text-gray-900 cursor-pointer hover:text-gray-500 transition-colors leading-snug">${isHomeMine ? '<span class="text-amber-400">★</span> ' : ''}${homeTeam?.flag || ''}<span class="hidden sm:inline"> ${escapeHtml(match.team_home)}</span></div>
-                            ${ownershipMarkup(match.team_home, 'right')}
-                        </div>
+                        <div onclick="showTeamOwners('${safeHome}')" class="min-w-0 text-right truncate text-sm font-black text-gray-900 cursor-pointer hover:text-gray-500 transition-colors">${isHomeMine ? '<span class="text-amber-400">★</span> ' : ''}${homeTeam?.flag || ''}<span class="hidden sm:inline"> ${escapeHtml(match.team_home)}</span></div>
                         <div class="shrink-0 text-base font-black text-gray-700 text-center tabular-nums leading-none">${scoreMarkup}</div>
-                        <div class="min-w-0 text-left">
-                            <div onclick="showTeamOwners('${safeAway}')" class="truncate text-sm font-black text-gray-900 cursor-pointer hover:text-gray-500 transition-colors leading-snug"><span class="hidden sm:inline">${escapeHtml(match.team_away)} </span>${awayTeam?.flag || ''}${isAwayMine ? ' <span class="text-amber-400">★</span>' : ''}</div>
-                            ${ownershipMarkup(match.team_away, 'left')}
-                        </div>
+                        <div onclick="showTeamOwners('${safeAway}')" class="min-w-0 text-left truncate text-sm font-black text-gray-900 cursor-pointer hover:text-gray-500 transition-colors"><span class="hidden sm:inline">${escapeHtml(match.team_away)} </span>${awayTeam?.flag || ''}${isAwayMine ? ' <span class="text-amber-400">★</span>' : ''}</div>
                     </div>
-                    ${match.was_extra_time ? '<div class="text-[9px] font-black uppercase text-red-400 italic text-center mt-1.5">ET/Pens</div>' : ''}
+                    <div class="grid grid-cols-[minmax(0,1fr)_2.5rem_minmax(0,1fr)] gap-2">
+                        <div>${ownershipMarkup(match.team_home, 'right')}</div>
+                        <div></div>
+                        <div>${ownershipMarkup(match.team_away, 'left')}</div>
+                    </div>
+                    ${match.was_extra_time ? '<div class="text-[9px] font-black uppercase text-red-400 italic text-center mt-1">ET/Pens</div>' : ''}
                 </div>
             `;
         };
@@ -4687,17 +4683,19 @@ async function setupDashboard() {
         if (chipsPreviewEl) {
             if (chips.length > 0) {
                 const toneClasses = { positive: 'bg-green-100 border-2 border-green-600', negative: 'bg-red-100 border-2 border-red-600', neutral: 'bg-sky-100 border-2 border-sky-600' };
-                // Mobile: 1 chip + overflow; sm+: 3 chips + overflow
-                const mobileVisible = chips.slice(0, 1);
+                const first = chips[0];
                 const mobileOverflow = chips.length > 1 ? chips.length - 1 : 0;
+                const mobileHtml = first ? `<div class="relative inline-flex items-center justify-center">
+                    ${mobileOverflow > 0 ? `<span class="absolute -bottom-1 -right-1.5 h-4 w-4 inline-flex items-center justify-center rounded-full bg-gray-200 border border-gray-300 text-[8px] font-black text-gray-600 z-0">+${mobileOverflow}</span>` : ''}
+                    <span class="relative z-10 inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${toneClasses[first.tone] || toneClasses.neutral}">${first.emoji}</span>
+                </div>` : '';
                 const deskVisible = chips.slice(0, 3);
                 const deskOverflow = chips.length > 3 ? chips.length - 3 : 0;
-                const chipHtml = (list, overflow) =>
-                    list.map((c) => `<span class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${toneClasses[c.tone] || toneClasses.neutral}">${c.emoji}</span>`).join('') +
-                    (overflow > 0 ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 border-2 border-gray-400 text-[10px] font-black text-gray-600">+${overflow}</span>` : '');
+                const deskHtml = deskVisible.map((c) => `<span class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${toneClasses[c.tone] || toneClasses.neutral}">${c.emoji}</span>`).join('') +
+                    (deskOverflow > 0 ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 border-2 border-gray-400 text-[10px] font-black text-gray-600">+${deskOverflow}</span>` : '');
                 chipsPreviewEl.innerHTML = `
-                    <div class="sm:hidden flex items-center gap-1 justify-center">${chipHtml(mobileVisible, mobileOverflow)}</div>
-                    <div class="hidden sm:flex items-center gap-1 justify-center">${chipHtml(deskVisible, deskOverflow)}</div>
+                    <div class="sm:hidden flex items-center justify-center">${mobileHtml}</div>
+                    <div class="hidden sm:flex items-center gap-1 justify-center">${deskHtml}</div>
                 `;
             } else {
                 chipsPreviewEl.textContent = '—';
@@ -4787,15 +4785,15 @@ async function setupDashboard() {
             ];
             const renderRow = (entry, index, prize) => {
                 const s = rankStyles[index] || { border: 'border-gray-100', bg: '#f9fafb', bar: '#9ca3af', medal: '' };
-                return `<div class="relative flex items-center gap-3 rounded-2xl border ${s.border} overflow-hidden px-4 py-4 w-full" style="background-color: ${s.bg};">
+                return `<div class="relative flex items-center gap-3 rounded-xl border ${s.border} overflow-hidden px-3 py-2 w-full" style="background-color: ${s.bg};">
                     <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color: ${s.bar};"></div>
-                    ${s.medal ? `<span class="text-2xl leading-none shrink-0 pl-1">${s.medal}</span>` : `<span class="text-sm font-black text-gray-400 pl-1 shrink-0 w-6 text-center">#${index + 1}</span>`}
+                    ${s.medal ? `<span class="text-xl leading-none shrink-0 pl-1">${s.medal}</span>` : `<span class="text-sm font-black text-gray-400 pl-1 shrink-0 w-6 text-center">#${index + 1}</span>`}
                     <div class="min-w-0 flex-1">
-                        <div class="truncate text-base font-black uppercase italic text-gray-900 leading-tight">${escapeHtml(entry.nickname)}</div>
-                        ${prize ? `<div class="text-sm font-black mt-0.5" style="color: ${s.bar};">${prize}</div>` : ''}
+                        <div class="truncate text-sm font-black uppercase italic text-gray-900 leading-tight">${escapeHtml(entry.nickname)}</div>
+                        ${prize ? `<div class="text-xs font-black" style="color: ${s.bar};">${prize}</div>` : ''}
                     </div>
                     <div class="shrink-0 text-right">
-                        <div class="text-2xl font-black text-gray-900">${entry.totalPoints}</div>
+                        <div class="text-xl font-black text-gray-900">${entry.totalPoints}</div>
                         <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">pts</div>
                     </div>
                 </div>`;
