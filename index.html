@@ -294,21 +294,103 @@
 </head>
 <body class="bg-gray-950 text-white h-screen overflow-hidden font-sans flex flex-col text-left">
 
-    <div id="auth-overlay" class="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-[#07121f] p-4">
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.16),_transparent_34%),linear-gradient(135deg,_rgba(11,78,46,0.95)_0%,_rgba(8,23,39,0.98)_55%,_rgba(80,12,20,0.92)_100%)]"></div>
-        <div class="absolute inset-x-[-10%] top-[12%] h-px bg-white/25"></div>
-        <div class="absolute inset-x-[-10%] bottom-[12%] h-px bg-white/18"></div>
-        <div class="absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10"></div>
-        <div class="absolute left-1/2 top-1/2 h-[220px] w-[220px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10"></div>
-        <div class="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-white/10"></div>
-        <div class="absolute top-10 left-10 h-28 w-28 rounded-full border border-white/8"></div>
-        <div class="absolute bottom-12 right-12 h-36 w-36 rounded-full border border-white/8"></div>
-        <div class="absolute inset-0 bg-black/35"></div>
-        <div class="relative bg-gray-900/86 p-8 md:p-10 rounded-3xl border border-white/10 max-w-md w-full text-center shadow-[0_25px_80px_rgba(0,0,0,0.45)] backdrop-blur-md">
-            <div class="text-5xl md:text-6xl mb-6 text-center text-white">⚽</div>
-            <h2 class="text-2xl md:text-3xl font-black mb-2 italic uppercase tracking-tighter text-white text-center">2026 World Cup Pool</h2>
-            <p class="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-gray-300">Sign in with your Google account to enter the pool</p>
-            <button onclick="startGoogleLogin()" id="google-login-btn" class="w-full rounded-2xl border border-white/20 bg-white px-4 py-4 font-black uppercase tracking-[0.2em] text-gray-900 transition-colors hover:bg-gray-100">Continue with Google</button>
+    <div id="auth-overlay" class="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden p-4" style="background: linear-gradient(135deg, #071a2e 0%, #0d1f3c 40%, #1a0f2e 100%);">
+
+        <!-- Subtle pitch stripe texture -->
+        <svg class="absolute inset-0 w-full h-full opacity-[0.04]" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+            <defs>
+                <pattern id="pitch-stripes" x="0" y="0" width="80" height="800" patternUnits="userSpaceOnUse">
+                    <rect x="0" y="0" width="40" height="800" fill="#22c55e"/>
+                    <rect x="40" y="0" width="40" height="800" fill="#16a34a"/>
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#pitch-stripes)"/>
+        </svg>
+
+        <!-- Full tournament bracket -->
+        <svg class="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 800" preserveAspectRatio="xMidYMid slice">
+            <defs>
+                <linearGradient id="bracketGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#facc15" stop-opacity="0.0"/>
+                    <stop offset="30%" stop-color="#facc15" stop-opacity="0.22"/>
+                    <stop offset="50%" stop-color="#fbbf24" stop-opacity="0.35"/>
+                    <stop offset="70%" stop-color="#facc15" stop-opacity="0.22"/>
+                    <stop offset="100%" stop-color="#facc15" stop-opacity="0.0"/>
+                </linearGradient>
+                <radialGradient id="finalGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.18"/>
+                    <stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
+                </radialGradient>
+            </defs>
+
+            <!-- Gold glow at the final (centre) -->
+            <ellipse cx="700" cy="400" rx="200" ry="160" fill="url(#finalGlow)"/>
+
+            <!-- ═══ LEFT BRACKET (left → centre) ═══ -->
+            <!-- R1: 4 match slots at x=60 -->
+            <line x1="60" y1="85"  x2="60" y2="115" stroke="#facc15" stroke-width="2" stroke-opacity="0.28"/>
+            <line x1="60" y1="100" x2="200" y2="100" stroke="#facc15" stroke-width="1.5" stroke-opacity="0.20"/>
+            <line x1="60" y1="245" x2="60" y2="275" stroke="#facc15" stroke-width="2" stroke-opacity="0.28"/>
+            <line x1="60" y1="260" x2="200" y2="260" stroke="#facc15" stroke-width="1.5" stroke-opacity="0.20"/>
+            <line x1="60" y1="525" x2="60" y2="555" stroke="#facc15" stroke-width="2" stroke-opacity="0.28"/>
+            <line x1="60" y1="540" x2="200" y2="540" stroke="#facc15" stroke-width="1.5" stroke-opacity="0.20"/>
+            <line x1="60" y1="685" x2="60" y2="715" stroke="#facc15" stroke-width="2" stroke-opacity="0.28"/>
+            <line x1="60" y1="700" x2="200" y2="700" stroke="#facc15" stroke-width="1.5" stroke-opacity="0.20"/>
+            <!-- R2: connect R1 pairs at x=200, output to x=380 -->
+            <line x1="200" y1="100" x2="200" y2="260" stroke="#facc15" stroke-width="1.5" stroke-opacity="0.22"/>
+            <line x1="200" y1="180" x2="380" y2="180" stroke="#facc15" stroke-width="1.5" stroke-opacity="0.22"/>
+            <line x1="200" y1="540" x2="200" y2="700" stroke="#facc15" stroke-width="1.5" stroke-opacity="0.22"/>
+            <line x1="200" y1="620" x2="380" y2="620" stroke="#facc15" stroke-width="1.5" stroke-opacity="0.22"/>
+            <!-- R3 (SF): connect R2 at x=380, output to centre at x=560 -->
+            <line x1="380" y1="180" x2="380" y2="620" stroke="#facc15" stroke-width="2" stroke-opacity="0.28"/>
+            <line x1="380" y1="400" x2="560" y2="400" stroke="#facc15" stroke-width="2" stroke-opacity="0.30"/>
+            <!-- Final entry line from left -->
+            <line x1="560" y1="400" x2="680" y2="400" stroke="#fbbf24" stroke-width="2.5" stroke-opacity="0.50"/>
+
+            <!-- ═══ RIGHT BRACKET (right → centre, mirrored) ═══ -->
+            <!-- R1: 4 match slots at x=1340 -->
+            <line x1="1340" y1="85"  x2="1340" y2="115" stroke="#facc15" stroke-width="2" stroke-opacity="0.28"/>
+            <line x1="1200" y1="100" x2="1340" y2="100" stroke="#facc15" stroke-width="1.5" stroke-opacity="0.20"/>
+            <line x1="1340" y1="245" x2="1340" y2="275" stroke="#facc15" stroke-width="2" stroke-opacity="0.28"/>
+            <line x1="1200" y1="260" x2="1340" y2="260" stroke="#facc15" stroke-width="1.5" stroke-opacity="0.20"/>
+            <line x1="1340" y1="525" x2="1340" y2="555" stroke="#facc15" stroke-width="2" stroke-opacity="0.28"/>
+            <line x1="1200" y1="540" x2="1340" y2="540" stroke="#facc15" stroke-width="1.5" stroke-opacity="0.20"/>
+            <line x1="1340" y1="685" x2="1340" y2="715" stroke="#facc15" stroke-width="2" stroke-opacity="0.28"/>
+            <line x1="1200" y1="700" x2="1340" y2="700" stroke="#facc15" stroke-width="1.5" stroke-opacity="0.20"/>
+            <!-- R2 -->
+            <line x1="1200" y1="100" x2="1200" y2="260" stroke="#facc15" stroke-width="1.5" stroke-opacity="0.22"/>
+            <line x1="1020" y1="180" x2="1200" y2="180" stroke="#facc15" stroke-width="1.5" stroke-opacity="0.22"/>
+            <line x1="1200" y1="540" x2="1200" y2="700" stroke="#facc15" stroke-width="1.5" stroke-opacity="0.22"/>
+            <line x1="1020" y1="620" x2="1200" y2="620" stroke="#facc15" stroke-width="1.5" stroke-opacity="0.22"/>
+            <!-- R3 (SF) -->
+            <line x1="1020" y1="180" x2="1020" y2="620" stroke="#facc15" stroke-width="2" stroke-opacity="0.28"/>
+            <line x1="840"  y1="400" x2="1020" y2="400" stroke="#facc15" stroke-width="2" stroke-opacity="0.30"/>
+            <!-- Final entry line from right -->
+            <line x1="720" y1="400" x2="840" y2="400" stroke="#fbbf24" stroke-width="2.5" stroke-opacity="0.50"/>
+
+            <!-- ═══ FINAL MATCH — trophy star at centre ═══ -->
+            <circle cx="700" cy="400" r="6" fill="#fbbf24" fill-opacity="0.70"/>
+            <circle cx="700" cy="400" r="14" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-opacity="0.40"/>
+        </svg>
+
+        <!-- Colour accent gradients — gives non-monochrome feel -->
+        <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(ellipse 60% 50% at 15% 20%, rgba(16,185,129,0.13) 0%, transparent 70%), radial-gradient(ellipse 50% 40% at 85% 75%, rgba(139,92,246,0.10) 0%, transparent 70%);"></div>
+
+        <!-- Vignette to keep card legible -->
+        <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(ellipse 55% 65% at 50% 50%, transparent 30%, rgba(4,10,22,0.82) 100%);"></div>
+
+        <!-- Login card -->
+        <div class="relative max-w-md w-full">
+            <div class="rounded-3xl border border-white/10 bg-gray-900/90 shadow-[0_32px_80px_rgba(0,0,0,0.7)] p-8 md:p-10 text-center backdrop-blur-md">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-800 border border-gray-700 mb-6 text-3xl">🏆</div>
+                <div class="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 mb-1">2026 FIFA</div>
+                <h2 class="text-3xl md:text-4xl font-black mb-1 italic uppercase tracking-tighter text-white">World Cup Pool</h2>
+                <p class="mb-8 text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Sign in to enter picks and track the standings</p>
+                <button onclick="startGoogleLogin()" id="google-login-btn" class="w-full rounded-2xl border border-gray-600 bg-gray-800 hover:bg-gray-700 px-4 py-4 font-black uppercase tracking-[0.18em] text-white transition-colors flex items-center justify-center gap-3">
+                    <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                    Continue with Google
+                </button>
+            </div>
         </div>
     </div>
 
@@ -316,7 +398,7 @@
         <div class="w-full max-w-md rounded-3xl border border-red-900/60 bg-gray-900 p-8 text-center shadow-2xl">
             <div class="mb-5 text-5xl text-red-500">⛔</div>
             <div class="mb-2 text-[10px] font-black uppercase tracking-[0.25em] text-red-400">Account Blocked</div>
-            <h2 class="mb-3 text-2xl font-black uppercase italic tracking-tight text-white">Pool Access Disabled</h2>
+            <h2 class="mb-3 text-2xl md:text-3xl font-black uppercase italic tracking-tight text-white">Pool Access Disabled</h2>
             <p class="text-sm font-bold leading-relaxed text-gray-300">This account has been blocked from the pool. Contact the commissioner if you think this is a mistake.</p>
         </div>
     </div>
@@ -362,203 +444,142 @@
     <div id="main-app" class="hidden h-[calc(100vh-60px)] w-full opacity-0 transition-opacity duration-700 text-gray-900">
         
         <div id="page-instructions" class="page-content h-full w-full overflow-y-auto p-6 md:p-12 bg-white text-gray-900 text-left">
-            <div class="max-w-6xl mx-auto space-y-10">
-                <header class="space-y-6 text-left">
-                    <div class="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-                        <div class="space-y-3">
-                            <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.3em]">2026 World Cup Pool</div>
-                            <h1 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter">Dashboard</h1>
-                            <p id="dashboard-welcome" class="max-w-2xl text-sm md:text-base font-bold text-gray-500">Loading your pool snapshot...</p>
-                        </div>
-                        <div class="flex w-full flex-wrap items-stretch justify-center gap-3 xl:w-auto xl:justify-end">
-                            <div id="dashboard-countdown" class="flex w-full justify-center gap-3 rounded-2xl bg-gray-900 px-4 py-3 text-center text-white shadow-xl sm:w-auto">
-                                <div><div id="dashboard-days" class="text-lg font-black text-white">00</div><div class="text-[8px] font-bold uppercase text-gray-400">Days</div></div>
-                                <div class="theme-countdown-accent font-bold">:</div>
-                                <div><div id="dashboard-hours" class="text-lg font-black text-white">00</div><div class="text-[8px] font-bold uppercase text-gray-400">Hrs</div></div>
-                                <div class="theme-countdown-accent font-bold">:</div>
-                                <div><div id="dashboard-minutes" class="text-lg font-black text-white">00</div><div class="text-[8px] font-bold uppercase text-gray-400">Min</div></div>
-                            </div>
-                        </div>
+            <div class="max-w-6xl mx-auto space-y-6">
+                <!-- Title + countdown -->
+                <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                    <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                        <h1 class="text-2xl md:text-3xl font-black uppercase italic tracking-tight">Dashboard</h1>
+                        <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.3em]">2026 World Cup Pool</div>
                     </div>
-                    <div id="dashboard-favorite-banner" class="hidden rounded-3xl px-6 py-5 text-center shadow-sm">
-                        <div id="dashboard-favorite-banner-text" class="text-xl md:text-2xl font-black uppercase italic tracking-[0.08em]">WORLD CUP 2026</div>
-                        <div id="dashboard-favorite-banner-subtext" class="mt-2 text-[10px] font-black uppercase tracking-[0.25em] opacity-80">Supporter colours by your favourite team</div>
-                    </div>
-                    <div class="mx-auto grid max-w-6xl grid-cols-2 xl:grid-cols-4 gap-4">
-                        <div class="theme-soft-card rounded-3xl border p-5 text-center relative overflow-hidden">
-                            <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl" style="background-color: var(--theme-accent-primary);"></div>
-                            <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.25em] text-center">My Points</div>
-                            <div id="dashboard-my-points" class="mt-2 text-4xl font-black italic text-gray-900 text-center">0</div>
-                        </div>
-                        <div class="rounded-3xl border border-gray-200 bg-white p-5 text-center relative overflow-hidden">
-                            <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl bg-gray-200"></div>
-                            <div class="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400 text-center">My Rank</div>
-                            <div id="dashboard-my-rank" class="mt-2 text-3xl font-black italic text-gray-900 text-center">-</div>
-                        </div>
-                        <div class="rounded-3xl border border-gray-200 bg-white p-5 text-center relative overflow-hidden">
-                            <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl bg-gray-200"></div>
-                            <div class="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400 text-center">Squad Size</div>
-                            <div id="dashboard-squad-size" class="mt-2 text-3xl font-black italic text-gray-900 text-center">0</div>
-                        </div>
-                        <div class="rounded-3xl border border-gray-200 bg-white p-5 text-center relative overflow-hidden">
-                            <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl bg-gray-200"></div>
-                            <div class="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400 text-center">Budget Left</div>
-                            <div id="dashboard-budget-left" class="mt-2 text-3xl font-black italic text-gray-900 text-center">$150</div>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-[1.3fr_0.7fr] gap-6">
-                        <div class="relative flex min-h-[270px] flex-col justify-between overflow-hidden rounded-3xl border border-gray-800 bg-gray-900 px-6 py-8 text-white">
-                            <div class="pointer-events-none absolute inset-0">
-                                <div class="absolute inset-4 rounded-[28px]" style="border: 1.5px solid rgba(var(--theme-accent-primary-rgb), 0.28);"></div>
-                                <div class="absolute left-1/2 top-5 h-[calc(100%-2.5rem)] w-[1.5px] -translate-x-1/2" style="background-color: rgba(var(--theme-accent-primary-rgb), 0.24);"></div>
-                                <div class="absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full" style="border: 1.5px solid rgba(var(--theme-accent-primary-rgb), 0.28);"></div>
-                                <div class="absolute left-5 top-1/2 h-24 w-12 -translate-y-1/2 rounded-r-2xl" style="border: 1.5px solid rgba(var(--theme-accent-primary-rgb), 0.24); border-left: 0;"></div>
-                                <div class="absolute right-5 top-1/2 h-24 w-12 -translate-y-1/2 rounded-l-2xl" style="border: 1.5px solid rgba(var(--theme-accent-primary-rgb), 0.24); border-right: 0;"></div>
-                                <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04)_0%,rgba(255,255,255,0)_58%)]"></div>
-                            </div>
-                            <div id="dashboard-squad-strip" class="relative z-10 flex flex-wrap justify-center gap-4 rounded-3xl bg-white px-5 py-6"></div>
-                            <div class="relative z-10 flex flex-col items-center justify-center gap-4 py-6">
-                                <div id="dashboard-save-status" class="text-xl font-black uppercase italic leading-none text-green-300">No changes yet</div>
-                                <button onclick="showPage('picks')" class="rounded-2xl bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] theme-accent-text transition-colors" style="background-color: #ffffff;">Go To Picks</button>
-                            </div>
-                        </div>
-                        <div class="relative overflow-hidden rounded-3xl border border-gray-200 bg-gray-50 px-6 py-5 text-gray-900 shadow-sm">
-                            <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_32%,rgba(255,255,255,0.95),transparent_28%),radial-gradient(circle_at_42%_66%,rgba(255,255,255,0.72),transparent_26%)]"></div>
-                            <div class="relative z-10 flex h-full flex-col gap-6">
-                                <div class="grid grid-cols-[minmax(0,1fr)_120px] items-center gap-4 md:grid-cols-[minmax(0,1fr)_148px]">
-                                    <div class="text-left">
-                                        <div class="text-[10px] font-black uppercase tracking-[0.25em] text-gray-500">Pool Pot</div>
-                                        <div id="dashboard-prize-pot" class="mt-1 text-4xl font-black italic leading-none">$0</div>
-                                        <div class="mt-2 text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">
-                                            <span id="dashboard-player-count">0 entries in the pool</span>
-                                        </div>
-                                    </div>
-                                    <div class="pointer-events-none flex justify-end opacity-35 md:opacity-45">
-                                        <svg width="150" height="98" viewBox="0 0 220 140" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-[78px] w-[118px] drop-shadow-sm md:h-[90px] md:w-[148px]">
-                                            <g transform="rotate(-14 62 72)">
-                                                <rect x="8" y="34" width="86" height="54" rx="10" fill="color-mix(in srgb, var(--theme-accent-primary) 18%, white)" stroke="color-mix(in srgb, var(--theme-accent-primary) 42%, white)" stroke-width="2"/>
-                                                <circle cx="51" cy="61" r="14" fill="color-mix(in srgb, var(--theme-accent-primary) 24%, white)"/>
-                                                <path d="M48.6 53.9h5.2v3h-4c-1 0-1.7.5-1.7 1.3 0 .8.6 1.2 1.8 1.5l1.4.3c3 .7 4.5 2.1 4.5 4.7 0 2.6-1.8 4.4-4.8 4.9v2.7h-3v-2.6h-5.1v-3h4.4c1.2 0 1.9-.5 1.9-1.3 0-.7-.5-1.1-1.7-1.4l-1.6-.4c-3-.7-4.4-2.2-4.4-4.8 0-2.6 1.7-4.4 4.7-4.8v-2.5h3v2.4z" fill="var(--theme-accent-text)"/>
-                                            </g>
-                                            <g transform="rotate(8 124 66)">
-                                                <rect x="84" y="18" width="94" height="58" rx="10" fill="color-mix(in srgb, var(--theme-accent-primary) 14%, white)" stroke="color-mix(in srgb, var(--theme-accent-primary) 36%, white)" stroke-width="2"/>
-                                                <circle cx="131" cy="47" r="15" fill="color-mix(in srgb, var(--theme-accent-primary) 20%, white)"/>
-                                                <path d="M128.6 39.9h5.2v3h-4c-1 0-1.7.5-1.7 1.3 0 .8.6 1.2 1.8 1.5l1.4.3c3 .7 4.5 2.1 4.5 4.7 0 2.6-1.8 4.4-4.8 4.9v2.7h-3v-2.6h-5.1v-3h4.4c1.2 0 1.9-.5 1.9-1.3 0-.7-.5-1.1-1.7-1.4l-1.6-.4c-3-.7-4.4-2.2-4.4-4.8 0-2.6 1.7-4.4 4.7-4.8v-2.5h3v2.4z" fill="var(--theme-accent-text)"/>
-                                            </g>
-                                            <g transform="rotate(17 162 92)">
-                                                <rect x="132" y="48" width="80" height="50" rx="10" fill="color-mix(in srgb, var(--theme-accent-primary) 10%, white)" stroke="color-mix(in srgb, var(--theme-accent-primary) 30%, white)" stroke-width="2"/>
-                                                <circle cx="172" cy="73" r="12" fill="color-mix(in srgb, var(--theme-accent-primary) 18%, white)"/>
-                                                <path d="M169.6 66.4h4.9v2.7h-3.7c-.9 0-1.5.5-1.5 1.2s.5 1.1 1.7 1.4l1.3.3c2.8.7 4.1 2 4.1 4.3s-1.7 4.1-4.4 4.5v2.4h-2.8v-2.4h-4.7v-2.7h4.1c1.1 0 1.8-.4 1.8-1.2 0-.6-.5-1-1.6-1.3l-1.5-.4c-2.7-.7-4-2-4-4.4s1.6-4 4.3-4.4v-2.3h2.8v2.3z" fill="var(--theme-accent-text)"/>
-                                            </g>
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div class="mt-auto space-y-2 text-xs font-black uppercase tracking-[0.18em] text-gray-700">
-                                    <div class="flex items-center justify-between gap-4 rounded-xl bg-white/85 px-4 py-3 shadow-sm">
-                                        <span>P1</span>
-                                        <span id="dashboard-prize-1st" class="theme-accent-text">$0</span>
-                                    </div>
-                                    <div class="flex items-center justify-between gap-4 rounded-xl bg-white/85 px-4 py-3 shadow-sm">
-                                        <span>P2</span>
-                                        <span id="dashboard-prize-2nd">$0</span>
-                                    </div>
-                                    <div class="flex items-center justify-between gap-4 rounded-xl bg-white/85 px-4 py-3 shadow-sm">
-                                        <span>P3</span>
-                                        <span id="dashboard-prize-3rd">$0</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </header>
-
-                <div id="dashboard-teams-today-section" class="hidden rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <div class="mb-4 border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                        <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Your Squad Matches</h2>
-                        <p id="dashboard-teams-today-label" class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Recent and upcoming matches for your squad</p>
-                    </div>
-                    <div id="dashboard-teams-today" class="grid grid-cols-1 gap-4 xl:grid-cols-2"></div>
                 </div>
 
-                <section class="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-8">
-                    <div class="space-y-8">
-                        <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                            <div class="mb-6 flex items-center justify-between gap-4">
-                                <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                                    <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Leaderboard Snapshot</h2>
-                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Current top contenders</p>
-                                </div>
-                                <button onclick="showPage('leaderboard')" class="rounded-2xl bg-slate-700 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-white transition-colors hover:bg-slate-600">Full Table</button>
-                            </div>
-                            <div id="dashboard-leaderboard" class="space-y-3 text-left"></div>
-                        </div>
-
-                        <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                            <div class="mb-6 flex items-center justify-between gap-4">
-                                <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                                    <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Latest Results</h2>
-                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Most recent match updates</p>
-                                </div>
-                                <button onclick="showPage('results'); showResultsTab('matches');" class="rounded-2xl bg-slate-700 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-white transition-colors hover:bg-slate-600">Match Results</button>
-                            </div>
-                            <div id="dashboard-latest-results" class="space-y-3 text-left"></div>
-                        </div>
+                <!-- One big pill: banner + stats bar + player card + tabs -->
+                <div class="rounded-3xl overflow-hidden shadow-lg">
+                    <!-- Favourite team banner -->
+                    <div id="dashboard-favorite-banner" class="hidden px-6 py-5 text-center">
+                        <div id="dashboard-favorite-banner-text" class="text-xl md:text-2xl font-black uppercase italic tracking-[0.08em]">WORLD CUP 2026</div>
+                        <div id="dashboard-favorite-banner-subtext" class="hidden"></div>
                     </div>
-
-                    <div class="space-y-8">
-                        <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                            <div class="mb-6 flex items-center justify-between gap-4">
-                                <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                                    <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Most Picked Teams</h2>
-                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Pool ownership leaders</p>
+                    <!-- Stats bar -->
+                    <div id="dashboard-stats-bar" class="hidden overflow-hidden">
+                        <div class="flex divide-x divide-black/10">
+                            <button onclick="showDashPointsModal()" class="flex-1 py-3 text-center hover:opacity-75 transition-opacity flex flex-col items-center gap-1.5">
+                                <div class="text-[9px] font-black uppercase tracking-[0.2em] opacity-60 leading-none">Points</div>
+                                <div id="dashboard-my-points" class="h-8 flex items-center justify-center text-2xl font-black leading-none">0</div>
+                            </button>
+                            <button onclick="showDashRankModal()" class="flex-1 py-3 text-center hover:opacity-75 transition-opacity flex flex-col items-center gap-1.5">
+                                <div class="text-[9px] font-black uppercase tracking-[0.2em] opacity-60 leading-none">Rank</div>
+                                <div id="dashboard-my-rank" class="h-8 flex items-center justify-center text-2xl font-black leading-none">-</div>
+                            </button>
+                            <button onclick="showDashReportCard()" class="flex-1 py-3 text-center hover:opacity-75 transition-opacity flex flex-col items-center gap-1.5">
+                                <div class="text-[9px] font-black uppercase tracking-[0.2em] opacity-60 leading-none">Report Card</div>
+                                <div id="dashboard-report-grade" class="h-8 flex items-center justify-center text-2xl font-black leading-none">—</div>
+                            </button>
+                            <button onclick="showDashChips()" class="flex-1 py-3 text-center hover:opacity-75 transition-opacity flex flex-col items-center gap-1.5">
+                                <div class="text-[9px] font-black uppercase tracking-[0.2em] opacity-60 leading-none">Chips</div>
+                                <div id="dashboard-chips-preview" class="h-8 flex items-center justify-center text-2xl font-black leading-none">—</div>
+                            </button>
+                            <div class="flex-1 py-3 text-center flex flex-col items-center gap-1.5">
+                                <div id="dashboard-countdown-label" class="text-[9px] font-black uppercase tracking-[0.2em] opacity-60 leading-none">Kick Off</div>
+                                <div class="h-8 flex items-center justify-center gap-1.5">
+                                    <div class="text-center"><div id="dash-cd-days" class="text-lg font-black leading-none">—</div><div class="text-[7px] font-bold uppercase opacity-50">Days</div></div>
+                                    <div class="text-sm font-bold opacity-30">:</div>
+                                    <div class="text-center"><div id="dash-cd-hours" class="text-lg font-black leading-none">—</div><div class="text-[7px] font-bold uppercase opacity-50">Hrs</div></div>
+                                    <div class="text-sm font-bold opacity-30">:</div>
+                                    <div class="text-center"><div id="dash-cd-mins" class="text-lg font-black leading-none">—</div><div class="text-[7px] font-bold uppercase opacity-50">Min</div></div>
                                 </div>
-                                <button onclick="showPage('results'); showResultsTab('selection');" class="rounded-2xl bg-slate-700 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-white transition-colors hover:bg-slate-600">Full Stats</button>
-                            </div>
-                            <div id="dashboard-most-picked" class="space-y-3 text-left"></div>
-                        </div>
-
-                        <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                            <div class="mb-6">
-                                <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                                    <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Quick Links</h2>
-                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Jump back into the pool</p>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-3">
-                                <button onclick="showPage('picks')" class="picks-action-link theme-soft-card rounded-2xl border px-4 py-4 text-left transition-colors">
-                                    <div class="picks-action-kicker text-[10px] font-black uppercase tracking-[0.25em]">My Picks</div>
-                                    <div class="mt-2 text-lg font-black uppercase italic text-gray-900">Edit Squad</div>
-                                </button>
-                                <button onclick="showPage('results')" class="theme-action-link rounded-2xl border border-gray-200 px-4 py-4 text-left transition-colors">
-                                    <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.25em]">Results</div>
-                                    <div class="mt-2 text-lg font-black uppercase italic text-gray-900">Track Scores</div>
-                                </button>
-                                <button onclick="showPage('leaderboard')" class="theme-action-link rounded-2xl border border-gray-200 px-4 py-4 text-left transition-colors">
-                                    <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.25em]">Leaderboard</div>
-                                    <div class="mt-2 text-lg font-black uppercase italic text-gray-900">See Rankings</div>
-                                </button>
-                                <button onclick="showPage('chat')" class="theme-action-link rounded-2xl border border-gray-200 px-4 py-4 text-left transition-colors">
-                                    <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.25em]">Chat</div>
-                                    <div class="mt-2 text-lg font-black uppercase italic text-gray-900">Join Talk</div>
-                                </button>
                             </div>
                         </div>
                     </div>
-                </section>
-                <div class="h-20"></div>
+                    <!-- Glow divider (below stats bar) -->
+                    <div id="dashboard-glow-divider-bottom" class="hidden h-px w-full opacity-60" style="background: linear-gradient(90deg, transparent 0%, var(--theme-accent-primary) 40%, var(--theme-accent-primary) 60%, transparent 100%); box-shadow: 0 0 4px 0px var(--theme-accent-primary);"></div>
+                    <!-- Player card + tabbed panel -->
+                    <div class="flex flex-col lg:flex-row">
+                        <!-- Left: player card -->
+                        <div id="dashboard-squad-card" class="lg:w-[44%] lg:flex-shrink-0 flex flex-col" style="background-color: #0f172a;">
+                            <div class="p-6 flex-1" id="dashboard-squad-inner">
+                                <div id="dashboard-squad-strip" class="grid grid-cols-2 gap-2"></div>
+                            </div>
+                            <div id="dashboard-squad-budget-bar" class="hidden px-6 pb-5"></div>
+                        </div>
+                        <!-- Right: tabbed panel -->
+                        <div class="flex-1 bg-white flex flex-col h-[480px] overflow-hidden">
+                            <!-- Tab bar + squad/all toggle -->
+                            <div class="flex items-center justify-between gap-2 px-4 pt-3 pb-0 border-b border-gray-100 shrink-0">
+                                <div class="flex gap-0 overflow-x-auto">
+                                    <button id="dash-tab-btn-board" onclick="setDashRightTab('board')"
+                                        class="px-3 pb-2.5 pt-1 text-[10px] font-black uppercase tracking-[0.18em] text-gray-900 border-b-2 border-gray-900 transition-all shrink-0">Table</button>
+                                    <button id="dash-tab-btn-matches" onclick="setDashRightTab('matches')"
+                                        class="px-3 pb-2.5 pt-1 text-[10px] font-black uppercase tracking-[0.18em] text-gray-400 border-b-2 border-transparent transition-all shrink-0">Matches</button>
+                                    <button id="dash-tab-btn-rankings" onclick="setDashRightTab('rankings')"
+                                        class="px-3 pb-2.5 pt-1 text-[10px] font-black uppercase tracking-[0.18em] text-gray-400 border-b-2 border-transparent transition-all shrink-0">Odds</button>
+                                    <button id="dash-tab-btn-groups" onclick="setDashRightTab('groups')"
+                                        class="px-3 pb-2.5 pt-1 text-[10px] font-black uppercase tracking-[0.18em] text-gray-400 border-b-2 border-transparent transition-all shrink-0">Groups</button>
+                                    <button id="dash-tab-btn-map" onclick="setDashRightTab('map')"
+                                        class="px-3 pb-2.5 pt-1 text-[10px] font-black uppercase tracking-[0.18em] text-gray-400 border-b-2 border-transparent transition-all shrink-0">Draw</button>
+                                </div>
+                                <div id="dash-match-mode-toggle" class="hidden flex rounded-lg bg-gray-100 p-0.5 gap-0.5 mb-1 shrink-0">
+                                    <button id="dash-matches-squad-btn" onclick="setDashMatchMode('squad')"
+                                        class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wide bg-white shadow-sm text-gray-900 transition-all">Squad</button>
+                                    <button id="dash-matches-all-btn" onclick="setDashMatchMode('all')"
+                                        class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wide text-gray-500 transition-all">All</button>
+                                </div>
+                            </div>
+                            <!-- Tab: Board -->
+                            <div id="dash-tab-content-board" class="flex-1 overflow-y-auto p-4 space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-sm font-black uppercase tracking-[0.12em] text-gray-700"><span id="dashboard-prize-pot">$0</span> pot · <span id="dashboard-player-count">0 entries</span></p>
+                                    <button onclick="showPage('leaderboard')" class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400 hover:text-gray-600">Full →</button>
+                                </div>
+                                <div id="dashboard-leaderboard" class="space-y-2"></div>
+                            </div>
+                            <!-- Tab: Matches (Scores + Fixtures) -->
+                            <div id="dash-tab-content-matches" class="hidden flex-1 overflow-hidden p-3">
+                                <div class="rounded-2xl border border-gray-100 overflow-hidden h-full flex flex-col">
+                                    <!-- Column headers -->
+                                    <div class="grid grid-cols-2 divide-x divide-gray-100 border-b border-gray-100 shrink-0">
+                                        <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 text-center py-2">Scores</div>
+                                        <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 text-center py-2">Fixtures</div>
+                                    </div>
+                                    <!-- Match columns -->
+                                    <div class="grid grid-cols-2 divide-x divide-gray-100 flex-1 overflow-hidden">
+                                        <div class="overflow-y-auto px-2 py-1" id="dash-matches-past-body"></div>
+                                        <div class="overflow-y-auto px-2 py-1" id="dash-matches-next-body"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Tab: Rankings -->
+                            <div id="dash-tab-content-rankings" class="hidden flex-1 overflow-y-auto p-4">
+                                <div id="dash-rankings-body"></div>
+                            </div>
+                            <!-- Tab: Groups -->
+                            <div id="dash-tab-content-groups" class="hidden flex-1 overflow-y-auto p-4">
+                                <div id="dash-groups-body"></div>
+                            </div>
+                            <!-- Tab: Map (ownership) -->
+                            <div id="dash-tab-content-map" class="hidden flex-1 overflow-y-auto p-4">
+                                <div id="dash-map-body"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="h-10"></div>
             </div>
         </div>
 
         <div id="page-rules" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-white text-gray-900 text-left">
             <div class="max-w-5xl mx-auto space-y-10">
                 <header class="text-left">
-                    <h1 class="text-4xl md:text-5xl font-black uppercase italic mb-2 tracking-tighter">The Official Rules</h1>
-                    <p class="theme-accent-text font-bold uppercase tracking-widest text-xs">2026 World Cup Pool Selection &amp; Scoring</p>
+                    <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                        <h1 class="text-2xl md:text-3xl font-black uppercase italic tracking-tight">The Official Rules</h1>
+                        <p class="theme-accent-text font-black uppercase tracking-[0.2em] text-[10px]">2026 World Cup Pool Selection &amp; Scoring</p>
+                    </div>
                 </header>
                 <div class="grid grid-cols-1 md:grid-cols-[1.15fr_0.85fr] gap-10 text-gray-900 border-b-2 border-gray-100 pb-8 text-left">
                     <section class="flex flex-col gap-5">
                         <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                            <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Squad Building</h2>
+                            <h2 class="text-2xl md:text-3xl font-black uppercase italic tracking-tight text-gray-900">Squad Building</h2>
                             <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Pick within budget and tier limits</p>
                         </div>
                         <div class="flex flex-col gap-4 flex-1">
@@ -597,7 +618,7 @@
                     </section>
                     <section class="flex flex-col gap-5 text-left">
                         <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                            <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Prizes</h2>
+                            <h2 class="text-2xl md:text-3xl font-black uppercase italic tracking-tight text-gray-900">Prizes</h2>
                             <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Pool pot split across top three</p>
                         </div>
                         <div class="flex flex-col gap-4 flex-1">
@@ -628,7 +649,7 @@
                 
                 <section class="space-y-6 text-left">
                     <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                        <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Point Scoring</h2>
+                        <h2 class="text-2xl md:text-3xl font-black uppercase italic tracking-tight text-gray-900">Point Scoring</h2>
                         <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">How points are earned each stage</p>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 font-bold text-gray-800">
@@ -663,7 +684,7 @@
             <div id="picks-main-scroll" class="flex-grow h-full overflow-y-auto p-4 md:p-10 bg-white text-gray-900 pb-[350px] md:pb-10 text-left">
                 <header class="mb-3 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-200 pb-6 gap-4 text-left">
                     <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                        <h1 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter">Selection</h1>
+                        <h1 class="text-2xl md:text-3xl font-black uppercase italic tracking-tight">Selection</h1>
                         <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Build your squad within budget and tier limits</p>
                     </div>
                     <div id="countdown" class="flex gap-3 justify-center text-center bg-gray-900 text-white px-4 py-2 rounded-xl shadow-xl w-full md:w-auto">
@@ -725,7 +746,7 @@
             <div class="max-w-6xl mx-auto space-y-10 text-left text-gray-900">
                 <header class="text-left">
                     <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                        <h1 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter">Results Centre</h1>
+                        <h1 class="text-2xl md:text-3xl font-black uppercase italic tracking-tight">Results Centre</h1>
                         <p class="theme-accent-text font-black uppercase tracking-[0.2em] text-[10px]">Verified Tournament Progress</p>
                     </div>
                 </header>
@@ -913,7 +934,7 @@
             <div class="max-w-6xl mx-auto space-y-6 text-left text-gray-900">
                 <header>
                     <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                        <h1 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter">Pool Statistics</h1>
+                        <h1 class="text-2xl md:text-3xl font-black uppercase italic tracking-tight">Pool Statistics</h1>
                         <p class="theme-accent-text font-black uppercase tracking-[0.2em] text-[10px]">Colour by ownership or group · click any country</p>
                     </div>
                 </header>
@@ -942,7 +963,7 @@
                                 <button id="map-mode-groups" onclick="setMapColorMode('groups')"
                                         class="px-3 rounded-xl text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all whitespace-nowrap">Groups</button>
                                 <button id="map-mode-me" onclick="setMapColorMode('me')"
-                                        class="px-3 rounded-xl text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all whitespace-nowrap">Me</button>
+                                        class="px-3 rounded-xl text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all whitespace-nowrap">My Picks</button>
                             </div>
                             <div class="relative flex-1 min-w-0" id="map-country-search-wrap">
                                 <div class="flex items-center gap-2 h-full rounded-2xl border border-gray-200 bg-white px-4 shadow-sm">
@@ -1045,7 +1066,7 @@
             <div class="max-w-5xl mx-auto text-left text-gray-900">
                 <header class="mb-8">
                     <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                        <h1 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter text-gray-900">Leaderboard</h1>
+                        <h1 class="text-2xl md:text-3xl font-black uppercase italic tracking-tight text-gray-900">Leaderboard</h1>
                         <p class="theme-accent-text font-black uppercase tracking-[0.2em] text-[10px]">Live Standings</p>
                     </div>
                 </header>
@@ -1108,7 +1129,12 @@
             <!-- Sticky header: title + main tabs -->
             <div id="admin-sticky-header" class="sticky top-0 z-30 bg-gray-900 border-b border-gray-800 px-6 md:px-12 pt-6 md:pt-10 pb-4">
                 <div class="max-w-6xl mx-auto text-left">
-                    <header class="text-left pb-5 text-left text-white text-left text-white text-left"><h1 class="text-4xl font-black uppercase italic mb-2 tracking-tighter text-left">Commissioner Desk</h1><p class="text-blue-500 font-bold uppercase tracking-widest text-xs text-left">Match Results & Tournament Controls</p></header>
+                    <header class="text-left pb-5">
+                    <div class="border-l-[3px] pl-3 border-blue-500">
+                        <h1 class="text-2xl md:text-3xl font-black uppercase italic tracking-tight text-white">Commissioner Desk</h1>
+                        <p class="text-blue-500 font-black uppercase tracking-[0.2em] text-[10px]">Match Results &amp; Tournament Controls</p>
+                    </div>
+                </header>
                     <div class="flex flex-wrap gap-2 rounded-3xl border border-gray-800 bg-gray-950/70 p-2 shadow-[0_18px_40px_rgba(0,0,0,0.25)]">
                         <button onclick="showAdminTab('matches')" id="admin-tab-matches" class="admin-tab active rounded-xl border border-blue-400/40 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-950 shadow-lg shadow-blue-500/10 transition-all duration-200">Match Results</button>
                         <button onclick="showAdminTab('schedule')" id="admin-tab-schedule" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Schedule</button>
@@ -1438,7 +1464,7 @@
             <div class="max-w-3xl mx-auto space-y-8">
                 <header class="text-left">
                     <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                        <h1 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter">Profile</h1>
+                        <h1 class="text-2xl md:text-3xl font-black uppercase italic tracking-tight">Profile</h1>
                         <p class="theme-accent-text font-black uppercase tracking-[0.2em] text-[10px]">Your identity across leaderboard and chat</p>
                     </div>
                 </header>
@@ -1666,6 +1692,56 @@
                     <button onclick="closePlayerProfile()" class="w-full rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-gray-300 hover:bg-gray-700 transition-colors">Close</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Dashboard: Points breakdown modal -->
+    <div id="dash-points-modal" class="hidden fixed inset-0 z-[116] bg-black/80 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closeDashPointsModal()">
+        <div class="w-full max-w-md rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="shrink-0 flex items-center justify-between px-6 py-4 border-b border-gray-800">
+                <div class="text-[11px] font-black uppercase tracking-[0.25em] text-gray-300">Points Breakdown</div>
+                <button onclick="closeDashPointsModal()" class="text-gray-500 hover:text-white transition-colors text-xl leading-none">×</button>
+            </div>
+            <div id="dash-points-modal-body" class="overflow-y-auto flex-1 p-6 space-y-2"></div>
+        </div>
+    </div>
+
+    <!-- Dashboard: Picks Report Card modal -->
+    <div id="dash-report-modal" class="hidden fixed inset-0 z-[116] bg-black/80 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closeDashReportCard()">
+        <div class="w-full max-w-4xl rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col" style="height:min(700px,90vh)">
+            <div class="shrink-0 flex items-center justify-between px-6 py-4 border-b border-gray-800">
+                <div class="text-[11px] font-black uppercase tracking-[0.25em] text-gray-300">Picks Report Card</div>
+                <button onclick="closeDashReportCard()" class="text-gray-500 hover:text-white transition-colors text-xl leading-none">×</button>
+            </div>
+            <div class="flex flex-1 min-h-0">
+                <div id="dash-report-sidebar" class="w-44 shrink-0 border-r border-gray-800 overflow-y-auto p-2 space-y-1"></div>
+                <div id="dash-report-modal-body" class="overflow-y-auto flex-1 p-6"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard: Chips modal -->
+    <div id="dash-chips-modal" class="hidden fixed inset-0 z-[116] bg-black/80 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closeDashChips()">
+        <div class="w-full max-w-4xl rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col" style="height:min(700px,90vh)">
+            <div class="shrink-0 flex items-center justify-between px-6 py-4 border-b border-gray-800">
+                <div class="text-[11px] font-black uppercase tracking-[0.25em] text-gray-300">Chips</div>
+                <button onclick="closeDashChips()" class="text-gray-500 hover:text-white transition-colors text-xl leading-none">×</button>
+            </div>
+            <div class="flex flex-1 min-h-0">
+                <div id="dash-chips-sidebar" class="w-44 shrink-0 border-r border-gray-800 overflow-y-auto p-2 space-y-1"></div>
+                <div id="dash-chips-body" class="overflow-y-auto flex-1 p-6"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard: Mini leaderboard modal -->
+    <div id="dash-rank-modal" class="hidden fixed inset-0 z-[116] bg-black/80 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closeDashRankModal()">
+        <div class="w-full max-w-sm rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="shrink-0 flex items-center justify-between px-6 py-4 border-b border-gray-800">
+                <div class="text-[11px] font-black uppercase tracking-[0.25em] text-gray-300">Leaderboard</div>
+                <button onclick="closeDashRankModal()" class="text-gray-500 hover:text-white transition-colors text-xl leading-none">×</button>
+            </div>
+            <div id="dash-rank-modal-body" class="overflow-y-auto flex-1 p-4 space-y-1.5"></div>
         </div>
     </div>
 

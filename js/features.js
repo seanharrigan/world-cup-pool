@@ -35,7 +35,7 @@ const stageMultiplierLabels = {
 const PLAYER_CHIP_DEFINITIONS = {
     leader: { id: 'leader', emoji: '🥇', label: 'Leader', tone: 'positive', description: 'Ranked #1 overall right now.' },
     hot: { id: 'hot', emoji: '🔥', label: 'Hot', tone: 'positive', description: 'Most points in the most recently completed stage.' },
-    group_king: { id: 'group_king', emoji: '🌟', label: 'Group King', tone: 'positive', description: 'Most combined group-stage points across Matchdays 1-3.' },
+    group_king: { id: 'group_king', emoji: '🌟', label: 'Group King', tone: 'positive', description: 'Most group-stage points in the pool across all three matchdays.' },
     all_through: { id: 'all_through', emoji: '⚡', label: 'All Through', tone: 'positive', description: 'Every picked team made it through the group stage and none are currently eliminated.' },
     big_dog: { id: 'big_dog', emoji: '💎', label: 'Big Dog', tone: 'positive', description: 'Owns the priciest Tier 1 star in the pool.' },
     on_the_rise: { id: 'on_the_rise', emoji: '📈', label: 'On the Rise', tone: 'positive', description: 'Biggest positive jump in rank since the last leaderboard snapshot.' },
@@ -55,16 +55,16 @@ const PLAYER_CHIP_DEFINITIONS = {
 
 const PLAYER_CHIP_TONE_CLASSES = {
     positive: {
-        row: 'bg-green-100 text-green-700',
-        card: 'bg-green-100 text-green-700'
+        row: 'bg-green-100 border-2 border-green-600',
+        card: 'bg-green-100 text-green-800 border-2 border-green-600'
     },
     negative: {
-        row: 'bg-red-100 text-red-700',
-        card: 'bg-red-100 text-red-700'
+        row: 'bg-red-100 border-2 border-red-600',
+        card: 'bg-red-100 text-red-800 border-2 border-red-600'
     },
     neutral: {
-        row: 'bg-sky-100 text-sky-700',
-        card: 'bg-sky-100 text-sky-700'
+        row: 'bg-sky-100 border-2 border-sky-600',
+        card: 'bg-sky-100 text-sky-800 border-2 border-sky-600'
     }
 };
 
@@ -268,6 +268,7 @@ function getFavoriteTeamAccentTokens(favoriteTeam) {
         primary,
         primaryRgb: hexToRgb(primary),
         text: darkenHex(primary, 0.12),
+        onDark: mixHexWithWhite(primary, 0.68),
         soft: mixHexWithWhite(primary, 0.90),
         softStrong: mixHexWithWhite(primary, 0.78),
         pillBg: mixHexWithWhite(primary, 0.84),
@@ -330,9 +331,18 @@ function applyFavoriteBanner(banner, bannerText, favoriteTeam) {
     const rightFlag = team?.flag || '🌍';
     const { backgroundColor } = getThemeColorContext(config);
 
-    banner.className = 'rounded-3xl px-6 py-5 text-center shadow-sm';
+    const statsBar = document.getElementById('dashboard-stats-bar');
+    banner.className = 'px-6 py-5 text-center';
     banner.classList.remove('hidden');
     banner.style.background = `linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)), ${config.gradient}`;
+
+    const glowDividerBottom = document.getElementById('dashboard-glow-divider-bottom');
+    if (glowDividerBottom) glowDividerBottom.classList.remove('hidden');
+    if (statsBar) {
+        statsBar.classList.remove('hidden');
+        statsBar.style.background = '#f3f4f6';
+        statsBar.style.color = '#111827';
+    }
     bannerText.className = 'text-xl md:text-2xl font-black uppercase italic tracking-[0.08em]';
     bannerText.style.color = getContrastingThemeTextColor(config, backgroundColor);
     bannerText.textContent = `${leftFlag} ${config.slogan} ${rightFlag}`;
@@ -446,6 +456,179 @@ function renderTopNavFavoriteTheme(currentProfile) {
     if (userDisplayNav) {
         userDisplayNav.style.setProperty('color', menuTextColor, 'important');
     }
+}
+
+// ── Team Report Card Data ─────────────────────────────────────────────────────
+// winProb: avg implied win% from DraftKings + ESPN/bet365 + BetMGM (Apr 2026)
+// fifaRank: official FIFA ranking, April 1 2026 update
+// dk/espn/betmgm: American odds (+xxx). betmgm null where only top-15 published.
+// Sources: draftkings.com, espn.com/espn/betting, betmgm.com
+
+const TEAM_REPORT_DATA = {
+    'Spain':        { winProb: 18.18, fifaRank: 2,  dk: 450,    espn: 450,    betmgm: 450   },
+    'France':       { winProb: 15.02, fifaRank: 1,  dk: 600,    espn: 550,    betmgm: 550   },
+    'England':      { winProb: 13.33, fifaRank: 4,  dk: 650,    espn: 650,    betmgm: 650   },
+    'Brazil':       { winProb: 10.72, fifaRank: 6,  dk: 850,    espn: 850,    betmgm: 800   },
+    'Argentina':    { winProb: 10.72, fifaRank: 3,  dk: 850,    espn: 850,    betmgm: 800   },
+    'Portugal':     { winProb: 8.37,  fifaRank: 5,  dk: 1200,   espn: 1100,   betmgm: 1000  },
+    'Germany':      { winProb: 6.67,  fifaRank: 10, dk: 1400,   espn: 1400,   betmgm: 1400  },
+    'Netherlands':  { winProb: 4.62,  fifaRank: 7,  dk: 2200,   espn: 2000,   betmgm: 2000  },
+    'Norway':       { winProb: 3.51,  fifaRank: 31, dk: 3000,   espn: 2800,   betmgm: 2500  },
+    'Belgium':      { winProb: 2.83,  fifaRank: 9,  dk: 3500,   espn: 3500,   betmgm: 3300  },
+    'Colombia':     { winProb: 2.28,  fifaRank: 13, dk: 5000,   espn: 4000,   betmgm: 4000  },
+    'Morocco':      { winProb: 1.57,  fifaRank: 8,  dk: 6600,   espn: 6000,   betmgm: null  },
+    'USA':          { winProb: 1.83,  fifaRank: 16, dk: 6500,   espn: 6500,   betmgm: 4000  },
+    'Japan':        { winProb: 1.75,  fifaRank: 18, dk: 7500,   espn: 5000,   betmgm: 5000  },
+    'Mexico':       { winProb: 1.38,  fifaRank: 15, dk: 8000,   espn: 7000,   betmgm: 6600  },
+    'Switzerland':  { winProb: 0.99,  fifaRank: 19, dk: 10000,  espn: 10000,  betmgm: null  },
+    'Uruguay':      { winProb: 1.57,  fifaRank: 17, dk: 8000,   espn: 6500,   betmgm: 5000  },
+    'Ecuador':      { winProb: 1.11,  fifaRank: 23, dk: 10000,  espn: 8000,   betmgm: null  },
+    'Croatia':      { winProb: 1.04,  fifaRank: 11, dk: 10000,  espn: 9000,   betmgm: null  },
+    'Austria':      { winProb: 0.83,  fifaRank: 24, dk: 15000,  espn: 10000,  betmgm: null  },
+    'Senegal':      { winProb: 0.89,  fifaRank: 14, dk: 12500,  espn: 10000,  betmgm: null  },
+    'Turkiye':      { winProb: 1.25,  fifaRank: 22, dk: 10000,  espn: 6500,   betmgm: null  },
+    'Sweden':       { winProb: 0.95,  fifaRank: 38, dk: 15000,  espn: 8000,   betmgm: null  },
+    'Bosnia':       { winProb: 0.40,  fifaRank: 65, dk: 25000,  espn: 25000,  betmgm: null  },
+    'Canada':       { winProb: 0.50,  fifaRank: 30, dk: 20000,  espn: 20000,  betmgm: null  },
+    'Paraguay':     { winProb: 0.50,  fifaRank: 40, dk: 20000,  espn: 20000,  betmgm: null  },
+    'Scotland':     { winProb: 0.45,  fifaRank: 43, dk: 25000,  espn: 20000,  betmgm: null  },
+    'Egypt':        { winProb: 0.33,  fifaRank: 29, dk: 30000,  espn: 30000,  betmgm: null  },
+    'Czechia':      { winProb: 0.50,  fifaRank: 41, dk: 30000,  espn: 15000,  betmgm: null  },
+    'Ivory Coast':  { winProb: 0.37,  fifaRank: 34, dk: 30000,  espn: 25000,  betmgm: null  },
+    'Algeria':      { winProb: 0.27,  fifaRank: 28, dk: 40000,  espn: 35000,  betmgm: null  },
+    'Ghana':        { winProb: 0.27,  fifaRank: 74, dk: 40000,  espn: 35000,  betmgm: null  },
+    'Australia':    { winProb: 0.21,  fifaRank: 27, dk: 50000,  espn: 45000,  betmgm: null  },
+    'Tunisia':      { winProb: 0.20,  fifaRank: 44, dk: 50000,  espn: 50000,  betmgm: null  },
+    'Iran':         { winProb: 0.27,  fifaRank: 21, dk: 50000,  espn: 30000,  betmgm: null  },
+    'South Korea':  { winProb: 0.24,  fifaRank: 25, dk: 50000,  espn: 35000,  betmgm: null  },
+    'DR Congo':     { winProb: 0.14,  fifaRank: 46, dk: 75000,  espn: 70000,  betmgm: null  },
+    'Qatar':        { winProb: 0.10,  fifaRank: 55, dk: 100000, espn: 100000, betmgm: null  },
+    'South Africa': { winProb: 0.11,  fifaRank: 60, dk: 100000, espn: 80000,  betmgm: null  },
+    'Saudi Arabia': { winProb: 0.10,  fifaRank: 61, dk: 100000, espn: 100000, betmgm: null  },
+    'Panama':       { winProb: 0.08,  fifaRank: 33, dk: 150000, espn: 100000, betmgm: null  },
+    'New Zealand':  { winProb: 0.07,  fifaRank: 85, dk: 200000, espn: 100000, betmgm: null  },
+    'Iraq':         { winProb: 0.08,  fifaRank: 57, dk: 150000, espn: 100000, betmgm: null  },
+    'Cape Verde':   { winProb: 0.07,  fifaRank: 69, dk: 200000, espn: 100000, betmgm: null  },
+    'Uzbekistan':   { winProb: 0.06,  fifaRank: 50, dk: 200000, espn: 150000, betmgm: null  },
+    'Curacao':      { winProb: 0.05,  fifaRank: 82, dk: 250000, espn: 150000, betmgm: null  },
+    'Jordan':       { winProb: 0.05,  fifaRank: 63, dk: 250000, espn: 150000, betmgm: null  },
+    'Haiti':        { winProb: 0.05,  fifaRank: 83, dk: 300000, espn: 150000, betmgm: null  },
+};
+
+const _HOST_TEAMS = new Set(['USA', 'Canada', 'Mexico']);
+const _CONTRARIAN_TEAMS = new Set(['Cape Verde', 'Curacao', 'Uzbekistan', 'Jordan', 'Haiti']);
+
+function _computeFlavorText(squadData) {
+    const names = squadData.map((t) => t.name);
+    const profile = window._dashCurrentProfile;
+    const favTeam = profile?.favoriteTeam || '';
+
+    if (favTeam && names.includes(favTeam)) {
+        return `Picking ${favTeam}? Not biased at all. Totally objective.`;
+    }
+    const hostPicks = names.filter((n) => _HOST_TEAMS.has(n));
+    if (hostPicks.length >= 2) {
+        return `${hostPicks.join(' and ')} at a home World Cup — brave, or just patriotic?`;
+    }
+    if (hostPicks.length === 1) {
+        return `${hostPicks[0]} at home. Heart says yes. Odds say… we'll see.`;
+    }
+    const contrarian = names.filter((n) => _CONTRARIAN_TEAMS.has(n));
+    if (contrarian.length >= 2) {
+        return `${contrarian[0]} and ${contrarian[1]}? The scout reports must be incredible.`;
+    }
+    if (contrarian.length === 1) {
+        return `${contrarian[0]} in the squad. Bold. Very bold.`;
+    }
+    const tier1 = squadData.filter((t) => t.tier === 1);
+    if (tier1.length === 0) {
+        return `No tier 1 team? Either a bold contrarian or a strict budget hawk.`;
+    }
+    const eliminated = squadData.filter((t) => t.eliminated);
+    if (eliminated.length >= 3) {
+        return `${eliminated.length} teams already eliminated. Respect the commitment.`;
+    }
+    const totalCost = squadData.reduce((s, t) => s + t.cost, 0);
+    if (totalCost <= 80) {
+        return `Under $80 total? Either genius budgeting or a very optimistic outlook.`;
+    }
+    if (totalCost >= 140) {
+        return `Nearly maxing the budget — all in on quality. No room for sentiment.`;
+    }
+    return `Solid, unremarkable, reliable. The Switzerland of fantasy squads.`;
+}
+
+function _computeReportCard(squad) {
+    if (!squad || squad.length === 0) return null;
+
+    const squadData = squad.map((team) => {
+        const d = TEAM_REPORT_DATA[team.name] || {};
+        const winProb = d.winProb || 0;
+        const cost = team.cost || 1;
+        const valueRatio = winProb / cost;
+        const fifaRank = d.fifaRank || 90;
+        const rankScore = Math.max(0, Math.round((1 - (fifaRank - 1) / 89) * 100));
+        return { ...team, winProb, valueRatio, fifaRank, rankScore, data: d };
+    });
+
+    const avgValue = squadData.reduce((s, t) => s + t.valueRatio, 0) / squadData.length;
+    const avgRank = squadData.reduce((s, t) => s + t.rankScore, 0) / squadData.length;
+
+    // Normalise value against the best achievable legal 8-team squad avg ratio (~0.106)
+    const valueNorm = Math.min(avgValue / 0.106 * 100, 100);
+
+    // Balance: tier 2 quality (50%) + tier 3 quality (30%) + tier 1 usage (20%)
+    // Tier 2 is the key differentiator — huge range from Netherlands (35%) down to Canada (6%)
+    const tier1Count = squadData.filter((t) => t.tier === 1).length;
+    const tier2InSquad = squadData.filter((t) => t.tier === 2);
+    const tier3InSquad = squadData.filter((t) => t.tier === 3);
+
+    // Tier 2 quality: compare avg win% against the top possible tier 2 picks (best 4)
+    const allTier2WinProbs = teams
+        .filter((t) => t.tier === 2)
+        .map((t) => (TEAM_REPORT_DATA[t.name] || {}).winProb || 0)
+        .sort((a, b) => b - a);
+    const bestTier2Avg = allTier2WinProbs.slice(0, 4).reduce((s, v) => s + v, 0) / 4;
+    const myTier2Avg = tier2InSquad.length > 0
+        ? tier2InSquad.reduce((s, t) => s + t.winProb, 0) / tier2InSquad.length
+        : 0;
+    const tier2Quality = bestTier2Avg > 0 ? Math.min(100, (myTier2Avg / bestTier2Avg) * 100) : 50;
+
+    // Tier 3 quality: compare avg win% against best 3 tier 3s
+    const allTier3WinProbs = teams
+        .filter((t) => t.tier === 3)
+        .map((t) => (TEAM_REPORT_DATA[t.name] || {}).winProb || 0)
+        .sort((a, b) => b - a);
+    const bestTier3Avg = allTier3WinProbs.slice(0, 3).reduce((s, v) => s + v, 0) / 3;
+    const myTier3Avg = tier3InSquad.length > 0
+        ? tier3InSquad.reduce((s, t) => s + t.winProb, 0) / tier3InSquad.length
+        : 0;
+    const tier3Quality = bestTier3Avg > 0 ? Math.min(100, (myTier3Avg / bestTier3Avg) * 100) : 0;
+
+    // Tier 1 slot: using it (one elite team) is better
+    const tier1Score = tier1Count === 1 ? 85 : 40;
+
+    const balanceScore = tier2Quality * 0.50 + tier3Quality * 0.30 + tier1Score * 0.20;
+
+    const rawTotal = valueNorm * 0.4 + avgRank * 0.3 + balanceScore * 0.3;
+    const total = Math.min(100, rawTotal);
+
+    const grades = [
+        [90, 'A+', 'Scouting genius — the bookies can\'t hide value from you.'],
+        [85, 'A',  'Elite squad. Sharp picks from top to bottom.'],
+        [80, 'A-', 'Very strong. Almost everything here has a real case.'],
+        [75, 'B+', 'Solid squad — you clearly know what you\'re doing.'],
+        [70, 'B',  'Good mix. A couple of picks really stand out.'],
+        [65, 'B-', 'Decent foundation. A few tweaks could push you higher.'],
+        [58, 'C+', 'Some value here, some faith-based selections.'],
+        [50, 'C',  'Mid-table manager. Serviceable but not scary.'],
+        [40, 'C-', 'A few head-scratchers in here.'],
+        [25, 'D',  'Brave choices. The market disagrees, strongly.'],
+        [0,  'F',  'Pure heart, zero stats. Good luck — you\'ll need it.'],
+    ];
+    const [, grade, tagline] = grades.find(([threshold]) => total >= threshold) || grades[grades.length - 1];
+
+    return { grade, total, valueNorm, avgRank, balanceScore, squadData, tagline, flavorText: _computeFlavorText(squadData) };
 }
 
 // ── 2026 World Cup Group Stage Schedule ──────────────────────────────────────
@@ -2765,7 +2948,7 @@ function _matchResult(m, teamName) {
     return { result: 'L', pts: 0 };
 }
 
-function _matchRowHtml(m, teamNames, accentColor) {
+function _matchRowHtml(m, teamNames) {
     const played = m.score_home != null && m.score_away != null;
     const homeT = teams.find((t) => t.name === m.team_home);
     const awayT = teams.find((t) => t.name === m.team_away);
@@ -2774,48 +2957,29 @@ function _matchRowHtml(m, teamNames, accentColor) {
 
     const scoreEl = played
         ? `<span class="text-sm font-black text-gray-900 tabular-nums">${m.score_home}–${m.score_away}</span>`
-        : `<span class="text-[10px] font-black text-gray-400">vs</span>`;
+        : `<span class="text-[10px] font-black text-gray-300">vs</span>`;
 
-    const dateStr = m.match_date_manual
-        ? new Date(m.match_date_manual + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-        : '';
-
-    // Stage label: for group matches show "Grp X", otherwise stage name
     const stageLabel = m.stage === 'Group'
-        ? (m.group ? `Grp ${m.group}` : 'Group')
+        ? `Group ${m.group || ''}`
         : (m.stage || '');
 
-    // Points badges for highlighted teams
     let ptsHtml = '';
-    if (played) {
-        const badges = [];
-        if (hHighlight) {
-            const r = _matchResult(m, m.team_home);
-            if (r) {
-                const c = r.result === 'W' ? '#16a34a' : r.result === 'D' ? '#9ca3af' : '#ef4444';
-                const ptsLabel = r.pts > 0 ? `+${r.pts}pts` : '—';
-                const prefix = teamNames.size > 1 ? `${m.team_home}: ` : '';
-                badges.push(`<span style="color:${c}" class="text-[9px] font-black">${prefix}${r.result} ${ptsLabel}</span>`);
+    if (played && (hHighlight || aHighlight)) {
+        const isDraw = m.score_home === m.score_away;
+        const multiplier = { Group: 1, R32: 2, R16: 3, Quarters: 5, Semis: 8, Finals: 12 }[m.stage] || 1;
+        if (isDraw) {
+            ptsHtml = `<div class="text-[9px] text-gray-400 mt-0.5 text-center">1 pt each</div>`;
+        } else {
+            const winner = m.score_home > m.score_away ? m.team_home : m.team_away;
+            if (teamNames.has(winner)) {
+                ptsHtml = `<div class="text-[9px] text-gray-400 mt-0.5 text-center">${3 * multiplier} pts awarded</div>`;
             }
         }
-        if (aHighlight) {
-            const r = _matchResult(m, m.team_away);
-            if (r) {
-                const c = r.result === 'W' ? '#16a34a' : r.result === 'D' ? '#9ca3af' : '#ef4444';
-                const ptsLabel = r.pts > 0 ? `+${r.pts}pts` : '—';
-                const prefix = teamNames.size > 1 ? `${m.team_away}: ` : '';
-                badges.push(`<span style="color:${c}" class="text-[9px] font-black">${prefix}${r.result} ${ptsLabel}</span>`);
-            }
-        }
-        if (badges.length) ptsHtml = `<div class="mt-1 flex flex-wrap gap-x-3 justify-center">${badges.join('')}</div>`;
     }
 
     return `
-        <div class="px-2.5 py-2.5 rounded-xl hover:bg-gray-50 transition-colors ${played ? '' : 'border-l-2 border-dashed border-gray-200'}">
-            <div class="flex items-center justify-between mb-1.5">
-                <span class="text-[8px] text-gray-400">${dateStr}</span>
-                <span class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-400">${stageLabel}</span>
-            </div>
+        <div class="py-2 px-1 rounded-xl hover:bg-gray-50 transition-colors">
+            <div class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-400 text-center mb-1">${stageLabel}</div>
             <div class="flex items-center gap-1">
                 <div class="flex items-center gap-1 flex-1 justify-end min-w-0">
                     <span class="text-[10px] font-black text-gray-900 truncate">${escapeHtml(m.team_home)}</span>
@@ -2880,17 +3044,38 @@ function renderMapSideTable() {
             return;
         }
 
-        const sectionHeader = (label) =>
-            `<div class="px-2.5 pt-3 pb-1 text-[8px] font-black uppercase tracking-[0.25em] text-gray-400 border-b border-gray-100">${label}</div>`;
+        const dateHeader = (dateStr) =>
+            `<div class="flex items-center gap-2 px-1 pt-3 pb-1">
+                <div class="flex-1 h-px bg-gray-100"></div>
+                <span class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-300 shrink-0">${dateStr}</span>
+                <div class="flex-1 h-px bg-gray-100"></div>
+            </div>`;
+
+        const groupByDate = (arr) => {
+            const groups = [];
+            let lastDate = null;
+            arr.forEach((m) => {
+                const d = m.match_date_manual
+                    ? new Date(m.match_date_manual + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+                    : 'TBD';
+                if (d !== lastDate) { groups.push({ date: d, matches: [] }); lastDate = d; }
+                groups[groups.length - 1].matches.push(m);
+            });
+            return groups;
+        };
 
         let html = '';
         if (upcoming.length) {
-            html += sectionHeader(`Upcoming · Next ${upcoming.length}`);
-            html += upcoming.map((m) => _matchRowHtml(m, teamNames, accentColor)).join('');
+            groupByDate(upcoming).forEach(({ date, matches }) => {
+                html += dateHeader(date);
+                html += matches.map((m) => _matchRowHtml(m, teamNames)).join('');
+            });
         }
         if (previous.length) {
-            html += sectionHeader('Previous');
-            html += previous.map((m) => _matchRowHtml(m, teamNames, accentColor)).join('');
+            groupByDate(previous).forEach(({ date, matches }) => {
+                html += dateHeader(date);
+                html += matches.map((m) => _matchRowHtml(m, teamNames)).join('');
+            });
         }
         containers.forEach((el) => { el.innerHTML = html; });
         return;
@@ -3454,31 +3639,635 @@ async function toggleTeamElimination(teamName, checked) {
     }
 }
 
-async function setupDashboard() {
-    const welcome = document.getElementById('dashboard-welcome');
-    if (!welcome) {
+let _dashMatchCache = null;
+let _dashMatchMode = 'squad';
+let _dashRankingsSort = { col: 'fifaRank', dir: 'asc' };
+let _dashReportRanked = null;
+let _dashReportSelectedEmail = null;
+let _dashChipsPlayerList = null;
+let _dashChipsSelectedEmail = null;
+
+function showDashPointsModal() {
+    const modal = document.getElementById('dash-points-modal');
+    const body = document.getElementById('dash-points-modal-body');
+    if (!modal || !body) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    const lb = window._leaderboardData || [];
+    const myEntry = lb.find((u) => u.email === userEmail);
+    if (!myEntry) {
+        body.innerHTML = '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 text-center py-4">No data yet</div>';
         return;
     }
 
-    welcome.textContent = 'Loading your pool snapshot...';
+    const sp = myEntry.stagePoints || {};
+    const stages = [
+        { label: 'Group Stage', key: 'group', pts: (sp.G1 || 0) + (sp.G2 || 0) + (sp.G3 || 0), mult: '×1' },
+        { label: 'Bonus (advancing)', key: 'bonus', pts: sp.Bonus || 0, mult: '+1' },
+        { label: 'Round of 32', key: 'r32', pts: sp.R32 || 0, mult: '×2' },
+        { label: 'Round of 16', key: 'r16', pts: sp.R16 || 0, mult: '×3' },
+        { label: 'Quarter-Finals', key: 'qf', pts: sp.QF || 0, mult: '×5' },
+        { label: 'Semi-Finals', key: 'sm', pts: sp.SM || 0, mult: '×8' },
+        { label: 'Final', key: 'f', pts: sp.F || 0, mult: '×12' },
+    ];
 
+    body.innerHTML = `
+        <div class="mb-4 flex items-baseline gap-2">
+            <div class="text-4xl font-black text-white">${myEntry.totalPoints}</div>
+            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">total pts</div>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+        ${stages.map((s) => `
+            <div class="flex items-center justify-between rounded-xl border border-gray-800 bg-gray-800 px-3 py-2.5 ${s.pts === 0 ? 'opacity-40' : ''} ${s.key === 'f' ? 'col-span-2' : ''}">
+                <div>
+                    <div class="text-[11px] font-black uppercase text-white">${s.label}</div>
+                    <div class="text-[9px] font-bold text-gray-400">${s.mult}</div>
+                </div>
+                <div class="text-base font-black text-white">${s.pts || '—'}</div>
+            </div>
+        `).join('')}
+        </div>
+        <div class="mt-3 rounded-xl border border-gray-700 bg-gray-800/50 px-4 py-3">
+            <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Team Contributions</div>
+            ${myEntry.squad ? [...myEntry.squad].sort((a, b) => ((window._dashTeamPointsMap?.[b.name] || 0) - (window._dashTeamPointsMap?.[a.name] || 0))).map((t) => {
+            const tPts = window._dashTeamPointsMap?.[t.name] || 0;
+            return `
+                <div class="flex items-center justify-between py-1.5 border-b border-gray-700 last:border-0">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">${t.flag || ''}</span>
+                        <span class="text-[11px] font-black uppercase text-white">${escapeHtml(t.name)}</span>
+                        ${t.eliminated ? '<span class="text-[8px] font-black uppercase text-red-400 ml-1">out</span>' : ''}
+                    </div>
+                    <div class="text-[11px] font-black text-gray-300">${tPts} pts</div>
+                </div>
+            `;
+        }).join('') : ''}
+        </div>
+    `;
+}
+
+function closeDashPointsModal() {
+    const modal = document.getElementById('dash-points-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function showDashRankModal() {
+    const modal = document.getElementById('dash-rank-modal');
+    const body = document.getElementById('dash-rank-modal-body');
+    if (!modal || !body) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    const lb = window._leaderboardData || [];
+    if (!lb.length) {
+        body.innerHTML = '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 text-center py-4">No data yet</div>';
+        return;
+    }
+
+    const medals = ['🥇', '🥈', '🥉'];
+    body.innerHTML = lb.map((entry, i) => {
+        const isMe = entry.email === userEmail;
+        const medal = medals[i] || '';
+        return `
+            <div class="flex items-center justify-between rounded-xl px-4 py-3 ${isMe ? 'bg-gray-700 border border-gray-600' : 'bg-gray-800 border border-gray-800'}">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-8 text-center shrink-0">${medal || `<span class="text-[10px] font-black text-gray-500">#${i + 1}</span>`}</div>
+                    <div class="min-w-0">
+                        <div class="text-sm font-black uppercase italic text-white truncate">${escapeHtml(entry.nickname)}</div>
+                        ${isMe ? '<div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">You</div>' : ''}
+                    </div>
+                </div>
+                <div class="text-base font-black text-white shrink-0">${entry.totalPoints} <span class="text-[9px] font-black text-gray-400">pts</span></div>
+            </div>
+        `;
+    }).join('');
+}
+
+function closeDashRankModal() {
+    const modal = document.getElementById('dash-rank-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+const _RC_GRADE_COLORS = {
+    'A+': '#22c55e', 'A': '#4ade80', 'A-': '#86efac',
+    'B+': '#bef264', 'B': '#facc15', 'B-': '#fbbf24',
+    'C+': '#fb923c', 'C': '#f97316', 'C-': '#ef4444',
+    'D': '#f87171', 'F': '#dc2626'
+};
+
+function showDashReportCard() {
+    const modal = document.getElementById('dash-report-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    const allEntries = window._leaderboardData || [];
+    _dashReportRanked = allEntries
+        .map((entry) => ({ entry, rc: _computeReportCard(entry.squad) }))
+        .filter(({ rc }) => rc)
+        .sort((a, b) => b.rc.total - a.rc.total);
+
+    _dashReportSelectedEmail = userEmail;
+    _renderReportSidebar();
+    _renderReportCardDetail(userEmail);
+}
+
+function _renderReportSidebar() {
+    const sidebar = document.getElementById('dash-report-sidebar');
+    if (!sidebar) return;
+    if (!_dashReportRanked || _dashReportRanked.length === 0) {
+        sidebar.innerHTML = '';
+        return;
+    }
+    sidebar.innerHTML = _dashReportRanked.map(({ entry, rc }) => {
+        const isMe = entry.email === userEmail;
+        const isSelected = entry.email === _dashReportSelectedEmail;
+        const color = _RC_GRADE_COLORS[rc.grade] || '#9ca3af';
+        return `<button data-email="${escapeHtml(entry.email)}" onclick="selectDashReportCard('${escapeHtml(entry.email)}')"
+            class="w-full text-left rounded-xl px-3 py-2 transition-colors ${isSelected ? 'bg-gray-700' : 'hover:bg-gray-800'}">
+            <div class="flex items-center justify-between gap-1">
+                <div class="text-[11px] font-black text-white truncate">${isMe ? '★ ' + escapeHtml(entry.nickname) : escapeHtml(entry.nickname)}</div>
+                <div class="text-sm font-black italic shrink-0" style="color:${color};">${rc.grade}</div>
+            </div>
+            <div class="text-[9px] text-gray-500">${Math.round(rc.total)}/100</div>
+        </button>`;
+    }).join('');
+}
+
+function selectDashReportCard(email) {
+    _dashReportSelectedEmail = email;
+    const sidebar = document.getElementById('dash-report-sidebar');
+    if (sidebar) {
+        sidebar.querySelectorAll('button[data-email]').forEach((btn) => {
+            const sel = btn.dataset.email === email;
+            btn.classList.toggle('bg-gray-700', sel);
+            btn.classList.toggle('hover:bg-gray-800', !sel);
+        });
+    }
+    _renderReportCardDetail(email);
+}
+
+function _renderReportCardDetail(email) {
+    const body = document.getElementById('dash-report-modal-body');
+    if (!body) return;
+
+    let rc = null;
+    let label = 'Your Picks';
+    if (_dashReportRanked) {
+        const item = _dashReportRanked.find(({ entry }) => entry.email === email);
+        if (item) {
+            rc = item.rc;
+            label = email === userEmail ? 'Your Picks' : `${item.entry.nickname}'s Picks`;
+        }
+    } else if (email === userEmail) {
+        rc = window._dashReportCard;
+    }
+
+    if (!rc) {
+        body.innerHTML = '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 text-center py-10">No picks found.</div>';
+        return;
+    }
+    _renderReportCardHtml(body, rc, label);
+}
+
+function _renderReportCardHtml(body, rc, label) {
+    const color = _RC_GRADE_COLORS[rc.grade] || '#9ca3af';
+    const bar = (pct, col) => `<div class="h-2 rounded-full overflow-hidden bg-gray-800"><div class="h-full rounded-full transition-all" style="width:${Math.round(pct)}%;background-color:${col};"></div></div>`;
+    const oddsStr = (d) => {
+        const parts = [];
+        if (d.dk)     parts.push(`<a href="https://sportsbook.draftkings.com/leagues/soccer/world-cup-2026" target="_blank" class="text-blue-400 hover:underline">DK +${d.dk.toLocaleString()}</a>`);
+        if (d.espn)   parts.push(`<a href="https://www.espn.com/espn/betting/story/_/id/48386952" target="_blank" class="text-blue-400 hover:underline">ESPN +${d.espn.toLocaleString()}</a>`);
+        if (d.betmgm) parts.push(`<a href="https://sports.betmgm.com/en/blog/world-cup/fifa-world-cup-odds-to-win-bm16/" target="_blank" class="text-blue-400 hover:underline">MGM +${d.betmgm.toLocaleString()}</a>`);
+        return parts.join('<span class="text-gray-600 mx-1">·</span>');
+    };
+    body.innerHTML = `
+        <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3">${escapeHtml(label)}</div>
+        <div class="flex items-center gap-5 mb-4">
+            <div class="text-7xl font-black italic shrink-0" style="color:${color};">${rc.grade}</div>
+            <div>
+                <div class="text-white text-base font-black uppercase tracking-[0.1em]">${rc.tagline}</div>
+                ${rc.flavorText ? `<div class="text-gray-400 text-xs italic mt-1 leading-relaxed">${escapeHtml(rc.flavorText)}</div>` : ''}
+                <div class="text-gray-500 text-xs font-black uppercase tracking-[0.18em] mt-1">Score: ${Math.round(rc.total)}/100</div>
+            </div>
+        </div>
+        <div class="rounded-xl bg-gray-800 border border-gray-700 px-3 py-2.5 mb-5 text-[10px] text-gray-400 leading-relaxed">
+            <span class="font-black text-gray-300 uppercase tracking-[0.15em]">Score = weighted average of three components, each 0–100 · </span>
+            <span class="font-semibold text-blue-400">40% Odds Value</span> — win probability per budget point spent.
+            <span class="font-semibold text-purple-400"> 30% FIFA Rankings</span> — how well-ranked your teams are on average.
+            <span class="font-semibold text-emerald-400"> 30% Squad Balance</span> — quality of your tier 2 picks (the key differentiator), your tier 3s, and using your tier 1 slot.
+        </div>
+        <div class="space-y-3 mb-6">
+            <div>
+                <div class="flex justify-between mb-1"><span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Odds Value</span><span class="text-[10px] font-black text-gray-400">${Math.round(rc.valueNorm)}/100</span></div>
+                ${bar(rc.valueNorm, '#60a5fa')}
+            </div>
+            <div>
+                <div class="flex justify-between mb-1"><span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">FIFA Rankings</span><span class="text-[10px] font-black text-gray-400">${Math.round(rc.avgRank)}/100</span></div>
+                ${bar(rc.avgRank, '#a78bfa')}
+            </div>
+            <div>
+                <div class="flex justify-between mb-1"><span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Squad Balance</span><span class="text-[10px] font-black text-gray-400">${Math.round(rc.balanceScore)}/100</span></div>
+                ${bar(rc.balanceScore, '#34d399')}
+            </div>
+        </div>
+        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-2">Picks</div>
+        <div class="grid grid-cols-2 gap-2">
+            ${rc.squadData.sort((a, b) => b.winProb - a.winProb).map((t) => {
+                const val = t.valueRatio / 0.106 * 100;
+                const valColor = val >= 50 ? '#34d399' : val >= 25 ? '#facc15' : '#f87171';
+                return `<div class="rounded-xl border border-gray-800 bg-gray-800 px-3 py-2.5 ${t.eliminated ? 'opacity-40' : ''}">
+                    <div class="flex items-center gap-1.5 mb-1.5">
+                        <span class="text-lg">${t.flag || ''}</span>
+                        <div>
+                            <div class="text-xs font-black uppercase text-white leading-tight">${escapeHtml(t.name)}</div>
+                            <div class="text-[10px] text-gray-500">FIFA #${t.fifaRank}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="text-[10px] font-black" style="color:${valColor};">${t.winProb.toFixed(2)}% win</div>
+                        <div class="text-[10px] text-gray-500">$${t.cost}</div>
+                    </div>
+                    <div class="text-[9px] text-gray-600 leading-relaxed mt-1">${oddsStr(t.data)}</div>
+                </div>`;
+            }).join('')}
+        </div>
+        <div class="mt-5 pt-4 border-t border-gray-800 text-[9px] text-gray-600 space-y-1">
+            <div class="font-black uppercase tracking-[0.15em] text-gray-500 mb-2">Sources</div>
+            <div><a href="https://sportsbook.draftkings.com/leagues/soccer/world-cup-2026" target="_blank" class="text-blue-500 hover:underline">DraftKings Sportsbook</a> · <a href="https://www.espn.com/espn/betting/story/_/id/48386952" target="_blank" class="text-blue-500 hover:underline">ESPN/bet365</a> · <a href="https://sports.betmgm.com/en/blog/world-cup/fifa-world-cup-odds-to-win-bm16/" target="_blank" class="text-blue-500 hover:underline">BetMGM</a></div>
+            <div><a href="https://inside.fifa.com/fifa-world-ranking/men" target="_blank" class="text-blue-500 hover:underline">FIFA World Rankings (April 2026)</a></div>
+            <div class="text-gray-700 mt-1">Odds averaged Apr 2026. For entertainment only.</div>
+        </div>
+    `;
+}
+
+function closeDashReportCard() {
+    const modal = document.getElementById('dash-report-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function showDashChips() {
+    const modal = document.getElementById('dash-chips-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    const allEntries = window._leaderboardData || [];
+    const chipsMap = window._playerChipsByEmail || {};
+    _dashChipsPlayerList = allEntries
+        .map((entry) => ({
+            entry,
+            chips: entry.chips || chipsMap[entry.email] || []
+        }))
+        .sort((a, b) => b.chips.length - a.chips.length);
+
+    _dashChipsSelectedEmail = userEmail;
+    _renderChipsSidebar();
+    _renderChipsDetail(userEmail);
+}
+
+function _renderChipsSidebar() {
+    const sidebar = document.getElementById('dash-chips-sidebar');
+    if (!sidebar || !_dashChipsPlayerList) return;
+    sidebar.innerHTML = _dashChipsPlayerList.map(({ entry, chips }) => {
+        const isMe = entry.email === userEmail;
+        const isSelected = entry.email === _dashChipsSelectedEmail;
+        const preview = chips.length > 0
+            ? chips.slice(0, 4).map((c) => c.emoji).join('') + (chips.length > 4 ? ` +${chips.length - 4}` : '')
+            : '—';
+        return `<button data-email="${escapeHtml(entry.email)}" onclick="selectDashChips('${escapeHtml(entry.email)}')"
+            class="w-full text-left rounded-xl px-3 py-2 transition-colors ${isSelected ? 'bg-gray-700' : 'hover:bg-gray-800'}">
+            <div class="text-[11px] font-black text-white truncate">${isMe ? '★ ' + escapeHtml(entry.nickname) : escapeHtml(entry.nickname)}</div>
+            <div class="text-[11px] text-gray-400">${preview}</div>
+        </button>`;
+    }).join('');
+}
+
+function selectDashChips(email) {
+    _dashChipsSelectedEmail = email;
+    const sidebar = document.getElementById('dash-chips-sidebar');
+    if (sidebar) {
+        sidebar.querySelectorAll('button[data-email]').forEach((btn) => {
+            const sel = btn.dataset.email === email;
+            btn.classList.toggle('bg-gray-700', sel);
+            btn.classList.toggle('hover:bg-gray-800', !sel);
+        });
+    }
+    _renderChipsDetail(email);
+}
+
+function _renderChipsDetail(email) {
+    const body = document.getElementById('dash-chips-body');
+    if (!body) return;
+
+    const player = _dashChipsPlayerList?.find((p) => p.entry.email === email);
+    const chips = player?.chips
+        || (window._leaderboardData?.find((e) => e.email === email))?.chips
+        || (window._playerChipsByEmail || {})[email]
+        || [];
+    const nickname = player?.entry?.nickname || email;
+    const isMe = email === userEmail;
+    const label = isMe ? 'Your Chips' : `${nickname}'s Chips`;
+
+    const toneStyle = {
+        positive: 'bg-green-500/15 border-green-500/60 text-green-300',
+        negative: 'bg-red-500/15 border-red-500/60 text-red-300',
+        neutral: 'bg-sky-500/15 border-sky-500/60 text-sky-300'
+    };
+
+    const chipToneOrder = { positive: 0, neutral: 1, negative: 2 };
+    const sortedChips = [...chips].sort((a, b) => (chipToneOrder[a.tone] ?? 1) - (chipToneOrder[b.tone] ?? 1));
+
+    const squad = player?.entry?.squad || [];
+    const teamPointsMap = window._dashTeamPointsMap || {};
+    const squadHtml = squad.length > 0
+        ? `<div class="mb-4 rounded-xl border border-gray-700 bg-gray-800/60 p-3">
+            <div class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-500 mb-2">Squad</div>
+            <div class="grid grid-cols-4 gap-2">
+                ${[...squad].sort((a, b) => (b.cost || 0) - (a.cost || 0)).map((t) => {
+                    const pts = teamPointsMap[t.name] || 0;
+                    const teamDef = teams.find((td) => td.name === t.name);
+                    const group = t.group || teamDef?.group || '';
+                    return `<div class="flex flex-col items-center text-center ${t.eliminated ? 'opacity-40' : ''}">
+                        <span class="text-xl mb-0.5">${t.flag || teamDef?.flag || ''}</span>
+                        <div class="text-[10px] font-black text-white truncate w-full">${escapeHtml(t.name)}</div>
+                        <div class="text-[9px] text-gray-500">${group ? `Grp ${group}` : `$${t.cost}`}</div>
+                        <div class="text-[11px] font-black text-gray-300">${pts} pts</div>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`
+        : '';
+
+    body.innerHTML = `
+        <div class="text-sm font-black text-white uppercase tracking-[0.1em] mb-3">${escapeHtml(label)}</div>
+        ${squadHtml}
+        ${sortedChips.length === 0
+            ? `<div class="text-gray-500 text-sm text-center py-12">No chips earned yet.<br><span class="text-[10px] text-gray-600 mt-1 block">Chips are awarded based on performance as the tournament progresses.</span></div>`
+            : `<div class="space-y-2">
+                ${sortedChips.map((chip) => {
+                    const cls = toneStyle[chip.tone] || toneStyle.neutral;
+                    return `<div class="rounded-xl border-2 px-4 py-3 flex items-center gap-3 ${cls}">
+                        <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-2xl ${cls.includes('green') ? 'bg-green-100 border-green-600' : cls.includes('red') ? 'bg-red-100 border-red-600' : 'bg-sky-100 border-sky-600'}">${chip.emoji}</span>
+                        <div>
+                            <div class="text-sm font-black">${escapeHtml(chip.label)}</div>
+                            <div class="text-[11px] opacity-75 mt-0.5">${escapeHtml(chip.description)}</div>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>`
+        }
+    `;
+}
+
+function closeDashChips() {
+    const modal = document.getElementById('dash-chips-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function setDashRightTab(tab) {
+    ['board', 'matches', 'rankings', 'groups', 'map'].forEach((t) => {
+        const content = document.getElementById(`dash-tab-content-${t}`);
+        const btn = document.getElementById(`dash-tab-btn-${t}`);
+        if (content) content.classList.toggle('hidden', t !== tab);
+        if (btn) {
+            btn.classList.toggle('border-gray-900', t === tab);
+            btn.classList.toggle('border-transparent', t !== tab);
+            btn.classList.toggle('text-gray-900', t === tab);
+            btn.classList.toggle('text-gray-400', t !== tab);
+        }
+    });
+    const toggle = document.getElementById('dash-match-mode-toggle');
+    if (toggle) toggle.classList.toggle('hidden', tab !== 'matches');
+    if (tab === 'matches') renderDashMatchesTab();
+    if (tab === 'rankings') renderDashRankingsTab();
+    if (tab === 'groups') renderDashGroupsTab();
+    if (tab === 'map') renderDashMapTab();
+}
+
+function setDashMatchMode(mode) {
+    _dashMatchMode = mode;
+    ['squad', 'all'].forEach((m) => {
+        const btn = document.getElementById(`dash-matches-${m}-btn`);
+        if (!btn) return;
+        btn.classList.toggle('bg-white', m === mode);
+        btn.classList.toggle('shadow-sm', m === mode);
+        btn.classList.toggle('text-gray-900', m === mode);
+        btn.classList.toggle('text-gray-500', m !== mode);
+    });
+    renderDashMatchesTab();
+}
+
+function renderDashMatchesTab() {
+    const pastBody = document.getElementById('dash-matches-past-body');
+    const nextBody = document.getElementById('dash-matches-next-body');
+    if (!pastBody || !nextBody || !_dashMatchCache) return;
+    const data = _dashMatchCache[_dashMatchMode];
+    const emptyPast = `<div class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300 text-center py-4">No results yet</div>`;
+    const emptyNext = `<div class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300 text-center py-4">No upcoming</div>`;
+    pastBody.innerHTML = data.prevHtml || emptyPast;
+    nextBody.innerHTML = data.nextHtml || emptyNext;
+}
+
+function setDashRankingsSort(col) {
+    const defaultDir = { fifaRank: 'asc', name: 'asc', cost: 'desc', tier: 'asc', winProb: 'desc' };
+    if (_dashRankingsSort.col === col) {
+        _dashRankingsSort.dir = _dashRankingsSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+        _dashRankingsSort = { col, dir: defaultDir[col] || 'asc' };
+    }
+    renderDashRankingsTab();
+}
+
+function renderDashRankingsTab() {
+    const container = document.getElementById('dash-rankings-body');
+    if (!container) return;
+
+    const { col, dir } = _dashRankingsSort;
+    const mult = dir === 'asc' ? 1 : -1;
+
+    const rows = [...teams]
+        .filter((t) => TEAM_REPORT_DATA[t.name])
+        .map((t) => ({ t, d: TEAM_REPORT_DATA[t.name] }))
+        .sort((a, b) => {
+            let va, vb;
+            if (col === 'name')     { va = a.t.name; vb = b.t.name; return va.localeCompare(vb) * mult; }
+            if (col === 'fifaRank') { va = a.d.fifaRank || 999; vb = b.d.fifaRank || 999; }
+            else if (col === 'cost')    { va = a.t.cost; vb = b.t.cost; }
+            else if (col === 'tier')    { va = a.t.tier; vb = b.t.tier; }
+            else if (col === 'winProb') { va = a.d.winProb; vb = b.d.winProb; }
+            else { va = 0; vb = 0; }
+            return (va - vb) * mult;
+        });
+
+    const tierBadge = (tier) => {
+        const cls = tier === 1 ? 'bg-amber-100 text-amber-700' : tier === 2 ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500';
+        return `<span class="text-[8px] font-black px-1 py-0.5 rounded-full ${cls}">T${tier}</span>`;
+    };
+
+    const arrow = (c) => {
+        if (_dashRankingsSort.col !== c) return `<span class="text-gray-300 ml-0.5">↕</span>`;
+        return `<span class="ml-0.5">${_dashRankingsSort.dir === 'asc' ? '▲' : '▼'}</span>`;
+    };
+
+    const th = (c, label, align = 'right') =>
+        `<th class="py-2 text-[8px] font-black uppercase tracking-[0.12em] text-gray-400 cursor-pointer hover:text-gray-700 select-none ${align === 'left' ? 'text-left' : 'text-right'}" onclick="setDashRankingsSort('${c}')">${label}${arrow(c)}</th>`;
+
+    container.innerHTML = `
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr class="border-b border-gray-100">
+                        ${th('fifaRank', '#')}
+                        ${th('name', 'Country', 'left')}
+                        ${th('cost', '$')}
+                        ${th('tier', 'T')}
+                        ${th('winProb', 'Win%')}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows.map(({ t, d }) => `
+                        <tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors" onclick="showTeamOwners('${t.name.replace(/'/g, "\\'")}')">
+                            <td class="py-1.5 text-[10px] font-black text-gray-300 text-right pr-2 tabular-nums">${d.fifaRank}</td>
+                            <td class="py-1.5 min-w-0">
+                                <div class="flex items-center gap-1">
+                                    <span class="shrink-0">${t.flag}</span>
+                                    <span class="text-[10px] font-black text-gray-900 truncate">${escapeHtml(t.name)}</span>
+                                </div>
+                            </td>
+                            <td class="py-1.5 text-[10px] font-black text-gray-600 text-center tabular-nums">$${t.cost}</td>
+                            <td class="py-1.5 text-center">${tierBadge(t.tier)}</td>
+                            <td class="py-1.5 text-[10px] font-black text-gray-600 text-center tabular-nums">${d.winProb.toFixed(1)}%</td>
+                        </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>`;
+}
+
+function renderDashGroupsTab() {
+    const body = document.getElementById('dash-groups-body');
+    if (!body) return;
+
+    const standings = computeGroupStandings(window._dashMatches || []);
+    const teamPointsMap = window._dashTeamPointsMap || {};
+
+    const groupKeys = Object.keys(standings).sort();
+    body.innerHTML = `<div class="grid grid-cols-2 gap-3">
+        ${groupKeys.map((g) => {
+            const { teams: groupTeams } = standings[g];
+            const sorted = [...groupTeams].sort((a, b) =>
+                (teamPointsMap[b.name] || 0) - (teamPointsMap[a.name] || 0) || b.pts - a.pts || b.gd - a.gd
+            );
+            return `
+            <div class="rounded-xl border border-gray-100 bg-gray-50 p-2.5">
+                <div class="flex items-center justify-between mb-1.5">
+                    <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Group ${g}</div>
+                    <div class="grid grid-cols-3 gap-x-2 text-[7px] font-black uppercase tracking-[0.1em] text-gray-300">
+                        <span class="text-right">GF</span><span class="text-right">GA</span><span class="text-right">Pts</span>
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    ${sorted.map((teamRow) => {
+                        const teamDef = teams.find((t) => t.name === teamRow.name);
+                        const isElim = eliminatedTeams.has(teamRow.name);
+                        const poolPts = teamPointsMap[teamRow.name] || 0;
+                        const ga = (teamRow.gf || 0) - (teamRow.gd || 0);
+                        return `
+                        <div class="grid grid-cols-[1fr_auto] items-center gap-1 ${isElim ? 'opacity-40' : ''}">
+                            <div class="flex items-center gap-1 min-w-0">
+                                <span class="text-sm shrink-0">${teamDef?.flag || ''}</span>
+                                <div class="text-[10px] font-black text-gray-800 truncate">${escapeHtml(teamRow.name)}</div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-x-2 shrink-0">
+                                <span class="text-[10px] font-black text-gray-500 tabular-nums text-right">${teamRow.gf || 0}</span>
+                                <span class="text-[10px] font-black text-gray-500 tabular-nums text-right">${ga}</span>
+                                <span class="text-[10px] font-black text-gray-700 tabular-nums text-right">${poolPts}</span>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+        }).join('')}
+    </div>`;
+}
+
+function renderDashMapTab() {
+    const body = document.getElementById('dash-map-body');
+    if (!body) return;
+
+    const groupKeys = Object.keys(GROUP_COLORS).sort();
+    body.innerHTML = `<div class="grid grid-cols-3 gap-2">
+        ${groupKeys.map((g) => {
+            const color = GROUP_COLORS[g];
+            const groupTeams = teams.filter((t) => t.group === g);
+            return `
+            <div class="rounded-xl p-2.5" style="background-color: ${color}18; border: 1.5px solid ${color}55;">
+                <div class="text-[8px] font-black uppercase tracking-[0.22em] mb-1.5" style="color: ${color};">${g}</div>
+                <div class="space-y-0.5">
+                    ${groupTeams.map((t) => {
+                        const isElim = eliminatedTeams.has(t.name);
+                        return `<div class="flex items-center gap-1 ${isElim ? 'opacity-40' : ''}">
+                            <span class="text-xs leading-none">${t.flag}</span>
+                            <span class="text-[9px] font-black text-gray-800 truncate">${escapeHtml(t.name)}</span>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+        }).join('')}
+    </div>`;
+}
+
+function renderDashOddsTab() {
+    const body = document.getElementById('dash-odds-body');
+    if (!body) return;
+    const sorted = [...teams]
+        .filter((t) => TEAM_REPORT_DATA[t.name])
+        .sort((a, b) => (TEAM_REPORT_DATA[b.name].winProb || 0) - (TEAM_REPORT_DATA[a.name].winProb || 0));
+    const tierColor = { 1: 'bg-amber-100 text-amber-700', 2: 'bg-blue-100 text-blue-600', 3: 'bg-gray-100 text-gray-500' };
+    const tierLabel = { 1: 'T1', 2: 'T2', 3: 'T3' };
+    body.innerHTML = `
+        <div class="grid grid-cols-[1fr_auto_auto_auto] text-[9px] font-black uppercase tracking-[0.12em] text-gray-400 border-b border-gray-100 pb-1.5 mb-1.5 gap-x-2">
+            <div>Team</div><div class="text-right">Win%</div><div class="text-right">Cost</div><div class="text-right">FIFA</div>
+        </div>
+        <div class="space-y-0.5">
+            ${sorted.map((t) => {
+                const d = TEAM_REPORT_DATA[t.name];
+                const tCls = tierColor[t.tier] || tierColor[3];
+                return `<div class="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-2 py-1 border-b border-gray-50">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <span class="text-sm shrink-0">${t.flag}</span>
+                        <div class="text-[10px] font-black text-gray-800 truncate">${escapeHtml(t.name)}</div>
+                        <span class="text-[8px] font-black px-1 py-0.5 rounded-full ${tCls} shrink-0">${tierLabel[t.tier]}</span>
+                    </div>
+                    <div class="text-[10px] font-black text-gray-600 text-right">${d.winProb.toFixed(1)}%</div>
+                    <div class="text-[10px] font-black text-gray-600 text-right">$${t.cost}</div>
+                    <div class="text-[10px] font-black text-gray-500 text-right">#${d.fifaRank}</div>
+                </div>`;
+            }).join('')}
+        </div>
+    `;
+}
+
+async function setupDashboard() {
     const myPointsEl = document.getElementById('dashboard-my-points');
+    if (!myPointsEl) return;
+
     const myRankEl = document.getElementById('dashboard-my-rank');
-    const squadSizeEl = document.getElementById('dashboard-squad-size');
-    const budgetLeftEl = document.getElementById('dashboard-budget-left');
-    const saveStatusEl = document.getElementById('dashboard-save-status');
-    const squadStripEl = document.getElementById('dashboard-squad-strip');
+    const reportGradeEl = document.getElementById('dashboard-report-grade');
+    const chipsPreviewEl = document.getElementById('dashboard-chips-preview');
     const prizePotEl = document.getElementById('dashboard-prize-pot');
     const playerCountEl = document.getElementById('dashboard-player-count');
-    const prizeFirstEl = document.getElementById('dashboard-prize-1st');
-    const prizeSecondEl = document.getElementById('dashboard-prize-2nd');
-    const prizeThirdEl = document.getElementById('dashboard-prize-3rd');
-    const ctaButton = document.getElementById('dashboard-primary-cta');
     const leaderboardEl = document.getElementById('dashboard-leaderboard');
-    const resultsEl = document.getElementById('dashboard-latest-results');
-    const mostPickedEl = document.getElementById('dashboard-most-picked');
 
-    // Skeleton cards replace text loading states so the dashboard layout doesn't flash blank
+    // Skeleton loading states
     const dashSkeletonCard = `
         <div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4 flex items-center justify-between gap-4">
             <div class="space-y-2">
@@ -3488,14 +4277,6 @@ async function setupDashboard() {
             <div class="h-6 w-12 bg-gray-200 rounded animate-pulse"></div>
         </div>`;
     if (leaderboardEl) leaderboardEl.innerHTML = dashSkeletonCard.repeat(3);
-    if (resultsEl) resultsEl.innerHTML = dashSkeletonCard.repeat(3);
-    if (mostPickedEl) mostPickedEl.innerHTML = dashSkeletonCard.repeat(5);
-    if (squadStripEl) squadStripEl.innerHTML = '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Loading squad...</div>';
-
-    if (saveStatusEl) {
-        const sourceSaveStatus = document.getElementById('save-status');
-        saveStatusEl.textContent = sourceSaveStatus ? sourceSaveStatus.textContent : 'No changes yet';
-    }
 
     try {
         const [
@@ -3522,8 +4303,10 @@ async function setupDashboard() {
 
         const picks = allPicks || [];
         const matches = allMatches || [];
+        window._dashMatches = matches;
         const profilesMap = buildProfilesMap(allProfiles);
         const selectionStats = buildSelectionStatsSnapshot(picks, allProfiles || []);
+        window._dashSelectionStats = selectionStats;
         const teamOwnership = new Map();
         selectionStats.sortedCountryCounts.forEach((entry) => {
             teamOwnership.set(entry.teamName, {
@@ -3533,9 +4316,19 @@ async function setupDashboard() {
         });
         await fetchAdvancedTeams();
         const teamPointsMap = buildTeamPointsMap(matches, teams, advancedTeams);
+        window._dashTeamPointsMap = teamPointsMap;
         const leaderboardData = buildLeaderboardData(picks, matches, profilesMap, teams, advancedTeams, eliminatedTeams);
+        const previousRanks = JSON.parse(localStorage.getItem('wc_pool_lb_ranks') || '{}');
+        const dashPlayerChips = computePlayerChips(leaderboardData, matches, previousRanks);
+        const enrichedLeaderboardData = leaderboardData.map((user) => ({
+            ...user,
+            chips: dashPlayerChips.get(user.email) || []
+        }));
+        window._playerChipsByEmail = Object.fromEntries(dashPlayerChips);
+        window._leaderboardData = enrichedLeaderboardData;
         const currentUserRows = picks.filter((pick) => pick.user_email === userEmail);
         const currentProfile = getDisplayProfile(userEmail, profilesMap);
+        window._dashCurrentProfile = currentProfile;
         renderDashboardFavoriteBanner(currentProfile);
         renderTopNavFavoriteTheme(currentProfile);
         const myEntry = leaderboardData.find((entry) => entry.email === userEmail);
@@ -3585,262 +4378,216 @@ async function setupDashboard() {
             const isAwayMine = squadNames?.has(match.team_away);
             const stageLabel = _getMatchStageDisplayLabel(match);
             const scoreMarkup = match.is_finished
-                ? `${match.score_home}-${match.score_away}`
-                : (match.match_date_manual || 'TBD');
+                ? `${match.score_home}–${match.score_away}`
+                : 'TBD';
+            const ptsLabel = match.is_finished ? buildPointsAwardedLabel(match) : '';
+            const safeHome = match.team_home.replace(/'/g, "\\'");
+            const safeAway = match.team_away.replace(/'/g, "\\'");
 
             return `
-                <div class="rounded-2xl border border-gray-100 bg-gray-50 px-3 py-3">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="theme-accent-text text-[9px] font-black uppercase tracking-[0.18em]">${match.match_date_manual || 'TBD'} | ${stageLabel}</div>
-                        <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 whitespace-nowrap">
-                            ${buildPointsAwardedLabel(match)}
+                <div class="py-3 border-b border-gray-100 last:border-0">
+                    <div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-400 text-center mb-2">${stageLabel}${ptsLabel ? ` · ${ptsLabel}` : ''}</div>
+                    <div class="grid grid-cols-[minmax(0,1fr)_2rem_minmax(0,1fr)] items-center gap-3">
+                        <div class="min-w-0 text-right">
+                            <div onclick="showTeamOwners('${safeHome}')" class="truncate text-xs font-black text-gray-900 cursor-pointer hover:opacity-70 transition-opacity">${isHomeMine ? '★ ' : ''}${homeTeam?.flag || ''} ${escapeHtml(match.team_home)}</div>
+                            ${ownershipMarkup(match.team_home, 'right')}
+                        </div>
+                        <div class="shrink-0 text-sm font-black text-gray-900 text-center tabular-nums">${scoreMarkup}</div>
+                        <div class="min-w-0 text-left">
+                            <div onclick="showTeamOwners('${safeAway}')" class="truncate text-xs font-black text-gray-900 cursor-pointer hover:opacity-70 transition-opacity">${escapeHtml(match.team_away)} ${awayTeam?.flag || ''}${isAwayMine ? ' ★' : ''}</div>
+                            ${ownershipMarkup(match.team_away, 'left')}
                         </div>
                     </div>
-                    <div class="mt-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 text-sm font-black text-gray-900">
-                        <div class="min-w-0 text-left ${isHomeMine ? 'font-black' : ''}">
-                            <div class="truncate">${homeTeam?.flag || ''} ${match.team_home}</div>
-                            ${ownershipMarkup(match.team_home, 'left')}
-                        </div>
-                        <div class="text-center">
-                            <div class="rounded-xl bg-gray-900 px-2.5 py-1 font-mono text-white text-center text-[13px]">
-                                ${scoreMarkup}
-                            </div>
-                        </div>
-                        <div class="min-w-0 text-right ${isAwayMine ? 'font-black' : ''}">
-                            <div class="truncate">${match.team_away} ${awayTeam?.flag || ''}</div>
-                            ${ownershipMarkup(match.team_away, 'right')}
-                        </div>
-                    </div>
-                    ${match.was_extra_time ? '<div class="mt-2 text-[8px] font-black uppercase text-red-500 italic text-right">ET/Pens Result</div>' : ''}
+                    ${match.was_extra_time ? '<div class="text-[8px] font-black uppercase text-red-500 italic text-center mt-1">ET/Pens</div>' : ''}
                 </div>
             `;
         };
 
-        // ── My Teams Today ────────────────────────────────────────────────────
-        const teamsTodaySection = document.getElementById('dashboard-teams-today-section');
-        const teamsTodayEl = document.getElementById('dashboard-teams-today');
-        const teamsTodayLabel = document.getElementById('dashboard-teams-today-label');
-        if (teamsTodayEl && liveSquad.length > 0) {
-            const squadNames = new Set(liveSquad.map((t) => t.name));
-            const squadMatches = matches
-                .filter((match) =>
-                    match?.match_date_manual && (squadNames.has(match.team_home) || squadNames.has(match.team_away))
-                )
-                .sort((a, b) => getMatchSortKey(a).localeCompare(getMatchSortKey(b)));
-            const previousMatches = squadMatches
-                .filter((match) => match.is_finished || match.match_date_manual < localTodayKey)
-                .sort((a, b) => getMatchSortKey(b).localeCompare(getMatchSortKey(a)))
-                .slice(0, 3);
-            const standings = computeGroupStandings(matches);
-            const bestThirdAssignments = _buildBestThirdAssignments(standings);
-            const loggedKeySet = new Set(
-                matches
-                    .filter((match) => match?.match_date_manual)
-                    .map((match) => `${match.stage}|${match.match_date_manual}|${match.team_home}|${match.team_away}`)
-            );
-            const upcomingGroupMatches = GROUP_STAGE_SCHEDULE
-                .filter((match) =>
-                    match.date >= localTodayKey &&
-                    (squadNames.has(match.home) || squadNames.has(match.away)) &&
-                    !loggedKeySet.has(`Group|${match.date}|${match.home}|${match.away}`) &&
-                    !loggedKeySet.has(`Group|${match.date}|${match.away}|${match.home}`)
-                )
-                .map((match) => ({
-                    stage: 'Group',
-                    match_date_manual: match.date,
-                    team_home: match.home,
-                    team_away: match.away,
-                    is_finished: false,
-                    was_extra_time: false
-                }));
-            const upcomingKnockoutMatches = KNOCKOUT_SCHEDULE
-                .filter((match) => match.date >= localTodayKey)
-                .map((match) => {
-                    const homeRes = _resolveKnockoutMatchTeam(match, 'home', standings, bestThirdAssignments, { matchesCache: matches });
-                    const awayRes = _resolveKnockoutMatchTeam(match, 'away', standings, bestThirdAssignments, { matchesCache: matches });
-                    return {
-                        stage: match.stage,
-                        match_date_manual: match.date,
-                        team_home: homeRes?.status !== 'none' ? homeRes.name : 'TBD',
-                        team_away: awayRes?.status !== 'none' ? awayRes.name : 'TBD',
-                        is_finished: false,
-                        was_extra_time: false
-                    };
-                })
-                .filter((match) =>
-                    (squadNames.has(match.team_home) || squadNames.has(match.team_away)) &&
-                    !loggedKeySet.has(`${match.stage}|${match.match_date_manual}|${match.team_home}|${match.team_away}`) &&
-                    !loggedKeySet.has(`${match.stage}|${match.match_date_manual}|${match.team_away}|${match.team_home}`)
-                );
-            const upcomingMatches = [...upcomingGroupMatches, ...upcomingKnockoutMatches]
-                .sort((a, b) => getMatchSortKey(a).localeCompare(getMatchSortKey(b)))
-                .slice(0, 3);
-
-            if (teamsTodaySection) teamsTodaySection.classList.remove('hidden');
-
-            if (upcomingMatches.length === 0 && previousMatches.length === 0) {
-                teamsTodayEl.innerHTML = '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No matches found for your squad</div>';
-                if (teamsTodayLabel) {
-                    teamsTodayLabel.textContent = 'Upcoming and recent matches for your squad';
-                }
-            } else {
-                if (teamsTodayLabel) {
-                    teamsTodayLabel.textContent = 'Recent and upcoming matches for your squad';
-                }
-
-                teamsTodayEl.innerHTML = `
-                    <div class="space-y-3">
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Last Games</div>
-                        ${previousMatches.length > 0
-                            ? previousMatches.map((match) => renderDashboardMatchCard(match, { squadNames })).join('')
-                            : '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No previous squad matches yet</div>'}
-                    </div>
-                    <div class="space-y-3">
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Next Games</div>
-                        ${upcomingMatches.length > 0
-                            ? upcomingMatches.map((match) => renderDashboardMatchCard(match, { squadNames })).join('')
-                            : '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No upcoming squad matches</div>'}
-                    </div>
-                `;
-            }
-        }
-
         const spent = liveSquad.reduce((sum, team) => sum + team.cost, 0);
-        const tierThreeCount = liveSquad.filter((team) => team.tier === 3).length;
         const myPoints = currentUserRows.reduce((sum, pick) => sum + (teamPointsMap[pick.team_name] || 0), 0);
         const myRank = leaderboardData.findIndex((entry) => entry.email === userEmail);
-        const hasUnsaved = typeof saveState !== 'undefined' && (saveState.picksDirty || saveState.identityDirty);
 
         if (myPointsEl) myPointsEl.textContent = `${myPoints}`;
         if (myRankEl) myRankEl.textContent = myRank >= 0 ? `#${myRank + 1}` : '-';
-        if (squadSizeEl) squadSizeEl.textContent = `${liveSquad.length}`;
-        if (budgetLeftEl) budgetLeftEl.textContent = `$${150 - spent}`;
+        // Report card grade
+        if (reportGradeEl && liveSquad.length > 0) {
+            const rc = _computeReportCard(liveSquad);
+            reportGradeEl.textContent = rc ? rc.grade : '—';
+            window._dashReportCard = rc;
+        }
+        // Chips preview
+        const myLbEntry = leaderboardData.find((e) => e.email === userEmail);
+        const chips = myLbEntry?.chips || window._playerChipsByEmail?.[userEmail] || [];
+        if (chipsPreviewEl) {
+            if (chips.length > 0) {
+                const toneClasses = { positive: 'bg-green-100 border-2 border-green-600', negative: 'bg-red-100 border-2 border-red-600', neutral: 'bg-sky-100 border-2 border-sky-600' };
+                const visible = chips.slice(0, 3);
+                const overflow = chips.length > 3 ? chips.length - 3 : 0;
+                chipsPreviewEl.innerHTML = `<div class="flex items-center gap-1 justify-center">
+                    ${visible.map((c) => `<span class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${toneClasses[c.tone] || toneClasses.neutral}">${c.emoji}</span>`).join('')}
+                    ${overflow > 0 ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 border-2 border-gray-400 text-[10px] font-black text-gray-600">+${overflow}</span>` : ''}
+                </div>`;
+            } else {
+                chipsPreviewEl.textContent = '—';
+            }
+        }
 
-        if (squadStripEl) {
-            squadStripEl.innerHTML = liveSquad.length > 0
+        // Player-card-style squad
+        const favTeamObj = teams.find((t) => t.name === currentProfile?.favoriteTeam);
+        const favFlag = favTeamObj?.flag || '';
+        const cardAccent = getPlayerCardAccentStyle(currentProfile?.favoriteTeam || '');
+        const squadCard = document.getElementById('dashboard-squad-card');
+        const squadInner = document.getElementById('dashboard-squad-inner');
+        const squadBudgetBar = document.getElementById('dashboard-squad-budget-bar');
+        if (squadCard) {
+            squadCard.style.cssText = `${cardAccent.style}; background-color: #0f172a;`;
+        }
+        // Glow effect on outer pill using accent primary color
+        const outerPill = squadCard?.closest('.rounded-3xl');
+        if (outerPill) {
+            const rgb = cardAccent.tokens.primaryRgb;
+            outerPill.style.boxShadow = `0 0 60px -15px rgba(${rgb.r},${rgb.g},${rgb.b},0.45), 0 25px 50px -12px rgba(0,0,0,0.5)`;
+        }
+        if (squadInner) {
+            const headerHtml = `
+                <div class="flex items-center gap-4 mb-5">
+                    <div class="h-12 w-12 rounded-2xl flex items-center justify-center text-2xl shrink-0" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.15);">
+                        ${favFlag || '⚽'}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-xl font-black uppercase italic tracking-tight text-white truncate">${escapeHtml(currentProfile?.nickname || '')}</div>
+                        <div class="text-[10px] font-black uppercase tracking-[0.18em] text-gray-400">${currentProfile?.realname ? escapeHtml(currentProfile.realname) : ''}</div>
+                    </div>
+                    <div class="text-right shrink-0 flex flex-col items-end gap-2">
+                        <div>
+                            <div class="text-2xl font-black" style="color: var(--player-card-accent-on-dark);">${myPoints}</div>
+                            <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
+                        </div>
+                        ${!isLocked ? `<button onclick="showPage('picks')" class="rounded-xl bg-gray-700 hover:bg-gray-600 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-white transition-colors">Edit Picks</button>` : ''}
+                    </div>
+                </div>
+            `;
+            squadInner.innerHTML = headerHtml + `<div id="dashboard-squad-strip" class="grid grid-cols-2 gap-2"></div>`;
+        }
+        const freshStripEl = document.getElementById('dashboard-squad-strip');
+        if (freshStripEl) {
+            freshStripEl.innerHTML = liveSquad.length > 0
                 ? liveSquad
-                    .sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name))
+                    .sort((a, b) => (b.cost || 0) - (a.cost || 0) || a.name.localeCompare(b.name))
                     .map((team) => `
-                        <div class="min-w-[58px] text-center">
-                            <div class="text-3xl">${team.flag}</div>
-                            <div class="mt-1 text-[9px] font-black uppercase tracking-[0.15em] text-gray-900">T${team.tier} · $${team.cost}</div>
+                        <div class="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 flex items-center gap-2 ${team.eliminated ? 'opacity-40' : ''}">
+                            <span class="text-xl">${team.flag || ''}</span>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-black uppercase text-white truncate">${escapeHtml(team.name)}</div>
+                                <div class="text-[10px] font-bold text-gray-400">${team.group ? `Grp ${team.group} · ` : ''}$${team.cost}${team.eliminated ? ' · out' : ''}</div>
+                            </div>
+                            <div class="text-xs font-black shrink-0" style="color: var(--player-card-accent-on-dark);">${teamPointsMap[team.name] || 0} pts</div>
                         </div>
                     `)
                     .join('')
-                : '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">No squad selected yet</div>';
+                : `<div class="col-span-2 text-center py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">No squad yet — <button onclick="showPage('picks')" class="underline text-gray-400">pick teams</button></div>`;
+        }
+        if (squadBudgetBar && spent > 0) {
+            squadBudgetBar.classList.remove('hidden');
+            squadBudgetBar.innerHTML = `
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Budget Used</span>
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">$${spent} / $150</span>
+                </div>
+                <div class="h-2 rounded-full overflow-hidden" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.18);">
+                    <div class="h-full rounded-full" style="width: ${Math.round(spent / 150 * 100)}%; background-color: var(--player-card-accent-primary);"></div>
+                </div>
+            `;
         }
 
+        // Leaderboard with prize badges for P1/P2/P3
         const playerCount = leaderboardData.length;
-        if (prizePotEl) prizePotEl.textContent = `$${(playerCount * 40).toLocaleString()}`;
-    if (playerCountEl) playerCountEl.textContent = `${playerCount} ${playerCount === 1 ? 'entry' : 'entries'} in the pool`;
-        if (prizeFirstEl) prizeFirstEl.textContent = `$${Math.floor(playerCount * 40 * 0.65).toLocaleString()}`;
-        if (prizeSecondEl) prizeSecondEl.textContent = `$${Math.floor(playerCount * 40 * 0.25).toLocaleString()}`;
-        if (prizeThirdEl) prizeThirdEl.textContent = `$${Math.floor(playerCount * 40 * 0.10).toLocaleString()}`;
-
-        if (welcome) {
-            if (!myEntry && liveSquad.length === 0) {
-                welcome.textContent = 'Start building your squad, save your picks, and track the pool from one place.';
-            } else if (!myEntry) {
-                welcome.textContent = 'Your current squad is local to this browser until you save it to the pool.';
-            } else if (hasUnsaved) {
-                welcome.textContent = `${currentProfile.nickname || myEntry?.nickname || 'Manager'}, you have unsaved changes in your squad right now.`;
-            } else {
-                welcome.textContent = `${currentProfile.nickname || myEntry?.nickname || 'Manager'}, you are currently ranked #${myRank + 1} with ${myPoints} points.`;
-            }
-        }
-
-        if (ctaButton) {
-            if (!myEntry && liveSquad.length === 0) {
-                ctaButton.textContent = 'Start My Picks';
-            } else if (liveSquad.length < 4 || tierThreeCount < 3 || spent > 150) {
-                ctaButton.textContent = 'Finish My Picks';
-            } else {
-                ctaButton.textContent = 'View My Squad';
-            }
-        }
+        const pot = playerCount * 40;
+        if (prizePotEl) prizePotEl.textContent = `$${pot.toLocaleString()}`;
+        if (playerCountEl) playerCountEl.textContent = `${playerCount} ${playerCount === 1 ? 'entry' : 'entries'}`;
+        const prizes = [Math.floor(pot * 0.65), Math.floor(pot * 0.25), Math.floor(pot * 0.10)];
 
         if (leaderboardEl) {
-            const leaders = leaderboardData.slice(0, 3);
             const rankStyles = [
-                { border: 'border-yellow-200', bg: '#fffbeb', bar: '#f59e0b', rankColor: '#b45309', medal: '🥇' },
-                { border: 'border-gray-200',   bg: '#f8fafc', bar: '#94a3b8', rankColor: '#475569', medal: '🥈' },
-                { border: 'border-orange-100', bg: '#fff7f0', bar: '#f97316', rankColor: '#c2410c', medal: '🥉' },
+                { border: 'border-yellow-200', bg: '#fffbeb', bar: '#f59e0b', medal: '🥇' },
+                { border: 'border-gray-200',   bg: '#f8fafc', bar: '#94a3b8', medal: '🥈' },
+                { border: 'border-orange-100', bg: '#fff7f0', bar: '#f97316', medal: '🥉' },
             ];
-            leaderboardEl.innerHTML = leaders.map((entry, index) => {
-                const s = rankStyles[index] || rankStyles[2];
-                return `
-                <div class="relative flex items-center justify-between gap-4 rounded-2xl border ${s.border} overflow-hidden px-4 py-4" style="background-color: ${s.bg};">
+            const renderRow = (entry, index, prize) => {
+                const s = rankStyles[index] || { border: 'border-gray-100', bg: '#f9fafb', bar: '#9ca3af', medal: '' };
+                return `<div class="relative flex items-center gap-3 rounded-2xl border ${s.border} overflow-hidden px-4 py-4 w-full" style="background-color: ${s.bg};">
                     <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color: ${s.bar};"></div>
-                    <div class="min-w-0 pl-2">
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-base leading-none">${s.medal}</span>
-                            <span class="text-[10px] font-black uppercase tracking-[0.2em]" style="color: ${s.rankColor};">#${index + 1}</span>
-                        </div>
-                        <div class="truncate text-lg font-black uppercase italic text-gray-900">${entry.nickname}</div>
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${entry.realname}</div>
+                    ${s.medal ? `<span class="text-2xl leading-none shrink-0 pl-1">${s.medal}</span>` : `<span class="text-sm font-black text-gray-400 pl-1 shrink-0 w-6 text-center">#${index + 1}</span>`}
+                    <div class="min-w-0 flex-1">
+                        <div class="truncate text-base font-black uppercase italic text-gray-900 leading-tight">${escapeHtml(entry.nickname)}</div>
+                        ${prize ? `<div class="text-sm font-black mt-0.5" style="color: ${s.bar};">${prize}</div>` : ''}
                     </div>
-                    <div class="text-right">
+                    <div class="shrink-0 text-right">
                         <div class="text-2xl font-black text-gray-900">${entry.totalPoints}</div>
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Pts</div>
+                        <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">pts</div>
                     </div>
                 </div>`;
-            }).join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No leaderboard data yet</div>';
-        }
+            };
 
-        if (resultsEl) {
-            resultsEl.innerHTML = matches
-                .filter((match) => match.is_finished)
-                .slice(0, 3)
-                .map((match) => renderDashboardMatchCard(match))
-                .join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No results logged yet</div>';
-        }
+            const top3 = leaderboardData.slice(0, 3);
+            const myIndex = leaderboardData.findIndex((e) => e.email === userEmail);
+            const isInTop3 = myIndex >= 0 && myIndex < 3;
+            const myEntry = myIndex >= 0 ? leaderboardData[myIndex] : null;
 
-        if (mostPickedEl) {
-            if (appSettings.hideTeamSelection) {
-                mostPickedEl.innerHTML = `
-                    <div class="flex h-[382px] items-center justify-center rounded-2xl border border-gray-100 bg-gray-50 px-6 text-center">
-                        <div class="max-w-xs">
-                            <div class="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400">Hidden For Now</div>
-                            <div class="mt-3 text-sm font-black uppercase tracking-[0.08em] text-gray-500">Pick selection statistics will be displayed when the World Cup starts.</div>
-                        </div>
-                    </div>
-                `;
-                return;
+            let html = top3.map((entry, i) => renderRow(entry, i, prizes[i] > 0 ? `$${prizes[i].toLocaleString()}` : '')).join('');
+
+            if (!isInTop3 && myEntry) {
+                html += `<div class="flex items-center gap-2 py-1 my-1">
+                    <div class="flex-1 h-px bg-gray-200"></div>
+                    <span class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-300">you</span>
+                    <div class="flex-1 h-px bg-gray-200"></div>
+                </div>`;
+                html += renderRow(myEntry, myIndex, '');
             }
 
-            const topTeams = selectionStats.sortedCountryCounts.slice(0, 5);
-            const maxPickedCount = topTeams[0]?.pickedCount || 1;
+            leaderboardEl.innerHTML = html || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No leaderboard data yet</div>';
+        }
 
-            mostPickedEl.innerHTML = topTeams.map((entry, i) => {
-                const name = entry.teamName;
-                const count = entry.pickedCount;
-                const team = entry.teamData || teams.find((teamEntry) => teamEntry.name === name);
-                const barPct = Math.round((count / maxPickedCount) * 100);
-                const ownPct = entry.percentage;
-                const barOpacity = i === 0 ? '0.12' : '0.07';
-                return `
-                    <div class="relative rounded-2xl border border-gray-100 overflow-hidden px-4 py-3.5" style="background-color: #f9fafb;">
-                        <div class="absolute inset-0 rounded-2xl" style="width: ${barPct}%; background-color: rgba(var(--theme-accent-primary-rgb), ${barOpacity});"></div>
-                        <div class="relative flex items-center justify-between gap-3">
-                            <div class="flex min-w-0 items-center gap-3">
-                                <span class="text-2xl">${team?.flag || ''}</span>
-                                <div class="truncate text-sm font-black uppercase text-gray-900">${name}</div>
-                            </div>
-                            <div class="flex items-center gap-2 shrink-0">
-                                <span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">${ownPct}%</span>
-                                <div class="theme-solid-badge rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]">${count}</div>
-                            </div>
-                        </div>
-                    </div>`;
-            }).join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No picks saved yet</div>';
-        }
+        // Build matches cache for both modes (squad + all), then render
+        const squadNames = new Set(liveSquad.map((t) => t.name));
+        const allFinished = matches.filter((m) => m.is_finished)
+            .sort((a, b) => getMatchSortKey(b).localeCompare(getMatchSortKey(a)));
+        const squadFinished = allFinished.filter((m) => squadNames.has(m.team_home) || squadNames.has(m.team_away));
+
+        const standings = computeGroupStandings(matches);
+        const bestThirdAssignments = _buildBestThirdAssignments(standings);
+        const loggedKeySet = new Set(
+            matches.filter((m) => m?.match_date_manual)
+                .map((m) => `${m.stage}|${m.match_date_manual}|${m.team_home}|${m.team_away}`)
+        );
+        const upcomingGroupAll = GROUP_STAGE_SCHEDULE
+            .filter((m) => m.date >= localTodayKey && !loggedKeySet.has(`Group|${m.date}|${m.home}|${m.away}`) && !loggedKeySet.has(`Group|${m.date}|${m.away}|${m.home}`))
+            .map((m) => ({ stage: 'Group', match_date_manual: m.date, team_home: m.home, team_away: m.away, is_finished: false, was_extra_time: false }));
+        const upcomingKnockoutAll = KNOCKOUT_SCHEDULE
+            .filter((m) => m.date >= localTodayKey)
+            .map((m) => {
+                const homeRes = _resolveKnockoutMatchTeam(m, 'home', standings, bestThirdAssignments, { matchesCache: matches });
+                const awayRes = _resolveKnockoutMatchTeam(m, 'away', standings, bestThirdAssignments, { matchesCache: matches });
+                return { stage: m.stage, match_date_manual: m.date, team_home: homeRes?.status !== 'none' ? homeRes.name : 'TBD', team_away: awayRes?.status !== 'none' ? awayRes.name : 'TBD', is_finished: false, was_extra_time: false };
+            })
+            .filter((m) => !loggedKeySet.has(`${m.stage}|${m.match_date_manual}|${m.team_home}|${m.team_away}`) && !loggedKeySet.has(`${m.stage}|${m.match_date_manual}|${m.team_away}|${m.team_home}`));
+        const allUpcoming = [...upcomingGroupAll, ...upcomingKnockoutAll].sort((a, b) => getMatchSortKey(a).localeCompare(getMatchSortKey(b)));
+        const squadUpcoming = allUpcoming.filter((m) => squadNames.has(m.team_home) || squadNames.has(m.team_away));
+
+        const toHtml = (arr, opts) => arr.slice(0, 3).map((m) => renderDashboardMatchCard(m, opts)).join('');
+        _dashMatchCache = {
+            squad: {
+                prevHtml: toHtml(squadFinished, { squadNames }),
+                nextHtml: toHtml(squadUpcoming, { squadNames }),
+            },
+            all: {
+                prevHtml: toHtml(allFinished, {}),
+                nextHtml: toHtml(allUpcoming, {}),
+            },
+        };
+        renderDashMatchesTab();
     } catch (error) {
-        if (welcome) {
-            welcome.textContent = 'Unable to load the dashboard right now.';
-        }
         if (leaderboardEl) leaderboardEl.innerHTML = '<div class="rounded-2xl border border-red-100 bg-red-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Could not load leaderboard</div>';
-        if (resultsEl) resultsEl.innerHTML = '<div class="rounded-2xl border border-red-100 bg-red-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Could not load results</div>';
-        if (mostPickedEl) mostPickedEl.innerHTML = '<div class="rounded-2xl border border-red-100 bg-red-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Could not load picks</div>';
     }
 }
 
@@ -5374,7 +6121,7 @@ function computePlayerChips(leaderboardData = [], matches = [], previousRanks = 
             'hot',
             (entry) => entry.recentStagePoints,
             (value) => Number.isFinite(value) && value > 0,
-            (entry, best) => ({ description: `${best} points in ${_getStageDisplayName(latestStageKey)} led the pool.` })
+            (entry, best) => ({ description: `Led the pool with ${best} points in the ${_getStageDisplayName(latestStageKey)}.` })
         );
         awardMin(
             'ice_cold',
@@ -5388,7 +6135,7 @@ function computePlayerChips(leaderboardData = [], matches = [], previousRanks = 
         'group_king',
         (entry) => entry.groupPoints,
         (value) => value > 0,
-        (entry, best) => ({ description: `${best} combined points across the three group-stage matchdays.` })
+        (entry, best) => ({ description: `Led the pool with ${best} group-stage points across all three matchdays.` })
     );
     _awardPlayerChip(
         chipsByEmail,
@@ -5498,6 +6245,7 @@ function getPlayerCardAccentStyle(favoriteTeam = '') {
             `--player-card-accent-primary: ${tokens.primary}`,
             `--player-card-accent-primary-rgb: ${tokens.primaryRgb.r}, ${tokens.primaryRgb.g}, ${tokens.primaryRgb.b}`,
             `--player-card-accent-text: ${tokens.text}`,
+            `--player-card-accent-on-dark: ${tokens.onDark}`,
             `--player-card-accent-soft: ${tokens.soft}`,
             `--player-card-accent-soft-strong: ${tokens.softStrong}`
         ].join('; ')
@@ -5516,7 +6264,7 @@ function renderPlayerChips(chips = [], email = '', variant = 'row', scopeId = ''
         return '';
     }
 
-    const toneOrder = { positive: 0, negative: 1, neutral: 2 };
+    const toneOrder = { positive: 0, neutral: 1, negative: 2 };
     const sortedChips = [...chips].sort((a, b) => (
         (toneOrder[a.tone] ?? 99) - (toneOrder[b.tone] ?? 99) || a.label.localeCompare(b.label)
     ));
@@ -5533,9 +6281,9 @@ function renderPlayerChips(chips = [], email = '', variant = 'row', scopeId = ''
                     return `<button type="button"
                         title="${escapeHtml(`${chip.label} — ${chip.description}`)}"
                         onclick="showPlayerChipInfo('${chip.id}', '${safeEmail}', event)"
-                        class="inline-flex h-6 min-w-[24px] items-center justify-center rounded-full px-1.5 text-xs font-black ${toneClasses} transition-transform hover:scale-105">${chip.emoji}</button>`;
+                        class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${toneClasses} transition-transform hover:scale-110 shrink-0">${chip.emoji}</button>`;
                 }).join('')}
-                ${overflowCount > 0 ? `<span class="inline-flex h-6 items-center justify-center rounded-full bg-gray-200 px-2 text-[10px] font-black uppercase tracking-[0.08em] text-gray-600">+${overflowCount}</span>` : ''}
+                ${overflowCount > 0 ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 border-2 border-gray-400 text-[10px] font-black text-gray-600">+${overflowCount}</span>` : ''}
             </div>
         `;
     }
@@ -5548,7 +6296,10 @@ function renderPlayerChips(chips = [], email = '', variant = 'row', scopeId = ''
                 return `<button type="button"
                     title="${escapeHtml(`${chip.label} — ${chip.description}`)}"
                     onclick="togglePlayerChipInline('${safeScopeId}', '${chip.id}', '${safeEmail}', event)"
-                    class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black uppercase tracking-[0.08em] ${toneClasses} transition-transform hover:scale-[1.02]">${chip.emoji} <span>${escapeHtml(chip.label)}</span></button>`;
+                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-black uppercase tracking-[0.08em] ${toneClasses} transition-transform hover:scale-[1.02]">
+                    <span class="text-sm">${chip.emoji}</span>
+                    <span>${escapeHtml(chip.label)}</span>
+                </button>`;
             }).join('')}
             </div>
             <div id="${escapeHtml(scopeId)}-chip-inline" class="chip-inline-panel"></div>
@@ -5588,7 +6339,7 @@ function togglePlayerChipInline(scopeId, chipId, email, event) {
             <div class="flex items-start gap-3">
                 <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-xl" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59, 130, 246), 0.14);">${chip.emoji}</div>
                 <div class="min-w-0 flex-1">
-                    <div class="text-[10px] font-black uppercase tracking-[0.22em]" style="color: var(--player-card-accent-text, #60a5fa);">Chip Detail</div>
+                    <div class="text-[10px] font-black uppercase tracking-[0.22em]" style="color: var(--player-card-accent-on-dark, #60a5fa);">Chip Detail</div>
                     <div class="mt-1 text-sm font-black uppercase tracking-[0.08em] text-white">${escapeHtml(chip.label)}</div>
                     <p class="mt-2 text-sm font-bold leading-relaxed text-gray-200">${escapeHtml(chip.description)}</p>
                 </div>
@@ -6770,7 +7521,7 @@ async function showPlayerProfile(email) {
                     </div>
                 </div>
                 ${playerEntry ? `<div class="ml-auto text-right shrink-0">
-                    <div class="text-3xl font-black" style="color: var(--player-card-accent-text);">${playerEntry.totalPoints}</div>
+                    <div class="text-3xl font-black" style="color: var(--player-card-accent-on-dark);">${playerEntry.totalPoints}</div>
                     <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
                 </div>` : ''}
             </div>
@@ -7141,7 +7892,7 @@ async function showTeamOwners(teamName) {
                     ${squadFlags ? `<div class="mt-1.5 flex flex-wrap gap-0.5">${squadFlags}</div>` : ''}
                 </div>
                 ${u.totalPoints !== null ? `<div class="shrink-0 text-right ml-2">
-                    <div class="text-lg font-black theme-accent-text">${u.totalPoints}</div>
+                    <div class="text-lg font-black text-white">${u.totalPoints}</div>
                     <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">pts</div>
                 </div>` : ''}
             </button>`;
@@ -7205,7 +7956,7 @@ async function showOwnerPlayer(email) {
                     <span class="text-xl">${t.flag || ''}</span>
                     <div class="flex-1 min-w-0">
                         <div class="text-xs font-black uppercase text-white truncate">${escapeHtml(t.name)}</div>
-                        <div class="text-[10px] font-bold text-gray-400">T${t.tier} · $${t.cost}${t.eliminated ? ' · out' : ''}</div>
+                        <div class="text-[10px] font-bold text-gray-400">${(() => { const td = teams.find((x) => x.name === t.name); const g = t.group || td?.group || ''; return g ? `Grp ${g} · ` : ''; })()}$${t.cost}${t.eliminated ? ' · out' : ''}</div>
                     </div>
                 </div>`).join('');
     } else {
@@ -7260,7 +8011,7 @@ async function showOwnerPlayer(email) {
                     </div>
                 </div>
                 ${totalPoints !== null ? `<div class="ml-auto text-right shrink-0">
-                    <div class="text-3xl font-black" style="color: var(--player-card-accent-text);">${totalPoints}</div>
+                    <div class="text-3xl font-black" style="color: var(--player-card-accent-on-dark);">${totalPoints}</div>
                     <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
                 </div>` : ''}
             </div>
@@ -7333,6 +8084,19 @@ Object.assign(window, {
     showAdminTab,
     showResultsTab,
     setupDashboard,
+    setDashRightTab,
+    setDashRankingsSort,
+    setDashMatchMode,
+    showDashPointsModal,
+    closeDashPointsModal,
+    showDashRankModal,
+    closeDashRankModal,
+    showDashReportCard,
+    closeDashReportCard,
+    selectDashReportCard,
+    showDashChips,
+    closeDashChips,
+    selectDashChips,
     setupResultsPage,
     setupStatsPage,
     setTeamResultsSort,
