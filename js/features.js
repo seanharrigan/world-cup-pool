@@ -4285,33 +4285,25 @@ async function setupDashboard() {
             const isAwayMine = squadNames?.has(match.team_away);
             const stageLabel = _getMatchStageDisplayLabel(match);
             const scoreMarkup = match.is_finished
-                ? `${match.score_home}-${match.score_away}`
-                : (match.match_date_manual || 'TBD');
+                ? `${match.score_home}–${match.score_away}`
+                : 'TBD';
+            const ptsLabel = match.is_finished ? buildPointsAwardedLabel(match) : '';
 
             return `
-                <div class="rounded-2xl border border-gray-100 bg-gray-50 px-3 py-3">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="theme-accent-text text-[9px] font-black uppercase tracking-[0.18em]">${match.match_date_manual || 'TBD'} | ${stageLabel}</div>
-                        <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 whitespace-nowrap">
-                            ${buildPointsAwardedLabel(match)}
+                <div class="py-2.5 border-b border-gray-100 last:border-0">
+                    <div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-400 text-center mb-1.5">${stageLabel}${ptsLabel ? ` · ${ptsLabel}` : ''}</div>
+                    <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1">
+                        <div class="min-w-0 text-right">
+                            <div class="truncate text-[11px] font-black text-gray-900 ${isHomeMine ? 'underline underline-offset-2' : ''}">${homeTeam?.flag || ''} ${escapeHtml(match.team_home)}</div>
+                            ${ownershipMarkup(match.team_home, 'right')}
+                        </div>
+                        <div class="shrink-0 w-10 text-sm font-black text-gray-900 text-center tabular-nums">${scoreMarkup}</div>
+                        <div class="min-w-0 text-left">
+                            <div class="truncate text-[11px] font-black text-gray-900 ${isAwayMine ? 'underline underline-offset-2' : ''}">${escapeHtml(match.team_away)} ${awayTeam?.flag || ''}</div>
+                            ${ownershipMarkup(match.team_away, 'left')}
                         </div>
                     </div>
-                    <div class="mt-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 text-sm font-black text-gray-900">
-                        <div class="min-w-0 text-left ${isHomeMine ? 'font-black' : ''}">
-                            <div class="truncate">${homeTeam?.flag || ''} ${match.team_home}</div>
-                            ${ownershipMarkup(match.team_home, 'left')}
-                        </div>
-                        <div class="text-center">
-                            <div class="rounded-xl bg-gray-900 px-2.5 py-1 font-mono text-white text-center text-[13px]">
-                                ${scoreMarkup}
-                            </div>
-                        </div>
-                        <div class="min-w-0 text-right ${isAwayMine ? 'font-black' : ''}">
-                            <div class="truncate">${match.team_away} ${awayTeam?.flag || ''}</div>
-                            ${ownershipMarkup(match.team_away, 'right')}
-                        </div>
-                    </div>
-                    ${match.was_extra_time ? '<div class="mt-2 text-[8px] font-black uppercase text-red-500 italic text-right">ET/Pens Result</div>' : ''}
+                    ${match.was_extra_time ? '<div class="text-[8px] font-black uppercase text-red-500 italic text-center mt-1">ET/Pens</div>' : ''}
                 </div>
             `;
         };
