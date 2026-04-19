@@ -2725,7 +2725,7 @@ function buildTeamMatchStats(matches) {
 
 function setMapTableSort(sort) {
     _mapTableSort = sort;
-    ['picked', 'points', 'goals'].forEach((s) => {
+    ['picked', 'points', 'goals', 'matches'].forEach((s) => {
         const btn = document.getElementById(`map-sort-${s}`);
         if (!btn) return;
         btn.classList.toggle('bg-white', s === sort);
@@ -2741,7 +2741,7 @@ function renderMapSideTable() {
     const titleEl = document.getElementById('map-table-title');
     if (!el || !_mapCachedData) return;
 
-    const { stats, matchStats } = _mapCachedData;
+    const { stats, matchStats, matchRows } = _mapCachedData;
     const accentTokens = getActiveThemeAccentTokens();
     const accentColor = accentTokens.primary;
 
@@ -2754,26 +2754,87 @@ function renderMapSideTable() {
     } else if (_highlightedIso !== null) {
         visibleTeams = teams.filter((t) => t.qualified !== false && TEAM_ISO_NUMERIC[t.name] === _highlightedIso);
         titleText = visibleTeams[0]?.name || 'Team';
+    } else if (_mapColorMode === 'me') {
+        visibleTeams = teams.filter((t) => (myPicks || []).includes(t.name));
+        titleText = 'My Picks';
     } else {
         visibleTeams = teams.filter((t) => t.qualified !== false);
     }
 
     if (titleEl) titleEl.textContent = titleText;
 
-    // Build rows with all metrics
+    // ── Matches view ─────────────────────────────────────────────────────────
+    if (_mapTableSort === 'matches') {
+        const teamNames = new Set(visibleTeams.map((t) => t.name));
+        if (teamNames.size === 0) {
+            el.innerHTML = '<div class="px-4 py-6 text-center text-[10px] text-gray-400 uppercase font-black tracking-widest">Select a team or group</div>';
+            return;
+        }
+        const relevant = (matchRows || [])
+            .filter((m) => teamNames.has(m.team_home) || teamNames.has(m.team_away))
+            .sort((a, b) => {
+                const aPlayed = a.score_home != null && a.score_away != null;
+                const bPlayed = b.score_home != null && b.score_away != null;
+                const da = a.match_date_manual || '';
+                const db = b.match_date_manual || '';
+                // Upcoming first (ascending), then played (descending)
+                if (!aPlayed && !bPlayed) return da.localeCompare(db);
+                if (aPlayed && bPlayed) return db.localeCompare(da);
+                return aPlayed ? 1 : -1;
+            });
+        if (relevant.length === 0) {
+            el.innerHTML = '<div class="px-4 py-6 text-center text-[10px] text-gray-400 uppercase font-black tracking-widest">No matches</div>';
+            return;
+        }
+        el.innerHTML = relevant.map((m) => {
+            const played = m.score_home != null && m.score_away != null;
+            const homeT = teams.find((t) => t.name === m.team_home);
+            const awayT = teams.find((t) => t.name === m.team_away);
+            const hHighlight = teamNames.has(m.team_home);
+            const aHighlight = teamNames.has(m.team_away);
+            const scoreEl = played
+                ? `<span class="text-sm font-black text-gray-900 tabular-nums">${m.score_home}–${m.score_away}</span>`
+                : `<span class="text-[10px] font-black text-gray-400">vs</span>`;
+            const dateStr = m.match_date_manual
+                ? new Date(m.match_date_manual + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+                : '';
+            const hColor = hHighlight ? `color:${accentColor}` : 'color:#111827';
+            const aColor = aHighlight ? `color:${accentColor}` : 'color:#111827';
+            return `
+                <div class="px-2.5 py-2.5 rounded-xl hover:bg-gray-50 transition-colors ${played ? '' : 'border-l-2 border-dashed border-gray-200'}">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-400">${m.stage || ''}</span>
+                        <span class="text-[8px] text-gray-400">${dateStr}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <div class="flex items-center gap-1 flex-1 justify-end min-w-0">
+                            <span class="text-[10px] font-black truncate" style="${hColor}">${escapeHtml(m.team_home)}</span>
+                            <span class="shrink-0 text-base leading-none">${homeT?.flag || ''}</span>
+                        </div>
+                        <div class="shrink-0 w-9 text-center">${scoreEl}</div>
+                        <div class="flex items-center gap-1 flex-1 min-w-0">
+                            <span class="shrink-0 text-base leading-none">${awayT?.flag || ''}</span>
+                            <span class="text-[10px] font-black truncate" style="${aColor}">${escapeHtml(m.team_away)}</span>
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+        return;
+    }
+
+    // ── Ranked stats view ─────────────────────────────────────────────────────
     const rows = visibleTeams.map((t) => {
         const ownership = stats.sortedCountryCounts.find((e) => e.teamName === t.name);
-        const match = matchStats?.[t.name] || { goals: 0, poolPoints: 0 };
+        const ms = matchStats?.[t.name] || { goals: 0, poolPoints: 0 };
         return {
             team: t,
             picked: ownership?.percentage || 0,
             pickedCount: ownership?.pickedCount || 0,
-            points: match.poolPoints,
-            goals: match.goals,
+            points: ms.poolPoints,
+            goals: ms.goals,
         };
     });
 
-    // Sort
     rows.sort((a, b) => b[_mapTableSort] - a[_mapTableSort] || a.team.name.localeCompare(b.team.name));
 
     const maxVal = Math.max(1, ...rows.map((r) => r[_mapTableSort]));
@@ -2782,15 +2843,13 @@ function renderMapSideTable() {
     el.innerHTML = rows.map((row, i) => {
         const val = row[_mapTableSort];
         const barW = Math.max(3, Math.round((val / maxVal) * 100));
-        const label = _mapTableSort === 'picked'
-            ? `${val}%`
-            : `${val}`;
+        const label = _mapTableSort === 'picked' ? `${val}%` : `${val}`;
         const sub = _mapTableSort === 'picked'
             ? `${row.pickedCount} ${row.pickedCount === 1 ? 'entry' : 'entries'}`
             : _mapTableSort === 'points' ? 'pool pts' : 'goals';
         return `
             <div onclick="showTeamOwners('${row.team.name.replace(/'/g, "\\'")}')"
-                 class="flex items-center gap-2.5 rounded-xl px-2.5 py-2 cursor-pointer hover:bg-gray-50 transition-colors group">
+                 class="flex items-center gap-2.5 rounded-xl px-2.5 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
                 <span class="text-[10px] font-black text-gray-300 w-4 shrink-0 text-right">${i + 1}</span>
                 <span class="text-xl leading-none shrink-0">${row.team.flag}</span>
                 <div class="flex-1 min-w-0">
@@ -2806,8 +2865,7 @@ function renderMapSideTable() {
                     <div class="text-sm font-black text-gray-900">${label}</div>
                     <div class="text-[9px] text-gray-400">${sub}</div>
                 </div>
-            </div>
-        `;
+            </div>`;
     }).join('') || '<div class="px-4 py-6 text-center text-[10px] text-gray-400 uppercase font-black tracking-widest">No data</div>';
 }
 
@@ -2847,6 +2905,16 @@ function _computeMapFill(iso, state) {
         return NOT_QUALIFIED;
     }
 
+    // My Picks mode — user's teams highlighted, others faded
+    if (_mapColorMode === 'me') {
+        const picks = myPicks || [];
+        const myIsos = new Set(picks.map((n) => TEAM_ISO_NUMERIC[n]).filter((iso) => iso !== undefined));
+        const lightTint = d3.interpolateRgb('#ffffff', accentColor)(0.18);
+        if (myIsos.has(iso)) return accentColor;
+        if (qualifiedIsos.has(iso)) return lightTint;
+        return NOT_QUALIFIED;
+    }
+
     // Groups coloring mode — distinct color per group
     if (_mapColorMode === 'groups') {
         const names = isoToTeamNames[iso];
@@ -2874,7 +2942,7 @@ function repaintMapPaths() {
 
 function setMapColorMode(mode) {
     _mapColorMode = mode;
-    ['ownership', 'groups'].forEach((m) => {
+    ['ownership', 'groups', 'me'].forEach((m) => {
         const btn = document.getElementById(`map-mode-${m}`);
         if (!btn) return;
         const active = m === mode;
@@ -2885,6 +2953,7 @@ function setMapColorMode(mode) {
     });
     updateMapLegend();
     repaintMapPaths();
+    renderMapSideTable();
 }
 
 function updateMapLegend() {
@@ -3020,7 +3089,7 @@ async function fetchSelectionMap() {
 
         const stats = buildSelectionStatsSnapshot(picks || [], profiles || []);
         const matchStats = buildTeamMatchStats(matchRows || []);
-        _mapCachedData = { stats, worldData, matchStats };
+        _mapCachedData = { stats, worldData, matchStats, matchRows: matchRows || [] };
 
         const container = document.getElementById('selection-map-container');
         if (container && !container.querySelector('svg')) {
