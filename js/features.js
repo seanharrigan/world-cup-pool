@@ -8187,26 +8187,22 @@ async function showOwnerPlayer(email) {
 
     playerContent.innerHTML = `
         <div class="p-5 space-y-4" style="${cardAccent.style}">
-            <div>
-                <div class="flex items-center gap-3">
-                    <div class="h-12 w-12 rounded-2xl flex items-center justify-center text-2xl shrink-0" style="background-color: ${rgbaFromHex(cardAccent.tokens.primary, 0.15)};">
-                        ${favFlag || '👤'}
-                    </div>
+            <div class="space-y-2">
+                <div class="flex items-start gap-3">
+                    <span class="text-4xl leading-tight shrink-0 mt-0.5">${favFlag || '👤'}</span>
                     <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <div class="text-xl font-black uppercase italic tracking-tight text-white truncate">${escapeHtml(nickname)}</div>
-                            ${realname ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 shrink-0">${escapeHtml(realname)}</div>` : ''}
-                        </div>
-                        <div class="flex flex-wrap items-center gap-x-2 gap-y-0 mt-0.5">
-                            ${profile?.favorite_team ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300">${favFlag} ${escapeHtml(profile.favorite_team)}</span>` : ''}
-                            ${profile?.home_country ? `<span class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">${escapeHtml(profile.home_country)}</span>` : ''}
-                        </div>
+                        <div class="text-xl font-black uppercase italic tracking-tight text-white truncate leading-tight">${escapeHtml(nickname)}</div>
+                        ${realname ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 leading-snug">${escapeHtml(realname)}</div>` : ''}
                     </div>
-                    ${totalPoints !== null ? `<div class="ml-auto text-right shrink-0">
-                        <div class="text-3xl font-black" style="color: var(--player-card-accent-on-dark);">${totalPoints}</div>
+                    ${totalPoints !== null ? `<div class="text-right shrink-0">
+                        <div class="text-3xl font-black leading-none" style="color: var(--player-card-accent-on-dark);">${totalPoints}</div>
                         <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
                     </div>` : ''}
                 </div>
+                ${(profile?.favorite_team || profile?.home_country) ? `<div class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                    ${profile?.favorite_team ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300">${favFlag} ${escapeHtml(profile.favorite_team)}</span>` : ''}
+                    ${profile?.home_country ? `<span class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">${escapeHtml(profile.home_country)}</span>` : ''}
+                </div>` : ''}
                 ${renderPlayerChips(playerChips, email, 'card', 'owner-player')}
             </div>
 
