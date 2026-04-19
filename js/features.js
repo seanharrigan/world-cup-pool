@@ -4118,16 +4118,16 @@ function renderDashRankingsTab() {
         return `<span class="ml-0.5">${_dashRankingsSort.dir === 'asc' ? '▲' : '▼'}</span>`;
     };
 
-    const th = (c, label, align = 'left') =>
-        `<th class="py-2 text-[8px] font-black uppercase tracking-[0.1em] text-gray-500 cursor-pointer hover:text-gray-800 select-none text-center" onclick="setDashRankingsSort('${c}')">${label}${arrow(c)}</th>`;
+    const th = (c, label) =>
+        `<th class="py-2.5 text-[10px] font-black uppercase tracking-[0.08em] text-gray-600 cursor-pointer hover:text-gray-900 select-none text-center" onclick="setDashRankingsSort('${c}')">${label}${arrow(c)}</th>`;
 
     container.innerHTML = `
         <div class="overflow-x-auto">
             <table class="w-full border-collapse">
                 <thead>
-                    <tr class="border-b border-gray-100">
+                    <tr class="border-b-2 border-gray-100">
                         ${th('fifaRank', 'FIFA')}
-                        <th class="py-2 text-[8px] font-black uppercase tracking-[0.1em] text-gray-500 cursor-pointer hover:text-gray-800 select-none text-left" onclick="setDashRankingsSort('name')">Country${arrow('name')}</th>
+                        <th class="py-2.5 text-[10px] font-black uppercase tracking-[0.08em] text-gray-600 cursor-pointer hover:text-gray-900 select-none text-left" onclick="setDashRankingsSort('name')">Country${arrow('name')}</th>
                         ${th('cost', 'Cost $')}
                         ${th('tier', 'Tier')}
                         ${th('winProb', 'Win%')}
@@ -4135,17 +4135,17 @@ function renderDashRankingsTab() {
                 </thead>
                 <tbody>
                     ${rows.map(({ t, d }) => `
-                        <tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors" onclick="showTeamOwners('${t.name.replace(/'/g, "\\'")}')">
-                            <td class="py-1.5 text-[10px] font-black text-gray-600 text-center tabular-nums">${d.fifaRank}</td>
-                            <td class="py-1.5 min-w-0">
+                        <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors" onclick="showTeamOwners('${t.name.replace(/'/g, "\\'")}')">
+                            <td class="py-2 text-xs font-black text-gray-600 text-center tabular-nums">${d.fifaRank}</td>
+                            <td class="py-2 min-w-0">
                                 <div class="flex items-center gap-2.5">
                                     <span class="shrink-0">${t.flag}</span>
-                                    <span class="text-[10px] font-black text-gray-900 truncate">${escapeHtml(t.name)}</span>
+                                    <span class="text-xs font-black text-gray-900 truncate">${escapeHtml(t.name)}</span>
                                 </div>
                             </td>
-                            <td class="py-1.5 text-[10px] font-black text-gray-700 text-center tabular-nums">$${t.cost}</td>
-                            <td class="py-1.5 text-center">${tierBadge(t.tier)}</td>
-                            <td class="py-1.5 text-[10px] font-black text-gray-700 text-center tabular-nums">${d.winProb.toFixed(1)}%</td>
+                            <td class="py-2 text-xs font-black text-gray-700 text-center tabular-nums">$${t.cost}</td>
+                            <td class="py-2 text-center">${tierBadge(t.tier)}</td>
+                            <td class="py-2 text-xs font-black text-gray-700 text-center tabular-nums">${d.winProb.toFixed(1)}%</td>
                         </tr>`).join('')}
                 </tbody>
             </table>
@@ -4383,20 +4383,20 @@ async function setupDashboard() {
             const safeAway = match.team_away.replace(/'/g, "\\'");
 
             return `
-                <div class="py-3 border-b border-gray-100 last:border-0">
-                    <div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-400 text-center mb-2">${stageLabel}${ptsLabel ? ` · ${ptsLabel}` : ''}</div>
-                    <div class="grid grid-cols-[minmax(0,1fr)_2rem_minmax(0,1fr)] items-center gap-3">
+                <div class="py-2.5 border-b border-gray-100 last:border-0">
+                    <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 mb-1.5">${stageLabel}${ptsLabel ? `<span class="text-gray-300 mx-1">·</span>${ptsLabel}` : ''}</div>
+                    <div class="grid grid-cols-[minmax(0,1fr)_2.25rem_minmax(0,1fr)] items-center gap-2">
                         <div class="min-w-0 text-right">
-                            <div onclick="showTeamOwners('${safeHome}')" class="truncate text-xs font-black text-gray-900 cursor-pointer hover:opacity-70 transition-opacity">${isHomeMine ? '★ ' : ''}${homeTeam?.flag || ''} ${escapeHtml(match.team_home)}</div>
+                            <div onclick="showTeamOwners('${safeHome}')" class="truncate text-[11px] font-black text-gray-900 cursor-pointer hover:text-gray-500 transition-colors leading-snug">${isHomeMine ? '<span class="text-amber-400">★</span> ' : ''}${homeTeam?.flag || ''} ${escapeHtml(match.team_home)}</div>
                             ${ownershipMarkup(match.team_home, 'right')}
                         </div>
-                        <div class="shrink-0 text-sm font-black text-gray-900 text-center tabular-nums">${scoreMarkup}</div>
+                        <div class="shrink-0 text-[13px] font-black text-gray-800 text-center tabular-nums leading-none">${scoreMarkup}</div>
                         <div class="min-w-0 text-left">
-                            <div onclick="showTeamOwners('${safeAway}')" class="truncate text-xs font-black text-gray-900 cursor-pointer hover:opacity-70 transition-opacity">${escapeHtml(match.team_away)} ${awayTeam?.flag || ''}${isAwayMine ? ' ★' : ''}</div>
+                            <div onclick="showTeamOwners('${safeAway}')" class="truncate text-[11px] font-black text-gray-900 cursor-pointer hover:text-gray-500 transition-colors leading-snug">${escapeHtml(match.team_away)} ${awayTeam?.flag || ''}${isAwayMine ? ' <span class="text-amber-400">★</span>' : ''}</div>
                             ${ownershipMarkup(match.team_away, 'left')}
                         </div>
                     </div>
-                    ${match.was_extra_time ? '<div class="text-[8px] font-black uppercase text-red-500 italic text-center mt-1">ET/Pens</div>' : ''}
+                    ${match.was_extra_time ? '<div class="text-[8px] font-black uppercase text-red-400 italic text-center mt-1">ET/Pens</div>' : ''}
                 </div>
             `;
         };
