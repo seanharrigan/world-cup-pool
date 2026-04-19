@@ -4600,12 +4600,18 @@ async function setupDashboard() {
         if (chipsPreviewEl) {
             if (chips.length > 0) {
                 const toneClasses = { positive: 'bg-green-100 border-2 border-green-600', negative: 'bg-red-100 border-2 border-red-600', neutral: 'bg-sky-100 border-2 border-sky-600' };
-                const visible = chips.slice(0, 3);
-                const overflow = chips.length > 3 ? chips.length - 3 : 0;
-                chipsPreviewEl.innerHTML = `<div class="flex items-center gap-1 justify-center">
-                    ${visible.map((c) => `<span class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${toneClasses[c.tone] || toneClasses.neutral}">${c.emoji}</span>`).join('')}
-                    ${overflow > 0 ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 border-2 border-gray-400 text-[10px] font-black text-gray-600">+${overflow}</span>` : ''}
-                </div>`;
+                // Mobile: 1 chip + overflow; sm+: 3 chips + overflow
+                const mobileVisible = chips.slice(0, 1);
+                const mobileOverflow = chips.length > 1 ? chips.length - 1 : 0;
+                const deskVisible = chips.slice(0, 3);
+                const deskOverflow = chips.length > 3 ? chips.length - 3 : 0;
+                const chipHtml = (list, overflow) =>
+                    list.map((c) => `<span class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${toneClasses[c.tone] || toneClasses.neutral}">${c.emoji}</span>`).join('') +
+                    (overflow > 0 ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 border-2 border-gray-400 text-[10px] font-black text-gray-600">+${overflow}</span>` : '');
+                chipsPreviewEl.innerHTML = `
+                    <div class="sm:hidden flex items-center gap-1 justify-center">${chipHtml(mobileVisible, mobileOverflow)}</div>
+                    <div class="hidden sm:flex items-center gap-1 justify-center">${chipHtml(deskVisible, deskOverflow)}</div>
+                `;
             } else {
                 chipsPreviewEl.textContent = '—';
             }
