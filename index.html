@@ -276,6 +276,20 @@
         .nav-link.active { color: var(--nav-accent, #3b82f6); }
         
         @media (min-width: 768px) {
+            #top-nav {
+                isolation: isolate;
+                z-index: 90;
+            }
+            #top-nav > .flex {
+                position: relative;
+                z-index: 1;
+            }
+            #top-nav .nav-link {
+                display: inline-flex;
+                align-items: center;
+                min-height: 1.75rem;
+                pointer-events: auto;
+            }
             .nav-link.active::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 100%; height: 2px; background: var(--nav-accent, #3b82f6); }
         }
 
@@ -308,6 +322,7 @@
         /* Smooth 150ms fade when switching between pages — fast enough to feel instant */
         @keyframes pageFadeIn { from { opacity: 0; } to { opacity: 1; } }
         .page-content:not(.hidden) { animation: pageFadeIn 0.15s ease; }
+        .page-content.hidden { display: none !important; }
 
         @keyframes messageEnter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .message-enter { animation: messageEnter 0.18s ease forwards; }
