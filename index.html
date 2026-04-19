@@ -306,7 +306,7 @@
             pointer-events: none;
         }
         #dashboard-tabs-panel { transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; max-height: 600px; }
-        .dash-sheet-minimized { max-height: 56px; }
+        #dashboard-tabs-panel.dash-sheet-minimized { max-height: 56px; }
         @media (min-width: 1024px) {
             #dashboard-squad-card { display: flex !important; }
             #dashboard-tabs-panel { max-height: none !important; overflow: visible; }
@@ -517,7 +517,7 @@
                     <!-- Player card + tabbed panel -->
                     <div class="relative flex flex-col lg:flex-row overflow-hidden lg:overflow-visible">
                         <!-- Left: player card (always visible) -->
-                        <div id="dashboard-squad-card" class="flex lg:w-[44%] lg:flex-shrink-0 flex-col" style="background-color: #0f172a;">
+                        <div id="dashboard-squad-card" class="flex lg:w-[44%] lg:flex-shrink-0 flex-col pb-14 lg:pb-0" style="background-color: #0f172a;">
                             <div class="p-6 flex-1" id="dashboard-squad-inner">
                                 <div id="dashboard-squad-strip" class="grid grid-cols-2 gap-2"></div>
                             </div>
