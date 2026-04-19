@@ -334,6 +334,7 @@
                 <span onclick="showPage('rules')" id="nav-rules" class="nav-link">Rules</span>
                 <span onclick="showPage('picks')" id="nav-picks" class="nav-link">My Picks</span>
                 <span onclick="showPage('results')" id="nav-results" class="nav-link">Results</span>
+                <span onclick="showPage('stats')" id="nav-stats" class="nav-link">Stats</span>
                 <span onclick="showPage('leaderboard')" id="nav-leaderboard" class="nav-link">Leaderboard</span>
                 <span onclick="showPage('chat')" id="nav-chat" class="nav-link relative">Chat<span id="chat-unread-badge" class="hidden absolute -top-1.5 -right-2.5 h-4 min-w-[16px] px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center leading-none"></span></span>
                 <span onclick="showPage('profile')" id="nav-profile" class="nav-link">Profile</span>
@@ -350,6 +351,7 @@
             <span onclick="showPage('rules')" class="mobile-menu-link py-4 border-b border-gray-900 text-center text-white">Rules</span>
             <span onclick="showPage('picks')" class="mobile-menu-link py-4 border-b border-gray-900 text-center text-white">My Picks</span>
             <span onclick="showPage('results')" class="mobile-menu-link py-4 border-b border-gray-900 text-center text-white">Results</span>
+            <span onclick="showPage('stats')" class="mobile-menu-link py-4 border-b border-gray-900 text-center text-white">Stats</span>
             <span onclick="showPage('leaderboard')" class="mobile-menu-link py-4 border-b border-gray-900 text-center text-white">Leaderboard</span>
             <span onclick="showPage('chat')" class="mobile-menu-link py-4 border-b border-gray-900 text-center text-white relative">Chat<span id="chat-unread-badge-mobile" class="hidden ml-2 inline-flex h-4 min-w-[16px] px-1 rounded-full bg-red-500 text-white text-[9px] font-black items-center justify-center leading-none"></span></span>
             <span onclick="showPage('profile')" class="mobile-menu-link py-4 border-b border-gray-900 text-center text-white">Profile</span>
@@ -740,8 +742,6 @@
                         <button onclick="showResultsTab('bracket')" data-tab="bracket" class="results-tab-option w-full border-t border-gray-100 px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.25em] transition-colors">Bracket</button>
                         <button onclick="showResultsTab('pool')" data-tab="pool" class="results-tab-option w-full border-t border-gray-100 px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.25em] transition-colors">Results Table</button>
                         <button onclick="showResultsTab('matches')" data-tab="matches" class="results-tab-option w-full border-t border-gray-100 px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.25em] transition-colors">Match Results</button>
-                        <button onclick="showResultsTab('selection')" data-tab="selection" class="results-tab-option w-full border-t border-gray-100 px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.25em] transition-colors">Selection Stats</button>
-                        <button onclick="showResultsTab('map')" data-tab="map" class="results-tab-option w-full border-t border-gray-100 px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.25em] transition-colors">World Map</button>
                     </div>
                 </div>
                 <!-- Desktop: segmented control -->
@@ -750,8 +750,6 @@
                     <button onclick="showResultsTab('bracket')" id="results-tab-bracket" class="results-tab results-tab-c flex-1 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 transition-all duration-200 hover:text-gray-700">Bracket</button>
                     <button onclick="showResultsTab('pool')" id="results-tab-pool" class="results-tab results-tab-c flex-1 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 transition-all duration-200 hover:text-gray-700">Results Table</button>
                     <button onclick="showResultsTab('matches')" id="results-tab-matches" class="results-tab results-tab-c flex-1 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 transition-all duration-200 hover:text-gray-700">Match Results</button>
-                    <button onclick="showResultsTab('selection')" id="results-tab-selection" class="results-tab results-tab-c flex-1 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 transition-all duration-200 hover:text-gray-700">Selection Stats</button>
-                    <button onclick="showResultsTab('map')" id="results-tab-map" class="results-tab results-tab-c flex-1 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 transition-all duration-200 hover:text-gray-700">World Map</button>
                 </div>
 
                 <div id="results-panel-groups" class="results-panel space-y-6">
@@ -901,75 +899,82 @@
                     </div>
                 </div>
 
-                <div id="results-panel-map" class="results-panel hidden">
-                    <!-- Heading -->
-                    <div class="border-l-[3px] border-gray-300 pl-3 mb-5">
-                        <h2 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-gray-900">Ownership Map</h2>
-                        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Colour by ownership or group · click any country</p>
+                <div id="results-panel-matches" class="results-panel hidden space-y-6">
+                    <div class="border-l-[3px] border-gray-300 pl-3">
+                        <h2 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-gray-900">Match Results</h2>
+                        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">All completed matches in chronological order</p>
                     </div>
-                    <!-- 25 / 75 layout: side table + map -->
-                    <div class="flex gap-5 items-stretch">
-                        <!-- Left: team stats table (desktop only, stretches to match right column) -->
-                        <div class="hidden md:flex flex-col w-64 xl:w-72 shrink-0 rounded-3xl border border-gray-200 bg-white shadow-sm">
-                            <div class="p-4 border-b border-gray-100 shrink-0">
-                                <div class="map-table-title text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2.5">All Teams</div>
-                                <div class="flex rounded-xl bg-gray-100 p-0.5 gap-0.5">
-                                    <button data-sort="picked" onclick="setMapTableSort('picked')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide bg-white shadow-sm text-gray-900 transition-all">Picked</button>
-                                    <button data-sort="points" onclick="setMapTableSort('points')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Points</button>
-                                    <button data-sort="goals" onclick="setMapTableSort('goals')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Goals</button>
-                                    <button data-sort="matches" onclick="setMapTableSort('matches')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Matches</button>
-                                </div>
+                    <div id="public-history-log" class="space-y-4 text-left"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-stats" class="page-content hidden h-full w-full overflow-y-auto p-6 md:p-12 bg-gray-50 text-gray-900 text-left">
+            <div class="max-w-6xl mx-auto space-y-6 text-left text-gray-900">
+                <header>
+                    <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                        <h1 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter">Pool Statistics</h1>
+                        <p class="theme-accent-text font-black uppercase tracking-[0.2em] text-[10px]">Colour by ownership or group · click any country</p>
+                    </div>
+                </header>
+                <!-- 25 / 75 layout: side table + map -->
+                <div class="flex gap-5 items-start">
+                    <!-- Left: team stats table (desktop only) -->
+                    <div id="map-left-panel" class="hidden md:flex flex-col w-64 xl:w-72 shrink-0 rounded-3xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-gray-100 shrink-0">
+                            <div class="map-table-title text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2.5">All Teams</div>
+                            <div class="flex rounded-xl bg-gray-100 p-0.5 gap-0.5">
+                                <button data-sort="picked" onclick="setMapTableSort('picked')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide bg-white shadow-sm text-gray-900 transition-all">Picked</button>
+                                <button data-sort="points" onclick="setMapTableSort('points')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Points</button>
+                                <button data-sort="goals" onclick="setMapTableSort('goals')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Goals</button>
+                                <button data-sort="matches" onclick="setMapTableSort('matches')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Matches</button>
                             </div>
-                            <div class="map-side-table-content flex-1 overflow-y-auto p-2 space-y-0.5"></div>
                         </div>
-                        <!-- Right: controls + map + legend -->
-                        <div class="flex-1 min-w-0 space-y-3">
-                            <!-- Controls: on mobile = two rows; on desktop = one row -->
-                            <!-- Row 1: toggle + search -->
-                            <div class="flex items-stretch gap-2">
-                                <!-- Colour mode toggle -->
-                                <div class="shrink-0 flex rounded-2xl bg-gray-100 p-1 gap-0.5">
-                                    <button id="map-mode-ownership" onclick="setMapColorMode('ownership')"
-                                            class="px-3 rounded-xl text-[10px] font-black uppercase tracking-wide bg-white shadow-sm text-gray-900 transition-all whitespace-nowrap">Ownership</button>
-                                    <button id="map-mode-groups" onclick="setMapColorMode('groups')"
-                                            class="px-3 rounded-xl text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all whitespace-nowrap">Groups</button>
-                                    <button id="map-mode-me" onclick="setMapColorMode('me')"
-                                            class="px-3 rounded-xl text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all whitespace-nowrap">Me</button>
-                                </div>
-                                <!-- Country search -->
-                                <div class="relative flex-1 min-w-0" id="map-country-search-wrap">
-                                    <div class="flex items-center gap-2 h-full rounded-2xl border border-gray-200 bg-white px-4 shadow-sm">
-                                        <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                                        <input id="map-country-search-input" type="text" placeholder="Team…" autocomplete="off"
-                                               class="flex-1 min-w-0 bg-transparent text-sm font-semibold text-gray-800 placeholder-gray-400 outline-none py-3"
-                                               oninput="filterMapCountrySearch(this.value)"
-                                               onfocus="openMapCountrySearch()"
-                                               onblur="setTimeout(closeMapCountrySearch, 150)">
-                                        <button id="map-country-search-clear" class="hidden text-gray-400 hover:text-gray-600 text-xs font-black" onclick="clearMapCountrySearch()">✕</button>
-                                    </div>
-                                    <div id="map-country-search-dropdown" class="hidden absolute z-30 mt-1 max-h-52 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-xl"></div>
-                                </div>
+                        <div class="map-side-table-content flex-1 overflow-y-auto p-2 space-y-0.5"></div>
+                    </div>
+                    <!-- Right: controls + map + legend -->
+                    <div class="flex-1 min-w-0 space-y-3">
+                        <!-- Row 1: toggle + search -->
+                        <div class="flex items-stretch gap-2">
+                            <div class="shrink-0 flex rounded-2xl bg-gray-100 p-1 gap-0.5">
+                                <button id="map-mode-ownership" onclick="setMapColorMode('ownership')"
+                                        class="px-3 rounded-xl text-[10px] font-black uppercase tracking-wide bg-white shadow-sm text-gray-900 transition-all whitespace-nowrap">Ownership</button>
+                                <button id="map-mode-groups" onclick="setMapColorMode('groups')"
+                                        class="px-3 rounded-xl text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all whitespace-nowrap">Groups</button>
+                                <button id="map-mode-me" onclick="setMapColorMode('me')"
+                                        class="px-3 rounded-xl text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all whitespace-nowrap">Me</button>
                             </div>
-                            <!-- Row 2: group slider (full width on mobile, inline on desktop hidden here since desktop has it in row 1) -->
-                            <div class="md:hidden flex rounded-2xl bg-gray-100 p-1 gap-0.5 overflow-x-auto" style="scrollbar-width:none;">
-                                <button data-group-btn="A" onclick="selectMapGroup('A')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">A</button>
-                                <button data-group-btn="B" onclick="selectMapGroup('B')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">B</button>
-                                <button data-group-btn="C" onclick="selectMapGroup('C')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">C</button>
-                                <button data-group-btn="D" onclick="selectMapGroup('D')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">D</button>
-                                <button data-group-btn="E" onclick="selectMapGroup('E')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">E</button>
-                                <button data-group-btn="F" onclick="selectMapGroup('F')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">F</button>
-                                <button data-group-btn="G" onclick="selectMapGroup('G')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">G</button>
-                                <button data-group-btn="H" onclick="selectMapGroup('H')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">H</button>
-                                <button data-group-btn="I" onclick="selectMapGroup('I')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">I</button>
-                                <button data-group-btn="J" onclick="selectMapGroup('J')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">J</button>
-                                <button data-group-btn="K" onclick="selectMapGroup('K')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">K</button>
-                                <button data-group-btn="L" onclick="selectMapGroup('L')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">L</button>
+                            <div class="relative flex-1 min-w-0" id="map-country-search-wrap">
+                                <div class="flex items-center gap-2 h-full rounded-2xl border border-gray-200 bg-white px-4 shadow-sm">
+                                    <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                                    <input id="map-country-search-input" type="text" placeholder="Team…" autocomplete="off"
+                                           class="flex-1 min-w-0 bg-transparent text-sm font-semibold text-gray-800 placeholder-gray-400 outline-none py-3"
+                                           oninput="filterMapCountrySearch(this.value)"
+                                           onfocus="openMapCountrySearch()"
+                                           onblur="setTimeout(closeMapCountrySearch, 150)">
+                                    <button id="map-country-search-clear" class="hidden text-gray-400 hover:text-gray-600 text-xs font-black" onclick="clearMapCountrySearch()">✕</button>
+                                </div>
+                                <div id="map-country-search-dropdown" class="hidden absolute z-30 mt-1 max-h-52 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-xl"></div>
                             </div>
-                            <!-- Desktop row 1 continued: group slider inline (hidden on mobile, shown on md+) -->
-                            <!-- (appended to the first row via JS-invisible trick — we re-add the group slider to the first row on md) -->
-                            <div class="hidden md:flex -mt-3 rounded-2xl bg-gray-100 p-1 gap-0.5 overflow-x-auto" style="scrollbar-width:none;">
-                                <!-- Group segmented slider (desktop) -->
-                                <div class="flex w-full gap-0.5">
+                        </div>
+                        <!-- Row 2: group slider (mobile) -->
+                        <div class="md:hidden flex rounded-2xl bg-gray-100 p-1 gap-0.5 overflow-x-auto" style="scrollbar-width:none;">
+                            <button data-group-btn="A" onclick="selectMapGroup('A')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">A</button>
+                            <button data-group-btn="B" onclick="selectMapGroup('B')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">B</button>
+                            <button data-group-btn="C" onclick="selectMapGroup('C')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">C</button>
+                            <button data-group-btn="D" onclick="selectMapGroup('D')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">D</button>
+                            <button data-group-btn="E" onclick="selectMapGroup('E')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">E</button>
+                            <button data-group-btn="F" onclick="selectMapGroup('F')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">F</button>
+                            <button data-group-btn="G" onclick="selectMapGroup('G')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">G</button>
+                            <button data-group-btn="H" onclick="selectMapGroup('H')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">H</button>
+                            <button data-group-btn="I" onclick="selectMapGroup('I')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">I</button>
+                            <button data-group-btn="J" onclick="selectMapGroup('J')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">J</button>
+                            <button data-group-btn="K" onclick="selectMapGroup('K')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">K</button>
+                            <button data-group-btn="L" onclick="selectMapGroup('L')" class="map-group-btn shrink-0 flex-1 px-2.5 py-2 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">L</button>
+                        </div>
+                        <!-- Group slider (desktop) -->
+                        <div class="hidden md:flex -mt-3 rounded-2xl bg-gray-100 p-1 gap-0.5 overflow-x-auto" style="scrollbar-width:none;">
+                            <div class="flex w-full gap-0.5">
                                 <button data-group-btn="A" onclick="selectMapGroup('A')" class="map-group-btn flex-1 px-2.5 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">A</button>
                                 <button data-group-btn="B" onclick="selectMapGroup('B')" class="map-group-btn flex-1 px-2.5 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">B</button>
                                 <button data-group-btn="C" onclick="selectMapGroup('C')" class="map-group-btn flex-1 px-2.5 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">C</button>
@@ -982,111 +987,56 @@
                                 <button data-group-btn="J" onclick="selectMapGroup('J')" class="map-group-btn flex-1 px-2.5 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">J</button>
                                 <button data-group-btn="K" onclick="selectMapGroup('K')" class="map-group-btn flex-1 px-2.5 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">K</button>
                                 <button data-group-btn="L" onclick="selectMapGroup('L')" class="map-group-btn flex-1 px-2.5 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">L</button>
-                                </div>
                             </div>
-                            <!-- Map card -->
-                            <div class="relative overflow-hidden" style="aspect-ratio:2/1; min-height:200px;">
-                                <div id="map-tooltip" class="pointer-events-none absolute z-20 hidden rounded-2xl border border-gray-700 bg-gray-950/95 px-3 py-2.5 shadow-xl backdrop-blur-sm text-center" style="transform:translate(-50%,calc(-100% - 10px)); white-space:nowrap;">
-                                    <div id="map-tooltip-flag" class="text-xl leading-none"></div>
-                                    <div id="map-tooltip-name" class="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-white"></div>
-                                    <div id="map-tooltip-stats" class="mt-0.5 text-[9px] font-bold text-gray-400"></div>
-                                </div>
-                                <div id="selection-map-container" class="absolute inset-0 w-full h-full"></div>
-                                <div id="selection-map-loading" class="absolute inset-0 flex items-center justify-center text-[10px] font-black uppercase tracking-[0.25em] text-gray-500">Loading map…</div>
+                        </div>
+                        <!-- Map card -->
+                        <div id="map-aspect-card" class="relative overflow-hidden" style="aspect-ratio:2/1; min-height:200px;">
+                            <div id="map-tooltip" class="pointer-events-none absolute z-20 hidden rounded-2xl border border-gray-700 bg-gray-950/95 px-3 py-2.5 shadow-xl backdrop-blur-sm text-center" style="transform:translate(-50%,calc(-100% - 10px)); white-space:nowrap;">
+                                <div id="map-tooltip-flag" class="text-xl leading-none"></div>
+                                <div id="map-tooltip-name" class="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-white"></div>
+                                <div id="map-tooltip-stats" class="mt-0.5 text-[9px] font-bold text-gray-400"></div>
                             </div>
-                            <!-- Legend -->
-                            <div id="map-legend-ownership" class="flex flex-wrap justify-center items-center gap-6">
-                                <div class="flex items-center gap-2">
-                                    <span id="map-legend-zero" class="inline-block w-5 h-4 rounded border border-gray-200"></span>
-                                    <span class="text-xs font-bold text-gray-500">Qualified, 0% picked</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <div id="map-legend-gradient" class="h-3 w-28 rounded-full"></div>
-                                    <span class="text-xs font-black uppercase tracking-[0.15em] text-gray-500">→ High ownership</span>
-                                </div>
+                            <div id="selection-map-container" class="absolute inset-0 w-full h-full"></div>
+                            <div id="selection-map-loading" class="absolute inset-0 flex items-center justify-center text-[10px] font-black uppercase tracking-[0.25em] text-gray-500">Loading map…</div>
+                        </div>
+                        <!-- Legend -->
+                        <div id="map-legend-ownership" class="flex flex-wrap justify-center items-center gap-6">
+                            <div class="flex items-center gap-2">
+                                <span id="map-legend-zero" class="inline-block w-5 h-4 rounded border border-gray-200"></span>
+                                <span class="text-xs font-bold text-gray-500">Qualified, 0% picked</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div id="map-legend-gradient" class="h-3 w-28 rounded-full"></div>
+                                <span class="text-xs font-black uppercase tracking-[0.15em] text-gray-500">→ High ownership</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="inline-block w-5 h-4 rounded" style="background:#d1d5db;"></span>
+                                <span class="text-xs font-bold text-gray-500">Did not qualify</span>
+                            </div>
+                        </div>
+                        <div id="map-legend-groups-bar" class="hidden" style="display:none;">
+                            <div id="map-legend-groups-items" class="flex flex-wrap justify-center gap-x-5 gap-y-2"></div>
+                            <div class="mt-2.5 flex justify-center">
                                 <div class="flex items-center gap-2">
                                     <span class="inline-block w-5 h-4 rounded" style="background:#d1d5db;"></span>
                                     <span class="text-xs font-bold text-gray-500">Did not qualify</span>
                                 </div>
                             </div>
-                            <div id="map-legend-groups-bar" class="hidden" style="display:none;">
-                                <div id="map-legend-groups-items" class="flex flex-wrap justify-center gap-x-5 gap-y-2"></div>
-                                <div class="mt-2.5 flex justify-center">
-                                    <div class="flex items-center gap-2">
-                                        <span class="inline-block w-5 h-4 rounded" style="background:#d1d5db;"></span>
-                                        <span class="text-xs font-bold text-gray-500">Did not qualify</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Mobile table panel (below map) -->
-                    <div class="md:hidden mt-5 rounded-3xl border border-gray-200 bg-white shadow-sm">
-                        <div class="p-4 border-b border-gray-100">
-                            <div class="map-table-title text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2.5">All Teams</div>
-                            <div class="flex rounded-xl bg-gray-100 p-0.5 gap-0.5">
-                                <button data-sort="picked" onclick="setMapTableSort('picked')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide bg-white shadow-sm text-gray-900 transition-all">Picked</button>
-                                <button data-sort="points" onclick="setMapTableSort('points')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Points</button>
-                                <button data-sort="goals" onclick="setMapTableSort('goals')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Goals</button>
-                                <button data-sort="matches" onclick="setMapTableSort('matches')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Matches</button>
-                            </div>
-                        </div>
-                        <div class="map-side-table-content p-2 space-y-0.5"></div>
-                    </div>
-                </div>
-
-                <div id="results-panel-selection" class="results-panel hidden space-y-6">
-                    <div class="flex items-center justify-between gap-4">
-                        <div class="border-l-[3px] border-gray-300 pl-3">
-                            <h2 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-gray-900">Selection Stats</h2>
-                            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Live ownership, squad shape &amp; group lean</p>
-                        </div>
-                        <div class="shrink-0 rounded-2xl border border-gray-200 bg-white px-5 py-3 text-right">
-                            <div class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Entries</div>
-                            <div id="public-selection-entry-count" class="text-2xl font-black text-gray-900">0</div>
-                        </div>
-                    </div>
-                    <div id="results-selection-locked" class="hidden rounded-3xl border border-gray-200 bg-white px-8 py-12 text-center">
-                        <div class="mx-auto max-w-xl">
-                            <div class="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400">Selection Hidden</div>
-                            <div class="mt-3 text-2xl font-black uppercase italic tracking-tight text-gray-900">Selection results will be shown once the World Cup starts.</div>
-                        </div>
-                    </div>
-                    <div id="results-selection-content" class="space-y-6">
-                        <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                            <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
-                                <div class="mb-6 border-l-[3px] border-gray-300 pl-3">
-                                    <h2 class="text-3xl font-black uppercase italic tracking-tight text-gray-900">Ownership</h2>
-                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Most popular teams across all entries</p>
-                                </div>
-                                <div id="public-country-pick-stats"></div>
-                            </section>
-
-                            <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
-                                <div class="mb-6 border-l-[3px] border-gray-300 pl-3">
-                                    <h2 class="text-3xl font-black uppercase italic tracking-tight text-gray-900">Squad Sizes</h2>
-                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">How many teams each player is carrying</p>
-                                </div>
-                                <div id="public-roster-size-stats"></div>
-                            </section>
-
-                            <section class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
-                                <div class="mb-6 border-l-[3px] border-gray-300 pl-3">
-                                    <h2 class="text-3xl font-black uppercase italic tracking-tight text-gray-900">Group Lean</h2>
-                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Which groups the pool is leaning on hardest</p>
-                                </div>
-                                <div id="public-group-density-stats"></div>
-                            </section>
                         </div>
                     </div>
                 </div>
-
-                <div id="results-panel-matches" class="results-panel hidden space-y-6">
-                    <div class="border-l-[3px] border-gray-300 pl-3">
-                        <h2 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-gray-900">Match Results</h2>
-                        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">All completed matches in chronological order</p>
+                <!-- Mobile table panel (below map) -->
+                <div class="md:hidden mt-5 rounded-3xl border border-gray-200 bg-white shadow-sm">
+                    <div class="p-4 border-b border-gray-100">
+                        <div class="map-table-title text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2.5">All Teams</div>
+                        <div class="flex rounded-xl bg-gray-100 p-0.5 gap-0.5">
+                            <button data-sort="picked" onclick="setMapTableSort('picked')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide bg-white shadow-sm text-gray-900 transition-all">Picked</button>
+                            <button data-sort="points" onclick="setMapTableSort('points')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Points</button>
+                            <button data-sort="goals" onclick="setMapTableSort('goals')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Goals</button>
+                            <button data-sort="matches" onclick="setMapTableSort('matches')" class="map-sort-btn flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">Matches</button>
+                        </div>
                     </div>
-                    <div id="public-history-log" class="space-y-4 text-left"></div>
+                    <div class="map-side-table-content p-2 space-y-0.5"></div>
                 </div>
             </div>
         </div>

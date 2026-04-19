@@ -2004,7 +2004,7 @@ function showResultsTab(tabId) {
         activeTab.classList.remove('text-gray-500');
     }
 
-    const tabLabels = { groups: 'Results by Group', bracket: 'Bracket', pool: 'Results Table', matches: 'Match Results', selection: 'Selection Stats', map: 'World Map' };
+    const tabLabels = { groups: 'Results by Group', bracket: 'Bracket', pool: 'Results Table', matches: 'Match Results' };
     const dropdownLabel = document.getElementById('results-tab-dropdown-label');
     const dropdownPanel = document.getElementById('results-tab-dropdown-panel');
     const dropdownChevron = document.getElementById('results-tab-dropdown-chevron');
@@ -2015,8 +2015,6 @@ function showResultsTab(tabId) {
         const isActive = btn.dataset.tab === tabId;
         btn.classList.toggle('inactive', !isActive);
     });
-
-    if (tabId === 'map') renderMapIfNeeded();
 }
 
 function toggleResultsTabDropdown() {
@@ -2051,9 +2049,23 @@ function setupResultsPage() {
     renderKnockoutBracket([]);
     fetchPublicResults();
     fetchPublicTeamResults();
-    fetchPublicSelectionStats();
-    fetchSelectionMap();
 }
+
+function setupStatsPage() {
+    fetchSelectionMap();
+    renderMapIfNeeded();
+    syncMapPanelHeight();
+}
+
+function syncMapPanelHeight() {
+    const mapCard = document.getElementById('map-aspect-card');
+    const leftPanel = document.getElementById('map-left-panel');
+    if (!mapCard || !leftPanel) return;
+    const h = mapCard.getBoundingClientRect().height;
+    if (h > 0) leftPanel.style.height = h + 'px';
+}
+
+window.addEventListener('resize', syncMapPanelHeight);
 
 function escapeCsvValue(value) {
     const stringValue = value == null ? '' : String(value);
@@ -2830,7 +2842,8 @@ function renderMapSideTable() {
         visibleTeams = teams.filter((t) => t.qualified !== false && TEAM_ISO_NUMERIC[t.name] === _highlightedIso);
         titleText = visibleTeams[0]?.name || 'Team';
     } else if (_mapColorMode === 'me') {
-        visibleTeams = teams.filter((t) => (myPicks || []).includes(t.name));
+        const myPickNames = new Set((myPicks || []).map((p) => p.name || p));
+        visibleTeams = teams.filter((t) => myPickNames.has(t.name));
         titleText = 'My Picks';
     } else {
         visibleTeams = teams.filter((t) => t.qualified !== false);
@@ -2963,7 +2976,7 @@ function _computeMapFill(iso, state) {
     // My Picks mode — user's teams highlighted, others faded
     if (_mapColorMode === 'me') {
         const picks = myPicks || [];
-        const myIsos = new Set(picks.map((n) => TEAM_ISO_NUMERIC[n]).filter((iso) => iso !== undefined));
+        const myIsos = new Set(picks.map((t) => TEAM_ISO_NUMERIC[t.name || t]).filter((iso) => iso !== undefined));
         const lightTint = d3.interpolateRgb('#ffffff', accentColor)(0.18);
         if (myIsos.has(iso)) return accentColor;
         if (qualifiedIsos.has(iso)) return lightTint;
@@ -3311,6 +3324,7 @@ function renderChoroplethMap(stats, worldData) {
         .attr('stroke-width', 0.4);
 
     renderMapSideTable();
+    requestAnimationFrame(syncMapPanelHeight);
 }
 
 
@@ -7313,6 +7327,7 @@ Object.assign(window, {
     showResultsTab,
     setupDashboard,
     setupResultsPage,
+    setupStatsPage,
     setTeamResultsSort,
     fetchAdminHistory,
     renderScheduleBrowser,

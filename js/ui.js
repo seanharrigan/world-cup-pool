@@ -379,6 +379,7 @@ function showPage(pageId) {
     if (pageId === 'chat') setupChat();
     if (pageId === 'profile') setupProfile();
     if (pageId === 'results') setupResultsPage();
+    if (pageId === 'stats') setupStatsPage();
 
     if (section) {
         requestAnimationFrame(() => {
