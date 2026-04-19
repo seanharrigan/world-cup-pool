@@ -4868,7 +4868,7 @@ async function setupDashboard() {
 
             const renderRow = (entry, rank, prize) => {
                 const s = rankStyleMap[rank] || defaultStyle;
-                return `<div class="relative flex items-center gap-3 rounded-xl border ${s.border} overflow-hidden px-3 py-2 w-full" style="background-color: ${s.bg};">
+                return `<div class="dash-lb-row relative flex items-center gap-3 rounded-xl border ${s.border} overflow-hidden px-3 py-2 w-full" style="background-color: ${s.bg};">
                     <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color: ${s.bar};"></div>
                     ${s.medal ? `<span class="text-xl leading-none shrink-0 pl-1">${s.medal}</span>` : `<span class="text-sm font-black text-gray-400 pl-1 shrink-0 w-6 text-center">#${rank}</span>`}
                     <div class="min-w-0 flex-1">
