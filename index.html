@@ -305,11 +305,11 @@
             font-weight: 600;
             pointer-events: none;
         }
-        #dashboard-tabs-panel { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-        .dash-sheet-minimized { transform: translateY(calc(100% - 56px)); }
+        #dashboard-tabs-panel { transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
+        .dash-sheet-minimized { max-height: 56px; }
         @media (min-width: 1024px) {
             #dashboard-squad-card { display: flex !important; }
-            .dash-sheet-minimized { transform: none !important; }
+            .dash-sheet-minimized { max-height: none; overflow: visible; }
         }
     </style>
 </head>
@@ -517,21 +517,21 @@
                     <!-- Player card + tabbed panel -->
                     <div class="flex flex-col lg:flex-row">
                         <!-- Left: player card (always visible) -->
-                        <div id="dashboard-squad-card" class="flex lg:w-[44%] lg:flex-shrink-0 flex-col pb-14 lg:pb-0" style="background-color: #0f172a;">
+                        <div id="dashboard-squad-card" class="flex lg:w-[44%] lg:flex-shrink-0 flex-col" style="background-color: #0f172a;">
                             <div class="p-6 flex-1" id="dashboard-squad-inner">
                                 <div id="dashboard-squad-strip" class="grid grid-cols-2 gap-2"></div>
                             </div>
                             <div id="dashboard-squad-budget-bar" class="hidden px-6 pb-5"></div>
                         </div>
-                        <!-- Right: tabbed panel — bottom sheet on mobile, inline on desktop -->
-                        <div id="dashboard-tabs-panel" class="dash-sheet-minimized fixed bottom-0 left-0 right-0 z-40 lg:static lg:flex-1 bg-white flex flex-col lg:h-[480px] overflow-hidden shadow-2xl lg:shadow-none">
+                        <!-- Right: tabbed panel — collapsible on mobile, inline on desktop -->
+                        <div id="dashboard-tabs-panel" class="dash-sheet-minimized lg:flex-1 bg-white flex flex-col h-[400px] lg:h-[480px]">
                             <!-- Handle bar (mobile only) -->
-                            <div onclick="toggleDashSheet()" class="lg:hidden h-14 shrink-0 flex items-center justify-between px-4 bg-gray-900 cursor-pointer border-t border-gray-700">
+                            <div onclick="toggleDashSheet()" class="lg:hidden h-14 shrink-0 flex items-center justify-between px-4 bg-gray-100 cursor-pointer border-t border-gray-200">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-sm font-black uppercase italic tracking-widest text-white">Table &amp; Stats</span>
+                                    <span class="text-sm font-black uppercase italic tracking-widest text-gray-700">Table &amp; Stats</span>
                                     <span id="dash-sheet-helper" class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Click to view</span>
                                 </div>
-                                <span id="dash-sheet-arrow" class="text-xs text-gray-400">▲</span>
+                                <span id="dash-sheet-arrow" class="text-xs text-gray-500">▲</span>
                             </div>
                             <!-- Tab bar -->
                             <div class="px-4 pt-3 pb-2 shrink-0">
@@ -698,23 +698,23 @@
                         <div class="flex-1 flex flex-col divide-y divide-gray-100">
                             <div class="flex-1 flex items-center justify-between">
                                 <span class="text-sm font-black text-gray-700">Win</span>
-                                <span class="text-2xl font-black text-emerald-500">3 pts</span>
+                                <span class="text-sm font-black text-emerald-500">3 pts</span>
                             </div>
                             <div class="flex-1 flex items-center justify-between">
                                 <span class="text-sm font-black text-gray-700">Draw</span>
-                                <span class="text-2xl font-black text-blue-500">1 pt</span>
+                                <span class="text-sm font-black text-blue-500">1 pt</span>
                             </div>
                             <div class="flex-1 flex items-center justify-between">
                                 <span class="text-sm font-black text-gray-700">Loss</span>
-                                <span class="text-2xl font-black text-red-400">0 pts</span>
+                                <span class="text-sm font-black text-red-400">0 pts</span>
                             </div>
                             <div class="flex-1 flex items-center justify-between">
                                 <span class="text-sm font-black text-gray-700">Advance bonus</span>
-                                <span class="text-2xl font-black text-amber-500">+1 pt</span>
+                                <span class="text-sm font-black text-amber-500">+1 pt</span>
                             </div>
                             <div class="flex-1 flex items-center justify-between">
                                 <span class="text-sm font-black text-gray-400">Bronze match</span>
-                                <span class="text-2xl font-black text-gray-300">—</span>
+                                <span class="text-sm font-black text-gray-300">—</span>
                             </div>
                         </div>
                     </div>
