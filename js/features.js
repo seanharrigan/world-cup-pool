@@ -268,6 +268,7 @@ function getFavoriteTeamAccentTokens(favoriteTeam) {
         primary,
         primaryRgb: hexToRgb(primary),
         text: darkenHex(primary, 0.12),
+        onDark: mixHexWithWhite(primary, 0.55),
         soft: mixHexWithWhite(primary, 0.90),
         softStrong: mixHexWithWhite(primary, 0.78),
         pillBg: mixHexWithWhite(primary, 0.84),
@@ -337,8 +338,8 @@ function applyFavoriteBanner(banner, bannerText, favoriteTeam) {
 
     if (statsBar) {
         statsBar.classList.remove('hidden');
-        statsBar.style.background = `linear-gradient(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.55)), ${config.gradient}`;
-        statsBar.style.color = getContrastingThemeTextColor(config, getThemeColorContext(config).backgroundColor);
+        statsBar.style.background = '#f3f4f6';
+        statsBar.style.color = '#111827';
     }
     bannerText.className = 'text-xl md:text-2xl font-black uppercase italic tracking-[0.08em]';
     bannerText.style.color = getContrastingThemeTextColor(config, backgroundColor);
@@ -3588,22 +3589,21 @@ function renderDashMatches() {
     const emptyPrev = `<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">No recent matches</div>`;
     const emptyNext = `<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">No upcoming matches</div>`;
     body.innerHTML = `
-        <div class="flex flex-col gap-0">
-            <div class="flex items-center gap-2 mb-2">
-                <div class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Last Match</div>
-                <div class="flex-1 h-px bg-gray-100"></div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div class="space-y-3">
+                <div class="flex items-center gap-2">
+                    <div class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Last 3 Games</div>
+                    <div class="flex-1 h-px bg-gray-100"></div>
+                </div>
+                ${data.prevHtml || emptyPrev}
             </div>
-            ${data.prevHtml || emptyPrev}
-            <div class="flex items-center gap-3 my-3">
-                <div class="flex-1 h-px bg-gray-100"></div>
-                <div class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-300">·</div>
-                <div class="flex-1 h-px bg-gray-100"></div>
+            <div class="space-y-3">
+                <div class="flex items-center gap-2">
+                    <div class="flex-1 h-px bg-gray-100"></div>
+                    <div class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Next 3 Games</div>
+                </div>
+                ${data.nextHtml || emptyNext}
             </div>
-            <div class="flex items-center gap-2 mb-2">
-                <div class="flex-1 h-px bg-gray-100"></div>
-                <div class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Next Match</div>
-            </div>
-            ${data.nextHtml || emptyNext}
         </div>
     `;
 }
@@ -3781,7 +3781,7 @@ async function setupDashboard() {
                         <div class="text-[10px] font-black uppercase tracking-[0.18em] text-gray-400">${currentProfile?.realname ? escapeHtml(currentProfile.realname) : ''}</div>
                     </div>
                     <div class="text-right shrink-0">
-                        <div class="text-2xl font-black" style="color: var(--player-card-accent-text);">${myPoints}</div>
+                        <div class="text-2xl font-black" style="color: var(--player-card-accent-on-dark);">${myPoints}</div>
                         <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
                     </div>
                 </div>
@@ -3800,7 +3800,7 @@ async function setupDashboard() {
                                 <div class="text-xs font-black uppercase text-white truncate">${escapeHtml(team.name)}</div>
                                 <div class="text-[10px] font-bold text-gray-400">T${team.tier} · $${team.cost}${team.eliminated ? ' · out' : ''}</div>
                             </div>
-                            <div class="text-xs font-black shrink-0" style="color: var(--player-card-accent-text);">${teamPointsMap[team.name] || 0} pts</div>
+                            <div class="text-xs font-black shrink-0" style="color: var(--player-card-accent-on-dark);">${teamPointsMap[team.name] || 0} pts</div>
                         </div>
                     `)
                     .join('')
@@ -3834,23 +3834,17 @@ async function setupDashboard() {
                 { border: 'border-orange-100', bg: '#fff7f0', bar: '#f97316', rankColor: '#c2410c', medal: '🥉' },
             ];
             leaderboardEl.innerHTML = leaders.map((entry, index) => {
-                const s = rankStyles[index] || rankStyles[4];
-                const prizeHtml = index < 3 && prizes[index] > 0
-                    ? `<div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">$${prizes[index].toLocaleString()}</div>`
-                    : '';
+                const s = rankStyles[index];
+                const prize = prizes[index] > 0 ? `$${prizes[index].toLocaleString()}` : '';
                 return `
-                <div class="relative flex items-center justify-between gap-3 rounded-2xl border ${s.border} overflow-hidden px-4 py-3" style="background-color: ${s.bg};">
+                <div class="relative flex items-center gap-3 rounded-2xl border ${s.border} overflow-hidden px-4 py-3.5 w-full" style="background-color: ${s.bg};">
                     <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color: ${s.bar};"></div>
-                    <div class="min-w-0 pl-2 flex-1">
-                        <div class="flex items-center gap-1.5">
-                            ${s.medal ? `<span class="text-sm leading-none">${s.medal}</span>` : `<span class="text-[10px] font-black text-gray-400">#${index + 1}</span>`}
-                        </div>
-                        <div class="truncate text-base font-black uppercase italic text-gray-900">${entry.nickname}</div>
+                    <span class="text-lg leading-none shrink-0 pl-1">${s.medal}</span>
+                    <div class="min-w-0 flex-1">
+                        <div class="truncate text-sm font-black uppercase italic text-gray-900 leading-tight">${escapeHtml(entry.nickname)}</div>
+                        ${prize ? `<div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">${prize} prize</div>` : ''}
                     </div>
-                    <div class="text-right shrink-0">
-                        <div class="text-xl font-black text-gray-900">${entry.totalPoints} <span class="text-[10px] font-black text-gray-400">pts</span></div>
-                        ${prizeHtml}
-                    </div>
+                    <div class="shrink-0 text-xl font-black text-gray-900">${entry.totalPoints}<span class="text-[10px] font-black text-gray-400 ml-0.5">pts</span></div>
                 </div>`;
             }).join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No leaderboard data yet</div>';
         }
@@ -3881,7 +3875,7 @@ async function setupDashboard() {
         const allUpcoming = [...upcomingGroupAll, ...upcomingKnockoutAll].sort((a, b) => getMatchSortKey(a).localeCompare(getMatchSortKey(b)));
         const squadUpcoming = allUpcoming.filter((m) => squadNames.has(m.team_home) || squadNames.has(m.team_away));
 
-        const toHtml = (arr, opts) => arr.slice(0, 1).map((m) => renderDashboardMatchCard(m, opts)).join('');
+        const toHtml = (arr, opts) => arr.slice(0, 3).map((m) => renderDashboardMatchCard(m, opts)).join('');
         _dashMatchCache = {
             squad: {
                 prevHtml: toHtml(squadFinished, { squadNames }),
@@ -5552,6 +5546,7 @@ function getPlayerCardAccentStyle(favoriteTeam = '') {
             `--player-card-accent-primary: ${tokens.primary}`,
             `--player-card-accent-primary-rgb: ${tokens.primaryRgb.r}, ${tokens.primaryRgb.g}, ${tokens.primaryRgb.b}`,
             `--player-card-accent-text: ${tokens.text}`,
+            `--player-card-accent-on-dark: ${tokens.onDark}`,
             `--player-card-accent-soft: ${tokens.soft}`,
             `--player-card-accent-soft-strong: ${tokens.softStrong}`
         ].join('; ')
@@ -5642,7 +5637,7 @@ function togglePlayerChipInline(scopeId, chipId, email, event) {
             <div class="flex items-start gap-3">
                 <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-xl" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59, 130, 246), 0.14);">${chip.emoji}</div>
                 <div class="min-w-0 flex-1">
-                    <div class="text-[10px] font-black uppercase tracking-[0.22em]" style="color: var(--player-card-accent-text, #60a5fa);">Chip Detail</div>
+                    <div class="text-[10px] font-black uppercase tracking-[0.22em]" style="color: var(--player-card-accent-on-dark, #60a5fa);">Chip Detail</div>
                     <div class="mt-1 text-sm font-black uppercase tracking-[0.08em] text-white">${escapeHtml(chip.label)}</div>
                     <p class="mt-2 text-sm font-bold leading-relaxed text-gray-200">${escapeHtml(chip.description)}</p>
                 </div>
@@ -6824,7 +6819,7 @@ async function showPlayerProfile(email) {
                     </div>
                 </div>
                 ${playerEntry ? `<div class="ml-auto text-right shrink-0">
-                    <div class="text-3xl font-black" style="color: var(--player-card-accent-text);">${playerEntry.totalPoints}</div>
+                    <div class="text-3xl font-black" style="color: var(--player-card-accent-on-dark);">${playerEntry.totalPoints}</div>
                     <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
                 </div>` : ''}
             </div>
@@ -7314,7 +7309,7 @@ async function showOwnerPlayer(email) {
                     </div>
                 </div>
                 ${totalPoints !== null ? `<div class="ml-auto text-right shrink-0">
-                    <div class="text-3xl font-black" style="color: var(--player-card-accent-text);">${totalPoints}</div>
+                    <div class="text-3xl font-black" style="color: var(--player-card-accent-on-dark);">${totalPoints}</div>
                     <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
                 </div>` : ''}
             </div>
