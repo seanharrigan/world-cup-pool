@@ -4060,24 +4060,14 @@ function setDashRightTab(tab) {
     if (tab === 'map') renderDashMapTab();
 }
 
-function setMobileDashPanel(panel) {
-    const card = document.getElementById('dashboard-squad-card');
-    const tabs = document.getElementById('dashboard-tabs-panel');
-    const btnTabs = document.getElementById('mob-dash-btn-tabs');
-    const btnSquad = document.getElementById('mob-dash-btn-squad');
-    if (!card || !tabs) return;
-    if (window.innerWidth >= 1024) return;
-    const isSquad = panel === 'squad';
-    card.style.display = isSquad ? 'flex' : 'none';
-    tabs.style.display = isSquad ? 'none' : 'flex';
-    if (btnTabs) {
-        btnTabs.classList.toggle('theme-primary-button', !isSquad);
-        btnTabs.classList.toggle('text-gray-500', isSquad);
-    }
-    if (btnSquad) {
-        btnSquad.classList.toggle('theme-primary-button', isSquad);
-        btnSquad.classList.toggle('text-gray-500', !isSquad);
-    }
+function toggleDashSheet() {
+    const panel = document.getElementById('dashboard-tabs-panel');
+    const arrow = document.getElementById('dash-sheet-arrow');
+    const helper = document.getElementById('dash-sheet-helper');
+    if (!panel) return;
+    const isMinimized = panel.classList.toggle('dash-sheet-minimized');
+    if (arrow) arrow.textContent = isMinimized ? '▲' : '▼';
+    if (helper) helper.textContent = isMinimized ? 'Click to view' : 'Click to close';
 }
 
 function toggleDashMatchMode() {
@@ -8368,7 +8358,7 @@ Object.assign(window, {
     setDashRankingsSort,
     setDashMatchMode,
     toggleDashMatchMode,
-    setMobileDashPanel,
+    toggleDashSheet,
     showDashPointsModal,
     closeDashPointsModal,
     showDashRankModal,
