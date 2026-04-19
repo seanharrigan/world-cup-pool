@@ -4111,13 +4111,13 @@ function renderDashMatchesTab() {
     const empty = (msg) => `<div class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300 text-center py-4">${msg}</div>`;
     body.innerHTML = `
         <div class="grid grid-cols-2 divide-x divide-gray-100 h-full overflow-hidden">
-            <div class="flex flex-col overflow-hidden">
+            <div class="flex flex-col h-full overflow-hidden">
                 <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 px-3 pt-1 pb-1.5 shrink-0">Recent Scores</div>
-                <div class="flex-1 overflow-y-auto px-3 pb-3 space-y-1.5">${data.prevHtml || empty('No results yet')}</div>
+                <div class="flex-1 flex flex-col px-3 pb-3 gap-2 overflow-hidden">${data.prevHtml || empty('No results yet')}</div>
             </div>
-            <div class="flex flex-col overflow-hidden">
+            <div class="flex flex-col h-full overflow-hidden">
                 <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 px-3 pt-1 pb-1.5 shrink-0">Upcoming Fixtures</div>
-                <div class="flex-1 overflow-y-auto px-3 pb-3 space-y-1.5">${data.nextHtml || empty('No upcoming fixtures')}</div>
+                <div class="flex-1 flex flex-col px-3 pb-3 gap-2 overflow-hidden">${data.nextHtml || empty('No upcoming fixtures')}</div>
             </div>
         </div>
     `;
@@ -4286,7 +4286,7 @@ async function renderDashMapTab() {
                 <span style="font-size:11px; font-weight:900; color:#9ca3af; line-height:1; user-select:none;">+</span>
                 <input type="range" id="dash-map-zoom-slider" min="1" max="4" step="0.1" value="1"
                     oninput="setDashMapZoom(this.value)"
-                    style="writing-mode:vertical-lr; direction:rtl; cursor:pointer; flex:1; min-height:0; accent-color:#4b5563;">
+                    style="writing-mode:vertical-lr; direction:rtl; cursor:pointer; flex:1; min-height:0; accent-color:var(--theme-accent-primary);">
                 <span style="font-size:11px; font-weight:900; color:#9ca3af; line-height:1; user-select:none;">−</span>
             </div>
             <div style="flex:1; display:flex; flex-direction:column;">
@@ -4651,23 +4651,23 @@ async function setupDashboard() {
             const safeAway = match.team_away.replace(/'/g, "\\'");
 
             return `
-                <div class="bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5">
-                    <div class="flex items-center justify-between mb-1.5">
-                        <span class="text-[8px] font-black uppercase tracking-[0.15em] text-gray-400">${stageLabel}</span>
-                        ${ptsLabel ? `<span class="text-[8px] font-black uppercase tracking-[0.12em] theme-accent-text">${ptsLabel}</span>` : ''}
+                <div class="flex-1 flex flex-col justify-center bg-gray-50 border border-gray-100 rounded-xl px-3 py-3 min-h-0">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">${stageLabel}</span>
+                        ${ptsLabel ? `<span class="text-[9px] font-black uppercase tracking-[0.12em] theme-accent-text">${ptsLabel}</span>` : ''}
                     </div>
-                    <div class="grid grid-cols-[minmax(0,1fr)_2.25rem_minmax(0,1fr)] items-center gap-2">
+                    <div class="grid grid-cols-[minmax(0,1fr)_3rem_minmax(0,1fr)] items-center gap-3">
                         <div class="min-w-0 text-right">
-                            <div onclick="showTeamOwners('${safeHome}')" class="truncate text-[11px] font-black text-gray-900 cursor-pointer hover:text-gray-500 transition-colors leading-snug">${isHomeMine ? '<span class="text-amber-400">★</span> ' : ''}${homeTeam?.flag || ''} ${escapeHtml(match.team_home)}</div>
+                            <div onclick="showTeamOwners('${safeHome}')" class="truncate text-xs font-black text-gray-900 cursor-pointer hover:text-gray-500 transition-colors leading-snug">${isHomeMine ? '<span class="text-amber-400">★</span> ' : ''}${homeTeam?.flag || ''} ${escapeHtml(match.team_home)}</div>
                             ${ownershipMarkup(match.team_home, 'right')}
                         </div>
-                        <div class="shrink-0 text-[13px] font-black text-gray-700 text-center tabular-nums leading-none bg-white border border-gray-200 rounded-lg py-0.5">${scoreMarkup}</div>
+                        <div class="shrink-0 text-sm font-black text-gray-700 text-center tabular-nums leading-none bg-white border border-gray-200 rounded-lg py-1.5">${scoreMarkup}</div>
                         <div class="min-w-0 text-left">
-                            <div onclick="showTeamOwners('${safeAway}')" class="truncate text-[11px] font-black text-gray-900 cursor-pointer hover:text-gray-500 transition-colors leading-snug">${escapeHtml(match.team_away)} ${awayTeam?.flag || ''}${isAwayMine ? ' <span class="text-amber-400">★</span>' : ''}</div>
+                            <div onclick="showTeamOwners('${safeAway}')" class="truncate text-xs font-black text-gray-900 cursor-pointer hover:text-gray-500 transition-colors leading-snug">${escapeHtml(match.team_away)} ${awayTeam?.flag || ''}${isAwayMine ? ' <span class="text-amber-400">★</span>' : ''}</div>
                             ${ownershipMarkup(match.team_away, 'left')}
                         </div>
                     </div>
-                    ${match.was_extra_time ? '<div class="text-[8px] font-black uppercase text-red-400 italic text-center mt-1">ET/Pens</div>' : ''}
+                    ${match.was_extra_time ? '<div class="text-[9px] font-black uppercase text-red-400 italic text-center mt-1.5">ET/Pens</div>' : ''}
                 </div>
             `;
         };
