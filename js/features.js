@@ -3454,31 +3454,53 @@ async function toggleTeamElimination(teamName, checked) {
     }
 }
 
+let _dashMatchCache = null;
+let _dashMatchMode = 'squad';
+
+function setDashMatchMode(mode) {
+    _dashMatchMode = mode;
+    ['squad', 'all'].forEach((m) => {
+        const btn = document.getElementById(`dash-matches-${m}-btn`);
+        if (!btn) return;
+        btn.classList.toggle('bg-white', m === mode);
+        btn.classList.toggle('shadow-sm', m === mode);
+        btn.classList.toggle('text-gray-900', m === mode);
+        btn.classList.toggle('text-gray-500', m !== mode);
+    });
+    renderDashMatches();
+}
+
+function renderDashMatches() {
+    const body = document.getElementById('dashboard-matches-body');
+    if (!body || !_dashMatchCache) return;
+    const data = _dashMatchCache[_dashMatchMode];
+    const empty = '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No matches found</div>';
+    body.innerHTML = `
+        <div class="space-y-3">
+            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Last 3 Games</div>
+            ${data.prevHtml || empty}
+        </div>
+        <div class="space-y-3">
+            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Next 3 Games</div>
+            ${data.nextHtml || empty}
+        </div>
+    `;
+}
+
 async function setupDashboard() {
-    const welcome = document.getElementById('dashboard-welcome');
-    if (!welcome) {
-        return;
-    }
-
-    welcome.textContent = 'Loading your pool snapshot...';
-
     const myPointsEl = document.getElementById('dashboard-my-points');
+    if (!myPointsEl) return;
+
     const myRankEl = document.getElementById('dashboard-my-rank');
     const squadSizeEl = document.getElementById('dashboard-squad-size');
     const budgetLeftEl = document.getElementById('dashboard-budget-left');
-    const saveStatusEl = document.getElementById('dashboard-save-status');
     const squadStripEl = document.getElementById('dashboard-squad-strip');
     const prizePotEl = document.getElementById('dashboard-prize-pot');
     const playerCountEl = document.getElementById('dashboard-player-count');
-    const prizeFirstEl = document.getElementById('dashboard-prize-1st');
-    const prizeSecondEl = document.getElementById('dashboard-prize-2nd');
-    const prizeThirdEl = document.getElementById('dashboard-prize-3rd');
-    const ctaButton = document.getElementById('dashboard-primary-cta');
     const leaderboardEl = document.getElementById('dashboard-leaderboard');
-    const resultsEl = document.getElementById('dashboard-latest-results');
-    const mostPickedEl = document.getElementById('dashboard-most-picked');
+    const ctaButton = document.getElementById('dashboard-primary-cta');
 
-    // Skeleton cards replace text loading states so the dashboard layout doesn't flash blank
+    // Skeleton loading states
     const dashSkeletonCard = `
         <div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4 flex items-center justify-between gap-4">
             <div class="space-y-2">
@@ -3488,14 +3510,7 @@ async function setupDashboard() {
             <div class="h-6 w-12 bg-gray-200 rounded animate-pulse"></div>
         </div>`;
     if (leaderboardEl) leaderboardEl.innerHTML = dashSkeletonCard.repeat(3);
-    if (resultsEl) resultsEl.innerHTML = dashSkeletonCard.repeat(3);
-    if (mostPickedEl) mostPickedEl.innerHTML = dashSkeletonCard.repeat(5);
-    if (squadStripEl) squadStripEl.innerHTML = '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Loading squad...</div>';
-
-    if (saveStatusEl) {
-        const sourceSaveStatus = document.getElementById('save-status');
-        saveStatusEl.textContent = sourceSaveStatus ? sourceSaveStatus.textContent : 'No changes yet';
-    }
+    if (squadStripEl) squadStripEl.innerHTML = '<div class="col-span-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Loading squad...</div>';
 
     try {
         const [
@@ -3616,138 +3631,112 @@ async function setupDashboard() {
             `;
         };
 
-        // ── My Teams Today ────────────────────────────────────────────────────
-        const teamsTodaySection = document.getElementById('dashboard-teams-today-section');
-        const teamsTodayEl = document.getElementById('dashboard-teams-today');
-        const teamsTodayLabel = document.getElementById('dashboard-teams-today-label');
-        if (teamsTodayEl && liveSquad.length > 0) {
-            const squadNames = new Set(liveSquad.map((t) => t.name));
-            const squadMatches = matches
-                .filter((match) =>
-                    match?.match_date_manual && (squadNames.has(match.team_home) || squadNames.has(match.team_away))
-                )
-                .sort((a, b) => getMatchSortKey(a).localeCompare(getMatchSortKey(b)));
-            const previousMatches = squadMatches
-                .filter((match) => match.is_finished || match.match_date_manual < localTodayKey)
-                .sort((a, b) => getMatchSortKey(b).localeCompare(getMatchSortKey(a)))
-                .slice(0, 3);
-            const standings = computeGroupStandings(matches);
-            const bestThirdAssignments = _buildBestThirdAssignments(standings);
-            const loggedKeySet = new Set(
-                matches
-                    .filter((match) => match?.match_date_manual)
-                    .map((match) => `${match.stage}|${match.match_date_manual}|${match.team_home}|${match.team_away}`)
-            );
-            const upcomingGroupMatches = GROUP_STAGE_SCHEDULE
-                .filter((match) =>
-                    match.date >= localTodayKey &&
-                    (squadNames.has(match.home) || squadNames.has(match.away)) &&
-                    !loggedKeySet.has(`Group|${match.date}|${match.home}|${match.away}`) &&
-                    !loggedKeySet.has(`Group|${match.date}|${match.away}|${match.home}`)
-                )
-                .map((match) => ({
-                    stage: 'Group',
-                    match_date_manual: match.date,
-                    team_home: match.home,
-                    team_away: match.away,
-                    is_finished: false,
-                    was_extra_time: false
-                }));
-            const upcomingKnockoutMatches = KNOCKOUT_SCHEDULE
-                .filter((match) => match.date >= localTodayKey)
-                .map((match) => {
-                    const homeRes = _resolveKnockoutMatchTeam(match, 'home', standings, bestThirdAssignments, { matchesCache: matches });
-                    const awayRes = _resolveKnockoutMatchTeam(match, 'away', standings, bestThirdAssignments, { matchesCache: matches });
-                    return {
-                        stage: match.stage,
-                        match_date_manual: match.date,
-                        team_home: homeRes?.status !== 'none' ? homeRes.name : 'TBD',
-                        team_away: awayRes?.status !== 'none' ? awayRes.name : 'TBD',
-                        is_finished: false,
-                        was_extra_time: false
-                    };
-                })
-                .filter((match) =>
-                    (squadNames.has(match.team_home) || squadNames.has(match.team_away)) &&
-                    !loggedKeySet.has(`${match.stage}|${match.match_date_manual}|${match.team_home}|${match.team_away}`) &&
-                    !loggedKeySet.has(`${match.stage}|${match.match_date_manual}|${match.team_away}|${match.team_home}`)
-                );
-            const upcomingMatches = [...upcomingGroupMatches, ...upcomingKnockoutMatches]
-                .sort((a, b) => getMatchSortKey(a).localeCompare(getMatchSortKey(b)))
-                .slice(0, 3);
-
-            if (teamsTodaySection) teamsTodaySection.classList.remove('hidden');
-
-            if (upcomingMatches.length === 0 && previousMatches.length === 0) {
-                teamsTodayEl.innerHTML = '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No matches found for your squad</div>';
-                if (teamsTodayLabel) {
-                    teamsTodayLabel.textContent = 'Upcoming and recent matches for your squad';
-                }
-            } else {
-                if (teamsTodayLabel) {
-                    teamsTodayLabel.textContent = 'Recent and upcoming matches for your squad';
-                }
-
-                teamsTodayEl.innerHTML = `
-                    <div class="space-y-3">
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Last Games</div>
-                        ${previousMatches.length > 0
-                            ? previousMatches.map((match) => renderDashboardMatchCard(match, { squadNames })).join('')
-                            : '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No previous squad matches yet</div>'}
-                    </div>
-                    <div class="space-y-3">
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Next Games</div>
-                        ${upcomingMatches.length > 0
-                            ? upcomingMatches.map((match) => renderDashboardMatchCard(match, { squadNames })).join('')
-                            : '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No upcoming squad matches</div>'}
-                    </div>
-                `;
-            }
-        }
-
         const spent = liveSquad.reduce((sum, team) => sum + team.cost, 0);
         const tierThreeCount = liveSquad.filter((team) => team.tier === 3).length;
         const myPoints = currentUserRows.reduce((sum, pick) => sum + (teamPointsMap[pick.team_name] || 0), 0);
         const myRank = leaderboardData.findIndex((entry) => entry.email === userEmail);
-        const hasUnsaved = typeof saveState !== 'undefined' && (saveState.picksDirty || saveState.identityDirty);
 
         if (myPointsEl) myPointsEl.textContent = `${myPoints}`;
         if (myRankEl) myRankEl.textContent = myRank >= 0 ? `#${myRank + 1}` : '-';
         if (squadSizeEl) squadSizeEl.textContent = `${liveSquad.length}`;
         if (budgetLeftEl) budgetLeftEl.textContent = `$${150 - spent}`;
 
+        // FIFA-style squad cards
         if (squadStripEl) {
             squadStripEl.innerHTML = liveSquad.length > 0
                 ? liveSquad
-                    .sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name))
+                    .sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name))
                     .map((team) => `
-                        <div class="min-w-[58px] text-center">
-                            <div class="text-3xl">${team.flag}</div>
-                            <div class="mt-1 text-[9px] font-black uppercase tracking-[0.15em] text-gray-900">T${team.tier} · $${team.cost}</div>
+                        <div class="rounded-2xl border-2 border-gray-100 bg-white p-2 text-center shadow-sm">
+                            <div class="text-3xl leading-none">${team.flag}</div>
+                            <div class="mt-1.5 text-[8px] font-black uppercase tracking-tight truncate text-gray-900">${team.name}</div>
+                            <div class="mt-0.5 flex items-center justify-center gap-1">
+                                <span class="text-[7px] font-black uppercase tracking-wide text-gray-400">T${team.tier}</span>
+                                <span class="text-[7px] text-gray-300">·</span>
+                                <span class="text-[7px] font-black uppercase tracking-wide text-gray-400">$${team.cost}</span>
+                            </div>
                         </div>
                     `)
                     .join('')
-                : '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">No squad selected yet</div>';
+                : '<div class="col-span-4 text-center py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No squad selected — <button onclick="showPage(\'picks\')" class="underline">pick your teams</button></div>';
         }
 
+        // Leaderboard with prize badges for P1/P2/P3
         const playerCount = leaderboardData.length;
-        if (prizePotEl) prizePotEl.textContent = `$${(playerCount * 40).toLocaleString()}`;
-    if (playerCountEl) playerCountEl.textContent = `${playerCount} ${playerCount === 1 ? 'entry' : 'entries'} in the pool`;
-        if (prizeFirstEl) prizeFirstEl.textContent = `$${Math.floor(playerCount * 40 * 0.65).toLocaleString()}`;
-        if (prizeSecondEl) prizeSecondEl.textContent = `$${Math.floor(playerCount * 40 * 0.25).toLocaleString()}`;
-        if (prizeThirdEl) prizeThirdEl.textContent = `$${Math.floor(playerCount * 40 * 0.10).toLocaleString()}`;
+        const pot = playerCount * 40;
+        if (prizePotEl) prizePotEl.textContent = `$${pot.toLocaleString()}`;
+        if (playerCountEl) playerCountEl.textContent = `${playerCount} ${playerCount === 1 ? 'entry' : 'entries'}`;
+        const prizes = [Math.floor(pot * 0.65), Math.floor(pot * 0.25), Math.floor(pot * 0.10)];
 
-        if (welcome) {
-            if (!myEntry && liveSquad.length === 0) {
-                welcome.textContent = 'Start building your squad, save your picks, and track the pool from one place.';
-            } else if (!myEntry) {
-                welcome.textContent = 'Your current squad is local to this browser until you save it to the pool.';
-            } else if (hasUnsaved) {
-                welcome.textContent = `${currentProfile.nickname || myEntry?.nickname || 'Manager'}, you have unsaved changes in your squad right now.`;
-            } else {
-                welcome.textContent = `${currentProfile.nickname || myEntry?.nickname || 'Manager'}, you are currently ranked #${myRank + 1} with ${myPoints} points.`;
-            }
+        if (leaderboardEl) {
+            const leaders = leaderboardData.slice(0, 5);
+            const rankStyles = [
+                { border: 'border-yellow-200', bg: '#fffbeb', bar: '#f59e0b', rankColor: '#b45309', medal: '🥇' },
+                { border: 'border-gray-200',   bg: '#f8fafc', bar: '#94a3b8', rankColor: '#475569', medal: '🥈' },
+                { border: 'border-orange-100', bg: '#fff7f0', bar: '#f97316', rankColor: '#c2410c', medal: '🥉' },
+                { border: 'border-gray-100',   bg: '#ffffff', bar: '#d1d5db', rankColor: '#6b7280', medal: '' },
+                { border: 'border-gray-100',   bg: '#ffffff', bar: '#d1d5db', rankColor: '#6b7280', medal: '' },
+            ];
+            leaderboardEl.innerHTML = leaders.map((entry, index) => {
+                const s = rankStyles[index] || rankStyles[4];
+                const prizeHtml = index < 3 && prizes[index] > 0
+                    ? `<div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">$${prizes[index].toLocaleString()}</div>`
+                    : '';
+                return `
+                <div class="relative flex items-center justify-between gap-3 rounded-2xl border ${s.border} overflow-hidden px-4 py-3" style="background-color: ${s.bg};">
+                    <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color: ${s.bar};"></div>
+                    <div class="min-w-0 pl-2 flex-1">
+                        <div class="flex items-center gap-1.5">
+                            ${s.medal ? `<span class="text-sm leading-none">${s.medal}</span>` : `<span class="text-[10px] font-black text-gray-400">#${index + 1}</span>`}
+                        </div>
+                        <div class="truncate text-base font-black uppercase italic text-gray-900">${entry.nickname}</div>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <div class="text-xl font-black text-gray-900">${entry.totalPoints} <span class="text-[10px] font-black text-gray-400">pts</span></div>
+                        ${prizeHtml}
+                    </div>
+                </div>`;
+            }).join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No leaderboard data yet</div>';
         }
+
+        // Build matches cache for both modes (squad + all), then render
+        const squadNames = new Set(liveSquad.map((t) => t.name));
+        const allFinished = matches.filter((m) => m.is_finished)
+            .sort((a, b) => getMatchSortKey(b).localeCompare(getMatchSortKey(a)));
+        const squadFinished = allFinished.filter((m) => squadNames.has(m.team_home) || squadNames.has(m.team_away));
+
+        const standings = computeGroupStandings(matches);
+        const bestThirdAssignments = _buildBestThirdAssignments(standings);
+        const loggedKeySet = new Set(
+            matches.filter((m) => m?.match_date_manual)
+                .map((m) => `${m.stage}|${m.match_date_manual}|${m.team_home}|${m.team_away}`)
+        );
+        const upcomingGroupAll = GROUP_STAGE_SCHEDULE
+            .filter((m) => m.date >= localTodayKey && !loggedKeySet.has(`Group|${m.date}|${m.home}|${m.away}`) && !loggedKeySet.has(`Group|${m.date}|${m.away}|${m.home}`))
+            .map((m) => ({ stage: 'Group', match_date_manual: m.date, team_home: m.home, team_away: m.away, is_finished: false, was_extra_time: false }));
+        const upcomingKnockoutAll = KNOCKOUT_SCHEDULE
+            .filter((m) => m.date >= localTodayKey)
+            .map((m) => {
+                const homeRes = _resolveKnockoutMatchTeam(m, 'home', standings, bestThirdAssignments, { matchesCache: matches });
+                const awayRes = _resolveKnockoutMatchTeam(m, 'away', standings, bestThirdAssignments, { matchesCache: matches });
+                return { stage: m.stage, match_date_manual: m.date, team_home: homeRes?.status !== 'none' ? homeRes.name : 'TBD', team_away: awayRes?.status !== 'none' ? awayRes.name : 'TBD', is_finished: false, was_extra_time: false };
+            })
+            .filter((m) => !loggedKeySet.has(`${m.stage}|${m.match_date_manual}|${m.team_home}|${m.team_away}`) && !loggedKeySet.has(`${m.stage}|${m.match_date_manual}|${m.team_away}|${m.team_home}`));
+        const allUpcoming = [...upcomingGroupAll, ...upcomingKnockoutAll].sort((a, b) => getMatchSortKey(a).localeCompare(getMatchSortKey(b)));
+        const squadUpcoming = allUpcoming.filter((m) => squadNames.has(m.team_home) || squadNames.has(m.team_away));
+
+        const toHtml = (arr, opts) => arr.slice(0, 3).map((m) => renderDashboardMatchCard(m, opts)).join('');
+        _dashMatchCache = {
+            squad: {
+                prevHtml: toHtml(squadFinished, { squadNames }),
+                nextHtml: toHtml(squadUpcoming, { squadNames }),
+            },
+            all: {
+                prevHtml: toHtml(allFinished, {}),
+                nextHtml: toHtml(allUpcoming, {}),
+            },
+        };
+        renderDashMatches();
 
         if (ctaButton) {
             if (!myEntry && liveSquad.length === 0) {
@@ -3758,89 +3747,8 @@ async function setupDashboard() {
                 ctaButton.textContent = 'View My Squad';
             }
         }
-
-        if (leaderboardEl) {
-            const leaders = leaderboardData.slice(0, 3);
-            const rankStyles = [
-                { border: 'border-yellow-200', bg: '#fffbeb', bar: '#f59e0b', rankColor: '#b45309', medal: '🥇' },
-                { border: 'border-gray-200',   bg: '#f8fafc', bar: '#94a3b8', rankColor: '#475569', medal: '🥈' },
-                { border: 'border-orange-100', bg: '#fff7f0', bar: '#f97316', rankColor: '#c2410c', medal: '🥉' },
-            ];
-            leaderboardEl.innerHTML = leaders.map((entry, index) => {
-                const s = rankStyles[index] || rankStyles[2];
-                return `
-                <div class="relative flex items-center justify-between gap-4 rounded-2xl border ${s.border} overflow-hidden px-4 py-4" style="background-color: ${s.bg};">
-                    <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color: ${s.bar};"></div>
-                    <div class="min-w-0 pl-2">
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-base leading-none">${s.medal}</span>
-                            <span class="text-[10px] font-black uppercase tracking-[0.2em]" style="color: ${s.rankColor};">#${index + 1}</span>
-                        </div>
-                        <div class="truncate text-lg font-black uppercase italic text-gray-900">${entry.nickname}</div>
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${entry.realname}</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-2xl font-black text-gray-900">${entry.totalPoints}</div>
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Pts</div>
-                    </div>
-                </div>`;
-            }).join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No leaderboard data yet</div>';
-        }
-
-        if (resultsEl) {
-            resultsEl.innerHTML = matches
-                .filter((match) => match.is_finished)
-                .slice(0, 3)
-                .map((match) => renderDashboardMatchCard(match))
-                .join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No results logged yet</div>';
-        }
-
-        if (mostPickedEl) {
-            if (appSettings.hideTeamSelection) {
-                mostPickedEl.innerHTML = `
-                    <div class="flex h-[382px] items-center justify-center rounded-2xl border border-gray-100 bg-gray-50 px-6 text-center">
-                        <div class="max-w-xs">
-                            <div class="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400">Hidden For Now</div>
-                            <div class="mt-3 text-sm font-black uppercase tracking-[0.08em] text-gray-500">Pick selection statistics will be displayed when the World Cup starts.</div>
-                        </div>
-                    </div>
-                `;
-                return;
-            }
-
-            const topTeams = selectionStats.sortedCountryCounts.slice(0, 5);
-            const maxPickedCount = topTeams[0]?.pickedCount || 1;
-
-            mostPickedEl.innerHTML = topTeams.map((entry, i) => {
-                const name = entry.teamName;
-                const count = entry.pickedCount;
-                const team = entry.teamData || teams.find((teamEntry) => teamEntry.name === name);
-                const barPct = Math.round((count / maxPickedCount) * 100);
-                const ownPct = entry.percentage;
-                const barOpacity = i === 0 ? '0.12' : '0.07';
-                return `
-                    <div class="relative rounded-2xl border border-gray-100 overflow-hidden px-4 py-3.5" style="background-color: #f9fafb;">
-                        <div class="absolute inset-0 rounded-2xl" style="width: ${barPct}%; background-color: rgba(var(--theme-accent-primary-rgb), ${barOpacity});"></div>
-                        <div class="relative flex items-center justify-between gap-3">
-                            <div class="flex min-w-0 items-center gap-3">
-                                <span class="text-2xl">${team?.flag || ''}</span>
-                                <div class="truncate text-sm font-black uppercase text-gray-900">${name}</div>
-                            </div>
-                            <div class="flex items-center gap-2 shrink-0">
-                                <span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">${ownPct}%</span>
-                                <div class="theme-solid-badge rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]">${count}</div>
-                            </div>
-                        </div>
-                    </div>`;
-            }).join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No picks saved yet</div>';
-        }
     } catch (error) {
-        if (welcome) {
-            welcome.textContent = 'Unable to load the dashboard right now.';
-        }
         if (leaderboardEl) leaderboardEl.innerHTML = '<div class="rounded-2xl border border-red-100 bg-red-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Could not load leaderboard</div>';
-        if (resultsEl) resultsEl.innerHTML = '<div class="rounded-2xl border border-red-100 bg-red-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Could not load results</div>';
-        if (mostPickedEl) mostPickedEl.innerHTML = '<div class="rounded-2xl border border-red-100 bg-red-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Could not load picks</div>';
     }
 }
 
@@ -7333,6 +7241,7 @@ Object.assign(window, {
     showAdminTab,
     showResultsTab,
     setupDashboard,
+    setDashMatchMode,
     setupResultsPage,
     setupStatsPage,
     setTeamResultsSort,

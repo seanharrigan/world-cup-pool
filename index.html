@@ -362,190 +362,95 @@
     <div id="main-app" class="hidden h-[calc(100vh-60px)] w-full opacity-0 transition-opacity duration-700 text-gray-900">
         
         <div id="page-instructions" class="page-content h-full w-full overflow-y-auto p-6 md:p-12 bg-white text-gray-900 text-left">
-            <div class="max-w-6xl mx-auto space-y-10">
-                <header class="space-y-6 text-left">
-                    <div class="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-                        <div class="space-y-3">
-                            <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.3em]">2026 World Cup Pool</div>
-                            <h1 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter">Dashboard</h1>
-                            <p id="dashboard-welcome" class="max-w-2xl text-sm md:text-base font-bold text-gray-500">Loading your pool snapshot...</p>
-                        </div>
-                        <div class="flex w-full flex-wrap items-stretch justify-center gap-3 xl:w-auto xl:justify-end">
-                            <div id="dashboard-countdown" class="flex w-full justify-center gap-3 rounded-2xl bg-gray-900 px-4 py-3 text-center text-white shadow-xl sm:w-auto">
-                                <div><div id="dashboard-days" class="text-lg font-black text-white">00</div><div class="text-[8px] font-bold uppercase text-gray-400">Days</div></div>
-                                <div class="theme-countdown-accent font-bold">:</div>
-                                <div><div id="dashboard-hours" class="text-lg font-black text-white">00</div><div class="text-[8px] font-bold uppercase text-gray-400">Hrs</div></div>
-                                <div class="theme-countdown-accent font-bold">:</div>
-                                <div><div id="dashboard-minutes" class="text-lg font-black text-white">00</div><div class="text-[8px] font-bold uppercase text-gray-400">Min</div></div>
-                            </div>
-                        </div>
+            <div class="max-w-6xl mx-auto space-y-6">
+                <!-- Title + countdown -->
+                <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                    <div>
+                        <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.3em]">2026 World Cup Pool</div>
+                        <h1 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter">Dashboard</h1>
                     </div>
-                    <div id="dashboard-favorite-banner" class="hidden rounded-3xl px-6 py-5 text-center shadow-sm">
-                        <div id="dashboard-favorite-banner-text" class="text-xl md:text-2xl font-black uppercase italic tracking-[0.08em]">WORLD CUP 2026</div>
-                        <div id="dashboard-favorite-banner-subtext" class="mt-2 text-[10px] font-black uppercase tracking-[0.25em] opacity-80">Supporter colours by your favourite team</div>
+                    <div id="dashboard-countdown" class="flex w-full justify-center gap-3 rounded-2xl bg-gray-900 px-4 py-3 text-center text-white shadow-xl sm:w-auto xl:w-auto">
+                        <div><div id="dashboard-days" class="text-lg font-black text-white">00</div><div class="text-[8px] font-bold uppercase text-gray-400">Days</div></div>
+                        <div class="theme-countdown-accent font-bold">:</div>
+                        <div><div id="dashboard-hours" class="text-lg font-black text-white">00</div><div class="text-[8px] font-bold uppercase text-gray-400">Hrs</div></div>
+                        <div class="theme-countdown-accent font-bold">:</div>
+                        <div><div id="dashboard-minutes" class="text-lg font-black text-white">00</div><div class="text-[8px] font-bold uppercase text-gray-400">Min</div></div>
                     </div>
-                    <div class="mx-auto grid max-w-6xl grid-cols-2 xl:grid-cols-4 gap-4">
-                        <div class="theme-soft-card rounded-3xl border p-5 text-center relative overflow-hidden">
-                            <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl" style="background-color: var(--theme-accent-primary);"></div>
-                            <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.25em] text-center">My Points</div>
-                            <div id="dashboard-my-points" class="mt-2 text-4xl font-black italic text-gray-900 text-center">0</div>
-                        </div>
-                        <div class="rounded-3xl border border-gray-200 bg-white p-5 text-center relative overflow-hidden">
-                            <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl bg-gray-200"></div>
-                            <div class="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400 text-center">My Rank</div>
-                            <div id="dashboard-my-rank" class="mt-2 text-3xl font-black italic text-gray-900 text-center">-</div>
-                        </div>
-                        <div class="rounded-3xl border border-gray-200 bg-white p-5 text-center relative overflow-hidden">
-                            <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl bg-gray-200"></div>
-                            <div class="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400 text-center">Squad Size</div>
-                            <div id="dashboard-squad-size" class="mt-2 text-3xl font-black italic text-gray-900 text-center">0</div>
-                        </div>
-                        <div class="rounded-3xl border border-gray-200 bg-white p-5 text-center relative overflow-hidden">
-                            <div class="absolute top-0 left-0 right-0 h-[3px] rounded-t-3xl bg-gray-200"></div>
-                            <div class="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400 text-center">Budget Left</div>
-                            <div id="dashboard-budget-left" class="mt-2 text-3xl font-black italic text-gray-900 text-center">$150</div>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-[1.3fr_0.7fr] gap-6">
-                        <div class="relative flex min-h-[270px] flex-col justify-between overflow-hidden rounded-3xl border border-gray-800 bg-gray-900 px-6 py-8 text-white">
-                            <div class="pointer-events-none absolute inset-0">
-                                <div class="absolute inset-4 rounded-[28px]" style="border: 1.5px solid rgba(var(--theme-accent-primary-rgb), 0.28);"></div>
-                                <div class="absolute left-1/2 top-5 h-[calc(100%-2.5rem)] w-[1.5px] -translate-x-1/2" style="background-color: rgba(var(--theme-accent-primary-rgb), 0.24);"></div>
-                                <div class="absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full" style="border: 1.5px solid rgba(var(--theme-accent-primary-rgb), 0.28);"></div>
-                                <div class="absolute left-5 top-1/2 h-24 w-12 -translate-y-1/2 rounded-r-2xl" style="border: 1.5px solid rgba(var(--theme-accent-primary-rgb), 0.24); border-left: 0;"></div>
-                                <div class="absolute right-5 top-1/2 h-24 w-12 -translate-y-1/2 rounded-l-2xl" style="border: 1.5px solid rgba(var(--theme-accent-primary-rgb), 0.24); border-right: 0;"></div>
-                                <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04)_0%,rgba(255,255,255,0)_58%)]"></div>
-                            </div>
-                            <div id="dashboard-squad-strip" class="relative z-10 flex flex-wrap justify-center gap-4 rounded-3xl bg-white px-5 py-6"></div>
-                            <div class="relative z-10 flex flex-col items-center justify-center gap-4 py-6">
-                                <div id="dashboard-save-status" class="text-xl font-black uppercase italic leading-none text-green-300">No changes yet</div>
-                                <button onclick="showPage('picks')" class="rounded-2xl bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] theme-accent-text transition-colors" style="background-color: #ffffff;">Go To Picks</button>
-                            </div>
-                        </div>
-                        <div class="relative overflow-hidden rounded-3xl border border-gray-200 bg-gray-50 px-6 py-5 text-gray-900 shadow-sm">
-                            <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_32%,rgba(255,255,255,0.95),transparent_28%),radial-gradient(circle_at_42%_66%,rgba(255,255,255,0.72),transparent_26%)]"></div>
-                            <div class="relative z-10 flex h-full flex-col gap-6">
-                                <div class="grid grid-cols-[minmax(0,1fr)_120px] items-center gap-4 md:grid-cols-[minmax(0,1fr)_148px]">
-                                    <div class="text-left">
-                                        <div class="text-[10px] font-black uppercase tracking-[0.25em] text-gray-500">Pool Pot</div>
-                                        <div id="dashboard-prize-pot" class="mt-1 text-4xl font-black italic leading-none">$0</div>
-                                        <div class="mt-2 text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">
-                                            <span id="dashboard-player-count">0 entries in the pool</span>
-                                        </div>
-                                    </div>
-                                    <div class="pointer-events-none flex justify-end opacity-35 md:opacity-45">
-                                        <svg width="150" height="98" viewBox="0 0 220 140" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-[78px] w-[118px] drop-shadow-sm md:h-[90px] md:w-[148px]">
-                                            <g transform="rotate(-14 62 72)">
-                                                <rect x="8" y="34" width="86" height="54" rx="10" fill="color-mix(in srgb, var(--theme-accent-primary) 18%, white)" stroke="color-mix(in srgb, var(--theme-accent-primary) 42%, white)" stroke-width="2"/>
-                                                <circle cx="51" cy="61" r="14" fill="color-mix(in srgb, var(--theme-accent-primary) 24%, white)"/>
-                                                <path d="M48.6 53.9h5.2v3h-4c-1 0-1.7.5-1.7 1.3 0 .8.6 1.2 1.8 1.5l1.4.3c3 .7 4.5 2.1 4.5 4.7 0 2.6-1.8 4.4-4.8 4.9v2.7h-3v-2.6h-5.1v-3h4.4c1.2 0 1.9-.5 1.9-1.3 0-.7-.5-1.1-1.7-1.4l-1.6-.4c-3-.7-4.4-2.2-4.4-4.8 0-2.6 1.7-4.4 4.7-4.8v-2.5h3v2.4z" fill="var(--theme-accent-text)"/>
-                                            </g>
-                                            <g transform="rotate(8 124 66)">
-                                                <rect x="84" y="18" width="94" height="58" rx="10" fill="color-mix(in srgb, var(--theme-accent-primary) 14%, white)" stroke="color-mix(in srgb, var(--theme-accent-primary) 36%, white)" stroke-width="2"/>
-                                                <circle cx="131" cy="47" r="15" fill="color-mix(in srgb, var(--theme-accent-primary) 20%, white)"/>
-                                                <path d="M128.6 39.9h5.2v3h-4c-1 0-1.7.5-1.7 1.3 0 .8.6 1.2 1.8 1.5l1.4.3c3 .7 4.5 2.1 4.5 4.7 0 2.6-1.8 4.4-4.8 4.9v2.7h-3v-2.6h-5.1v-3h4.4c1.2 0 1.9-.5 1.9-1.3 0-.7-.5-1.1-1.7-1.4l-1.6-.4c-3-.7-4.4-2.2-4.4-4.8 0-2.6 1.7-4.4 4.7-4.8v-2.5h3v2.4z" fill="var(--theme-accent-text)"/>
-                                            </g>
-                                            <g transform="rotate(17 162 92)">
-                                                <rect x="132" y="48" width="80" height="50" rx="10" fill="color-mix(in srgb, var(--theme-accent-primary) 10%, white)" stroke="color-mix(in srgb, var(--theme-accent-primary) 30%, white)" stroke-width="2"/>
-                                                <circle cx="172" cy="73" r="12" fill="color-mix(in srgb, var(--theme-accent-primary) 18%, white)"/>
-                                                <path d="M169.6 66.4h4.9v2.7h-3.7c-.9 0-1.5.5-1.5 1.2s.5 1.1 1.7 1.4l1.3.3c2.8.7 4.1 2 4.1 4.3s-1.7 4.1-4.4 4.5v2.4h-2.8v-2.4h-4.7v-2.7h4.1c1.1 0 1.8-.4 1.8-1.2 0-.6-.5-1-1.6-1.3l-1.5-.4c-2.7-.7-4-2-4-4.4s1.6-4 4.3-4.4v-2.3h2.8v2.3z" fill="var(--theme-accent-text)"/>
-                                            </g>
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div class="mt-auto space-y-2 text-xs font-black uppercase tracking-[0.18em] text-gray-700">
-                                    <div class="flex items-center justify-between gap-4 rounded-xl bg-white/85 px-4 py-3 shadow-sm">
-                                        <span>P1</span>
-                                        <span id="dashboard-prize-1st" class="theme-accent-text">$0</span>
-                                    </div>
-                                    <div class="flex items-center justify-between gap-4 rounded-xl bg-white/85 px-4 py-3 shadow-sm">
-                                        <span>P2</span>
-                                        <span id="dashboard-prize-2nd">$0</span>
-                                    </div>
-                                    <div class="flex items-center justify-between gap-4 rounded-xl bg-white/85 px-4 py-3 shadow-sm">
-                                        <span>P3</span>
-                                        <span id="dashboard-prize-3rd">$0</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </header>
-
-                <div id="dashboard-teams-today-section" class="hidden rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <div class="mb-4 border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                        <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Your Squad Matches</h2>
-                        <p id="dashboard-teams-today-label" class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Recent and upcoming matches for your squad</p>
-                    </div>
-                    <div id="dashboard-teams-today" class="grid grid-cols-1 gap-4 xl:grid-cols-2"></div>
                 </div>
 
-                <section class="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-8">
-                    <div class="space-y-8">
-                        <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                            <div class="mb-6 flex items-center justify-between gap-4">
-                                <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                                    <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Leaderboard Snapshot</h2>
-                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Current top contenders</p>
-                                </div>
-                                <button onclick="showPage('leaderboard')" class="rounded-2xl bg-slate-700 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-white transition-colors hover:bg-slate-600">Full Table</button>
-                            </div>
-                            <div id="dashboard-leaderboard" class="space-y-3 text-left"></div>
-                        </div>
+                <!-- Favourite team banner -->
+                <div id="dashboard-favorite-banner" class="hidden rounded-3xl px-6 py-5 text-center shadow-sm">
+                    <div id="dashboard-favorite-banner-text" class="text-xl md:text-2xl font-black uppercase italic tracking-[0.08em]">WORLD CUP 2026</div>
+                    <div id="dashboard-favorite-banner-subtext" class="mt-2 text-[10px] font-black uppercase tracking-[0.25em] opacity-80">Supporter colours by your favourite team</div>
+                </div>
 
-                        <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                            <div class="mb-6 flex items-center justify-between gap-4">
-                                <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                                    <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Latest Results</h2>
-                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Most recent match updates</p>
-                                </div>
-                                <button onclick="showPage('results'); showResultsTab('matches');" class="rounded-2xl bg-slate-700 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-white transition-colors hover:bg-slate-600">Match Results</button>
-                            </div>
-                            <div id="dashboard-latest-results" class="space-y-3 text-left"></div>
+                <!-- Stat hero: points prominent + rank / squad / budget inline -->
+                <div class="theme-soft-card rounded-3xl border p-5 flex flex-wrap items-center gap-4 md:gap-6 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 bottom-0 w-1 rounded-l-3xl" style="background-color: var(--theme-accent-primary);"></div>
+                    <div class="pl-3 flex items-baseline gap-1.5 shrink-0">
+                        <div id="dashboard-my-points" class="text-5xl font-black italic text-gray-900">0</div>
+                        <div class="theme-accent-text text-[11px] font-black uppercase tracking-[0.25em]">pts</div>
+                    </div>
+                    <div class="hidden sm:block self-stretch w-px bg-gray-200 shrink-0"></div>
+                    <div class="flex flex-wrap gap-x-6 gap-y-2">
+                        <div>
+                            <div class="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400">Rank</div>
+                            <div id="dashboard-my-rank" class="text-2xl font-black italic text-gray-900">-</div>
+                        </div>
+                        <div>
+                            <div class="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400">Squad</div>
+                            <div id="dashboard-squad-size" class="text-2xl font-black italic text-gray-900">0</div>
+                        </div>
+                        <div>
+                            <div class="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400">Budget Left</div>
+                            <div id="dashboard-budget-left" class="text-2xl font-black italic text-gray-900">$150</div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="space-y-8">
-                        <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                            <div class="mb-6 flex items-center justify-between gap-4">
-                                <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                                    <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Most Picked Teams</h2>
-                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Pool ownership leaders</p>
-                                </div>
-                                <button onclick="showPage('results'); showResultsTab('selection');" class="rounded-2xl bg-slate-700 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-white transition-colors hover:bg-slate-600">Full Stats</button>
+                <!-- Squad + Leaderboard row -->
+                <div class="grid grid-cols-1 lg:grid-cols-[1.3fr_0.7fr] gap-6">
+                    <!-- My Squad: FIFA-style team cards -->
+                    <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                        <div class="mb-4 flex items-center justify-between gap-4">
+                            <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                                <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">My Squad</h2>
                             </div>
-                            <div id="dashboard-most-picked" class="space-y-3 text-left"></div>
+                            <button onclick="showPage('picks')" class="rounded-2xl bg-slate-700 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.25em] text-white transition-colors hover:bg-slate-600">Edit</button>
                         </div>
+                        <div id="dashboard-squad-strip" class="grid grid-cols-4 sm:grid-cols-4 gap-2"></div>
+                    </div>
 
-                        <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                            <div class="mb-6">
-                                <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
-                                    <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Quick Links</h2>
-                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Jump back into the pool</p>
-                                </div>
+                    <!-- Leaderboard + pool pot combined -->
+                    <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm flex flex-col">
+                        <div class="mb-4 flex items-center justify-between gap-4 shrink-0">
+                            <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                                <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Leaderboard</h2>
+                                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400"><span id="dashboard-prize-pot">$0</span> pot · <span id="dashboard-player-count">0 entries</span></p>
                             </div>
-                            <div class="grid grid-cols-2 gap-3">
-                                <button onclick="showPage('picks')" class="picks-action-link theme-soft-card rounded-2xl border px-4 py-4 text-left transition-colors">
-                                    <div class="picks-action-kicker text-[10px] font-black uppercase tracking-[0.25em]">My Picks</div>
-                                    <div class="mt-2 text-lg font-black uppercase italic text-gray-900">Edit Squad</div>
-                                </button>
-                                <button onclick="showPage('results')" class="theme-action-link rounded-2xl border border-gray-200 px-4 py-4 text-left transition-colors">
-                                    <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.25em]">Results</div>
-                                    <div class="mt-2 text-lg font-black uppercase italic text-gray-900">Track Scores</div>
-                                </button>
-                                <button onclick="showPage('leaderboard')" class="theme-action-link rounded-2xl border border-gray-200 px-4 py-4 text-left transition-colors">
-                                    <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.25em]">Leaderboard</div>
-                                    <div class="mt-2 text-lg font-black uppercase italic text-gray-900">See Rankings</div>
-                                </button>
-                                <button onclick="showPage('chat')" class="theme-action-link rounded-2xl border border-gray-200 px-4 py-4 text-left transition-colors">
-                                    <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.25em]">Chat</div>
-                                    <div class="mt-2 text-lg font-black uppercase italic text-gray-900">Join Talk</div>
-                                </button>
-                            </div>
+                            <button onclick="showPage('leaderboard')" class="rounded-2xl bg-slate-700 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.25em] text-white transition-colors hover:bg-slate-600 shrink-0">Full Table</button>
+                        </div>
+                        <div id="dashboard-leaderboard" class="space-y-2 text-left flex-1"></div>
+                    </div>
+                </div>
+
+                <!-- Matches card: toggle squad / all, last 3 + next 3 -->
+                <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <div class="mb-5 flex items-center justify-between gap-4">
+                        <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
+                            <h2 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">Matches</h2>
+                        </div>
+                        <div class="flex rounded-xl bg-gray-100 p-0.5 gap-0.5">
+                            <button id="dash-matches-squad-btn" onclick="setDashMatchMode('squad')"
+                                    class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide bg-white shadow-sm text-gray-900 transition-all">Your Squad</button>
+                            <button id="dash-matches-all-btn" onclick="setDashMatchMode('all')"
+                                    class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all">All</button>
                         </div>
                     </div>
-                </section>
-                <div class="h-20"></div>
+                    <div id="dashboard-matches-body" class="grid grid-cols-1 xl:grid-cols-2 gap-6"></div>
+                </div>
+
+                <div class="h-10"></div>
             </div>
         </div>
 
