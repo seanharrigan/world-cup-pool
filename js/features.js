@@ -4840,7 +4840,7 @@ async function setupDashboard() {
                     .join('')
                 : `<div class="col-span-2 text-center py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">No squad yet — <button onclick="showPage('picks')" class="underline text-gray-400">pick teams</button></div>`;
         }
-        if (squadBudgetBar && spent > 0) {
+        if (squadBudgetBar && spent > 0 && !isLocked) {
             squadBudgetBar.classList.remove('hidden');
             squadBudgetBar.innerHTML = `
                 <div class="flex items-center justify-between mb-1.5">
@@ -4851,15 +4851,17 @@ async function setupDashboard() {
                     <div class="h-full rounded-full" style="width: ${Math.round(spent / 150 * 100)}%; background-color: var(--player-card-accent-primary);"></div>
                 </div>
             `;
+        } else if (squadBudgetBar) {
+            squadBudgetBar.classList.add('hidden');
         }
 
         // Build pool-relative upside map (used by score bar + leaderboard rows)
         const poolUpsideMap = _buildUpsideMap(leaderboardData);
         window._poolUpsideMap = poolUpsideMap;
 
-        // Score position bar + Upside bar
+        // Score position bar + Upside bar (locked only)
         const squadScoreBar = document.getElementById('dashboard-squad-score-bar');
-        if (squadScoreBar && leaderboardData.length > 1) {
+        if (squadScoreBar && isLocked && leaderboardData.length > 1) {
             const allPts = leaderboardData.map((e) => e.totalPoints);
             const maxPts = Math.max(...allPts);
             const minPts = Math.min(...allPts);
@@ -4898,6 +4900,8 @@ async function setupDashboard() {
                     </div>
                 </div>
             `;
+        } else if (squadScoreBar) {
+            squadScoreBar.classList.add('hidden');
         }
 
         // Leaderboard with prize badges for P1/P2/P3
