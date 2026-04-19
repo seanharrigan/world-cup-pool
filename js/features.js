@@ -1245,44 +1245,50 @@ function renderScheduleBrowser() {
     const koLabels   = { R32: 'R32', R16: 'R16', Quarters: 'QF', Semis: 'Semi', Finals: 'Final' };
     const isKnockout = koStages.includes(f) || f === 'knockout-all';
 
-    const active   = 'border-blue-500 bg-blue-600/30 text-blue-300';
-    const inactive = 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-500 hover:text-gray-200';
-    const current  = 'border-[1.5px] border-gray-500 text-gray-100 font-extrabold';
-    const pillClasses = (filter) => {
+    const active   = 'border-blue-400/40 bg-white text-gray-950 shadow-lg shadow-blue-500/10';
+    const inactive = 'border-transparent bg-transparent text-gray-400 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white';
+    const current  = 'border-gray-600 text-gray-100';
+    const tabClasses = (filter, wide = false) => {
         const stateClass = f === filter ? active : inactive;
         const currentClass = currentFilter === filter && f !== filter ? current : '';
-        return `px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border transition-colors ${stateClass} ${currentClass}`;
+        const widthClass = wide ? 'min-w-[84px]' : 'min-w-[42px]';
+        return `shrink-0 ${widthClass} rounded-xl border px-3 py-2 text-center text-[9px] font-black uppercase tracking-[0.18em] transition-all duration-200 ${stateClass} ${currentClass}`;
     };
 
     // ── Counts for pill labels ────────────────────────────────────────────────
     const groupDone = GROUP_STAGE_SCHEDULE.filter(_isMatchLogged).length;
     const koDone    = _scheduleBrowserLoggedCache.filter((r) => r.stage !== 'Group').length;
 
-    // ── Filter pills ──────────────────────────────────────────────────────────
+    // ── Filter strip ──────────────────────────────────────────────────────────
     filterEl.innerHTML = `
-        <div class="flex flex-wrap gap-2">
-            <button onclick="setScheduleFilter('all')"
-                class="${pillClasses('all')}">
-                Groups <span class="opacity-60">${groupDone}/${GROUP_STAGE_SCHEDULE.length}</span>
-            </button>
-            ${allGroups.map((g) => `
-                <button onclick="setScheduleFilter('${g}')"
-                    class="${pillClasses(g)}">
-                    Grp ${g}
-                </button>
-            `).join('')}
-        </div>
-        <div class="flex flex-wrap gap-2 mt-2 pt-2 border-t border-gray-800">
-            <button onclick="setScheduleFilter('knockout-all')"
-                class="${pillClasses('knockout-all')}">
-                Knockout <span class="opacity-60">${koDone}/${KNOCKOUT_SCHEDULE.length}</span>
-            </button>
-            ${koStages.map((s) => `
-                <button onclick="setScheduleFilter('${s}')"
-                    class="${pillClasses(s)}">
-                    ${koLabels[s]}
-                </button>
-            `).join('')}
+        <div class="overflow-x-auto no-scrollbar">
+            <div class="flex min-w-full items-center gap-2 rounded-3xl border border-gray-800 bg-gray-950/70 p-2 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+                <div class="flex flex-1 items-center justify-between gap-1.5">
+                    <button onclick="setScheduleFilter('all')"
+                        class="${tabClasses('all', true)}">
+                        Groups <span class="opacity-60">${groupDone}/${GROUP_STAGE_SCHEDULE.length}</span>
+                    </button>
+                    ${allGroups.map((g) => `
+                        <button onclick="setScheduleFilter('${g}')"
+                            class="${tabClasses(g)}">
+                            ${g}
+                        </button>
+                    `).join('')}
+                </div>
+                <span class="mx-1 h-7 w-px shrink-0 bg-gray-800"></span>
+                <div class="flex flex-1 items-center justify-between gap-1.5">
+                    <button onclick="setScheduleFilter('knockout-all')"
+                        class="${tabClasses('knockout-all', true)}">
+                        KO <span class="opacity-60">${koDone}/${KNOCKOUT_SCHEDULE.length}</span>
+                    </button>
+                    ${koStages.map((s) => `
+                        <button onclick="setScheduleFilter('${s}')"
+                            class="${tabClasses(s)}">
+                            ${koLabels[s]}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
         </div>
     `;
 
@@ -1998,7 +2004,7 @@ function showResultsTab(tabId) {
         activeTab.classList.remove('text-gray-500');
     }
 
-    const tabLabels = { groups: 'Results by Group', bracket: 'Bracket', pool: 'Results Table', matches: 'Match Results', selection: 'Selection Stats' };
+    const tabLabels = { groups: 'Results by Group', bracket: 'Bracket', pool: 'Results Table', matches: 'Match Results', selection: 'Selection Stats', map: 'World Map' };
     const dropdownLabel = document.getElementById('results-tab-dropdown-label');
     const dropdownPanel = document.getElementById('results-tab-dropdown-panel');
     const dropdownChevron = document.getElementById('results-tab-dropdown-chevron');
@@ -2010,6 +2016,7 @@ function showResultsTab(tabId) {
         btn.classList.toggle('inactive', !isActive);
     });
 
+    if (tabId === 'map') renderMapIfNeeded();
 }
 
 function toggleResultsTabDropdown() {
@@ -2045,6 +2052,7 @@ function setupResultsPage() {
     fetchPublicResults();
     fetchPublicTeamResults();
     fetchPublicSelectionStats();
+    fetchSelectionMap();
 }
 
 function escapeCsvValue(value) {
@@ -2673,6 +2681,474 @@ async function fetchPublicSelectionStats() {
         rosterBox.innerHTML = '<div class="px-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Could not load roster density.</div>';
         groupBox.innerHTML = '<div class="px-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Could not load group density.</div>';
         entryCount.textContent = '0';
+    }
+}
+
+const TEAM_ISO_NUMERIC = {
+    Canada: 124, USA: 840, Mexico: 484, Panama: 591, Curacao: 531,
+    Colombia: 170, Ecuador: 218, Paraguay: 600, Uruguay: 858, Argentina: 32, Brazil: 76, Haiti: 332,
+    Morocco: 504, Algeria: 12, Tunisia: 788, Egypt: 818, Senegal: 686,
+    'Ivory Coast': 384, Ghana: 288, 'Cape Verde': 132, 'South Africa': 710, 'DR Congo': 180,
+    England: 826, Scotland: 826, Ireland: 372, France: 250, Belgium: 56,
+    Netherlands: 528, Germany: 276, Switzerland: 756, Austria: 40,
+    Croatia: 191, Bosnia: 70, Czechia: 203, Sweden: 752, Norway: 578,
+    Portugal: 620, Spain: 724, Italy: 380,
+    Turkiye: 792, 'Saudi Arabia': 682, Qatar: 634, Iraq: 368, Iran: 364, Jordan: 400,
+    Uzbekistan: 860, India: 356, Japan: 392, 'South Korea': 410,
+    Australia: 36, 'New Zealand': 554,
+};
+
+let _mapCachedData = null;
+let _mapState = null;
+let _highlightedIso = null;
+let _highlightedGroup = null;
+let _mapColorMode = 'ownership'; // 'ownership' | 'groups'
+
+const GROUP_COLORS = {
+    A: '#e63946', B: '#f4a261', C: '#2a9d8f', D: '#457b9d',
+    E: '#6a4c93', F: '#f72585', G: '#4cc9f0', H: '#06d6a0',
+    I: '#fb8500', J: '#8338ec', K: '#3a86ff', L: '#e9c46a',
+};
+
+function _computeMapFill(iso, state) {
+    const { isoDataMap, qualifiedIsos, isoToTeamNames, colorFilled, ZERO_PCT, NOT_QUALIFIED, accentColor } = state;
+
+    // Country spotlight
+    if (_highlightedIso !== null) {
+        let spotColor = accentColor;
+        if (_mapColorMode === 'groups') {
+            const names = isoToTeamNames[_highlightedIso];
+            const team = names && teams.find((t) => names.includes(t.name));
+            if (team?.group && GROUP_COLORS[team.group]) spotColor = GROUP_COLORS[team.group];
+        }
+        const lightTint = d3.interpolateRgb('#ffffff', spotColor)(0.18);
+        if (iso === _highlightedIso) return spotColor;
+        if (qualifiedIsos.has(iso)) return lightTint;
+        return NOT_QUALIFIED;
+    }
+
+    // Group spotlight: use that group's own colour in groups mode, accent in ownership mode
+    if (_highlightedGroup !== null) {
+        const spotColor = (_mapColorMode === 'groups' && GROUP_COLORS[_highlightedGroup])
+            ? GROUP_COLORS[_highlightedGroup]
+            : accentColor;
+        const lightTint = d3.interpolateRgb('#ffffff', spotColor)(0.18);
+        const names = isoToTeamNames[iso];
+        const inGroup = names && teams.some((t) => names.includes(t.name) && t.group === _highlightedGroup);
+        if (inGroup) return spotColor;
+        if (qualifiedIsos.has(iso)) return lightTint;
+        return NOT_QUALIFIED;
+    }
+
+    // Groups coloring mode — distinct color per group
+    if (_mapColorMode === 'groups') {
+        const names = isoToTeamNames[iso];
+        if (names) {
+            const team = teams.find((t) => names.includes(t.name));
+            if (team?.group && GROUP_COLORS[team.group]) return GROUP_COLORS[team.group];
+        }
+        return NOT_QUALIFIED;
+    }
+
+    // Ownership mode — gradient by pick %
+    const data = isoDataMap[iso];
+    if (data && data.entry.percentage > 0) return colorFilled(data.entry.percentage);
+    if (qualifiedIsos.has(iso)) return ZERO_PCT;
+    return NOT_QUALIFIED;
+}
+
+function repaintMapPaths() {
+    if (!_mapState) return;
+    const container = document.getElementById('selection-map-container');
+    if (!container) return;
+    d3.select(container).selectAll('path.country-path')
+        .attr('fill', (d) => d ? _computeMapFill(+d.id, _mapState) : _mapState.NOT_QUALIFIED);
+}
+
+function setMapColorMode(mode) {
+    _mapColorMode = mode;
+    ['ownership', 'groups'].forEach((m) => {
+        const btn = document.getElementById(`map-mode-${m}`);
+        if (!btn) return;
+        const active = m === mode;
+        btn.classList.toggle('bg-white', active);
+        btn.classList.toggle('shadow-sm', active);
+        btn.classList.toggle('text-gray-900', active);
+        btn.classList.toggle('text-gray-500', !active);
+    });
+    updateMapLegend();
+    repaintMapPaths();
+}
+
+function updateMapLegend() {
+    const owLegend = document.getElementById('map-legend-ownership');
+    const grLegend = document.getElementById('map-legend-groups-bar');
+    if (!owLegend || !grLegend) return;
+    const isGroups = _mapColorMode === 'groups';
+    owLegend.style.display = isGroups ? 'none' : '';
+    grLegend.style.display = isGroups ? 'flex' : 'none';
+    grLegend.style.flexWrap = 'wrap';
+    grLegend.style.alignItems = 'center';
+    grLegend.style.gap = '12px';
+    if (isGroups) {
+        const el = document.getElementById('map-legend-groups-items');
+        if (el && !el.children.length) {
+            el.innerHTML = Object.entries(GROUP_COLORS).map(([g, c]) => `
+                <div class="flex items-center gap-1.5">
+                    <span class="inline-block w-4 h-4 rounded" style="background:${c};"></span>
+                    <span class="text-xs font-bold text-gray-600">Group&nbsp;${g}</span>
+                </div>
+            `).join('');
+        }
+    }
+}
+
+function selectMapCountry(teamName) {
+    const iso = TEAM_ISO_NUMERIC[teamName];
+    _highlightedIso = (iso !== undefined) ? iso : null;
+    _highlightedGroup = null;
+    _syncGroupHighlightUI();
+    const team = teams.find((t) => t.name === teamName);
+    const input = document.getElementById('map-country-search-input');
+    if (input) input.value = team ? `${team.flag} ${teamName}` : teamName;
+    document.getElementById('map-country-search-clear')?.classList.remove('hidden');
+    document.getElementById('map-country-search-dropdown')?.classList.add('hidden');
+    repaintMapPaths();
+}
+
+function clearMapCountrySearch() {
+    const input = document.getElementById('map-country-search-input');
+    if (input) input.value = '';
+    document.getElementById('map-country-search-clear')?.classList.add('hidden');
+    document.getElementById('map-country-search-dropdown')?.classList.add('hidden');
+    _highlightedIso = null;
+    _highlightedGroup = null;
+    _syncGroupHighlightUI();
+    repaintMapPaths();
+}
+
+function openMapCountrySearch() {
+    const input = document.getElementById('map-country-search-input');
+    if (input) input.value = '';
+    filterMapCountrySearch('');
+}
+
+function filterMapCountrySearch(query) {
+    const dd = document.getElementById('map-country-search-dropdown');
+    if (!dd) return;
+    // Strip emoji/non-ASCII so "🇧🇷 Brazil" still matches after re-focus clears
+    const q = query.replace(/[^\x20-\x7E]/g, '').trim().toLowerCase();
+    const qualified = teams.filter((t) => t.qualified !== false)
+        .sort((a, b) => a.name.localeCompare(b.name));
+    const matches = q ? qualified.filter((t) => t.name.toLowerCase().includes(q)) : qualified;
+    dd.innerHTML = matches.map((t) => `
+        <div class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors"
+             onmousedown="selectMapCountry('${t.name.replace(/'/g, "\\'")}')">
+            <span class="text-lg leading-none">${t.flag}</span>
+            <span class="text-sm font-bold text-gray-800">${escapeHtml(t.name)}</span>
+        </div>
+    `).join('') || '<div class="px-4 py-3 text-sm text-gray-400">No matches</div>';
+    dd.classList.remove('hidden');
+}
+
+function closeMapCountrySearch() {
+    document.getElementById('map-country-search-dropdown')?.classList.add('hidden');
+}
+
+function _syncGroupHighlightUI() {
+    document.querySelectorAll('[data-group-heat]').forEach((el) => {
+        const isActive = el.dataset.groupHeat === _highlightedGroup;
+        el.style.outline = isActive ? '3px solid #fbbf24' : '';
+        el.style.outlineOffset = isActive ? '2px' : '';
+    });
+    document.querySelectorAll('[data-group-btn]').forEach((el) => {
+        const isActive = el.dataset.groupBtn === _highlightedGroup;
+        el.classList.toggle('bg-white', isActive);
+        el.classList.toggle('shadow-sm', isActive);
+        el.classList.toggle('text-gray-900', isActive);
+        el.classList.toggle('text-gray-500', !isActive);
+    });
+}
+
+function selectMapGroup(groupName) {
+    _highlightedGroup = (_highlightedGroup === groupName) ? null : groupName;
+    _highlightedIso = null;
+    const input = document.getElementById('map-country-search-input');
+    if (input) input.value = '';
+    document.getElementById('map-country-search-clear')?.classList.add('hidden');
+    _syncGroupHighlightUI();
+    repaintMapPaths();
+    if (_highlightedGroup) {
+        document.getElementById('selection-map-container')
+            ?.closest('[style*="aspect-ratio"]')
+            ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+async function fetchSelectionMap() {
+    const loading = document.getElementById('selection-map-loading');
+    if (appSettings.hideTeamSelection) {
+        if (loading) loading.textContent = 'Map visible once the World Cup starts.';
+        return;
+    }
+
+    try {
+        const [
+            { data: picks, error: picksError },
+            { data: profiles, error: profilesError },
+            worldData
+        ] = await Promise.all([
+            supabaseClient.from('picks').select('team_name, user_email'),
+            supabaseClient.from('profiles').select('email'),
+            fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((r) => r.json())
+        ]);
+        if (picksError) throw picksError;
+        if (profilesError) throw profilesError;
+
+        const stats = buildSelectionStatsSnapshot(picks || [], profiles || []);
+        _mapCachedData = { stats, worldData };
+
+        const container = document.getElementById('selection-map-container');
+        if (container && !container.querySelector('svg')) {
+            if (loading) loading.classList.add('hidden');
+            renderChoroplethMap(stats, worldData);
+        }
+    } catch (err) {
+        if (loading) loading.textContent = 'Could not load map.';
+    }
+}
+
+function renderMapIfNeeded() {
+    if (!_mapCachedData) return;
+    const container = document.getElementById('selection-map-container');
+    if (!container || container.querySelector('svg')) return;
+    const loading = document.getElementById('selection-map-loading');
+    if (loading) loading.classList.add('hidden');
+    renderChoroplethMap(_mapCachedData.stats, _mapCachedData.worldData);
+}
+
+function renderChoroplethMap(stats, worldData) {
+    const container = document.getElementById('selection-map-container');
+    if (!container) return;
+    if (typeof d3 === 'undefined' || typeof topojson === 'undefined') {
+        container.innerHTML = '<div class="flex h-full items-center justify-center text-xs text-gray-500">Map libraries not loaded.</div>';
+        return;
+    }
+
+    const { sortedCountryCounts } = stats;
+
+    // Build iso numeric → { entry, team }; for shared codes (England/Scotland) use the higher %
+    const isoDataMap = {};
+    sortedCountryCounts.forEach((entry) => {
+        const iso = TEAM_ISO_NUMERIC[entry.teamName];
+        if (iso === undefined) return;
+        if (!isoDataMap[iso] || entry.percentage > isoDataMap[iso].entry.percentage) {
+            isoDataMap[iso] = { entry, team: teams.find((t) => t.name === entry.teamName) };
+        }
+    });
+
+    // Set of ISO codes for ALL qualified pool teams (including 0% picked)
+    const qualifiedIsos = new Set();
+    const isoToTeamNames = {};
+    teams.filter((t) => t.qualified !== false).forEach((t) => {
+        const iso = TEAM_ISO_NUMERIC[t.name];
+        if (iso !== undefined) {
+            qualifiedIsos.add(iso);
+            if (!isoToTeamNames[iso]) isoToTeamNames[iso] = [];
+            isoToTeamNames[iso].push(t.name);
+        }
+    });
+
+    const maxPct = Math.max(1, ...sortedCountryCounts.map((e) => e.percentage));
+
+    // Use theme accent color for high-ownership end
+    const accentTokens = getActiveThemeAccentTokens();
+    const accentColor = accentTokens.primary;
+
+    // Update legend swatches to match current accent
+    const legendEl = document.getElementById('map-legend-gradient');
+    const zeroTint = d3.interpolateRgb('#ffffff', accentColor)(0.12);
+    if (legendEl) legendEl.style.background = `linear-gradient(to right, ${zeroTint}, ${accentColor})`;
+    const legendZeroEl = document.getElementById('map-legend-zero');
+    if (legendZeroEl) legendZeroEl.style.background = zeroTint;
+
+    // Color scale: white (0%) → accent (maxPct%)
+    const ZERO_PCT = d3.interpolateRgb('#ffffff', accentColor)(0.12); // 12% tint of accent
+    const colorFilled = d3.scaleSequential()
+        .domain([0, maxPct])
+        .interpolator(d3.interpolateRgb(ZERO_PCT, accentColor));
+
+    const OCEAN = '#f9fafb';         // same as page bg — water is invisible
+    const NOT_QUALIFIED = '#d1d5db'; // gray-300: light, clearly land but not in pool
+    const BORDER = '#e5e7eb';        // gray-200: subtle country borders
+
+    // W:H = 2:1 exactly matches the container aspect-ratio, eliminating letterbox bars
+    const W = 960, H = 480;
+    container.innerHTML = '';
+    const svg = d3.select(container).append('svg')
+        .attr('viewBox', `0 0 ${W} ${H}`)
+        .attr('width', '100%')
+        .attr('height', '100%')
+        .attr('preserveAspectRatio', 'xMidYMid meet')
+        .style('display', 'block');
+
+    svg.append('rect').attr('width', W).attr('height', H).attr('fill', OCEAN);
+
+    const projection = d3.geoNaturalEarth1()
+        .scale(W / 6.3)
+        .translate([W / 2, H / 2]);
+    const path = d3.geoPath().projection(projection);
+    const countries = topojson.feature(worldData, worldData.objects.countries);
+
+    _mapState = { isoDataMap, qualifiedIsos, isoToTeamNames, colorFilled, ZERO_PCT, NOT_QUALIFIED, accentColor };
+    const getFill = (d) => _computeMapFill(+d.id, _mapState);
+
+    const tooltip = document.getElementById('map-tooltip');
+
+    svg.append('g')
+        .selectAll('path')
+        .data(countries.features)
+        .join('path')
+        .classed('country-path', true)
+        .attr('d', path)
+        .attr('fill', getFill)
+        .attr('stroke', BORDER)
+        .attr('stroke-width', 0.5)
+        .style('cursor', (d) => {
+            const iso = +d.id;
+            return (isoDataMap[iso] || qualifiedIsos.has(iso)) ? 'pointer' : 'default';
+        })
+        .on('mouseenter', function (event, d) {
+            const iso = +d.id;
+            const data = isoDataMap[iso];
+            const isQualified = qualifiedIsos.has(iso);
+            if (!isQualified && !data) return;
+            if (tooltip) {
+                if (data && data.entry.percentage > 0) {
+                    const { entry, team } = data;
+                    document.getElementById('map-tooltip-flag').textContent = team?.flag || '';
+                    document.getElementById('map-tooltip-name').textContent = entry.teamName;
+                    document.getElementById('map-tooltip-stats').textContent =
+                        `T${team?.tier} · ${entry.percentage}% · ${entry.pickedCount} ${entry.pickedCount === 1 ? 'player' : 'players'}`;
+                } else {
+                    const names = isoToTeamNames[iso] || [];
+                    const team = teams.find((t) => names.includes(t.name));
+                    document.getElementById('map-tooltip-flag').textContent =
+                        names.map((n) => teams.find((t) => t.name === n)?.flag || '').join(' ');
+                    document.getElementById('map-tooltip-name').textContent = names.join(' / ') || '—';
+                    document.getElementById('map-tooltip-stats').textContent =
+                        `T${team?.tier || '?'} · 0% · 0 players`;
+                }
+                tooltip.classList.remove('hidden');
+            }
+            const hovered = d3.color(getFill(d));
+            d3.select(this).attr('fill', hovered?.brighter(0.4)?.toString() || '#fcd34d');
+        })
+        .on('mousemove', function (event) {
+            if (!tooltip) return;
+            const rect = container.getBoundingClientRect();
+            tooltip.style.left = `${event.clientX - rect.left}px`;
+            tooltip.style.top = `${event.clientY - rect.top}px`;
+        })
+        .on('mouseleave', function (event, d) {
+            if (tooltip) tooltip.classList.add('hidden');
+            d3.select(this).attr('fill', getFill(d));
+        })
+        .on('click', function (event, d) {
+            const iso = +d.id;
+            const data = isoDataMap[iso];
+            if (data) {
+                showTeamOwners(data.entry.teamName);
+            } else if (qualifiedIsos.has(iso)) {
+                const names = isoToTeamNames[iso] || [];
+                if (names.length > 0) showTeamOwners(names[0]);
+            }
+        });
+
+    svg.append('path')
+        .datum(topojson.mesh(worldData, worldData.objects.countries, (a, b) => a !== b))
+        .attr('d', path)
+        .attr('fill', 'none')
+        .attr('stroke', BORDER)
+        .attr('stroke-width', 0.4);
+
+    renderMapBottomStats(stats);
+}
+
+function renderMapBottomStats(stats) {
+    const { sortedCountryCounts, groupDensityEntries, maxGroupCount, rosterDensityEntries } = stats;
+    const accentTokens = getActiveThemeAccentTokens();
+
+    // ── Left: Full ownership ranking ──────────────────────────────────────────
+    const rankingEl = document.getElementById('map-ownership-ranking');
+    if (rankingEl) {
+        const allQualified = teams
+            .filter((t) => t.qualified !== false)
+            .map((t) => {
+                const entry = sortedCountryCounts.find((e) => e.teamName === t.name);
+                return { team: t, pct: entry?.percentage || 0, pickedCount: entry?.pickedCount || 0 };
+            })
+            .sort((a, b) => b.pct - a.pct || a.team.name.localeCompare(b.team.name));
+
+        const maxPct = Math.max(1, ...allQualified.map((r) => r.pct));
+        const tierColors = { 1: 'bg-yellow-100 text-yellow-700', 2: 'bg-blue-100 text-blue-700', 3: 'bg-gray-100 text-gray-600' };
+
+        rankingEl.innerHTML = allQualified.slice(0, 10).map((row) => `
+            <div onclick="showTeamOwners('${row.team.name.replace(/'/g, "\\'")}')"
+                 class="flex items-center gap-3 rounded-xl px-2 py-1.5 cursor-pointer hover:bg-gray-50 transition-colors">
+                <span class="text-xl leading-none w-7 text-center">${row.team.flag}</span>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5 mb-1">
+                        <span class="text-[11px] font-black uppercase text-gray-900 truncate">${escapeHtml(row.team.name)}</span>
+                        <span class="shrink-0 text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${tierColors[row.team.tier] || tierColors[3]}">T${row.team.tier}</span>
+                    </div>
+                    <div class="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                        <div class="h-full rounded-full transition-all" style="width:${Math.max(2, Math.round((row.pct / maxPct) * 100))}%; background:${accentTokens.primary};"></div>
+                    </div>
+                </div>
+                <div class="text-right shrink-0 min-w-[40px]">
+                    <div class="text-sm font-black text-gray-900">${row.pct}%</div>
+                    <div class="text-[9px] text-gray-400">${row.pickedCount}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // ── Right top: Group heat grid (4×3) ──────────────────────────────────────
+    const groupHeatEl = document.getElementById('map-group-heat');
+    if (groupHeatEl) {
+        const maxCount = Math.max(1, maxGroupCount);
+        groupHeatEl.innerHTML = groupDensityEntries.map((g) => {
+            const intensity = g.count / maxCount;
+            const bg = `rgba(${hexToRgb(accentTokens.primary).r},${hexToRgb(accentTokens.primary).g},${hexToRgb(accentTokens.primary).b},${(0.1 + intensity * 0.85).toFixed(2)})`;
+            const textColor = intensity > 0.55 ? 'text-white' : 'text-gray-700';
+            return `
+                <div data-group-heat="${g.group}" onclick="selectMapGroup('${g.group}')"
+                     class="rounded-xl p-2.5 text-center cursor-pointer transition-all hover:brightness-110" style="background:${bg};">
+                    <div class="text-[10px] font-black uppercase tracking-[0.15em] ${textColor} opacity-80">Grp</div>
+                    <div class="text-lg font-black ${textColor}">${g.group}</div>
+                    <div class="text-[10px] font-bold ${textColor} opacity-80">${g.count}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ── Right bottom: Squad shape ──────────────────────────────────────────────
+    const squadShapeEl = document.getElementById('map-squad-shape');
+    if (squadShapeEl) {
+        const maxCount = Math.max(1, ...rosterDensityEntries.map((e) => e.count));
+        squadShapeEl.innerHTML = rosterDensityEntries.map((entry) => {
+            const w = Math.max(6, Math.round((entry.count / maxCount) * 100));
+            return `
+                <div class="flex items-center gap-3">
+                    <div class="w-14 text-right text-[11px] font-black text-gray-700 shrink-0">${entry.size} picks</div>
+                    <div class="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                        <div class="h-full rounded-full" style="width:${w}%; background:${accentTokens.primary};"></div>
+                    </div>
+                    <div class="w-8 text-left text-[11px] font-black text-gray-900 shrink-0">${entry.count}</div>
+                </div>
+            `;
+        }).join('') || '<div class="text-[10px] text-gray-400">No data yet.</div>';
     }
 }
 
@@ -3659,10 +4135,10 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
                     html: `
                     <tr class="border-t border-gray-800 align-top">
                         <td class="px-3 py-3 min-w-[150px]">
-                            <div class="flex items-center gap-3">
+                            <div onclick="showTeamOwners('${team.name.replace(/'/g, "\\'")}')" class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
                                 <span class="text-2xl">${team.flag}</span>
                                 <div>
-                                    <div class="text-[12px] font-black uppercase ${theme === 'dark' ? 'text-white' : 'text-gray-900'}">
+                                    <div class="text-[12px] font-black uppercase ${theme === 'dark' ? 'text-white' : 'text-gray-900'} hover:underline">
                                         ${team.name}
                                     </div>
                                 </div>
@@ -4341,7 +4817,7 @@ async function fetchPublicResults() {
                         <div class="rounded-[24px] border border-gray-200 bg-white px-3 py-2.5 md:px-4 md:py-3 text-left">
                             <div class="grid grid-cols-[minmax(0,1fr)_88px_minmax(0,1fr)] items-center gap-2.5 md:grid-cols-[minmax(180px,1fr)_108px_minmax(180px,1fr)] md:gap-4">
                                 <div class="min-w-0 text-left">
-                                    <div class="text-[13px] md:text-base font-black leading-tight truncate">${homeTeam?.flag || ''} ${match.team_home}</div>
+                                    <div onclick="showTeamOwners('${match.team_home.replace(/'/g, "\\'")}')" class="text-[13px] md:text-base font-black leading-tight truncate cursor-pointer hover:underline">${homeTeam?.flag || ''} ${match.team_home}</div>
                                     ${ownershipMarkup(match.team_home)}
                                 </div>
                                 <div class="text-center">
@@ -4356,7 +4832,7 @@ async function fetchPublicResults() {
                                     </div>
                                 </div>
                                 <div class="min-w-0 text-right">
-                                    <div class="text-[13px] md:text-base font-black leading-tight truncate">${match.team_away} ${awayTeam?.flag || ''}</div>
+                                    <div onclick="showTeamOwners('${match.team_away.replace(/'/g, "\\'")}')" class="text-[13px] md:text-base font-black leading-tight truncate cursor-pointer hover:underline">${match.team_away} ${awayTeam?.flag || ''}</div>
                                     ${ownershipMarkup(match.team_away)}
                                 </div>
                             </div>
@@ -4525,7 +5001,7 @@ function _getPlayerDisplayRanks(leaderboardData = []) {
     return ranks;
 }
 
-function _awardPlayerChip(chipsByEmail, emails, chipId) {
+function _awardPlayerChip(chipsByEmail, emails, chipId, chipBuilder = null) {
     const chip = PLAYER_CHIP_DEFINITIONS[chipId];
     if (!chip) {
         return;
@@ -4537,7 +5013,8 @@ function _awardPlayerChip(chipsByEmail, emails, chipId) {
         }
         const list = chipsByEmail.get(email);
         if (!list.some((entry) => entry.id === chipId)) {
-            list.push({ ...chip });
+            const builtChip = typeof chipBuilder === 'function' ? chipBuilder(email) : null;
+            list.push({ ...chip, ...(builtChip || {}) });
         }
     });
 }
@@ -4568,6 +5045,21 @@ function _getLatestCompletedStageKey(leaderboardData = []) {
     return stageOrder.find((stageKey) => (
         leaderboardData.some((user) => Number(user.stagePoints?.[stageKey] || 0) > 0)
     )) || null;
+}
+
+function _getStageDisplayName(stageKey) {
+    const labels = {
+        G1: 'Group Matchday 1',
+        G2: 'Group Matchday 2',
+        G3: 'Group Matchday 3',
+        Bonus: 'Group Bonus',
+        R32: 'Round of 32',
+        R16: 'Round of 16',
+        QF: 'Quarter-finals',
+        SM: 'Semi-finals',
+        F: 'Finals'
+    };
+    return labels[stageKey] || stageKey;
 }
 
 function computePlayerChips(leaderboardData = [], matches = [], previousRanks = {}) {
@@ -4638,7 +5130,9 @@ function computePlayerChips(leaderboardData = [], matches = [], previousRanks = 
         };
     });
 
-    const awardMax = (chipId, getValue, predicate = (value) => value > 0) => {
+    const playerMetricByEmail = new Map(playerMetrics.map((entry) => [entry.user.email, entry]));
+
+    const awardMax = (chipId, getValue, predicate = (value) => value > 0, describe = null) => {
         let best = null;
         let emails = [];
 
@@ -4656,10 +5150,10 @@ function computePlayerChips(leaderboardData = [], matches = [], previousRanks = 
             }
         });
 
-        _awardPlayerChip(chipsByEmail, emails, chipId);
+        _awardPlayerChip(chipsByEmail, emails, chipId, describe ? (email) => describe(playerMetricByEmail.get(email), best) : null);
     };
 
-    const awardMin = (chipId, getValue, predicate = () => true) => {
+    const awardMin = (chipId, getValue, predicate = () => true, describe = null) => {
         let best = null;
         let emails = [];
 
@@ -4677,38 +5171,164 @@ function computePlayerChips(leaderboardData = [], matches = [], previousRanks = 
             }
         });
 
-        _awardPlayerChip(chipsByEmail, emails, chipId);
+        _awardPlayerChip(chipsByEmail, emails, chipId, describe ? (email) => describe(playerMetricByEmail.get(email), best) : null);
     };
 
-    _awardPlayerChip(chipsByEmail, playerMetrics.filter((entry) => entry.rank === 1).map((entry) => entry.user.email), 'leader');
+    _awardPlayerChip(
+        chipsByEmail,
+        playerMetrics.filter((entry) => entry.rank === 1).map((entry) => entry.user.email),
+        'leader',
+        (email) => {
+            const entry = playerMetricByEmail.get(email);
+            return {
+                description: `Sitting in 1st place with ${entry?.user.totalPoints || 0} total points.`
+            };
+        }
+    );
 
     if (latestStageKey) {
-        awardMax('hot', (entry) => entry.recentStagePoints, (value) => Number.isFinite(value) && value > 0);
-        awardMin('ice_cold', (entry) => entry.recentStagePoints, (value, entry) => Number.isFinite(value) && entry.user.totalPoints > 0);
+        awardMax(
+            'hot',
+            (entry) => entry.recentStagePoints,
+            (value) => Number.isFinite(value) && value > 0,
+            (entry, best) => ({ description: `${best} points in ${_getStageDisplayName(latestStageKey)} led the pool.` })
+        );
+        awardMin(
+            'ice_cold',
+            (entry) => entry.recentStagePoints,
+            (value, entry) => Number.isFinite(value) && entry.user.totalPoints > 0,
+            (entry, best) => ({ description: `${best} points in ${_getStageDisplayName(latestStageKey)} was the lowest return among active scorers.` })
+        );
     }
 
-    awardMax('group_king', (entry) => entry.groupPoints, (value) => value > 0);
-    _awardPlayerChip(chipsByEmail, playerMetrics.filter((entry) => entry.allThrough).map((entry) => entry.user.email), 'all_through');
-    awardMax('big_dog', (entry) => entry.tierOneMaxCost, (value) => value > 0);
-    awardMax('on_the_rise', (entry) => entry.rankDelta, (value) => Number.isFinite(value) && value > 0);
-    awardMin('freefall', (entry) => entry.rankDelta, (value) => Number.isFinite(value) && value < 0);
-    awardMax('sharpshooter', (entry) => entry.totalGoals, (value) => value > 0);
-    awardMax('contrarian', (entry) => entry.uniqueOnlyCount, (value) => value > 0);
-    awardMax('value_pick', (entry) => entry.valueRatio, (value) => Number.isFinite(value) && value > 0);
-    awardMax('still_standing', (entry) => entry.remainingCount, (value) => value > 0);
-    _awardPlayerChip(chipsByEmail, playerMetrics.filter((entry) => entry.wipedOut).map((entry) => entry.user.email), 'wiped_out');
-    awardMax('early_graves', (entry) => entry.eliminatedCount, (value) => value > 0);
-    awardMax('united_nations', (entry) => entry.distinctGroups, (value) => value > 0);
-    awardMax('crowd_pleaser', (entry) => entry.crowdPleaserCount, (value) => value > 0);
-    awardMax('all_in', (entry) => entry.squadCost, (value) => value >= 145);
+    awardMax(
+        'group_king',
+        (entry) => entry.groupPoints,
+        (value) => value > 0,
+        (entry, best) => ({ description: `${best} combined points across the three group-stage matchdays.` })
+    );
+    _awardPlayerChip(
+        chipsByEmail,
+        playerMetrics.filter((entry) => entry.allThrough).map((entry) => entry.user.email),
+        'all_through',
+        (email) => {
+            const entry = playerMetricByEmail.get(email);
+            return {
+                description: `${entry?.remainingCount || 0} of ${entry?.squad.length || 0} picks are still alive after every squad team got through the groups.`
+            };
+        }
+    );
+    awardMax(
+        'big_dog',
+        (entry) => entry.tierOneMaxCost,
+        (value) => value > 0,
+        (entry, best) => ({ description: `Carries a Tier 1 heavyweight worth $${best}.` })
+    );
+    awardMax(
+        'on_the_rise',
+        (entry) => entry.rankDelta,
+        (value) => Number.isFinite(value) && value > 0,
+        (entry, best) => ({ description: `Up ${best} spot${best === 1 ? '' : 's'} since the last leaderboard snapshot.` })
+    );
+    awardMin(
+        'freefall',
+        (entry) => entry.rankDelta,
+        (value) => Number.isFinite(value) && value < 0,
+        (entry, best) => ({ description: `Down ${Math.abs(best)} spot${Math.abs(best) === 1 ? '' : 's'} since the last leaderboard snapshot.` })
+    );
+    awardMax(
+        'sharpshooter',
+        (entry) => entry.totalGoals,
+        (value) => value > 0,
+        (entry, best) => ({ description: `${best} total group-stage goals from teams in this squad.` })
+    );
+    awardMax(
+        'contrarian',
+        (entry) => entry.uniqueOnlyCount,
+        (value) => value > 0,
+        (entry, best) => ({ description: `${best} uniquely owned team${best === 1 ? '' : 's'} that nobody else picked.` })
+    );
+    awardMax(
+        'value_pick',
+        (entry) => entry.valueRatio,
+        (value) => Number.isFinite(value) && value > 0,
+        (entry) => ({ description: `${entry.user.totalPoints} points from a $${entry.squadCost} squad is the best points-per-budget return.` })
+    );
+    awardMax(
+        'still_standing',
+        (entry) => entry.remainingCount,
+        (value) => value > 0,
+        (entry, best) => ({ description: `${best} team${best === 1 ? '' : 's'} still alive in the tournament.` })
+    );
+    _awardPlayerChip(
+        chipsByEmail,
+        playerMetrics.filter((entry) => entry.wipedOut).map((entry) => entry.user.email),
+        'wiped_out',
+        (email) => {
+            const entry = playerMetricByEmail.get(email);
+            return {
+                description: `${entry?.eliminatedCount || 0} of ${entry?.squad.length || 0} picks have been eliminated.`
+            };
+        }
+    );
+    awardMax(
+        'early_graves',
+        (entry) => entry.eliminatedCount,
+        (value) => value > 0,
+        (entry, best) => ({ description: `${best} squad team${best === 1 ? '' : 's'} have already been knocked out.` })
+    );
+    awardMax(
+        'united_nations',
+        (entry) => entry.distinctGroups,
+        (value) => value > 0,
+        (entry, best) => ({ description: `This squad spans ${best} different World Cup group${best === 1 ? '' : 's'}.` })
+    );
+    awardMax(
+        'crowd_pleaser',
+        (entry) => entry.crowdPleaserCount,
+        (value) => value > 0,
+        (entry, best) => ({ description: `${best} of the pool’s most popular team picks are in this squad.` })
+    );
+    awardMax(
+        'all_in',
+        (entry) => entry.squadCost,
+        (value) => value >= 145,
+        (entry) => ({ description: `$${entry.squadCost} spent, leaving just $${Math.max(0, 150 - entry.squadCost)} in the bank.` })
+    );
 
     const bottomHalfThreshold = Math.ceil(playerMetrics.length / 2);
-    awardMax('splurge', (entry) => entry.squadCost, (value, entry) => value >= 145 && Number(entry.rank || 0) > bottomHalfThreshold);
+    awardMax(
+        'splurge',
+        (entry) => entry.squadCost,
+        (value, entry) => value >= 145 && Number(entry.rank || 0) > bottomHalfThreshold,
+        (entry) => ({ description: `$${entry.squadCost} spent while sitting ${entry.rank}${entry.rank === 1 ? 'st' : entry.rank === 2 ? 'nd' : entry.rank === 3 ? 'rd' : 'th'} overall.` })
+    );
 
     return chipsByEmail;
 }
 
-function renderPlayerChips(chips = [], email = '', variant = 'row') {
+function getPlayerCardAccentStyle(favoriteTeam = '') {
+    const tokens = getFavoriteTeamAccentTokens(favoriteTeam);
+    return {
+        tokens,
+        style: [
+            `--player-card-accent-primary: ${tokens.primary}`,
+            `--player-card-accent-primary-rgb: ${tokens.primaryRgb.r}, ${tokens.primaryRgb.g}, ${tokens.primaryRgb.b}`,
+            `--player-card-accent-text: ${tokens.text}`,
+            `--player-card-accent-soft: ${tokens.soft}`,
+            `--player-card-accent-soft-strong: ${tokens.softStrong}`
+        ].join('; ')
+    };
+}
+
+function getPlayerChipById(email, chipId) {
+    const chips = window._playerChipsByEmail?.[email]
+        || window._leaderboardData?.find((entry) => entry.email === email)?.chips
+        || [];
+    return chips.find((chip) => chip.id === chipId) || null;
+}
+
+function renderPlayerChips(chips = [], email = '', variant = 'row', scopeId = '') {
     if (!chips.length) {
         return '';
     }
@@ -4717,8 +5337,10 @@ function renderPlayerChips(chips = [], email = '', variant = 'row') {
     const sortedChips = [...chips].sort((a, b) => (
         (toneOrder[a.tone] ?? 99) - (toneOrder[b.tone] ?? 99) || a.label.localeCompare(b.label)
     ));
-    const visibleChips = variant === 'row' ? sortedChips.slice(0, 2) : sortedChips;
+    const visibleChips = variant === 'row' ? sortedChips.slice(0, 3) : sortedChips;
+    const overflowCount = variant === 'row' ? Math.max(0, sortedChips.length - visibleChips.length) : 0;
     const safeEmail = String(email || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const safeScopeId = String(scopeId || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
     if (variant === 'row') {
         return `
@@ -4730,21 +5352,86 @@ function renderPlayerChips(chips = [], email = '', variant = 'row') {
                         onclick="showPlayerChipInfo('${chip.id}', '${safeEmail}', event)"
                         class="inline-flex h-6 min-w-[24px] items-center justify-center rounded-full px-1.5 text-xs font-black ${toneClasses} transition-transform hover:scale-105">${chip.emoji}</button>`;
                 }).join('')}
+                ${overflowCount > 0 ? `<span class="inline-flex h-6 items-center justify-center rounded-full bg-gray-200 px-2 text-[10px] font-black uppercase tracking-[0.08em] text-gray-600">+${overflowCount}</span>` : ''}
             </div>
         `;
     }
 
     return `
-        <div class="mt-2 flex flex-wrap gap-1.5">
+        <div class="mt-2">
+            <div class="flex flex-wrap gap-1.5">
             ${visibleChips.map((chip) => {
                 const toneClasses = PLAYER_CHIP_TONE_CLASSES[chip.tone]?.card || PLAYER_CHIP_TONE_CLASSES.neutral.card;
                 return `<button type="button"
                     title="${escapeHtml(`${chip.label} — ${chip.description}`)}"
-                    onclick="showPlayerChipInfo('${chip.id}', '${safeEmail}', event)"
+                    onclick="togglePlayerChipInline('${safeScopeId}', '${chip.id}', '${safeEmail}', event)"
                     class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black uppercase tracking-[0.08em] ${toneClasses} transition-transform hover:scale-[1.02]">${chip.emoji} <span>${escapeHtml(chip.label)}</span></button>`;
             }).join('')}
+            </div>
+            <div id="${escapeHtml(scopeId)}-chip-inline" class="chip-inline-panel"></div>
         </div>
     `;
+}
+
+function togglePlayerChipInline(scopeId, chipId, email, event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    const panel = document.getElementById(`${scopeId}-chip-inline`);
+    const chip = getPlayerChipById(email, chipId);
+    if (!panel || !chip) {
+        return;
+    }
+
+    if (panel.dataset.activeChip === chipId && panel.classList.contains('open')) {
+        panel.classList.remove('open');
+        panel.dataset.activeChip = '';
+        window.setTimeout(() => {
+            if (!panel.classList.contains('open')) {
+                panel.innerHTML = '';
+            }
+        }, 220);
+        return;
+    }
+
+    panel.dataset.activeChip = chipId;
+    const escapedScopeId = String(scopeId).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const escapedChipId = String(chipId).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const escapedEmail = String(email).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const nextHtml = `
+        <div class="rounded-2xl border px-4 py-3 shadow-sm" style="border-color: var(--player-card-accent-soft-strong, #374151); background-color: rgba(var(--player-card-accent-primary-rgb, 59, 130, 246), 0.08);">
+            <div class="flex items-start gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-xl" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59, 130, 246), 0.14);">${chip.emoji}</div>
+                <div class="min-w-0 flex-1">
+                    <div class="text-[10px] font-black uppercase tracking-[0.22em]" style="color: var(--player-card-accent-text, #60a5fa);">Chip Detail</div>
+                    <div class="mt-1 text-sm font-black uppercase tracking-[0.08em] text-white">${escapeHtml(chip.label)}</div>
+                    <p class="mt-2 text-sm font-bold leading-relaxed text-gray-200">${escapeHtml(chip.description)}</p>
+                </div>
+                <button type="button" onclick="togglePlayerChipInline('${escapedScopeId}', '${escapedChipId}', '${escapedEmail}', event)" class="shrink-0 h-8 w-8 rounded-full border border-gray-700 bg-gray-800 text-xs font-black text-gray-300 transition-colors hover:bg-gray-700 hover:text-white" aria-label="Close chip detail">✕</button>
+            </div>
+        </div>
+    `;
+
+    if (panel.classList.contains('open')) {
+        panel.classList.remove('open');
+        window.setTimeout(() => {
+            if (panel.dataset.activeChip !== chipId) {
+                return;
+            }
+            panel.innerHTML = nextHtml;
+            requestAnimationFrame(() => {
+                panel.classList.add('open');
+            });
+        }, 140);
+        return;
+    }
+
+    panel.innerHTML = nextHtml;
+    requestAnimationFrame(() => {
+        panel.classList.add('open');
+    });
 }
 
 async function showPlayerChipInfo(chipId, email, event) {
@@ -4753,23 +5440,75 @@ async function showPlayerChipInfo(chipId, email, event) {
         event.stopPropagation();
     }
 
-    const chip = PLAYER_CHIP_DEFINITIONS[chipId];
+    const chip = getPlayerChipById(email, chipId) || PLAYER_CHIP_DEFINITIONS[chipId];
     if (!chip) {
         return;
     }
 
     const leaderboardEntry = (window._leaderboardData || []).find((entry) => entry.email === email);
     const playerName = leaderboardEntry?.nickname || leaderboardEntry?.realname || email || 'Player';
+    const shell = document.getElementById('chip-popover-shell');
+    const card = document.getElementById('chip-popover-card');
+    const emojiEl = document.getElementById('chip-popover-emoji');
+    const titleEl = document.getElementById('chip-popover-title');
+    const kickerEl = document.getElementById('chip-popover-kicker');
+    const messageEl = document.getElementById('chip-popover-message');
+    const detailEl = document.getElementById('chip-popover-detail');
+    if (!shell || !card || !emojiEl || !titleEl || !kickerEl || !messageEl || !detailEl) {
+        return;
+    }
 
-    await showConfirmModal({
-        label: 'Player Chip',
-        icon: chip.emoji,
-        title: chip.label,
-        message: chip.description,
-        detail: `${playerName} currently holds this stat token.`,
-        confirmText: 'Close',
-        singleAction: true
-    });
+    const toneMap = {
+        positive: 'Positive Token',
+        negative: 'Watchlist Token',
+        neutral: 'Fun Token'
+    };
+
+    emojiEl.textContent = chip.emoji;
+    titleEl.textContent = chip.label;
+    kickerEl.textContent = toneMap[chip.tone] || 'Player Chip';
+    messageEl.textContent = chip.description;
+    detailEl.textContent = `${playerName} currently holds this stat token.`;
+
+    shell.classList.remove('hidden');
+    shell.classList.add('flex');
+    card.classList.remove('chip-popover-enter');
+    card.classList.remove('chip-popover-leave');
+    void card.offsetWidth;
+    card.classList.add('chip-popover-enter');
+
+    if (window._chipPopoverEscapeHandler) {
+        document.removeEventListener('keydown', window._chipPopoverEscapeHandler);
+    }
+
+    window._chipPopoverEscapeHandler = (keyboardEvent) => {
+        if (keyboardEvent.key === 'Escape') {
+            closeChipPopover();
+        }
+    };
+    document.addEventListener('keydown', window._chipPopoverEscapeHandler);
+}
+
+function closeChipPopover() {
+    const shell = document.getElementById('chip-popover-shell');
+    const card = document.getElementById('chip-popover-card');
+    if (!shell || !card) {
+        return;
+    }
+
+    card.classList.remove('chip-popover-enter');
+    card.classList.add('chip-popover-leave');
+
+    window.setTimeout(() => {
+        card.classList.remove('chip-popover-leave');
+        shell.classList.add('hidden');
+        shell.classList.remove('flex');
+    }, 160);
+
+    if (window._chipPopoverEscapeHandler) {
+        document.removeEventListener('keydown', window._chipPopoverEscapeHandler);
+        window._chipPopoverEscapeHandler = null;
+    }
 }
 
 async function fetchLeaderboard() {
@@ -4814,7 +5553,8 @@ async function fetchLeaderboard() {
         const leaderboardData = buildLeaderboardData(allPicks || [], allMatches || [], profilesMap, teams, advancedTeams, eliminatedTeams);
         const bestAvailableTeam = buildBestAvailableTeamData(allMatches || [], teams, advancedTeams, eliminatedTeams);
         const playerCount = leaderboardData.length;
-        const search = document.getElementById('leaderboard-search').value.toLowerCase();
+        const nameFilterWrap = document.getElementById('leaderboard-name-filter');
+        const nameFilter = nameFilterWrap?.dataset?.value || '';
         const countryFilterWrap = document.getElementById('leaderboard-country-filter');
         const filter = countryFilterWrap?.dataset?.value || '';
         const countryFilterBtn = document.getElementById('country-filter-btn');
@@ -4833,12 +5573,12 @@ async function fetchLeaderboard() {
             countryFilterBtn.classList.toggle('pointer-events-none', Boolean(appSettings.hideTeamSelection));
         }
 
+        updateNameFilterOptions(enrichedLeaderboardData);
+
         let filteredLeaderboardData = [...enrichedLeaderboardData];
 
-        if (search) {
-            filteredLeaderboardData = filteredLeaderboardData.filter((user) => (
-                user.nickname.toLowerCase().includes(search) || user.realname.toLowerCase().includes(search)
-            ));
+        if (nameFilter) {
+            filteredLeaderboardData = filteredLeaderboardData.filter((user) => user.email === nameFilter);
         }
 
         if (!appSettings.hideTeamSelection && filter) {
@@ -5775,6 +6515,7 @@ async function showPlayerProfile(email) {
     const favTeam = teams.find((t) => t.name === profile?.favorite_team);
     const favFlag = favTeam?.flag || '';
     const playerChips = playerEntry?.chips || window._playerChipsByEmail?.[email] || [];
+    const cardAccent = getPlayerCardAccentStyle(profile?.favorite_team || '');
 
     // Squad section
     let squadHtml = '';
@@ -5784,12 +6525,13 @@ async function showPlayerProfile(email) {
         squadHtml = playerEntry.squad
             .sort((a, b) => (b.cost || 0) - (a.cost || 0) || a.name.localeCompare(b.name))
             .map((t) => `
-                <div class="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 flex items-center gap-2 ${t.eliminated ? 'opacity-40' : ''}">
+                <div class="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 flex items-center gap-2 ${t.eliminated ? 'opacity-40' : ''} cursor-pointer hover:border-gray-500 hover:bg-gray-750 transition-colors" onclick="showProfileTeam('${t.name.replace(/'/g, "\\'")}')">
                     <span class="text-xl">${t.flag || ''}</span>
                     <div class="flex-1 min-w-0">
                         <div class="text-xs font-black uppercase text-white truncate">${escapeHtml(t.name)}</div>
                         <div class="text-[10px] font-bold text-gray-400">T${t.tier} · $${t.cost}${t.eliminated ? ' · out' : ''}</div>
                     </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-gray-600 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
                 </div>
             `).join('');
     } else {
@@ -5819,39 +6561,39 @@ async function showPlayerProfile(email) {
     }
 
     const budgetBarHtml = budgetUsed > 0 ? `
-        <div class="px-6 pb-5">
+        <div class="px-6 pb-5" style="${cardAccent.style}">
             <div class="flex items-center justify-between mb-1.5">
                 <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Budget Used</span>
                 <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">$${budgetUsed} / $150</span>
             </div>
-            <div class="h-2 rounded-full bg-gray-800 overflow-hidden">
-                <div class="h-full rounded-full" style="width: ${Math.round(budgetUsed / 150 * 100)}%; background-color: var(--theme-accent-primary);"></div>
+            <div class="h-2 rounded-full overflow-hidden" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59, 130, 246), 0.18);">
+                <div class="h-full rounded-full" style="width: ${Math.round(budgetUsed / 150 * 100)}%; background-color: var(--player-card-accent-primary);"></div>
             </div>
         </div>` : '';
 
     content.innerHTML = `
-        <div class="p-6 space-y-5">
+        <div class="p-6 space-y-5" style="${cardAccent.style}">
             <div class="flex items-center gap-4">
-                <div class="h-14 w-14 rounded-2xl flex items-center justify-center text-3xl shrink-0" style="background-color: rgba(var(--theme-accent-primary-rgb), 0.15);">
+                <div class="h-14 w-14 rounded-2xl flex items-center justify-center text-3xl shrink-0" style="background-color: ${rgbaFromHex(cardAccent.tokens.primary, 0.15)};">
                     ${favFlag || '👤'}
                 </div>
                 <div class="min-w-0 flex-1">
                     <div class="text-2xl font-black uppercase italic tracking-tight text-white truncate">${escapeHtml(nickname)}</div>
                     ${realname ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${escapeHtml(realname)}</div>` : ''}
-                    ${renderPlayerChips(playerChips, email, 'card')}
+                    ${renderPlayerChips(playerChips, email, 'card', 'player-profile')}
                     <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
                         ${profile?.favorite_team ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300">${favFlag} ${escapeHtml(profile.favorite_team)}</span>` : ''}
                         ${profile?.home_country ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-500">${escapeHtml(profile.home_country)}</span>` : ''}
                     </div>
                 </div>
                 ${playerEntry ? `<div class="ml-auto text-right shrink-0">
-                    <div class="theme-accent-text text-3xl font-black">${playerEntry.totalPoints}</div>
+                    <div class="text-3xl font-black" style="color: var(--player-card-accent-text);">${playerEntry.totalPoints}</div>
                     <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
                 </div>` : ''}
             </div>
 
             ${playerEntry && stageBreakdownHtml ? `
-            <div class="rounded-2xl border border-gray-700 bg-gray-800/50 px-4 py-3">
+            <div class="rounded-2xl border px-4 py-3" style="border-color: var(--player-card-accent-soft-strong); background-color: ${rgbaFromHex(cardAccent.tokens.primary, 0.12)};">
                 <div class="text-[9px] font-black uppercase tracking-[0.25em] text-gray-500 mb-3">Points by Stage</div>
                 <div class="grid grid-cols-7 gap-1">${stageBreakdownHtml}</div>
             </div>` : ''}
@@ -5867,6 +6609,249 @@ async function showPlayerProfile(email) {
 
 function closePlayerProfile() {
     const modal = document.getElementById('player-profile-modal');
+    if (!modal) return;
+    closeChipPopover();
+    closeProfileTeam();
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function closeProfileTeam() {
+    const container = document.getElementById('player-profile-container');
+    const panel = document.getElementById('player-profile-team-panel');
+    if (!container || !panel) return;
+    panel.classList.add('hidden');
+    panel.classList.remove('flex');
+    container.classList.remove('profile-team-open');
+}
+
+async function showProfileTeam(teamName) {
+    const container = document.getElementById('player-profile-container');
+    const panel = document.getElementById('player-profile-team-panel');
+    const content = document.getElementById('player-profile-team-content');
+    if (!container || !panel || !content) return;
+
+    panel.classList.remove('hidden');
+    panel.classList.add('flex');
+    container.classList.add('profile-team-open');
+    content.innerHTML = '<div class="p-8 text-center text-gray-400 font-black uppercase tracking-[0.2em] text-[10px] animate-pulse">Loading...</div>';
+
+    const team = teams.find((t) => t.name === teamName);
+    if (!team) {
+        content.innerHTML = '<div class="p-8 text-center text-red-400 text-xs font-black uppercase">Team not found.</div>';
+        return;
+    }
+
+    await fetchAdvancedTeams();
+
+    const [
+        { data: matches },
+        { data: picks },
+        { data: profiles }
+    ] = await Promise.all([
+        supabaseClient.from('matches').select('*').order('match_date_manual', { ascending: true }),
+        supabaseClient.from('picks').select('user_email, team_name'),
+        supabaseClient.from('profiles').select('email')
+    ]);
+
+    const totalPlayers = new Set((profiles || []).map((p) => p.email).filter(Boolean)).size;
+    const pickedSet = (picks || []).reduce((set, p) => { if (p.team_name === teamName) set.add(p.user_email); return set; }, new Set());
+    const pickedCount = pickedSet.size;
+    const pickedPct = totalPlayers > 0 ? Math.round(pickedCount / totalPlayers * 100) : 0;
+
+    const teamBreakdownMap = buildTeamStageBreakdownMap(matches || [], teams, advancedTeams);
+    const stageBreakdown = teamBreakdownMap[teamName] || { G1: 0, G2: 0, G3: 0, Bonus: 0, R32: 0, R16: 0, QF: 0, SM: 0, F: 0, total: 0 };
+
+    const knockoutStageMap = { R32: 'R32', R16: 'R16', Quarters: 'QF', Semis: 'Semi', Finals: 'Final' };
+    const teamMatches = (matches || [])
+        .filter((m) => m.team_home === teamName || m.team_away === teamName)
+        .sort((a, b) => (a.match_date_manual || '').localeCompare(b.match_date_manual || '') || (a.id || 0) - (b.id || 0));
+
+    const matchesHtml = teamMatches.length > 0
+        ? teamMatches.map((match) => {
+            const isHome = match.team_home === teamName;
+            const oppName = isHome ? match.team_away : match.team_home;
+            const opp = teams.find((t) => t.name === oppName);
+            const stageLabel = match.stage === 'Group' ? 'Group' : (knockoutStageMap[match.stage] || match.stage);
+            const pts = getMatchPointsForTeam(match, teamName);
+            const myScore = isHome ? match.score_home : match.score_away;
+            const oppScore = isHome ? match.score_away : match.score_home;
+            const won = myScore > oppScore;
+            const drew = myScore === oppScore;
+            const resultColor = won ? 'text-green-400' : drew ? 'text-yellow-400' : 'text-gray-500';
+            const resultLabel = won ? 'W' : drew ? 'D' : 'L';
+            return `
+                <div class="rounded-xl border border-gray-700 bg-gray-800/50 px-3 py-2.5">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">${stageLabel}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-black ${resultColor}">${resultLabel}</span>
+                            <span class="text-xs font-black text-white">${pts} pts</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-bold text-gray-200">
+                        <span class="text-base">${team.flag}</span>
+                        <span class="font-black">${myScore}–${oppScore}</span>
+                        <span class="text-base">${opp?.flag || ''}</span>
+                        <span class="truncate text-gray-400">${escapeHtml(oppName)}</span>
+                    </div>
+                </div>
+            `;
+        }).join('')
+        : '<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 py-2">No matches yet</div>';
+
+    const isElim = eliminatedTeams.has(teamName);
+    const isAdv = advancedTeams.has(teamName);
+    const statusHtml = isElim
+        ? '<span class="text-[9px] font-black uppercase tracking-[0.12em] px-2 py-0.5 rounded-full bg-red-900/40 text-red-400">Eliminated</span>'
+        : isAdv
+        ? '<span class="text-[9px] font-black uppercase tracking-[0.12em] px-2 py-0.5 rounded-full bg-green-900/40 text-green-400">Advanced</span>'
+        : '';
+
+    const stageRows = [
+        { label: 'Group', pts: (stageBreakdown.G1 || 0) + (stageBreakdown.G2 || 0) + (stageBreakdown.G3 || 0) },
+        { label: 'Bonus', pts: stageBreakdown.Bonus || 0 },
+        { label: 'R32', pts: stageBreakdown.R32 || 0 },
+        { label: 'R16', pts: stageBreakdown.R16 || 0 },
+        { label: 'QF', pts: stageBreakdown.QF || 0 },
+        { label: 'Semi', pts: stageBreakdown.SM || 0 },
+        { label: 'Final', pts: stageBreakdown.F || 0 },
+    ].map(({ label, pts }) => `
+        <div class="text-center">
+            <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">${label}</div>
+            <div class="text-sm font-black text-white">${pts || '—'}</div>
+        </div>
+    `).join('');
+
+    content.innerHTML = `
+        <div class="p-5 space-y-4">
+            <div class="flex items-center gap-3">
+                <span class="text-4xl leading-none">${team.flag}</span>
+                <div class="flex-1 min-w-0">
+                    <div class="text-base font-black uppercase text-white truncate">${escapeHtml(team.name)}</div>
+                    <div class="flex flex-wrap items-center gap-2 mt-0.5">
+                        <span class="text-[10px] font-black uppercase tracking-[0.12em] text-gray-400">T${team.tier} · $${team.cost} · Grp ${team.group}</span>
+                        ${statusHtml}
+                    </div>
+                </div>
+                <div class="text-right shrink-0">
+                    <div class="text-2xl font-black text-white">${stageBreakdown.total}</div>
+                    <div class="text-[10px] font-black uppercase text-gray-400">pts</div>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-700 bg-gray-800/50 px-4 py-3">
+                <div class="flex items-center justify-between mb-2.5">
+                    <span class="text-[9px] font-black uppercase tracking-[0.25em] text-gray-500">Points by Stage</span>
+                    <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">${pickedPct}% picked · ${pickedCount} players</span>
+                </div>
+                <div class="grid grid-cols-4 gap-x-2 gap-y-2">${stageRows}</div>
+            </div>
+
+            <div>
+                <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Matches</div>
+                <div class="space-y-2">${matchesHtml}</div>
+            </div>
+        </div>
+    `;
+}
+
+function toggleNameFilter() {
+    const panel = document.getElementById('name-filter-panel');
+    const btn = document.getElementById('name-filter-btn');
+    if (!panel) return;
+    const isOpen = !panel.classList.contains('hidden');
+    if (isOpen) {
+        closeNameFilter();
+    } else {
+        panel.classList.remove('hidden');
+        panel.classList.add('open');
+        const chevron = btn?.querySelector('.team-dropdown-chevron');
+        if (chevron) chevron.style.transform = 'rotate(180deg)';
+        setTimeout(() => document.getElementById('name-filter-search')?.focus(), 50);
+        setTimeout(() => {
+            const handler = (e) => {
+                if (!document.getElementById('leaderboard-name-filter')?.contains(e.target)) {
+                    closeNameFilter();
+                    document.removeEventListener('mousedown', handler);
+                }
+            };
+            document.addEventListener('mousedown', handler);
+        }, 0);
+    }
+}
+
+function closeNameFilter() {
+    const panel = document.getElementById('name-filter-panel');
+    const btn = document.getElementById('name-filter-btn');
+    if (!panel) return;
+    panel.classList.add('hidden');
+    panel.classList.remove('open');
+    const chevron = btn?.querySelector('.team-dropdown-chevron');
+    if (chevron) chevron.style.transform = '';
+}
+
+function selectNameFilter(email, label) {
+    const wrap = document.getElementById('leaderboard-name-filter');
+    const input = document.getElementById('leaderboard-name-filter-input');
+    const labelEl = document.getElementById('name-filter-label');
+    if (!wrap || !input || !labelEl) return;
+    wrap.dataset.value = email || '';
+    input.value = email || '';
+    labelEl.textContent = label || 'All Players';
+    if (label) {
+        labelEl.classList.remove('text-gray-400');
+        labelEl.classList.add('text-gray-900', 'font-black');
+    } else {
+        labelEl.classList.add('text-gray-400');
+        labelEl.classList.remove('text-gray-900', 'font-black');
+    }
+    const searchEl = document.getElementById('name-filter-search');
+    if (searchEl) searchEl.value = '';
+    closeNameFilter();
+    fetchLeaderboard();
+}
+
+function filterNameDropdownOptions() {
+    const search = (document.getElementById('name-filter-search')?.value || '').toLowerCase();
+    document.querySelectorAll('#name-filter-list .name-filter-option').forEach((item) => {
+        const text = item.dataset.searchText || '';
+        item.hidden = search ? !text.includes(search) : false;
+    });
+}
+
+function updateNameFilterOptions(leaderboardData) {
+    const list = document.getElementById('name-filter-list');
+    if (!list) return;
+    const currentValue = document.getElementById('leaderboard-name-filter')?.dataset?.value || '';
+    const players = [...leaderboardData].sort((a, b) => (a.nickname || '').localeCompare(b.nickname || ''));
+
+    const allOption = `<button type="button" onclick="selectNameFilter('','')" class="name-filter-option w-full text-left px-4 py-2.5 text-sm font-bold flex items-center gap-2 ${!currentValue ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'}" data-search-text="all players"><span>👥</span><span>All Players</span></button>`;
+
+    const playerOptions = players.map((user) => {
+        const label = user.nickname || user.email.split('@')[0];
+        const searchText = `${label} ${user.realname || ''}`.toLowerCase();
+        const isSelected = user.email === currentValue;
+        const flagEl = user.squad?.[0]?.flag ? `<span>${user.squad[0].flag}</span>` : '<span>👤</span>';
+        return `<button type="button" onclick="selectNameFilter(${JSON.stringify(user.email)},${JSON.stringify(label)})" class="name-filter-option w-full text-left px-4 py-2.5 text-sm font-bold flex items-center gap-2 ${isSelected ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'}" data-search-text="${searchText.replace(/"/g, '&quot;')}">${flagEl}<div class="min-w-0"><div class="truncate">${escapeHtml(label)}</div>${user.realname ? `<div class="text-[10px] text-gray-400">${escapeHtml(user.realname)}</div>` : ''}</div></button>`;
+    });
+
+    list.innerHTML = allOption + playerOptions.join('');
+    const search = document.getElementById('name-filter-search')?.value;
+    if (search) filterNameDropdownOptions();
+}
+
+function showR32SeatingInfo() {
+    const modal = document.getElementById('r32-seating-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    const onEscape = (e) => { if (e.key === 'Escape') { closeR32SeatingInfo(); document.removeEventListener('keydown', onEscape); } };
+    document.addEventListener('keydown', onEscape);
+}
+
+function closeR32SeatingInfo() {
+    const modal = document.getElementById('r32-seating-modal');
     if (!modal) return;
     modal.classList.add('hidden');
     modal.classList.remove('flex');
@@ -5918,11 +6903,21 @@ async function showTeamOwners(teamName) {
             const leaderboardData = window.WorldCupScoring.buildLeaderboardData(
                 allPicks || [], allMatches || [], profilesMap, teams, advancedTeams, eliminatedTeams
             );
-            // Prime the cache so subsequent opens are instant
-            window._leaderboardData = leaderboardData;
-            lb = leaderboardData;
+            const previousRanks = JSON.parse(localStorage.getItem('wc_pool_lb_ranks') || '{}');
+            const currentRanks = _getPlayerDisplayRanks(leaderboardData);
+            const playerChips = computePlayerChips(leaderboardData, allMatches || [], previousRanks);
+            const enrichedLeaderboardData = leaderboardData.map((user) => ({
+                ...user,
+                displayRank: currentRanks[user.email] || null,
+                chips: playerChips.get(user.email) || []
+            }));
 
-            owners = leaderboardData
+            // Prime the cache so subsequent opens are instant
+            window._leaderboardData = enrichedLeaderboardData;
+            window._playerChipsByEmail = Object.fromEntries(playerChips);
+            lb = enrichedLeaderboardData;
+
+            owners = enrichedLeaderboardData
                 .filter((u) => u.squad.some((t) => t.name === teamName))
                 .sort((a, b) => b.totalPoints - a.totalPoints || a.nickname.localeCompare(b.nickname))
                 .map((u) => ({ email: u.email, nickname: u.nickname, realname: u.realname || '', totalPoints: u.totalPoints, squad: u.squad, stagePoints: u.stagePoints }));
@@ -6009,6 +7004,8 @@ async function showOwnerPlayer(email) {
     const realname = profile?.realname || ownerData?.realname || '';
     const favTeam = teams.find((t) => t.name === profile?.favorite_team);
     const favFlag = favTeam?.flag || '';
+    const playerChips = playerEntry?.chips || window._playerChipsByEmail?.[email] || [];
+    const cardAccent = getPlayerCardAccentStyle(profile?.favorite_team || '');
 
     const squad = playerEntry?.squad || ownerData?.squad || [];
     const totalPoints = playerEntry?.totalPoints ?? ownerData?.totalPoints ?? null;
@@ -6054,38 +7051,39 @@ async function showOwnerPlayer(email) {
     }
 
     const budgetBarHtml = budgetUsed > 0 ? `
-        <div class="px-5 pb-5">
+        <div class="px-5 pb-5" style="${cardAccent.style}">
             <div class="flex items-center justify-between mb-1.5">
                 <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Budget Used</span>
                 <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">$${budgetUsed} / $150</span>
             </div>
-            <div class="h-2 rounded-full bg-gray-800 overflow-hidden">
-                <div class="h-full rounded-full" style="width: ${Math.round(budgetUsed / 150 * 100)}%; background-color: var(--theme-accent-primary);"></div>
+            <div class="h-2 rounded-full overflow-hidden" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59, 130, 246), 0.18);">
+                <div class="h-full rounded-full" style="width: ${Math.round(budgetUsed / 150 * 100)}%; background-color: var(--player-card-accent-primary);"></div>
             </div>
         </div>` : '';
 
     playerContent.innerHTML = `
-        <div class="p-5 space-y-4">
+        <div class="p-5 space-y-4" style="${cardAccent.style}">
             <div class="flex items-center gap-4">
-                <div class="h-14 w-14 rounded-2xl flex items-center justify-center text-3xl shrink-0" style="background-color: rgba(var(--theme-accent-primary-rgb), 0.15);">
+                <div class="h-14 w-14 rounded-2xl flex items-center justify-center text-3xl shrink-0" style="background-color: ${rgbaFromHex(cardAccent.tokens.primary, 0.15)};">
                     ${favFlag || '👤'}
                 </div>
                 <div class="min-w-0 flex-1">
                     <div class="text-xl font-black uppercase italic tracking-tight text-white truncate">${escapeHtml(nickname)}</div>
                     ${realname ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${escapeHtml(realname)}</div>` : ''}
+                    ${renderPlayerChips(playerChips, email, 'card', 'owner-player')}
                     <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
                         ${profile?.favorite_team ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300">${favFlag} ${escapeHtml(profile.favorite_team)}</span>` : ''}
                         ${profile?.home_country ? `<span class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-500">${escapeHtml(profile.home_country)}</span>` : ''}
                     </div>
                 </div>
                 ${totalPoints !== null ? `<div class="ml-auto text-right shrink-0">
-                    <div class="theme-accent-text text-3xl font-black">${totalPoints}</div>
+                    <div class="text-3xl font-black" style="color: var(--player-card-accent-text);">${totalPoints}</div>
                     <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
                 </div>` : ''}
             </div>
 
             ${stageBreakdownHtml ? `
-            <div class="rounded-2xl border border-gray-700 bg-gray-800/50 px-4 py-3">
+            <div class="rounded-2xl border px-4 py-3" style="border-color: var(--player-card-accent-soft-strong); background-color: ${rgbaFromHex(cardAccent.tokens.primary, 0.12)};">
                 <div class="text-[9px] font-black uppercase tracking-[0.25em] text-gray-500 mb-3">Points by Stage</div>
                 <div class="grid grid-cols-7 gap-1">${stageBreakdownHtml}</div>
             </div>` : ''}
@@ -6103,6 +7101,7 @@ function closeOwnerPlayer() {
     const rightPanel = document.getElementById('team-owners-right');
     const container = document.getElementById('team-owners-container');
     if (!rightPanel) return;
+    closeChipPopover();
     rightPanel.classList.add('hidden');
     rightPanel.classList.remove('flex');
     if (container) container.classList.remove('team-owners-expanded');
@@ -6111,6 +7110,7 @@ function closeOwnerPlayer() {
 function closeTeamOwners() {
     const modal = document.getElementById('team-owners-modal');
     if (!modal) return;
+    closeChipPopover();
     closeOwnerPlayer();
     modal.classList.add('hidden');
     modal.classList.remove('flex');
@@ -6198,7 +7198,9 @@ Object.assign(window, {
     toggleReaction,
     setupLeaderboardRealtime,
     showPlayerProfile,
+    togglePlayerChipInline,
     showPlayerChipInfo,
+    closeChipPopover,
     showProfileByNickname,
     closePlayerProfile,
     clearChatBadge,

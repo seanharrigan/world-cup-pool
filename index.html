@@ -15,6 +15,8 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
     <style>
         :root {
             --picks-accent-primary: #3b82f6;
@@ -165,6 +167,29 @@
             #team-owners-container.team-owners-expanded #team-owners-left { max-height: 220px; }
         }
 
+        @keyframes r32-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(234,179,8,0.5); }
+            50% { box-shadow: 0 0 0 6px rgba(234,179,8,0); }
+        }
+
+        /* Player profile two-panel */
+        #player-profile-container { transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        #player-profile-container.profile-team-open { max-width: 48rem; }
+        @keyframes profile-team-slide-in {
+            from { opacity: 0; transform: translateX(-14px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes profile-team-slide-up {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        #player-profile-team-panel.flex { animation: profile-team-slide-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        @media (max-width: 767px) {
+            #player-profile-team-panel.flex { animation: profile-team-slide-up 0.24s cubic-bezier(0.16, 1, 0.3, 1) both; }
+            #player-profile-container.profile-team-open { max-width: 24rem; }
+            #player-profile-container.profile-team-open #player-profile-right-panel { display: none !important; }
+        }
+
         /* Searchable team dropdown */
         @keyframes team-dropdown-in {
             from { opacity: 0; transform: translateY(-6px) scaleY(0.95); }
@@ -176,6 +201,34 @@
         }
         .team-dropdown-chevron { transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
         .team-dropdown-option[hidden] { display: none !important; }
+
+        @keyframes chip-popover-in {
+            from { opacity: 0; transform: translateY(14px) scale(0.94); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes chip-popover-out {
+            from { opacity: 1; transform: translateY(0) scale(1); }
+            to { opacity: 0; transform: translateY(10px) scale(0.96); }
+        }
+        .chip-popover-enter {
+            animation: chip-popover-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .chip-popover-leave {
+            animation: chip-popover-out 0.16s ease forwards;
+        }
+        .chip-inline-panel {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transform: translateY(-6px);
+            transition: max-height 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease, transform 0.22s ease, margin-top 0.22s ease;
+        }
+        .chip-inline-panel.open {
+            max-height: 220px;
+            opacity: 1;
+            transform: translateY(0);
+            margin-top: 0.75rem;
+        }
 
         @keyframes results-dropdown-in {
             from { opacity: 0; transform: translateY(-8px) scaleY(0.94); }
@@ -631,6 +684,7 @@
                                 <div><span class="text-gray-900">Tier 2:</span> Unlimited selections.</div>
                                 <div><span class="text-gray-900">Tier 3:</span> Minimum 3 teams required.</div>
                             </div>
+                            <p class="mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-[0.18em]">Teams are ordered by odds — higher cost = shorter odds (stronger favourites).</p>
                         </div>
                     </section>
                 </div>
@@ -687,6 +741,7 @@
                         <button onclick="showResultsTab('pool')" data-tab="pool" class="results-tab-option w-full border-t border-gray-100 px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.25em] transition-colors">Results Table</button>
                         <button onclick="showResultsTab('matches')" data-tab="matches" class="results-tab-option w-full border-t border-gray-100 px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.25em] transition-colors">Match Results</button>
                         <button onclick="showResultsTab('selection')" data-tab="selection" class="results-tab-option w-full border-t border-gray-100 px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.25em] transition-colors">Selection Stats</button>
+                        <button onclick="showResultsTab('map')" data-tab="map" class="results-tab-option w-full border-t border-gray-100 px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.25em] transition-colors">World Map</button>
                     </div>
                 </div>
                 <!-- Desktop: segmented control -->
@@ -696,6 +751,7 @@
                     <button onclick="showResultsTab('pool')" id="results-tab-pool" class="results-tab results-tab-c flex-1 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 transition-all duration-200 hover:text-gray-700">Results Table</button>
                     <button onclick="showResultsTab('matches')" id="results-tab-matches" class="results-tab results-tab-c flex-1 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 transition-all duration-200 hover:text-gray-700">Match Results</button>
                     <button onclick="showResultsTab('selection')" id="results-tab-selection" class="results-tab results-tab-c flex-1 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 transition-all duration-200 hover:text-gray-700">Selection Stats</button>
+                    <button onclick="showResultsTab('map')" id="results-tab-map" class="results-tab results-tab-c flex-1 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 transition-all duration-200 hover:text-gray-700">World Map</button>
                 </div>
 
                 <div id="results-panel-groups" class="results-panel space-y-6">
@@ -710,9 +766,12 @@
 
                 <div id="results-panel-bracket" class="results-panel hidden space-y-6">
                     <section class="space-y-4">
-                        <div class="border-l-[3px] border-gray-300 pl-3">
-                            <h2 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-gray-900">Knockout Bracket</h2>
-                            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Updates as results come in · fills from group stage through to the final</p>
+                        <div class="border-l-[3px] border-gray-300 pl-3 flex items-start justify-between gap-4">
+                            <div>
+                                <h2 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-gray-900">Knockout Bracket</h2>
+                                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Updates as results come in · fills from group stage through to the final</p>
+                            </div>
+                            <button onclick="showR32SeatingInfo()" class="mt-1 shrink-0 flex items-center justify-center w-9 h-9 rounded-full border-2 border-yellow-400 bg-yellow-50 text-yellow-500 font-black text-lg hover:bg-yellow-100 transition-colors" style="animation: r32-pulse 2s ease-in-out infinite;" title="How does R32 seating work?">!</button>
                         </div>
                         <div id="bracket-guide" class="rounded-[28px] border border-gray-200 bg-white p-4 shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
                             <div class="flex flex-wrap items-center gap-3 border-b border-gray-100 pb-3">
@@ -842,6 +901,114 @@
                     </div>
                 </div>
 
+                <div id="results-panel-map" class="results-panel hidden space-y-5">
+                    <div class="border-l-[3px] border-gray-300 pl-3">
+                        <h2 class="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-gray-900">Ownership Map</h2>
+                        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Colour by ownership or group · click any country</p>
+                    </div>
+                    <!-- Single controls row: toggle | search | group slider -->
+                    <div class="flex items-stretch gap-2">
+                        <!-- Color mode toggle -->
+                        <div class="shrink-0 flex rounded-2xl bg-gray-100 p-1 gap-0.5">
+                            <button id="map-mode-ownership" onclick="setMapColorMode('ownership')"
+                                    class="px-3 rounded-xl text-[10px] font-black uppercase tracking-wide bg-white shadow-sm text-gray-900 transition-all whitespace-nowrap">Ownership</button>
+                            <button id="map-mode-groups" onclick="setMapColorMode('groups')"
+                                    class="px-3 rounded-xl text-[10px] font-black uppercase tracking-wide text-gray-500 transition-all whitespace-nowrap">Groups</button>
+                        </div>
+                        <!-- Country search -->
+                        <div class="relative flex-1 min-w-0" id="map-country-search-wrap">
+                            <div class="flex items-center gap-2 h-full rounded-2xl border border-gray-200 bg-white px-4 shadow-sm">
+                                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                                <input id="map-country-search-input" type="text" placeholder="Highlight a country…" autocomplete="off"
+                                       class="flex-1 min-w-0 bg-transparent text-sm font-semibold text-gray-800 placeholder-gray-400 outline-none py-3"
+                                       oninput="filterMapCountrySearch(this.value)"
+                                       onfocus="openMapCountrySearch()"
+                                       onblur="setTimeout(closeMapCountrySearch, 150)">
+                                <button id="map-country-search-clear" class="hidden text-gray-400 hover:text-gray-600 text-xs font-black" onclick="clearMapCountrySearch()">✕</button>
+                            </div>
+                            <div id="map-country-search-dropdown" class="hidden absolute z-30 mt-1 max-h-52 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-xl"></div>
+                        </div>
+                        <!-- Group segmented slider -->
+                        <div class="shrink-0 flex rounded-2xl bg-gray-100 p-1 gap-0.5 overflow-x-auto" style="scrollbar-width:none;">
+                            <button data-group-btn="A" onclick="selectMapGroup('A')" class="map-group-btn shrink-0 px-2.5 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">A</button>
+                            <button data-group-btn="B" onclick="selectMapGroup('B')" class="map-group-btn shrink-0 px-2.5 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">B</button>
+                            <button data-group-btn="C" onclick="selectMapGroup('C')" class="map-group-btn shrink-0 px-2.5 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">C</button>
+                            <button data-group-btn="D" onclick="selectMapGroup('D')" class="map-group-btn shrink-0 px-2.5 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">D</button>
+                            <button data-group-btn="E" onclick="selectMapGroup('E')" class="map-group-btn shrink-0 px-2.5 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">E</button>
+                            <button data-group-btn="F" onclick="selectMapGroup('F')" class="map-group-btn shrink-0 px-2.5 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">F</button>
+                            <button data-group-btn="G" onclick="selectMapGroup('G')" class="map-group-btn shrink-0 px-2.5 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">G</button>
+                            <button data-group-btn="H" onclick="selectMapGroup('H')" class="map-group-btn shrink-0 px-2.5 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">H</button>
+                            <button data-group-btn="I" onclick="selectMapGroup('I')" class="map-group-btn shrink-0 px-2.5 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">I</button>
+                            <button data-group-btn="J" onclick="selectMapGroup('J')" class="map-group-btn shrink-0 px-2.5 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">J</button>
+                            <button data-group-btn="K" onclick="selectMapGroup('K')" class="map-group-btn shrink-0 px-2.5 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">K</button>
+                            <button data-group-btn="L" onclick="selectMapGroup('L')" class="map-group-btn shrink-0 px-2.5 rounded-xl text-[11px] font-black text-gray-500 hover:text-gray-800 transition-all">L</button>
+                        </div>
+                    </div>
+                    <!-- Map card -->
+                    <div class="relative overflow-hidden" style="aspect-ratio:2/1; min-height:260px;">
+                        <div id="map-tooltip" class="pointer-events-none absolute z-20 hidden rounded-2xl border border-gray-700 bg-gray-950/95 px-3 py-2.5 shadow-xl backdrop-blur-sm text-center" style="transform:translate(-50%,calc(-100% - 10px)); white-space:nowrap;">
+                            <div id="map-tooltip-flag" class="text-xl leading-none"></div>
+                            <div id="map-tooltip-name" class="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-white"></div>
+                            <div id="map-tooltip-stats" class="mt-0.5 text-[9px] font-bold text-gray-400"></div>
+                        </div>
+                        <div id="selection-map-container" class="absolute inset-0 w-full h-full"></div>
+                        <div id="selection-map-loading" class="absolute inset-0 flex items-center justify-center text-[10px] font-black uppercase tracking-[0.25em] text-gray-500">Loading map…</div>
+                    </div>
+                    <!-- Legend -->
+                    <div id="map-legend-ownership" class="flex flex-wrap justify-center items-center gap-6">
+                        <div class="flex items-center gap-2">
+                            <span id="map-legend-zero" class="inline-block w-5 h-4 rounded border border-gray-200"></span>
+                            <span class="text-xs font-bold text-gray-500">Qualified, 0% picked</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div id="map-legend-gradient" class="h-3 w-28 rounded-full"></div>
+                            <span class="text-xs font-black uppercase tracking-[0.15em] text-gray-500">→ High ownership</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-block w-5 h-4 rounded" style="background:#d1d5db;"></span>
+                            <span class="text-xs font-bold text-gray-500">Did not qualify</span>
+                        </div>
+                    </div>
+                    <div id="map-legend-groups-bar" class="hidden" style="display:none;">
+                        <div id="map-legend-groups-items" class="flex flex-wrap justify-center gap-x-5 gap-y-2"></div>
+                        <div class="mt-2.5 flex justify-center">
+                            <div class="flex items-center gap-2">
+                                <span class="inline-block w-5 h-4 rounded" style="background:#d1d5db;"></span>
+                                <span class="text-xs font-bold text-gray-500">Did not qualify</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom two-column grid -->
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        <!-- Left: Full ownership ranking -->
+                        <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                            <div class="mb-4 border-l-[3px] border-gray-300 pl-3">
+                                <h3 class="text-xl font-black uppercase italic tracking-tight text-gray-900">Ownership Ranking</h3>
+                                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Top 10 qualified teams · click to see who picked them</p>
+                            </div>
+                            <div id="map-ownership-ranking" class="space-y-1"></div>
+                        </div>
+                        <!-- Right: Group heat + Squad shape -->
+                        <div class="space-y-6">
+                            <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                                <div class="mb-4 border-l-[3px] border-gray-300 pl-3">
+                                    <h3 class="text-xl font-black uppercase italic tracking-tight text-gray-900">Group Heat</h3>
+                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Total picks per group · darker = more popular</p>
+                                </div>
+                                <div id="map-group-heat" class="grid grid-cols-4 gap-2"></div>
+                            </div>
+                            <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                                <div class="mb-4 border-l-[3px] border-gray-300 pl-3">
+                                    <h3 class="text-xl font-black uppercase italic tracking-tight text-gray-900">Squad Shape</h3>
+                                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">How many teams per entry</p>
+                                </div>
+                                <div id="map-squad-shape" class="space-y-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="results-panel-selection" class="results-panel hidden space-y-6">
                     <div class="flex items-center justify-between gap-4">
                         <div class="border-l-[3px] border-gray-300 pl-3">
@@ -956,7 +1123,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-gray-900"><input type="text" id="leaderboard-search" placeholder="Search by name..." oninput="fetchLeaderboard()" class="theme-input w-full p-3 rounded-xl border-2 outline-none font-bold text-sm text-gray-900 text-left"><div id="leaderboard-country-filter" data-value="" class="relative w-full"><input type="hidden" id="leaderboard-country-filter-input" value=""><button id="country-filter-btn" type="button" onclick="toggleCountryFilter()" class="theme-input w-full px-4 py-3 rounded-xl border-2 bg-white text-left flex items-center justify-between gap-2 font-bold text-sm outline-none"><span id="country-filter-label" class="text-gray-400">All Countries</span><svg xmlns="http://www.w3.org/2000/svg" class="team-dropdown-chevron w-4 h-4 shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg></button><div id="country-filter-panel" class="team-dropdown-panel hidden absolute top-full left-0 right-0 mt-1.5 bg-white rounded-2xl border-2 shadow-xl overflow-hidden z-50" style="border-color: var(--theme-accent-soft-strong);"><div class="border-b border-gray-100 p-3"><input id="country-filter-search" type="text" placeholder="Type to find a team..." autocomplete="off" class="theme-input w-full rounded-xl border-2 bg-white px-3 py-2 text-sm font-bold text-gray-900 outline-none" oninput="filterTeamDropdownOptions('leaderboard-country-filter')" onkeydown="handleTeamDropdownSearchKeydown(event, 'leaderboard-country-filter')"></div><div id="country-filter-list" class="max-h-64 overflow-y-auto"></div></div></div></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-gray-900"><div id="leaderboard-name-filter" data-value="" class="relative w-full"><input type="hidden" id="leaderboard-name-filter-input" value=""><button id="name-filter-btn" type="button" onclick="toggleNameFilter()" class="theme-input w-full px-4 py-3 rounded-xl border-2 bg-white text-left flex items-center justify-between gap-2 font-bold text-sm outline-none"><span id="name-filter-label" class="text-gray-400">All Players</span><svg xmlns="http://www.w3.org/2000/svg" class="team-dropdown-chevron w-4 h-4 shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg></button><div id="name-filter-panel" class="team-dropdown-panel hidden absolute top-full left-0 right-0 mt-1.5 bg-white rounded-2xl border-2 shadow-xl overflow-hidden z-50" style="border-color: var(--theme-accent-soft-strong);"><div class="border-b border-gray-100 p-3"><input id="name-filter-search" type="text" placeholder="Search players..." autocomplete="off" class="theme-input w-full rounded-xl border-2 bg-white px-3 py-2 text-sm font-bold text-gray-900 outline-none" oninput="filterNameDropdownOptions()"></div><div id="name-filter-list" class="max-h-64 overflow-y-auto"></div></div></div><div id="leaderboard-country-filter" data-value="" class="relative w-full"><input type="hidden" id="leaderboard-country-filter-input" value=""><button id="country-filter-btn" type="button" onclick="toggleCountryFilter()" class="theme-input w-full px-4 py-3 rounded-xl border-2 bg-white text-left flex items-center justify-between gap-2 font-bold text-sm outline-none"><span id="country-filter-label" class="text-gray-400">All Countries</span><svg xmlns="http://www.w3.org/2000/svg" class="team-dropdown-chevron w-4 h-4 shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg></button><div id="country-filter-panel" class="team-dropdown-panel hidden absolute top-full left-0 right-0 mt-1.5 bg-white rounded-2xl border-2 shadow-xl overflow-hidden z-50" style="border-color: var(--theme-accent-soft-strong);"><div class="border-b border-gray-100 p-3"><input id="country-filter-search" type="text" placeholder="Type to find a team..." autocomplete="off" class="theme-input w-full rounded-xl border-2 bg-white px-3 py-2 text-sm font-bold text-gray-900 outline-none" oninput="filterTeamDropdownOptions('leaderboard-country-filter')" onkeydown="handleTeamDropdownSearchKeydown(event, 'leaderboard-country-filter')"></div><div id="country-filter-list" class="max-h-64 overflow-y-auto"></div></div></div></div>
                 <div class="bg-gray-50 rounded-3xl border border-gray-200 overflow-hidden text-left text-gray-900"><div class="overflow-x-auto text-left text-gray-900"><table class="min-w-[1060px] w-full text-left text-gray-900 text-left"><thead class="bg-gray-900 text-white uppercase text-[11px] tracking-[0.2em] font-black text-left"><tr><th class="w-[88px] px-4 py-4 text-center">Rank</th><th class="w-[92px] px-4 py-4 text-center text-white">Points</th><th class="px-6 py-4 text-left">Player & Squad</th><th class="px-4 py-4 text-center">G</th><th class="px-4 py-4 text-center">Bonus</th><th class="px-4 py-4 text-center">R32</th><th class="px-4 py-4 text-center">R16</th><th class="px-4 py-4 text-center">QF</th><th class="px-4 py-4 text-center">SM</th><th class="px-4 py-4 text-center">F</th></tr></thead><tbody id="leaderboard-body" class="font-bold text-left text-gray-900 text-left text-gray-900 text-left"></tbody></table></div></div>
             </div>
         </div>
@@ -1069,7 +1236,7 @@
 
                 <!-- Schedule browser panel -->
                 <div id="admin-panel-schedule" class="admin-panel hidden">
-                    <!-- Group/knockout filter pills — sticky below the main tab strip -->
+                    <!-- Schedule filter strip — sticky below the main tab strip -->
                     <div id="schedule-group-filters" class="sticky z-20 bg-gray-900 py-3 -mx-6 md:-mx-12 px-6 md:px-12 border-b border-gray-800/60">
                         <!-- Rendered by renderScheduleBrowser() -->
                     </div>
@@ -1505,10 +1672,105 @@
     </div>
 
     <div id="player-profile-modal" class="hidden fixed inset-0 z-[115] bg-black/80 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closePlayerProfile()">
-        <div class="w-full max-w-lg rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div id="player-profile-modal-content" class="overflow-y-auto flex-1"></div>
+        <div id="player-profile-container" class="relative w-full max-w-lg rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
+            <!-- Left panel: team detail (hidden by default) -->
+            <div id="player-profile-team-panel" class="hidden flex-col min-w-0 overflow-hidden border-b md:border-b-0 md:border-r border-gray-800 md:w-[320px] md:flex-none">
+                <div class="shrink-0 flex items-center px-4 py-3 border-b border-gray-800">
+                    <button onclick="closeProfileTeam()" class="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        Back
+                    </button>
+                </div>
+                <div id="player-profile-team-content" class="overflow-y-auto flex-1"></div>
+            </div>
+            <!-- Right panel: player card -->
+            <div id="player-profile-right-panel" class="flex flex-col min-w-0 flex-1 overflow-hidden">
+                <div id="player-profile-modal-content" class="overflow-y-auto flex-1"></div>
+                <div class="border-t border-gray-800 bg-gray-950/70 p-4 shrink-0">
+                    <button onclick="closePlayerProfile()" class="w-full rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-gray-300 hover:bg-gray-700 transition-colors">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="r32-seating-modal" class="hidden fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closeR32SeatingInfo()">
+        <div class="w-full max-w-2xl rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-gray-800 flex items-center justify-between gap-4 shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-center w-9 h-9 rounded-full border-2 border-yellow-400 bg-yellow-400/10 text-yellow-400 font-black text-lg shrink-0">!</div>
+                    <div>
+                        <div class="text-[10px] font-black uppercase tracking-[0.25em] text-yellow-400">How it works</div>
+                        <div class="text-lg font-black uppercase italic tracking-tight text-white">R32 Seating: The 495-Combo Problem</div>
+                    </div>
+                </div>
+                <button onclick="closeR32SeatingInfo()" class="shrink-0 h-9 w-9 rounded-full border border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors">✕</button>
+            </div>
+            <div class="overflow-y-auto flex-1 p-5 space-y-5 text-sm">
+                <div class="rounded-2xl border border-gray-700 bg-gray-800/60 p-4 space-y-2">
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">The setup</p>
+                    <p class="font-bold text-gray-200">The 2026 World Cup has <span class="text-white font-black">12 groups</span>. The top 2 from each group advance automatically (24 teams). The <span class="text-white font-black">8 best 3rd-place teams</span> across all groups also qualify — filling the Round of 32.</p>
+                    <p class="font-bold text-gray-200">But here's the twist: <em>which</em> 8 groups produce those third-place qualifiers determines their bracket position. FIFA pre-defined all possible combinations using <span class="text-yellow-400 font-black">Annex C</span> of the tournament regulations.</p>
+                </div>
+                <div class="rounded-2xl border border-gray-700 bg-gray-800/60 p-4 space-y-2">
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">The maths</p>
+                    <p class="font-bold text-gray-200">Choosing 8 groups from 12 gives <span class="text-yellow-400 font-black">C(12,8) = 495 possible combinations</span>. For each of those 495 outcomes, Annex C maps each 3rd-place team to a specific R32 slot — ensuring no group plays itself and the bracket stays balanced.</p>
+                </div>
+                <div class="rounded-2xl border border-gray-700 bg-gray-800/60 p-4 space-y-3">
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Example — suppose groups A, B, C, D, E, F, G, H qualify</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs font-bold">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="text-left pb-2 text-gray-400 font-black uppercase tracking-[0.15em]">3rd-place team from</th>
+                                    <th class="text-left pb-2 text-gray-400 font-black uppercase tracking-[0.15em]">Assigned R32 slot</th>
+                                    <th class="text-left pb-2 text-gray-400 font-black uppercase tracking-[0.15em]">Plays against</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-200">
+                                <tr class="border-b border-gray-800"><td class="py-1.5">Group A</td><td class="py-1.5">Slot 5</td><td class="py-1.5">1st of Group E</td></tr>
+                                <tr class="border-b border-gray-800"><td class="py-1.5">Group B</td><td class="py-1.5">Slot 3</td><td class="py-1.5">1st of Group C</td></tr>
+                                <tr class="border-b border-gray-800"><td class="py-1.5">Group C</td><td class="py-1.5">Slot 8</td><td class="py-1.5">2nd of Group H</td></tr>
+                                <tr class="border-b border-gray-800"><td class="py-1.5">Group D</td><td class="py-1.5">Slot 2</td><td class="py-1.5">1st of Group B</td></tr>
+                                <tr class="border-b border-gray-800"><td class="py-1.5">Group E</td><td class="py-1.5">Slot 6</td><td class="py-1.5">2nd of Group F</td></tr>
+                                <tr class="border-b border-gray-800"><td class="py-1.5">Group F</td><td class="py-1.5">Slot 1</td><td class="py-1.5">1st of Group A</td></tr>
+                                <tr class="border-b border-gray-800"><td class="py-1.5">Group G</td><td class="py-1.5">Slot 7</td><td class="py-1.5">2nd of Group G</td></tr>
+                                <tr><td class="py-1.5">Group H</td><td class="py-1.5">Slot 4</td><td class="py-1.5">1st of Group D</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-[10px] font-bold text-gray-500">The actual slots shift depending on which combination of groups qualifies — this is just one of 495 possible layouts.</p>
+                </div>
+                <div class="rounded-2xl border border-yellow-500/30 bg-yellow-500/5 p-4 space-y-1">
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-yellow-400">What this means for you</p>
+                    <p class="font-bold text-gray-200">Until all group stages finish, we won't know which 8 groups contributed 3rd-place qualifiers — so the bracket can't be fully filled. Once groups end, the Annex C table is looked up and all 32 R32 matchups lock in simultaneously.</p>
+                    <p class="font-bold text-gray-200 pt-1">The bracket updates live after every group stage match as standings shift — it will keep projecting the most likely R32 seeding until group play is complete and the real assignments lock in.</p>
+                </div>
+                <div class="rounded-2xl border border-gray-600/40 bg-gray-800/40 p-4 flex gap-3">
+                    <span class="text-yellow-400 text-base shrink-0">⚠️</span>
+                    <p class="text-[11px] font-bold text-gray-400">We believe this bracket and seating logic is correct, but it's complex stuff — if something looks off, it may need an update. Don't hesitate to flag it.</p>
+                </div>
+            </div>
             <div class="border-t border-gray-800 bg-gray-950/70 p-4 shrink-0">
-                <button onclick="closePlayerProfile()" class="w-full rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-gray-300 hover:bg-gray-700 transition-colors">Close</button>
+                <button onclick="closeR32SeatingInfo()" class="w-full rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-gray-300 hover:bg-gray-700 transition-colors">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="chip-popover-shell" class="hidden fixed inset-0 z-[130] items-center justify-center p-4 pointer-events-none">
+        <div id="chip-popover-card" class="pointer-events-auto w-full max-w-sm rounded-[1.75rem] border border-gray-700 bg-gray-900/95 shadow-[0_30px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl overflow-hidden">
+            <div class="border-b border-gray-800 bg-gray-950/70 px-5 py-4 flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                    <div id="chip-popover-kicker" class="text-[10px] font-black uppercase tracking-[0.25em] text-sky-300">Player Chip</div>
+                    <div class="mt-1 flex items-center gap-3">
+                        <span id="chip-popover-emoji" class="text-2xl leading-none">🔥</span>
+                        <h3 id="chip-popover-title" class="text-lg font-black uppercase italic tracking-tight text-white">Hot</h3>
+                    </div>
+                </div>
+                <button type="button" onclick="closeChipPopover()" class="shrink-0 h-9 w-9 rounded-full border border-gray-700 bg-gray-800 text-gray-300 transition-colors hover:bg-gray-700 hover:text-white" aria-label="Close chip description">✕</button>
+            </div>
+            <div class="px-5 py-5 space-y-3">
+                <p id="chip-popover-message" class="text-sm font-bold leading-relaxed text-gray-100"></p>
+                <p id="chip-popover-detail" class="text-[10px] font-black uppercase tracking-[0.18em] text-gray-400"></p>
             </div>
         </div>
     </div>
