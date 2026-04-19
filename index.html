@@ -582,128 +582,144 @@
         </div>
 
         <div id="page-rules" class="page-content hidden h-full w-full overflow-y-auto bg-white text-gray-900 text-left">
-            <div class="max-w-3xl mx-auto px-6 md:px-10 py-10 md:py-14 space-y-10">
+            <div class="max-w-5xl mx-auto px-6 md:px-10 py-10 md:py-14 space-y-6">
 
-                <!-- Header -->
-                <div class="flex items-end justify-between gap-4 border-b border-gray-100 pb-6">
+                <!-- Header banner -->
+                <div class="bg-gray-900 rounded-3xl px-8 py-6 flex items-center justify-between gap-6">
                     <div>
-                        <h1 class="text-2xl font-black uppercase italic tracking-tight text-gray-900">The Rules</h1>
-                        <p class="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400 mt-0.5">2026 World Cup Pool</p>
+                        <h1 class="text-2xl md:text-3xl font-black uppercase italic tracking-tight text-white">The Rules</h1>
+                        <p class="text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 mt-1">2026 World Cup Pool · Selection &amp; Scoring</p>
                     </div>
                     <div class="text-right shrink-0">
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Entry</div>
-                        <div class="text-2xl font-black text-gray-900">$40 <span class="text-base font-bold text-gray-400">CAD</span></div>
-                        <div class="text-[10px] text-gray-400 mt-0.5">E-transfer to Connor</div>
+                        <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Entry Fee</div>
+                        <div class="text-2xl font-black text-white mt-0.5">$40 <span class="text-base font-bold text-gray-400">CAD</span></div>
+                        <div class="text-[10px] text-gray-500 mt-0.5">E-transfer to Connor</div>
                     </div>
                 </div>
 
-                <!-- Two-column grid: Squad + Prizes & Scoring -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <!-- Row 1: Squad + Prizes -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                    <!-- Left: Squad Building -->
-                    <div class="space-y-5">
-                        <div class="text-[9px] font-black uppercase tracking-[0.3em] text-gray-400">Squad</div>
-
-                        <div class="space-y-0 divide-y divide-gray-100">
+                    <!-- Squad card -->
+                    <div class="bg-gray-900 rounded-2xl border border-gray-700 p-6 space-y-5">
+                        <div>
+                            <div class="text-[9px] font-black uppercase tracking-[0.3em] text-gray-500 mb-2">Squad Selection</div>
+                            <p class="text-sm font-semibold text-gray-400 leading-relaxed">Pick exactly 8 teams within a $150 budget. Stronger favourites cost more — use the tier system to build a smart, balanced squad.</p>
+                        </div>
+                        <div class="space-y-0 divide-y divide-gray-800">
                             <div class="flex items-baseline justify-between py-3">
-                                <span class="text-sm font-bold text-gray-500">Teams</span>
-                                <span class="text-sm font-black text-gray-900">Exactly 8</span>
+                                <span class="text-sm font-bold text-gray-400">Teams</span>
+                                <span class="text-sm font-black text-white">Exactly 8</span>
                             </div>
                             <div class="flex items-baseline justify-between py-3">
-                                <span class="text-sm font-bold text-gray-500">Budget</span>
-                                <span class="text-sm font-black text-gray-900 theme-accent-text">$150 max</span>
+                                <span class="text-sm font-bold text-gray-400">Budget</span>
+                                <span class="text-sm font-black theme-accent-text">$150 max</span>
+                            </div>
+                            <div class="flex items-start justify-between gap-4 py-3">
+                                <span class="text-sm font-bold text-gray-400">Tier 1</span>
+                                <div class="text-right">
+                                    <div class="text-sm font-black text-white">0 or 1</div>
+                                    <div class="text-[10px] text-gray-500 mt-0.5">Spain, England, France…</div>
+                                </div>
+                            </div>
+                            <div class="flex items-start justify-between gap-4 py-3">
+                                <span class="text-sm font-bold text-gray-400">Tier 2</span>
+                                <div class="text-right">
+                                    <div class="text-sm font-black text-white">No limit</div>
+                                    <div class="text-[10px] text-gray-500 mt-0.5">Netherlands, Norway…</div>
+                                </div>
                             </div>
                             <div class="flex items-baseline justify-between py-3">
-                                <span class="text-sm font-bold text-gray-500">Tier 1 teams</span>
-                                <span class="text-sm font-black text-gray-900">0 or 1</span>
-                            </div>
-                            <div class="flex items-baseline justify-between py-3">
-                                <span class="text-sm font-bold text-gray-500">Tier 3 teams</span>
-                                <span class="text-sm font-black text-gray-900">Minimum 3</span>
-                            </div>
-                            <div class="flex items-baseline justify-between py-3">
-                                <span class="text-sm font-bold text-gray-500">Tier 2 teams</span>
-                                <span class="text-sm font-black text-gray-900">No limit</span>
+                                <span class="text-sm font-bold text-gray-400">Tier 3</span>
+                                <span class="text-sm font-black text-white">Minimum 3</span>
                             </div>
                         </div>
-                        <p class="text-xs text-gray-400">Higher cost = stronger favourite. Prices reflect tournament odds.</p>
                     </div>
 
-                    <!-- Right: Prizes + Scoring -->
-                    <div class="space-y-8">
-
-                        <!-- Prizes -->
-                        <div class="space-y-5">
-                            <div class="text-[9px] font-black uppercase tracking-[0.3em] text-gray-400">Prizes</div>
-                            <div class="space-y-0 divide-y divide-gray-100">
-                                <div class="flex items-baseline justify-between py-3">
-                                    <span class="text-sm font-bold text-gray-500">1st place</span>
-                                    <span class="text-sm font-black text-gray-900">65%</span>
-                                </div>
-                                <div class="flex items-baseline justify-between py-3">
-                                    <span class="text-sm font-bold text-gray-500">2nd place</span>
-                                    <span class="text-sm font-black text-gray-900">25%</span>
-                                </div>
-                                <div class="flex items-baseline justify-between py-3">
-                                    <span class="text-sm font-bold text-gray-500">3rd place</span>
-                                    <span class="text-sm font-black text-gray-900">10%</span>
-                                </div>
-                            </div>
-                            <p class="text-xs text-gray-400">Ties split the combined prize money for those positions. Two 1st-place ties split 1st + 2nd equally; 3rd keeps their share.</p>
+                    <!-- Prizes card -->
+                    <div class="bg-gray-900 rounded-2xl border border-gray-700 p-6 space-y-5">
+                        <div>
+                            <div class="text-[9px] font-black uppercase tracking-[0.3em] text-gray-500 mb-2">Prizes</div>
+                            <p class="text-sm font-semibold text-gray-400 leading-relaxed">The full pot is split across the top three finishers. The more players enter, the bigger the prize.</p>
                         </div>
-
-                        <!-- Scoring -->
-                        <div class="space-y-5">
-                            <div class="text-[9px] font-black uppercase tracking-[0.3em] text-gray-400">Scoring</div>
-                            <div class="space-y-0 divide-y divide-gray-100">
-                                <div class="flex items-baseline justify-between py-3">
-                                    <span class="text-sm font-bold text-gray-500">Win</span>
-                                    <span class="text-sm font-black text-gray-900">3 pts</span>
-                                </div>
-                                <div class="flex items-baseline justify-between py-3">
-                                    <span class="text-sm font-bold text-gray-500">Draw</span>
-                                    <span class="text-sm font-black text-gray-900">1 pt</span>
-                                </div>
-                                <div class="flex items-baseline justify-between py-3">
-                                    <span class="text-sm font-bold text-gray-500">Advance bonus</span>
-                                    <span class="text-sm font-black text-gray-900">+1 pt</span>
-                                </div>
-                                <div class="flex items-baseline justify-between py-3">
-                                    <span class="text-sm font-bold text-gray-500">Bronze match</span>
-                                    <span class="text-sm font-black text-gray-400">No points</span>
-                                </div>
+                        <div class="space-y-0 divide-y divide-gray-800">
+                            <div class="flex items-center justify-between py-3">
+                                <span class="text-sm font-bold text-gray-400">1st place</span>
+                                <span class="text-2xl font-black text-green-400">65%</span>
+                            </div>
+                            <div class="flex items-center justify-between py-3">
+                                <span class="text-sm font-bold text-gray-400">2nd place</span>
+                                <span class="text-2xl font-black text-white">25%</span>
+                            </div>
+                            <div class="flex items-center justify-between py-3">
+                                <span class="text-sm font-bold text-gray-400">3rd place</span>
+                                <span class="text-2xl font-black text-gray-400">10%</span>
                             </div>
                         </div>
+                        <p class="text-xs italic text-gray-500 leading-relaxed">Ties split the combined prize for those positions — two tied 1st places split 1st &amp; 2nd equally, and 3rd keeps their share.</p>
                     </div>
                 </div>
 
-                <!-- Stage Multipliers — full width -->
-                <div class="border-t border-gray-100 pt-8 space-y-4">
-                    <div class="text-[9px] font-black uppercase tracking-[0.3em] text-gray-400">Knockout Multipliers <span class="text-gray-300 font-bold normal-case tracking-normal">— points × multiplier each round</span></div>
-                    <div class="grid grid-cols-6 gap-px bg-gray-100 rounded-xl overflow-hidden text-center text-sm">
-                        <div class="bg-white py-3 px-1">
-                            <div class="text-[9px] font-black uppercase tracking-[0.08em] text-gray-400 leading-none mb-1.5">Groups</div>
-                            <div class="font-black text-gray-900">×1</div>
+                <!-- Row 2: Scoring + Multipliers -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    <!-- Scoring card -->
+                    <div class="bg-gray-900 rounded-2xl border border-gray-700 p-6 space-y-5">
+                        <div>
+                            <div class="text-[9px] font-black uppercase tracking-[0.3em] text-gray-500 mb-2">How Points Work</div>
+                            <p class="text-sm font-semibold text-gray-400 leading-relaxed">Your teams earn points for every match result. The advance bonus rewards teams that make it out of the group stage.</p>
                         </div>
-                        <div class="bg-white py-3 px-1">
-                            <div class="text-[9px] font-black uppercase tracking-[0.08em] text-gray-400 leading-none mb-1.5">R32</div>
-                            <div class="font-black theme-accent-text">×2</div>
+                        <div class="space-y-0 divide-y divide-gray-800">
+                            <div class="flex items-baseline justify-between py-3">
+                                <span class="text-sm font-bold text-gray-400">Win</span>
+                                <span class="text-sm font-black text-white">3 pts</span>
+                            </div>
+                            <div class="flex items-baseline justify-between py-3">
+                                <span class="text-sm font-bold text-gray-400">Draw</span>
+                                <span class="text-sm font-black text-white">1 pt</span>
+                            </div>
+                            <div class="flex items-baseline justify-between py-3">
+                                <span class="text-sm font-bold text-gray-400">Advance bonus</span>
+                                <span class="text-sm font-black theme-accent-text">+1 pt</span>
+                            </div>
+                            <div class="flex items-baseline justify-between py-3">
+                                <span class="text-sm font-bold text-gray-400">Bronze match</span>
+                                <span class="text-sm font-bold text-gray-600">No points</span>
+                            </div>
                         </div>
-                        <div class="bg-white py-3 px-1">
-                            <div class="text-[9px] font-black uppercase tracking-[0.08em] text-gray-400 leading-none mb-1.5">R16</div>
-                            <div class="font-black theme-accent-text">×3</div>
+                    </div>
+
+                    <!-- Multipliers card -->
+                    <div class="bg-gray-900 rounded-2xl border border-gray-700 p-6 space-y-5">
+                        <div>
+                            <div class="text-[9px] font-black uppercase tracking-[0.3em] text-gray-500 mb-2">Stage Multipliers</div>
+                            <p class="text-sm font-semibold text-gray-400 leading-relaxed">Points are multiplied by the round. The deeper your teams go, the more they're worth — a Final win is 12× a group match.</p>
                         </div>
-                        <div class="bg-white py-3 px-1">
-                            <div class="text-[9px] font-black uppercase tracking-[0.08em] text-gray-400 leading-none mb-1.5">QF</div>
-                            <div class="font-black theme-accent-text">×5</div>
-                        </div>
-                        <div class="bg-white py-3 px-1">
-                            <div class="text-[9px] font-black uppercase tracking-[0.08em] text-gray-400 leading-none mb-1.5">Semi</div>
-                            <div class="font-black theme-accent-text">×8</div>
-                        </div>
-                        <div class="bg-gray-900 py-3 px-1">
-                            <div class="text-[9px] font-black uppercase tracking-[0.08em] text-white/50 leading-none mb-1.5">Final</div>
-                            <div class="font-black text-white">×12</div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="bg-gray-800 border border-gray-700 rounded-xl p-3 text-center">
+                                <div class="text-[8px] font-black uppercase tracking-[0.1em] text-gray-500 mb-1">Groups</div>
+                                <div class="text-lg font-black text-gray-300">×1</div>
+                            </div>
+                            <div class="bg-gray-800 border border-gray-700 rounded-xl p-3 text-center">
+                                <div class="text-[8px] font-black uppercase tracking-[0.1em] text-gray-500 mb-1">R32</div>
+                                <div class="text-lg font-black theme-accent-text">×2</div>
+                            </div>
+                            <div class="bg-gray-800 border border-gray-700 rounded-xl p-3 text-center">
+                                <div class="text-[8px] font-black uppercase tracking-[0.1em] text-gray-500 mb-1">R16</div>
+                                <div class="text-lg font-black theme-accent-text">×3</div>
+                            </div>
+                            <div class="bg-gray-800 border border-gray-700 rounded-xl p-3 text-center">
+                                <div class="text-[8px] font-black uppercase tracking-[0.1em] text-gray-500 mb-1">QF</div>
+                                <div class="text-lg font-black theme-accent-text">×5</div>
+                            </div>
+                            <div class="bg-gray-800 border border-gray-700 rounded-xl p-3 text-center">
+                                <div class="text-[8px] font-black uppercase tracking-[0.1em] text-gray-500 mb-1">Semi</div>
+                                <div class="text-lg font-black theme-accent-text">×8</div>
+                            </div>
+                            <div class="border rounded-xl p-3 text-center" style="background-color: rgba(var(--theme-accent-primary-rgb), 0.15); border-color: rgba(var(--theme-accent-primary-rgb), 0.4);">
+                                <div class="text-[8px] font-black uppercase tracking-[0.1em] text-gray-400 mb-1">Final</div>
+                                <div class="text-lg font-black text-white">×12</div>
+                            </div>
                         </div>
                     </div>
                 </div>
