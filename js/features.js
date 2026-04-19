@@ -6281,9 +6281,9 @@ function renderPlayerChips(chips = [], email = '', variant = 'row', scopeId = ''
                     return `<button type="button"
                         title="${escapeHtml(`${chip.label} — ${chip.description}`)}"
                         onclick="showPlayerChipInfo('${chip.id}', '${safeEmail}', event)"
-                        class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${toneClasses} transition-transform hover:scale-110 shrink-0">${chip.emoji}</button>`;
+                        class="inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${toneClasses} transition-transform hover:scale-110 shrink-0">${chip.emoji}</button>`;
                 }).join('')}
-                ${overflowCount > 0 ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 border-2 border-gray-400 text-[10px] font-black text-gray-600">+${overflowCount}</span>` : ''}
+                ${overflowCount > 0 ? `<span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 border border-gray-400 text-[8px] font-black text-gray-600">+${overflowCount}</span>` : ''}
             </div>
         `;
     }
@@ -6449,12 +6449,12 @@ async function fetchLeaderboard() {
     const body = document.getElementById('leaderboard-body');
     // Show animated placeholder rows while scores are calculated.
     // Columns: rank, points, player+squad, then 7 stage-points cols (G, Bonus, R32, R16, QF, SM, F)
-    const skeletonCell = '<td class="px-4 py-4 text-center"><div class="h-4 w-6 bg-gray-200 rounded animate-pulse mx-auto"></div></td>';
+    const skeletonCell = '<td class="px-2 py-2.5 text-center"><div class="h-4 w-6 bg-gray-200 rounded animate-pulse mx-auto"></div></td>';
     const skeletonRow = `
         <tr class="border-b border-gray-100">
-            <td class="w-[88px] px-4 py-4 text-center"><div class="h-5 w-6 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
-            <td class="w-[92px] px-4 py-4 text-center"><div class="h-6 w-10 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
-            <td class="px-6 py-4"><div class="space-y-2"><div class="h-4 w-28 bg-gray-200 rounded animate-pulse"></div><div class="h-3 w-20 bg-gray-100 rounded animate-pulse"></div></div></td>
+            <td class="w-[72px] px-2 py-2.5 text-center"><div class="h-5 w-6 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
+            <td class="w-[72px] px-2 py-2.5 text-center"><div class="h-6 w-10 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
+            <td class="px-4 py-2.5"><div class="space-y-2"><div class="h-4 w-28 bg-gray-200 rounded animate-pulse"></div><div class="h-3 w-20 bg-gray-100 rounded animate-pulse"></div></div></td>
             ${skeletonCell.repeat(7)}
         </tr>`;
     body.innerHTML = skeletonRow.repeat(5);
@@ -6550,27 +6550,31 @@ async function fetchLeaderboard() {
 
         const bestRowMarkup = bestAvailableTeam ? `
             <tr class="border-b border-gray-100 bg-gray-50 text-left text-gray-700">
-                <td class="w-[88px] px-4 py-4 text-center text-[1.45rem] font-black text-gray-400">-</td>
-                <td class="w-[92px] px-4 py-4 text-center font-mono text-[1.45rem] font-black text-gray-500">${bestAvailableTeam.totalPoints}</td>
-                <td class="px-6 py-4 text-left">
+                <td class="w-[72px] px-2 py-2.5 text-center text-lg font-black text-gray-400">-</td>
+                <td class="w-[72px] px-2 py-2.5 text-center font-mono text-lg font-black text-gray-500">${bestAvailableTeam.totalPoints}</td>
+                <td class="px-4 py-2.5 text-left">
                     <div class="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400 text-left">${bestAvailableTeam.nickname}</div>
-                    <div class="mt-2 text-left">
+                    <div class="mt-1.5 text-left">
                         ${renderSquadSummary(bestAvailableTeam, true)}
                     </div>
                 </td>
-                <td class="px-4 py-4 text-center font-black text-gray-500">${(bestAvailableTeam.stagePoints.G1 + bestAvailableTeam.stagePoints.G2 + bestAvailableTeam.stagePoints.G3) || '-'}</td>
-                <td class="px-4 py-4 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.Bonus || '-'}</td>
-                <td class="px-4 py-4 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.R32 || '-'}</td>
-                <td class="px-4 py-4 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.R16 || '-'}</td>
-                <td class="px-4 py-4 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.QF || '-'}</td>
-                <td class="px-4 py-4 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.SM || '-'}</td>
-                <td class="px-4 py-4 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.F || '-'}</td>
+                <td class="px-2 py-2.5 text-center font-black text-gray-500">${(bestAvailableTeam.stagePoints.G1 + bestAvailableTeam.stagePoints.G2 + bestAvailableTeam.stagePoints.G3) || '-'}</td>
+                <td class="px-2 py-2.5 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.Bonus || '-'}</td>
+                <td class="px-2 py-2.5 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.R32 || '-'}</td>
+                <td class="px-2 py-2.5 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.R16 || '-'}</td>
+                <td class="px-2 py-2.5 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.QF || '-'}</td>
+                <td class="px-2 py-2.5 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.SM || '-'}</td>
+                <td class="px-2 py-2.5 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.F || '-'}</td>
             </tr>
         ` : '';
 
         const newRanks = { ...currentRanks };
 
-        body.innerHTML = bestRowMarkup + (filteredLeaderboardData.map((user) => {
+        const glowDividerRow = `<tr><td colspan="10" class="p-0">
+            <div class="h-px w-full opacity-40" style="background: linear-gradient(90deg, transparent 0%, var(--theme-accent-primary) 30%, var(--theme-accent-primary) 70%, transparent 100%); box-shadow: 0 0 6px 0px var(--theme-accent-primary);"></div>
+        </td></tr>`;
+
+        body.innerHTML = bestRowMarkup + (filteredLeaderboardData.map((user, idx) => {
             // Compute rank change indicator
             const prevRank = previousRanks[user.email];
             let rankIndicator;
@@ -6585,33 +6589,34 @@ async function fetchLeaderboard() {
 
             const rowTone = (Number(user.displayRank || 0) % 2) === 1 ? 'bg-white' : 'bg-gray-50';
             const safeEmail = user.email.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            const separator = idx === 2 ? glowDividerRow : '';
 
-            return `
+            return separator + `
             <tr class="theme-hover-row ${rowTone} border-b border-gray-100 transition-colors text-left text-gray-900 cursor-pointer" onclick="showPlayerProfile('${safeEmail}')">
-                <td class="theme-accent-text w-[88px] px-4 py-4 text-center">
-                    <div class="flex items-center justify-center gap-2">
-                        <div class="w-5 text-right">${rankIndicator}</div>
-                        <div class="text-[1.45rem] font-black">#${user.displayRank}</div>
+                <td class="w-[72px] px-2 py-2.5 text-center">
+                    <div class="flex items-center justify-center gap-1.5">
+                        <div class="w-4 text-right">${rankIndicator}</div>
+                        <div class="text-lg font-black text-gray-900">#${user.displayRank}</div>
                     </div>
                 </td>
-                <td class="theme-accent-text w-[92px] px-4 py-4 text-center font-mono text-[1.45rem] font-black">${user.totalPoints}</td>
-                <td class="px-6 py-4 text-left">
-                    <div class="flex flex-wrap items-center gap-2 text-left">
+                <td class="w-[72px] px-2 py-2.5 text-center font-mono text-lg font-black text-gray-900">${user.totalPoints}</td>
+                <td class="px-4 py-2.5 text-left">
+                    <div class="flex flex-wrap items-center gap-1.5 text-left">
                         <div class="text-lg font-black uppercase text-left text-gray-900">${user.nickname}</div>
                         ${renderPlayerChips(user.chips, user.email, 'row')}
                     </div>
                     <div class="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400 text-left">${user.realname}</div>
-                    <div class="mt-2 text-left">
+                    <div class="mt-1.5 text-left">
                         ${renderSquadSummary(user)}
                     </div>
                 </td>
-                <td class="px-4 py-4 text-center font-black text-gray-900">${(user.stagePoints.G1 + user.stagePoints.G2 + user.stagePoints.G3) || '-'}</td>
-                <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.Bonus || '-'}</td>
-                <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.R32 || '-'}</td>
-                <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.R16 || '-'}</td>
-                <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.QF || '-'}</td>
-                <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.SM || '-'}</td>
-                <td class="px-4 py-4 text-center font-black text-gray-900">${user.stagePoints.F || '-'}</td>
+                <td class="px-2 py-2.5 text-center font-black text-gray-900">${(user.stagePoints.G1 + user.stagePoints.G2 + user.stagePoints.G3) || '-'}</td>
+                <td class="px-2 py-2.5 text-center font-black text-gray-900">${user.stagePoints.Bonus || '-'}</td>
+                <td class="px-2 py-2.5 text-center font-black text-gray-900">${user.stagePoints.R32 || '-'}</td>
+                <td class="px-2 py-2.5 text-center font-black text-gray-900">${user.stagePoints.R16 || '-'}</td>
+                <td class="px-2 py-2.5 text-center font-black text-gray-900">${user.stagePoints.QF || '-'}</td>
+                <td class="px-2 py-2.5 text-center font-black text-gray-900">${user.stagePoints.SM || '-'}</td>
+                <td class="px-2 py-2.5 text-center font-black text-gray-900">${user.stagePoints.F || '-'}</td>
             </tr>
         `;
         }).join('') || '<tr><td colspan="10" class="p-8 text-center text-gray-900">No players found</td></tr>');
