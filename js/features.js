@@ -35,7 +35,7 @@ const stageMultiplierLabels = {
 const PLAYER_CHIP_DEFINITIONS = {
     leader: { id: 'leader', emoji: '🥇', label: 'Leader', tone: 'positive', description: 'Ranked #1 overall right now.' },
     hot: { id: 'hot', emoji: '🔥', label: 'Hot', tone: 'positive', description: 'Most points in the most recently completed stage.' },
-    group_king: { id: 'group_king', emoji: '🌟', label: 'Group King', tone: 'positive', description: 'Most combined group-stage points across Matchdays 1-3.' },
+    group_king: { id: 'group_king', emoji: '🌟', label: 'Group King', tone: 'positive', description: 'Most group-stage points in the pool across all three matchdays.' },
     all_through: { id: 'all_through', emoji: '⚡', label: 'All Through', tone: 'positive', description: 'Every picked team made it through the group stage and none are currently eliminated.' },
     big_dog: { id: 'big_dog', emoji: '💎', label: 'Big Dog', tone: 'positive', description: 'Owns the priciest Tier 1 star in the pool.' },
     on_the_rise: { id: 'on_the_rise', emoji: '📈', label: 'On the Rise', tone: 'positive', description: 'Biggest positive jump in rank since the last leaderboard snapshot.' },
@@ -268,7 +268,7 @@ function getFavoriteTeamAccentTokens(favoriteTeam) {
         primary,
         primaryRgb: hexToRgb(primary),
         text: darkenHex(primary, 0.12),
-        onDark: mixHexWithWhite(primary, 0.55),
+        onDark: mixHexWithWhite(primary, 0.68),
         soft: mixHexWithWhite(primary, 0.90),
         softStrong: mixHexWithWhite(primary, 0.78),
         pillBg: mixHexWithWhite(primary, 0.84),
@@ -3981,12 +3981,37 @@ function _renderChipsDetail(email) {
         neutral: 'bg-sky-500/15 border-sky-500/60 text-sky-300'
     };
 
+    const chipToneOrder = { positive: 0, neutral: 1, negative: 2 };
+    const sortedChips = [...chips].sort((a, b) => (chipToneOrder[a.tone] ?? 1) - (chipToneOrder[b.tone] ?? 1));
+
+    const squad = player?.entry?.squad || [];
+    const teamPointsMap = window._dashTeamPointsMap || {};
+    const squadHtml = squad.length > 0
+        ? `<div class="mb-4 rounded-xl border border-gray-700 bg-gray-800/60 p-3">
+            <div class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-500 mb-2">Squad</div>
+            <div class="grid grid-cols-4 gap-2">
+                ${[...squad].sort((a, b) => (b.cost || 0) - (a.cost || 0)).map((t) => {
+                    const pts = teamPointsMap[t.name] || 0;
+                    const teamDef = teams.find((td) => td.name === t.name);
+                    const group = t.group || teamDef?.group || '';
+                    return `<div class="flex flex-col items-center text-center ${t.eliminated ? 'opacity-40' : ''}">
+                        <span class="text-xl mb-0.5">${t.flag || teamDef?.flag || ''}</span>
+                        <div class="text-[10px] font-black text-white truncate w-full">${escapeHtml(t.name)}</div>
+                        <div class="text-[9px] text-gray-500">${group ? `Grp ${group}` : `$${t.cost}`}</div>
+                        <div class="text-[11px] font-black text-gray-300">${pts} pts</div>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`
+        : '';
+
     body.innerHTML = `
-        <div class="text-sm font-black text-white uppercase tracking-[0.1em] mb-4">${escapeHtml(label)}</div>
-        ${chips.length === 0
+        <div class="text-sm font-black text-white uppercase tracking-[0.1em] mb-3">${escapeHtml(label)}</div>
+        ${squadHtml}
+        ${sortedChips.length === 0
             ? `<div class="text-gray-500 text-sm text-center py-12">No chips earned yet.<br><span class="text-[10px] text-gray-600 mt-1 block">Chips are awarded based on performance as the tournament progresses.</span></div>`
             : `<div class="space-y-2">
-                ${chips.map((chip) => {
+                ${sortedChips.map((chip) => {
                     const cls = toneStyle[chip.tone] || toneStyle.neutral;
                     return `<div class="rounded-xl border-2 px-4 py-3 flex items-center gap-3 ${cls}">
                         <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-2xl ${cls.includes('green') ? 'bg-green-100 border-green-600' : cls.includes('red') ? 'bg-red-100 border-red-600' : 'bg-sky-100 border-sky-600'}">${chip.emoji}</span>
@@ -4009,7 +4034,7 @@ function closeDashChips() {
 }
 
 function setDashRightTab(tab) {
-    ['board', 'matches', 'rankings', 'groups', 'map', 'odds'].forEach((t) => {
+    ['board', 'matches', 'rankings', 'groups', 'map'].forEach((t) => {
         const content = document.getElementById(`dash-tab-content-${t}`);
         const btn = document.getElementById(`dash-tab-btn-${t}`);
         if (content) content.classList.toggle('hidden', t !== tab);
@@ -4026,7 +4051,6 @@ function setDashRightTab(tab) {
     if (tab === 'rankings') renderDashRankingsTab();
     if (tab === 'groups') renderDashGroupsTab();
     if (tab === 'map') renderDashMapTab();
-    if (tab === 'odds') renderDashOddsTab();
 }
 
 function setDashMatchMode(mode) {
@@ -4054,7 +4078,7 @@ function renderDashMatchesTab() {
 }
 
 function setDashRankingsSort(col) {
-    const defaultDir = { fifaRank: 'asc', name: 'asc', cost: 'desc', tier: 'asc', winProb: 'desc', dk: 'asc', espn: 'asc' };
+    const defaultDir = { fifaRank: 'asc', name: 'asc', cost: 'desc', tier: 'asc', winProb: 'desc' };
     if (_dashRankingsSort.col === col) {
         _dashRankingsSort.dir = _dashRankingsSort.dir === 'asc' ? 'desc' : 'asc';
     } else {
@@ -4064,8 +4088,8 @@ function setDashRankingsSort(col) {
 }
 
 function renderDashRankingsTab() {
-    const body = document.getElementById('dash-rankings-body');
-    if (!body) return;
+    const container = document.getElementById('dash-rankings-body');
+    if (!container) return;
 
     const { col, dir } = _dashRankingsSort;
     const mult = dir === 'asc' ? 1 : -1;
@@ -4080,8 +4104,6 @@ function renderDashRankingsTab() {
             else if (col === 'cost')    { va = a.t.cost; vb = b.t.cost; }
             else if (col === 'tier')    { va = a.t.tier; vb = b.t.tier; }
             else if (col === 'winProb') { va = a.d.winProb; vb = b.d.winProb; }
-            else if (col === 'dk')      { va = a.d.dk || 999999; vb = b.d.dk || 999999; }
-            else if (col === 'espn')    { va = a.d.espn || 999999; vb = b.d.espn || 999999; }
             else { va = 0; vb = 0; }
             return (va - vb) * mult;
         });
@@ -4093,98 +4115,110 @@ function renderDashRankingsTab() {
 
     const arrow = (c) => {
         if (_dashRankingsSort.col !== c) return `<span class="text-gray-300 ml-0.5">↕</span>`;
-        return `<span class="ml-0.5">${_dashRankingsSort.dir === 'asc' ? '↑' : '↓'}</span>`;
+        return `<span class="ml-0.5">${_dashRankingsSort.dir === 'asc' ? '▲' : '▼'}</span>`;
     };
 
     const th = (c, label, align = 'right') =>
-        `<th class="text-[8px] font-black uppercase tracking-[0.12em] text-gray-400 cursor-pointer hover:text-gray-700 select-none pb-2 ${align === 'left' ? 'text-left' : 'text-right'}" onclick="setDashRankingsSort('${c}')">${label}${arrow(c)}</th>`;
+        `<th class="py-2 text-[8px] font-black uppercase tracking-[0.12em] text-gray-400 cursor-pointer hover:text-gray-700 select-none ${align === 'left' ? 'text-left' : 'text-right'}" onclick="setDashRankingsSort('${c}')">${label}${arrow(c)}</th>`;
 
-    body.innerHTML = `
-        <table class="w-full border-collapse">
-            <thead class="sticky top-0 bg-white z-10">
-                <tr>
-                    ${th('fifaRank', '#')}
-                    ${th('name', 'Country', 'left')}
-                    ${th('cost', '$')}
-                    ${th('tier', 'T')}
-                    ${th('winProb', 'Win%')}
-                    ${th('dk', 'DK')}
-                    ${th('espn', 'ESPN')}
-                </tr>
-                <tr><td colspan="7" class="pb-1"><div class="h-px bg-gray-100"></div></td></tr>
-            </thead>
-            <tbody>
-                ${rows.map(({ t, d }) => `
-                    <tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors" onclick="showTeamOwners('${t.name.replace(/'/g, "\\'")}')">
-                        <td class="py-1.5 text-[10px] font-black text-gray-300 text-right pr-2 tabular-nums">${d.fifaRank}</td>
-                        <td class="py-1.5 min-w-0 max-w-0">
-                            <div class="flex items-center gap-1">
-                                <span class="shrink-0">${t.flag}</span>
-                                <span class="text-[10px] font-black text-gray-900 truncate">${escapeHtml(t.name)}</span>
-                            </div>
-                        </td>
-                        <td class="py-1.5 text-[10px] font-black text-gray-600 text-right pr-2 tabular-nums">$${t.cost}</td>
-                        <td class="py-1.5 text-center">${tierBadge(t.tier)}</td>
-                        <td class="py-1.5 text-[10px] font-black text-gray-600 text-right pr-1 tabular-nums">${d.winProb.toFixed(1)}%</td>
-                        <td class="py-1.5 text-[10px] text-gray-500 text-right pr-1 tabular-nums">+${(d.dk / 100).toFixed(0)}k</td>
-                        <td class="py-1.5 text-[10px] text-gray-500 text-right tabular-nums">+${(d.espn / 100).toFixed(0)}k</td>
-                    </tr>`).join('')}
-            </tbody>
-        </table>`;
+    container.innerHTML = `
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr class="border-b border-gray-100">
+                        ${th('fifaRank', '#')}
+                        ${th('name', 'Country', 'left')}
+                        ${th('cost', '$')}
+                        ${th('tier', 'T')}
+                        ${th('winProb', 'Win%')}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows.map(({ t, d }) => `
+                        <tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors" onclick="showTeamOwners('${t.name.replace(/'/g, "\\'")}')">
+                            <td class="py-1.5 text-[10px] font-black text-gray-300 text-right pr-2 tabular-nums">${d.fifaRank}</td>
+                            <td class="py-1.5 min-w-0">
+                                <div class="flex items-center gap-1">
+                                    <span class="shrink-0">${t.flag}</span>
+                                    <span class="text-[10px] font-black text-gray-900 truncate">${escapeHtml(t.name)}</span>
+                                </div>
+                            </td>
+                            <td class="py-1.5 text-[10px] font-black text-gray-600 text-center tabular-nums">$${t.cost}</td>
+                            <td class="py-1.5 text-center">${tierBadge(t.tier)}</td>
+                            <td class="py-1.5 text-[10px] font-black text-gray-600 text-center tabular-nums">${d.winProb.toFixed(1)}%</td>
+                        </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>`;
 }
 
 function renderDashGroupsTab() {
     const body = document.getElementById('dash-groups-body');
     if (!body) return;
-    const groupMap = {};
-    teams.forEach((t) => {
-        if (!t.group) return;
-        if (!groupMap[t.group]) groupMap[t.group] = [];
-        groupMap[t.group].push(t);
-    });
-    const groupKeys = Object.keys(groupMap).sort();
+
+    const standings = computeGroupStandings(window._dashMatches || []);
+    const teamPointsMap = window._dashTeamPointsMap || {};
+
+    const groupKeys = Object.keys(standings).sort();
     body.innerHTML = `<div class="grid grid-cols-2 gap-3">
-        ${groupKeys.map((g) => `
-            <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
-                <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Group ${g}</div>
-                <div class="space-y-1.5">
-                    ${groupMap[g].map((t) => `
-                        <div class="flex items-center gap-2">
-                            <span class="text-base">${t.flag}</span>
-                            <div class="text-[11px] font-black text-gray-800 truncate flex-1">${escapeHtml(t.name)}</div>
-                            <div class="text-[9px] text-gray-400">$${t.cost}</div>
-                        </div>`).join('')}
+        ${groupKeys.map((g) => {
+            const { teams: groupTeams } = standings[g];
+            const sorted = [...groupTeams].sort((a, b) =>
+                (teamPointsMap[b.name] || 0) - (teamPointsMap[a.name] || 0) || b.pts - a.pts || b.gd - a.gd
+            );
+            return `
+            <div class="rounded-xl border border-gray-100 bg-gray-50 p-2.5">
+                <div class="flex items-center justify-between mb-1.5">
+                    <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Group ${g}</div>
+                    <div class="grid grid-cols-3 gap-x-2 text-[7px] font-black uppercase tracking-[0.1em] text-gray-300">
+                        <span class="text-right">GF</span><span class="text-right">GA</span><span class="text-right">Pts</span>
+                    </div>
                 </div>
-            </div>`).join('')}
+                <div class="space-y-1">
+                    ${sorted.map((teamRow) => {
+                        const teamDef = teams.find((t) => t.name === teamRow.name);
+                        const isElim = eliminatedTeams.has(teamRow.name);
+                        const poolPts = teamPointsMap[teamRow.name] || 0;
+                        const ga = (teamRow.gf || 0) - (teamRow.gd || 0);
+                        return `
+                        <div class="grid grid-cols-[1fr_auto] items-center gap-1 ${isElim ? 'opacity-40' : ''}">
+                            <div class="flex items-center gap-1 min-w-0">
+                                <span class="text-sm shrink-0">${teamDef?.flag || ''}</span>
+                                <div class="text-[10px] font-black text-gray-800 truncate">${escapeHtml(teamRow.name)}</div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-x-2 shrink-0">
+                                <span class="text-[10px] font-black text-gray-500 tabular-nums text-right">${teamRow.gf || 0}</span>
+                                <span class="text-[10px] font-black text-gray-500 tabular-nums text-right">${ga}</span>
+                                <span class="text-[10px] font-black text-gray-700 tabular-nums text-right">${poolPts}</span>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+        }).join('')}
     </div>`;
 }
 
 function renderDashMapTab() {
     const body = document.getElementById('dash-map-body');
     if (!body) return;
-    const stats = window._dashSelectionStats;
-    if (!stats) {
-        body.innerHTML = `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center py-8">Loading…</div>`;
-        return;
-    }
-    const entries = stats.sortedCountryCounts.filter((e) => e.pickedCount > 0);
-    const maxPct = Math.max(1, ...entries.map((e) => e.percentage));
-    body.innerHTML = `<div class="space-y-1.5">
-        ${entries.map((entry) => {
-            const team = teams.find((t) => t.name === entry.teamName);
-            const flag = team?.flag || '🌍';
-            const barWidth = Math.round((entry.percentage / maxPct) * 100);
-            const tierColor = team?.tier === 1 ? '#f59e0b' : team?.tier === 2 ? '#60a5fa' : '#9ca3af';
-            return `<div class="flex items-center gap-2">
-                <span class="text-sm shrink-0">${flag}</span>
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center justify-between mb-0.5">
-                        <div class="text-[10px] font-black text-gray-800 truncate">${escapeHtml(entry.teamName)}</div>
-                        <div class="text-[9px] font-black text-gray-500 ml-1 shrink-0">${entry.pickedCount}</div>
-                    </div>
-                    <div class="h-1.5 rounded-full overflow-hidden bg-gray-100">
-                        <div class="h-full rounded-full transition-all" style="width:${barWidth}%;background-color:${tierColor};"></div>
-                    </div>
+
+    const groupKeys = Object.keys(GROUP_COLORS).sort();
+    body.innerHTML = `<div class="grid grid-cols-3 gap-2">
+        ${groupKeys.map((g) => {
+            const color = GROUP_COLORS[g];
+            const groupTeams = teams.filter((t) => t.group === g);
+            return `
+            <div class="rounded-xl p-2.5" style="background-color: ${color}18; border: 1.5px solid ${color}55;">
+                <div class="text-[8px] font-black uppercase tracking-[0.22em] mb-1.5" style="color: ${color};">${g}</div>
+                <div class="space-y-0.5">
+                    ${groupTeams.map((t) => {
+                        const isElim = eliminatedTeams.has(t.name);
+                        return `<div class="flex items-center gap-1 ${isElim ? 'opacity-40' : ''}">
+                            <span class="text-xs leading-none">${t.flag}</span>
+                            <span class="text-[9px] font-black text-gray-800 truncate">${escapeHtml(t.name)}</span>
+                        </div>`;
+                    }).join('')}
                 </div>
             </div>`;
         }).join('')}
@@ -4269,6 +4303,7 @@ async function setupDashboard() {
 
         const picks = allPicks || [];
         const matches = allMatches || [];
+        window._dashMatches = matches;
         const profilesMap = buildProfilesMap(allProfiles);
         const selectionStats = buildSelectionStatsSnapshot(picks, allProfiles || []);
         window._dashSelectionStats = selectionStats;
@@ -4384,9 +4419,17 @@ async function setupDashboard() {
         const myLbEntry = leaderboardData.find((e) => e.email === userEmail);
         const chips = myLbEntry?.chips || window._playerChipsByEmail?.[userEmail] || [];
         if (chipsPreviewEl) {
-            chipsPreviewEl.textContent = chips.length > 0
-                ? chips.slice(0, 3).map((c) => c.emoji).join('') + (chips.length > 3 ? ` +${chips.length - 3}` : '')
-                : '—';
+            if (chips.length > 0) {
+                const toneClasses = { positive: 'bg-green-100 border-2 border-green-600', negative: 'bg-red-100 border-2 border-red-600', neutral: 'bg-sky-100 border-2 border-sky-600' };
+                const visible = chips.slice(0, 3);
+                const overflow = chips.length > 3 ? chips.length - 3 : 0;
+                chipsPreviewEl.innerHTML = `<div class="flex items-center gap-1 justify-center">
+                    ${visible.map((c) => `<span class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${toneClasses[c.tone] || toneClasses.neutral}">${c.emoji}</span>`).join('')}
+                    ${overflow > 0 ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 border-2 border-gray-400 text-[10px] font-black text-gray-600">+${overflow}</span>` : ''}
+                </div>`;
+            } else {
+                chipsPreviewEl.textContent = '—';
+            }
         }
 
         // Player-card-style squad
@@ -4436,7 +4479,7 @@ async function setupDashboard() {
                             <span class="text-xl">${team.flag || ''}</span>
                             <div class="flex-1 min-w-0">
                                 <div class="text-xs font-black uppercase text-white truncate">${escapeHtml(team.name)}</div>
-                                <div class="text-[10px] font-bold text-gray-400">T${team.tier} · $${team.cost}${team.eliminated ? ' · out' : ''}</div>
+                                <div class="text-[10px] font-bold text-gray-400">${team.group ? `Grp ${team.group} · ` : ''}$${team.cost}${team.eliminated ? ' · out' : ''}</div>
                             </div>
                             <div class="text-xs font-black shrink-0" style="color: var(--player-card-accent-on-dark);">${teamPointsMap[team.name] || 0} pts</div>
                         </div>
@@ -4465,19 +4508,16 @@ async function setupDashboard() {
         const prizes = [Math.floor(pot * 0.65), Math.floor(pot * 0.25), Math.floor(pot * 0.10)];
 
         if (leaderboardEl) {
-            const leaders = leaderboardData.slice(0, 3);
             const rankStyles = [
-                { border: 'border-yellow-200', bg: '#fffbeb', bar: '#f59e0b', rankColor: '#b45309', medal: '🥇' },
-                { border: 'border-gray-200',   bg: '#f8fafc', bar: '#94a3b8', rankColor: '#475569', medal: '🥈' },
-                { border: 'border-orange-100', bg: '#fff7f0', bar: '#f97316', rankColor: '#c2410c', medal: '🥉' },
+                { border: 'border-yellow-200', bg: '#fffbeb', bar: '#f59e0b', medal: '🥇' },
+                { border: 'border-gray-200',   bg: '#f8fafc', bar: '#94a3b8', medal: '🥈' },
+                { border: 'border-orange-100', bg: '#fff7f0', bar: '#f97316', medal: '🥉' },
             ];
-            leaderboardEl.innerHTML = leaders.map((entry, index) => {
-                const s = rankStyles[index];
-                const prize = prizes[index] > 0 ? `$${prizes[index].toLocaleString()}` : '';
-                return `
-                <div class="relative flex items-center gap-3 rounded-2xl border ${s.border} overflow-hidden px-4 py-5 w-full" style="background-color: ${s.bg};">
+            const renderRow = (entry, index, prize) => {
+                const s = rankStyles[index] || { border: 'border-gray-100', bg: '#f9fafb', bar: '#9ca3af', medal: '' };
+                return `<div class="relative flex items-center gap-3 rounded-2xl border ${s.border} overflow-hidden px-4 py-4 w-full" style="background-color: ${s.bg};">
                     <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color: ${s.bar};"></div>
-                    <span class="text-2xl leading-none shrink-0 pl-1">${s.medal}</span>
+                    ${s.medal ? `<span class="text-2xl leading-none shrink-0 pl-1">${s.medal}</span>` : `<span class="text-sm font-black text-gray-400 pl-1 shrink-0 w-6 text-center">#${index + 1}</span>`}
                     <div class="min-w-0 flex-1">
                         <div class="truncate text-base font-black uppercase italic text-gray-900 leading-tight">${escapeHtml(entry.nickname)}</div>
                         ${prize ? `<div class="text-sm font-black mt-0.5" style="color: ${s.bar};">${prize}</div>` : ''}
@@ -4487,7 +4527,25 @@ async function setupDashboard() {
                         <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">pts</div>
                     </div>
                 </div>`;
-            }).join('') || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No leaderboard data yet</div>';
+            };
+
+            const top3 = leaderboardData.slice(0, 3);
+            const myIndex = leaderboardData.findIndex((e) => e.email === userEmail);
+            const isInTop3 = myIndex >= 0 && myIndex < 3;
+            const myEntry = myIndex >= 0 ? leaderboardData[myIndex] : null;
+
+            let html = top3.map((entry, i) => renderRow(entry, i, prizes[i] > 0 ? `$${prizes[i].toLocaleString()}` : '')).join('');
+
+            if (!isInTop3 && myEntry) {
+                html += `<div class="flex items-center gap-2 py-1 my-1">
+                    <div class="flex-1 h-px bg-gray-200"></div>
+                    <span class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-300">you</span>
+                    <div class="flex-1 h-px bg-gray-200"></div>
+                </div>`;
+                html += renderRow(myEntry, myIndex, '');
+            }
+
+            leaderboardEl.innerHTML = html || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No leaderboard data yet</div>';
         }
 
         // Build matches cache for both modes (squad + all), then render
@@ -6063,7 +6121,7 @@ function computePlayerChips(leaderboardData = [], matches = [], previousRanks = 
             'hot',
             (entry) => entry.recentStagePoints,
             (value) => Number.isFinite(value) && value > 0,
-            (entry, best) => ({ description: `${best} points in ${_getStageDisplayName(latestStageKey)} led the pool.` })
+            (entry, best) => ({ description: `Led the pool with ${best} points in the ${_getStageDisplayName(latestStageKey)}.` })
         );
         awardMin(
             'ice_cold',
@@ -6077,7 +6135,7 @@ function computePlayerChips(leaderboardData = [], matches = [], previousRanks = 
         'group_king',
         (entry) => entry.groupPoints,
         (value) => value > 0,
-        (entry, best) => ({ description: `${best} combined points across the three group-stage matchdays.` })
+        (entry, best) => ({ description: `Led the pool with ${best} group-stage points across all three matchdays.` })
     );
     _awardPlayerChip(
         chipsByEmail,
@@ -6206,7 +6264,7 @@ function renderPlayerChips(chips = [], email = '', variant = 'row', scopeId = ''
         return '';
     }
 
-    const toneOrder = { positive: 0, negative: 1, neutral: 2 };
+    const toneOrder = { positive: 0, neutral: 1, negative: 2 };
     const sortedChips = [...chips].sort((a, b) => (
         (toneOrder[a.tone] ?? 99) - (toneOrder[b.tone] ?? 99) || a.label.localeCompare(b.label)
     ));
@@ -7834,7 +7892,7 @@ async function showTeamOwners(teamName) {
                     ${squadFlags ? `<div class="mt-1.5 flex flex-wrap gap-0.5">${squadFlags}</div>` : ''}
                 </div>
                 ${u.totalPoints !== null ? `<div class="shrink-0 text-right ml-2">
-                    <div class="text-lg font-black theme-accent-text">${u.totalPoints}</div>
+                    <div class="text-lg font-black text-white">${u.totalPoints}</div>
                     <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">pts</div>
                 </div>` : ''}
             </button>`;
@@ -7898,7 +7956,7 @@ async function showOwnerPlayer(email) {
                     <span class="text-xl">${t.flag || ''}</span>
                     <div class="flex-1 min-w-0">
                         <div class="text-xs font-black uppercase text-white truncate">${escapeHtml(t.name)}</div>
-                        <div class="text-[10px] font-bold text-gray-400">T${t.tier} · $${t.cost}${t.eliminated ? ' · out' : ''}</div>
+                        <div class="text-[10px] font-bold text-gray-400">${(() => { const td = teams.find((x) => x.name === t.name); const g = t.group || td?.group || ''; return g ? `Grp ${g} · ` : ''; })()}$${t.cost}${t.eliminated ? ' · out' : ''}</div>
                     </div>
                 </div>`).join('');
     } else {
