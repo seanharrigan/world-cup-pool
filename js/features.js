@@ -2703,6 +2703,113 @@ let _mapState = null;
 let _highlightedIso = null;
 let _highlightedGroup = null;
 let _mapColorMode = 'ownership'; // 'ownership' | 'groups'
+let _mapTableSort = 'picked'; // 'picked' | 'points' | 'goals'
+
+const _STAGE_MULT = { Group: 1, R32: 2, R16: 3, QF: 5, Semi: 8, Final: 12, Third: 8 };
+
+function buildTeamMatchStats(matches) {
+    const stats = {};
+    (matches || []).forEach((m) => {
+        if (m.score_home == null || m.score_away == null) return;
+        const mult = _STAGE_MULT[m.stage] || 1;
+        const h = +m.score_home, a = +m.score_away;
+        if (!stats[m.team_home]) stats[m.team_home] = { goals: 0, poolPoints: 0 };
+        if (!stats[m.team_away]) stats[m.team_away] = { goals: 0, poolPoints: 0 };
+        stats[m.team_home].goals += h;
+        stats[m.team_home].poolPoints += h > a ? 3 * mult : h === a ? 1 * mult : 0;
+        stats[m.team_away].goals += a;
+        stats[m.team_away].poolPoints += a > h ? 3 * mult : a === h ? 1 * mult : 0;
+    });
+    return stats;
+}
+
+function setMapTableSort(sort) {
+    _mapTableSort = sort;
+    ['picked', 'points', 'goals'].forEach((s) => {
+        const btn = document.getElementById(`map-sort-${s}`);
+        if (!btn) return;
+        btn.classList.toggle('bg-white', s === sort);
+        btn.classList.toggle('shadow-sm', s === sort);
+        btn.classList.toggle('text-gray-900', s === sort);
+        btn.classList.toggle('text-gray-500', s !== sort);
+    });
+    renderMapSideTable();
+}
+
+function renderMapSideTable() {
+    const el = document.getElementById('map-side-table');
+    const titleEl = document.getElementById('map-table-title');
+    if (!el || !_mapCachedData) return;
+
+    const { stats, matchStats } = _mapCachedData;
+    const accentTokens = getActiveThemeAccentTokens();
+    const accentColor = accentTokens.primary;
+
+    // Determine which teams to show
+    let visibleTeams;
+    let titleText = 'All Teams';
+    if (_highlightedGroup) {
+        visibleTeams = teams.filter((t) => t.qualified !== false && t.group === _highlightedGroup);
+        titleText = `Group ${_highlightedGroup}`;
+    } else if (_highlightedIso !== null) {
+        visibleTeams = teams.filter((t) => t.qualified !== false && TEAM_ISO_NUMERIC[t.name] === _highlightedIso);
+        titleText = visibleTeams[0]?.name || 'Team';
+    } else {
+        visibleTeams = teams.filter((t) => t.qualified !== false);
+    }
+
+    if (titleEl) titleEl.textContent = titleText;
+
+    // Build rows with all metrics
+    const rows = visibleTeams.map((t) => {
+        const ownership = stats.sortedCountryCounts.find((e) => e.teamName === t.name);
+        const match = matchStats?.[t.name] || { goals: 0, poolPoints: 0 };
+        return {
+            team: t,
+            picked: ownership?.percentage || 0,
+            pickedCount: ownership?.pickedCount || 0,
+            points: match.poolPoints,
+            goals: match.goals,
+        };
+    });
+
+    // Sort
+    rows.sort((a, b) => b[_mapTableSort] - a[_mapTableSort] || a.team.name.localeCompare(b.team.name));
+
+    const maxVal = Math.max(1, ...rows.map((r) => r[_mapTableSort]));
+    const tierColors = { 1: 'text-yellow-600', 2: 'text-blue-500', 3: 'text-gray-400' };
+
+    el.innerHTML = rows.map((row, i) => {
+        const val = row[_mapTableSort];
+        const barW = Math.max(3, Math.round((val / maxVal) * 100));
+        const label = _mapTableSort === 'picked'
+            ? `${val}%`
+            : `${val}`;
+        const sub = _mapTableSort === 'picked'
+            ? `${row.pickedCount} ${row.pickedCount === 1 ? 'entry' : 'entries'}`
+            : _mapTableSort === 'points' ? 'pool pts' : 'goals';
+        return `
+            <div onclick="showTeamOwners('${row.team.name.replace(/'/g, "\\'")}')"
+                 class="flex items-center gap-2.5 rounded-xl px-2.5 py-2 cursor-pointer hover:bg-gray-50 transition-colors group">
+                <span class="text-[10px] font-black text-gray-300 w-4 shrink-0 text-right">${i + 1}</span>
+                <span class="text-xl leading-none shrink-0">${row.team.flag}</span>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5 mb-1">
+                        <span class="text-[11px] font-black text-gray-900 truncate">${escapeHtml(row.team.name)}</span>
+                        <span class="shrink-0 text-[8px] font-black ${tierColors[row.team.tier] || tierColors[3]}">T${row.team.tier}</span>
+                    </div>
+                    <div class="h-1 rounded-full bg-gray-100 overflow-hidden">
+                        <div class="h-full rounded-full" style="width:${barW}%; background:${accentColor};"></div>
+                    </div>
+                </div>
+                <div class="text-right shrink-0">
+                    <div class="text-sm font-black text-gray-900">${label}</div>
+                    <div class="text-[9px] text-gray-400">${sub}</div>
+                </div>
+            </div>
+        `;
+    }).join('') || '<div class="px-4 py-6 text-center text-[10px] text-gray-400 uppercase font-black tracking-widest">No data</div>';
+}
 
 const GROUP_COLORS = {
     A: '#e63946', B: '#f4a261', C: '#2a9d8f', D: '#457b9d',
@@ -2814,6 +2921,7 @@ function selectMapCountry(teamName) {
     document.getElementById('map-country-search-clear')?.classList.remove('hidden');
     document.getElementById('map-country-search-dropdown')?.classList.add('hidden');
     repaintMapPaths();
+    renderMapSideTable();
 }
 
 function clearMapCountrySearch() {
@@ -2825,6 +2933,7 @@ function clearMapCountrySearch() {
     _highlightedGroup = null;
     _syncGroupHighlightUI();
     repaintMapPaths();
+    renderMapSideTable();
 }
 
 function openMapCountrySearch() {
@@ -2878,6 +2987,7 @@ function selectMapGroup(groupName) {
     document.getElementById('map-country-search-clear')?.classList.add('hidden');
     _syncGroupHighlightUI();
     repaintMapPaths();
+    renderMapSideTable();
     if (_highlightedGroup) {
         document.getElementById('selection-map-container')
             ?.closest('[style*="aspect-ratio"]')
@@ -2896,17 +3006,21 @@ async function fetchSelectionMap() {
         const [
             { data: picks, error: picksError },
             { data: profiles, error: profilesError },
+            { data: matchRows, error: matchesError },
             worldData
         ] = await Promise.all([
             supabaseClient.from('picks').select('team_name, user_email'),
             supabaseClient.from('profiles').select('email'),
+            supabaseClient.from('matches').select('team_home, team_away, score_home, score_away, stage'),
             fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((r) => r.json())
         ]);
         if (picksError) throw picksError;
         if (profilesError) throw profilesError;
+        // matchesError is non-fatal — table may be empty pre-tournament
 
         const stats = buildSelectionStatsSnapshot(picks || [], profiles || []);
-        _mapCachedData = { stats, worldData };
+        const matchStats = buildTeamMatchStats(matchRows || []);
+        _mapCachedData = { stats, worldData, matchStats };
 
         const container = document.getElementById('selection-map-container');
         if (container && !container.querySelector('svg')) {
@@ -3073,6 +3187,7 @@ function renderChoroplethMap(stats, worldData) {
         .attr('stroke-width', 0.4);
 
     renderMapBottomStats(stats);
+    renderMapSideTable();
 }
 
 function renderMapBottomStats(stats) {
