@@ -281,6 +281,17 @@
         
         #roster-panel { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .roster-minimized { transform: translateY(calc(100% - 70px)); }
+        @keyframes roster-nudge {
+            0%   { transform: translateY(calc(100% - 70px)); }
+            18%  { transform: translateY(calc(100% - 79px)); }
+            36%  { transform: translateY(calc(100% - 70px)); }
+            50%  { transform: translateY(calc(100% - 75px)); }
+            64%  { transform: translateY(calc(100% - 70px)); }
+            76%  { transform: translateY(calc(100% - 72px)); }
+            88%  { transform: translateY(calc(100% - 70px)); }
+            100% { transform: translateY(calc(100% - 70px)); }
+        }
+        #roster-panel.roster-nudge { animation: roster-nudge 1.6s ease-in-out; }
         @media (min-width: 768px) { .roster-minimized { transform: none !important; } }
 
         #mobile-menu { transition: max-height 0.3s ease-out; max-height: 0; overflow: hidden; }
@@ -437,7 +448,7 @@
 
     <nav id="top-nav" class="hidden bg-gray-950 border-b border-gray-800 px-4 md:px-8 py-3 z-50 transition-colors duration-500">
         <div class="flex justify-between items-center w-full">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="showPage('instructions')">
                 <span id="top-nav-flag" class="hidden text-xl md:text-2xl"></span>
                 <span id="top-nav-icon" class="text-xl md:text-2xl">🏆</span>
                 <span id="top-nav-title" class="font-black italic uppercase tracking-tighter text-lg md:text-xl text-white">WC2026</span>
@@ -527,8 +538,8 @@
                     <div id="dashboard-glow-divider-bottom" class="hidden h-px w-full opacity-60" style="background: linear-gradient(90deg, transparent 0%, var(--theme-accent-primary) 20%, var(--theme-accent-primary) 80%, transparent 100%); box-shadow: 0 0 6px 2px var(--theme-accent-primary);"></div>
                     <!-- Player card + tabbed panel -->
                     <div class="relative flex-1 flex flex-col lg:flex-row overflow-hidden lg:overflow-visible">
-                        <!-- White backing strip so nudge animation doesn't flash the dark card background -->
-                        <div class="lg:hidden absolute bottom-0 left-0 right-0 h-6 bg-white z-[9]"></div>
+                        <!-- Backing strip matches handle bar color so nudge doesn't flash the dark card background -->
+                        <div class="lg:hidden absolute bottom-0 left-0 right-0 h-6 bg-gray-100 z-[9]"></div>
                         <!-- Left: player card (always visible) -->
                         <div id="dashboard-squad-card" class="flex-1 lg:flex-none flex lg:w-[44%] lg:flex-shrink-0 flex-col pb-14 lg:pb-0" style="background-color: #0f172a;">
                             <div class="p-6 flex-1 flex flex-col" id="dashboard-squad-inner">

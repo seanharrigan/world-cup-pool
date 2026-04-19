@@ -373,6 +373,19 @@ function showPage(pageId) {
         // If squad is incomplete, fire the yellow entry flash (success path is handled by updateUI)
         const helperBtn = document.getElementById('picks-rules-toggle');
         if (helperBtn && _picksHelperState === 'warn') triggerPicksHelperFlash(helperBtn);
+        // Mobile hint: nudge the My Squad handle twice so users know it's there
+        if (window.innerWidth < 768) {
+            const nudgeRoster = () => {
+                const panel = document.getElementById('roster-panel');
+                if (!panel || !panel.classList.contains('roster-minimized')) return;
+                panel.classList.remove('roster-nudge');
+                void panel.offsetWidth;
+                panel.classList.add('roster-nudge');
+                panel.addEventListener('animationend', () => panel.classList.remove('roster-nudge'), { once: true });
+            };
+            setTimeout(nudgeRoster, 800);
+            setTimeout(nudgeRoster, 5800);
+        }
     }
     if (pageId === 'leaderboard') fetchLeaderboard();
     if (pageId === 'admin') setupAdminPage();

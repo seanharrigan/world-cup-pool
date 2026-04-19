@@ -4724,7 +4724,7 @@ async function setupDashboard() {
                 const mobileOverflow = chips.length > 1 ? chips.length - 1 : 0;
                 const mobileHtml = first ? `<div class="relative inline-flex items-center justify-center">
                     <span class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${toneClasses[first.tone] || toneClasses.neutral}">${first.emoji}</span>
-                    ${mobileOverflow > 0 ? `<span class="absolute -top-1 -right-1 h-4 w-4 inline-flex items-center justify-center rounded-full bg-gray-700 border border-gray-500 text-[8px] font-black text-gray-200 z-10">+${mobileOverflow}</span>` : ''}
+                    ${mobileOverflow > 0 ? `<span class="absolute -top-1 -right-1.5 h-[14px] min-w-[14px] px-0.5 inline-flex items-center justify-center rounded-full bg-gray-800 border border-gray-600 text-[7px] font-black text-white z-20">+${mobileOverflow}</span>` : ''}
                 </div>` : '';
                 const deskVisible = chips.slice(0, 3);
                 const deskOverflow = chips.length > 3 ? chips.length - 3 : 0;
