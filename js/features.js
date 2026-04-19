@@ -3641,6 +3641,7 @@ async function toggleTeamElimination(teamName, checked) {
 
 let _dashMatchCache = null;
 let _dashMatchMode = 'squad';
+let _dashMapZoom = 1;
 let _dashMapMode = 'picks';
 let _dashRankingsSort = { col: 'fifaRank', dir: 'asc' };
 let _dashReportRanked = null;
@@ -4049,42 +4050,97 @@ function setDashRightTab(tab) {
         const btn = document.getElementById(`dash-tab-btn-${t}`);
         if (content) content.classList.toggle('hidden', t !== tab);
         if (btn) {
-            btn.classList.toggle('border-gray-900', t === tab);
-            btn.classList.toggle('border-transparent', t !== tab);
-            btn.classList.toggle('text-gray-900', t === tab);
-            btn.classList.toggle('text-gray-400', t !== tab);
+            btn.classList.toggle('theme-primary-button', t === tab);
+            btn.classList.toggle('text-gray-500', t !== tab);
         }
     });
-    const toggle = document.getElementById('dash-match-mode-toggle');
-    if (toggle) toggle.classList.toggle('hidden', tab !== 'matches');
     if (tab === 'matches') renderDashMatchesTab();
     if (tab === 'rankings') renderDashRankingsTab();
     if (tab === 'groups') renderDashGroupsTab();
     if (tab === 'map') renderDashMapTab();
 }
 
+function setMobileDashPanel(panel) {
+    const card = document.getElementById('dashboard-squad-card');
+    const tabs = document.getElementById('dashboard-tabs-panel');
+    const btnTabs = document.getElementById('mob-dash-btn-tabs');
+    const btnSquad = document.getElementById('mob-dash-btn-squad');
+    if (!card || !tabs) return;
+    const isSquad = panel === 'squad';
+    card.classList.toggle('hidden', !isSquad);
+    card.classList.toggle('flex', isSquad);
+    tabs.classList.toggle('hidden', isSquad);
+    if (btnTabs) {
+        btnTabs.classList.toggle('theme-primary-button', !isSquad);
+        btnTabs.classList.toggle('text-gray-500', isSquad);
+    }
+    if (btnSquad) {
+        btnSquad.classList.toggle('theme-primary-button', isSquad);
+        btnSquad.classList.toggle('text-gray-500', !isSquad);
+    }
+}
+
+function toggleDashMatchMode() {
+    setDashMatchMode(_dashMatchMode === 'squad' ? 'all' : 'squad');
+}
+
 function setDashMatchMode(mode) {
     _dashMatchMode = mode;
-    ['squad', 'all'].forEach((m) => {
-        const btn = document.getElementById(`dash-matches-${m}-btn`);
-        if (!btn) return;
-        btn.classList.toggle('bg-white', m === mode);
-        btn.classList.toggle('shadow-sm', m === mode);
-        btn.classList.toggle('text-gray-900', m === mode);
-        btn.classList.toggle('text-gray-500', m !== mode);
-    });
+    const toggle = document.getElementById('dash-matches-toggle');
+    const knob = document.getElementById('dash-matches-knob');
+    const labelSquad = document.getElementById('dash-matches-label-squad');
+    const labelAll = document.getElementById('dash-matches-label-all');
+    const isAll = mode === 'all';
+    if (toggle) toggle.style.backgroundColor = isAll ? 'var(--theme-accent-primary)' : '#d1d5db';
+    if (knob) knob.style.transform = isAll ? 'translateX(16px)' : 'translateX(0)';
+    if (labelSquad) {
+        labelSquad.classList.toggle('theme-accent-text', !isAll);
+        labelSquad.classList.toggle('text-gray-400', isAll);
+    }
+    if (labelAll) {
+        labelAll.classList.toggle('theme-accent-text', isAll);
+        labelAll.classList.toggle('text-gray-400', !isAll);
+    }
     renderDashMatchesTab();
 }
 
 function renderDashMatchesTab() {
-    const pastBody = document.getElementById('dash-matches-past-body');
-    const nextBody = document.getElementById('dash-matches-next-body');
-    if (!pastBody || !nextBody || !_dashMatchCache) return;
-    const data = _dashMatchCache[_dashMatchMode];
-    const emptyPast = `<div class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300 text-center py-4">No results yet</div>`;
-    const emptyNext = `<div class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300 text-center py-4">No upcoming</div>`;
-    pastBody.innerHTML = data.prevHtml || emptyPast;
-    nextBody.innerHTML = data.nextHtml || emptyNext;
+    const body = document.getElementById('dash-matches-body');
+    if (!body || !_dashMatchCache) return;
+    const data = _dashMatchCache[_dashMatchMode] || _dashMatchCache.all || {};
+    const empty = (msg) => `<div class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300 text-center py-4">${msg}</div>`;
+    body.innerHTML = `
+        <div class="grid grid-cols-2 divide-x divide-gray-100 h-full overflow-hidden">
+            <div class="flex flex-col overflow-hidden">
+                <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 px-3 pt-1 pb-1.5 shrink-0">Recent Scores</div>
+                <div class="flex-1 overflow-y-auto px-3 pb-3 space-y-1.5">${data.prevHtml || empty('No results yet')}</div>
+            </div>
+            <div class="flex flex-col overflow-hidden">
+                <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 px-3 pt-1 pb-1.5 shrink-0">Upcoming Fixtures</div>
+                <div class="flex-1 overflow-y-auto px-3 pb-3 space-y-1.5">${data.nextHtml || empty('No upcoming fixtures')}</div>
+            </div>
+        </div>
+    `;
+}
+
+function setDashMapZoom(value) {
+    _dashMapZoom = parseFloat(value);
+    const svg = document.querySelector('#dash-map-svg-container svg');
+    if (!svg) return;
+    const W = 960, H = 480;
+    const z = _dashMapZoom;
+    const w = W / z, h = H / z;
+    if (z <= 1.01) {
+        window._dashMapDragTranslate = { x: 0, y: 0 };
+        svg.style.cursor = 'default';
+    } else {
+        svg.style.cursor = 'grab';
+    }
+    const dt = window._dashMapDragTranslate || { x: 0, y: 0 };
+    const maxX = (W - w) / 2, maxY = (H - h) / 2;
+    dt.x = Math.max(-maxX, Math.min(maxX, dt.x));
+    dt.y = Math.max(-maxY, Math.min(maxY, dt.y));
+    svg.setAttribute('viewBox', `${(W - w) / 2 - dt.x} ${(H - h) / 2 - dt.y} ${w} ${h}`);
 }
 
 function setDashRankingsSort(col) {
@@ -4213,7 +4269,7 @@ function setDashMapMode(mode) {
         const btn = document.getElementById(`dash-map-mode-${m}`);
         if (!btn) return;
         const active = m === mode;
-        btn.className = `px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wide transition-all ${active ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`;
+        btn.style.cssText = `padding:2px 8px; border-radius:6px; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.1em; border:none; cursor:pointer; transition:all 0.15s; ${active ? 'background:#4b5563; color:#fff;' : 'background:transparent; color:#9ca3af;'}`;
     });
     _renderDashMapSvg(_mapCachedData?.worldData);
 }
@@ -4222,20 +4278,33 @@ async function renderDashMapTab() {
     const body = document.getElementById('dash-map-body');
     if (!body) return;
 
+    _dashMapZoom = 1;
+    window._dashMapDragTranslate = { x: 0, y: 0 };
     body.innerHTML = `
-        <div class="flex items-center justify-between mb-3">
-            <div class="flex rounded-lg bg-gray-100 p-0.5 gap-0.5">
-                <button id="dash-map-mode-picks" onclick="setDashMapMode('picks')"
-                    class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wide transition-all ${_dashMapMode === 'picks' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}">Picks</button>
-                <button id="dash-map-mode-groups" onclick="setDashMapMode('groups')"
-                    class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wide transition-all ${_dashMapMode === 'groups' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}">Groups</button>
+        <div style="display:flex; gap:8px; align-items:stretch;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0; padding:2px 0;">
+                <span style="font-size:11px; font-weight:900; color:#9ca3af; line-height:1; user-select:none;">+</span>
+                <input type="range" id="dash-map-zoom-slider" min="1" max="4" step="0.1" value="1"
+                    oninput="setDashMapZoom(this.value)"
+                    style="writing-mode:vertical-lr; direction:rtl; cursor:pointer; flex:1; min-height:0; accent-color:#4b5563;">
+                <span style="font-size:11px; font-weight:900; color:#9ca3af; line-height:1; user-select:none;">−</span>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column;">
+                <div id="dash-map-svg-container" class="relative w-full rounded-xl overflow-hidden bg-gray-50" style="aspect-ratio:2/1; flex-shrink:0;">
+                    <div id="dash-map-loading" class="absolute inset-0 flex items-center justify-center text-xs text-gray-400">Loading map…</div>
+                    <div id="dash-map-tooltip" class="pointer-events-none absolute hidden z-50 rounded-lg bg-white shadow-lg border border-gray-100 px-2.5 py-1.5 text-xs leading-snug" style="max-width:150px; top:0; left:0;"></div>
+                    <div class="absolute bottom-2 left-2 z-10" style="pointer-events:auto;">
+                        <div style="display:flex; background:rgba(31,41,55,0.82); border-radius:8px; padding:2px; gap:2px;">
+                            <button id="dash-map-mode-picks" onclick="setDashMapMode('picks')"
+                                style="padding:2px 8px; border-radius:6px; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.1em; border:none; cursor:pointer; transition:all 0.15s; ${_dashMapMode === 'picks' ? 'background:#4b5563; color:#fff;' : 'background:transparent; color:#9ca3af;'}">Picks</button>
+                            <button id="dash-map-mode-groups" onclick="setDashMapMode('groups')"
+                                style="padding:2px 8px; border-radius:6px; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.1em; border:none; cursor:pointer; transition:all 0.15s; ${_dashMapMode === 'groups' ? 'background:#4b5563; color:#fff;' : 'background:transparent; color:#9ca3af;'}">Groups</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="dash-map-legend" class="mt-2"></div>
             </div>
         </div>
-        <div id="dash-map-svg-container" class="relative w-full rounded-xl overflow-hidden bg-gray-50" style="aspect-ratio: 2 / 1;">
-            <div id="dash-map-loading" class="absolute inset-0 flex items-center justify-center text-xs text-gray-400">Loading map…</div>
-            <div id="dash-map-tooltip" class="pointer-events-none absolute hidden z-50 rounded-lg bg-white shadow-lg border border-gray-100 px-2.5 py-1.5 text-xs leading-snug" style="max-width: 150px; top: 0; left: 0;"></div>
-        </div>
-        <div id="dash-map-legend" class="mt-2"></div>
     `;
 
     let worldData = _mapCachedData?.worldData;
@@ -4372,9 +4441,27 @@ function _renderDashMapSvg(worldDataArg) {
             if (tooltip) tooltip.classList.add('hidden');
         })
         .on('click', function (event, d) {
+            if (event.defaultPrevented) return; // swallowed by drag
             const teamName = isoToTeamName[+d.id];
             if (teamName) showTeamOwners(teamName);
         });
+
+    // Drag to pan when zoomed in
+    const dragBehavior = d3.drag()
+        .filter(() => _dashMapZoom > 1.05)
+        .on('start', () => { svg.style('cursor', 'grabbing'); })
+        .on('drag', (event) => {
+            if (_dashMapZoom <= 1.05) return;
+            const containerW = container.clientWidth || 400;
+            const W = 960;
+            const scale = (W / _dashMapZoom) / containerW;
+            if (!window._dashMapDragTranslate) window._dashMapDragTranslate = { x: 0, y: 0 };
+            window._dashMapDragTranslate.x += event.dx * scale;
+            window._dashMapDragTranslate.y += event.dy * scale;
+            setDashMapZoom(_dashMapZoom);
+        })
+        .on('end', () => { svg.style('cursor', _dashMapZoom > 1.05 ? 'grab' : 'default'); });
+    svg.call(dragBehavior);
 
     // Legend
     const legendEl = document.getElementById('dash-map-legend');
@@ -4564,14 +4651,17 @@ async function setupDashboard() {
             const safeAway = match.team_away.replace(/'/g, "\\'");
 
             return `
-                <div class="py-2.5 border-b border-gray-100 last:border-0">
-                    <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 mb-1.5">${stageLabel}${ptsLabel ? `<span class="text-gray-300 mx-1">·</span>${ptsLabel}` : ''}</div>
+                <div class="bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-[8px] font-black uppercase tracking-[0.15em] text-gray-400">${stageLabel}</span>
+                        ${ptsLabel ? `<span class="text-[8px] font-black uppercase tracking-[0.12em] theme-accent-text">${ptsLabel}</span>` : ''}
+                    </div>
                     <div class="grid grid-cols-[minmax(0,1fr)_2.25rem_minmax(0,1fr)] items-center gap-2">
                         <div class="min-w-0 text-right">
                             <div onclick="showTeamOwners('${safeHome}')" class="truncate text-[11px] font-black text-gray-900 cursor-pointer hover:text-gray-500 transition-colors leading-snug">${isHomeMine ? '<span class="text-amber-400">★</span> ' : ''}${homeTeam?.flag || ''} ${escapeHtml(match.team_home)}</div>
                             ${ownershipMarkup(match.team_home, 'right')}
                         </div>
-                        <div class="shrink-0 text-[13px] font-black text-gray-800 text-center tabular-nums leading-none">${scoreMarkup}</div>
+                        <div class="shrink-0 text-[13px] font-black text-gray-700 text-center tabular-nums leading-none bg-white border border-gray-200 rounded-lg py-0.5">${scoreMarkup}</div>
                         <div class="min-w-0 text-left">
                             <div onclick="showTeamOwners('${safeAway}')" class="truncate text-[11px] font-black text-gray-900 cursor-pointer hover:text-gray-500 transition-colors leading-snug">${escapeHtml(match.team_away)} ${awayTeam?.flag || ''}${isAwayMine ? ' <span class="text-amber-400">★</span>' : ''}</div>
                             ${ownershipMarkup(match.team_away, 'left')}
@@ -8277,6 +8367,8 @@ Object.assign(window, {
     setDashRightTab,
     setDashRankingsSort,
     setDashMatchMode,
+    toggleDashMatchMode,
+    setMobileDashPanel,
     showDashPointsModal,
     closeDashPointsModal,
     showDashRankModal,

@@ -882,7 +882,7 @@ function showPaymentReminderModal() {
         icon: '💸',
         title: 'Still To Pay',
         message: 'You have not paid yet.',
-        detail: 'Please contact Connor or Sean for payment.',
+        detail: 'Please contact the Commissioner for payment.',
         confirmText: 'Okay',
         singleAction: true
     });
