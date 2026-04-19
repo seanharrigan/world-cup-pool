@@ -4669,7 +4669,7 @@ async function setupDashboard() {
 
             const winningTeam = match.score_home > match.score_away ? match.team_home : match.team_away;
             const awardedPoints = getMatchPointsForTeam(match, winningTeam);
-            return `${awardedPoints} pts awarded`;
+            return `${awardedPoints} pts`;
         };
         const renderDashboardMatchCard = (match, { squadNames = null } = {}) => {
             const homeTeam = teams.find((team) => team.name === match.team_home);
@@ -4686,7 +4686,10 @@ async function setupDashboard() {
 
             return `
                 <div class="flex-1 flex flex-col justify-center bg-gray-50 border border-gray-100 rounded-xl px-3 py-3 min-h-0">
-                    <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 mb-1.5">${stageLabel}</div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">${stageLabel}</div>
+                        ${ptsLabel ? `<div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">${ptsLabel}</div>` : ''}
+                    </div>
                     <div class="grid grid-cols-[minmax(0,1fr)_2.5rem_minmax(0,1fr)] items-center gap-2">
                         <div onclick="showTeamOwners('${safeHome}')" class="min-w-0 text-right truncate text-sm font-black text-gray-900 cursor-pointer hover:text-gray-500 transition-colors">${isHomeMine ? '<span class="text-amber-400">★</span> ' : ''}${homeTeam?.flag || ''}<span class="hidden sm:inline"> ${escapeHtml(match.team_home)}</span></div>
                         <div class="shrink-0 text-base font-black text-gray-700 text-center tabular-nums leading-none">${scoreMarkup}</div>
