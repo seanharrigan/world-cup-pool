@@ -4677,18 +4677,40 @@ async function setupDashboard() {
             const isHomeMine = squadNames?.has(match.team_home);
             const isAwayMine = squadNames?.has(match.team_away);
             const stageLabel = _getMatchStageDisplayLabel(match);
-            const scoreMarkup = match.is_finished
-                ? `${match.score_home}–${match.score_away}`
-                : 'TBD';
-            const ptsLabel = match.is_finished ? buildPointsAwardedLabel(match) : '';
+
+            // Mobile-abbreviated stage label
+            const stageAbbr = stageLabel.startsWith('Group')
+                ? stageLabel.replace('Group Stage', 'Grp').replace('Group ', 'Grp ')
+                : ({ 'Round of 32': 'R32', 'Round of 16': 'R16', 'Quarter-final': 'QF', 'Semi-final': 'SF', 'Third Place': '3rd' }[match.stage] || stageLabel);
+
+            // Date: short on mobile (Jun 15), full on desktop (June 15)
+            const dateStr = match.match_date_manual || '';
+            const fmtDate = (str, short) => {
+                if (!str) return '';
+                const d = new Date(str + 'T12:00:00Z');
+                return d.toLocaleDateString('en-US', { month: short ? 'short' : 'long', day: 'numeric', timeZone: 'UTC' });
+            };
+
+            // Points: awarded (green) for finished, potential win pts (gray) for upcoming
+            const stageMultiplierMap = { 'Group': 1, 'Round of 32': 2, 'Round of 16': 3, 'Quarter-final': 5, 'Semi-final': 8, 'Final': 12, 'Third Place': 8 };
+            const mult = stageMultiplierMap[match.stage] || 1;
+            const ptsLabel = match.is_finished ? buildPointsAwardedLabel(match) : `${3 * mult} pts`;
+            const ptsColor = match.is_finished ? 'text-green-500' : 'text-gray-400';
+
+            const scoreMarkup = match.is_finished ? `${match.score_home}–${match.score_away}` : 'TBD';
             const safeHome = match.team_home.replace(/'/g, "\\'");
             const safeAway = match.team_away.replace(/'/g, "\\'");
 
             return `
-                <div class="flex-1 flex flex-col justify-center bg-gray-50 border border-gray-100 rounded-xl px-3 py-3 min-h-0">
-                    <div class="flex items-center justify-between mb-1.5">
-                        <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">${stageLabel}</div>
-                        ${ptsLabel ? `<div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">${ptsLabel}</div>` : ''}
+                <div class="flex-1 flex flex-col justify-center bg-gray-50 border border-gray-100 rounded-xl px-3 py-1.5 min-h-0">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">
+                            <span class="sm:hidden">${stageAbbr}</span><span class="hidden sm:inline">${stageLabel}</span>
+                        </div>
+                        ${dateStr ? `<div class="text-[9px] font-black uppercase tracking-[0.12em] text-gray-400">
+                            <span class="sm:hidden">${fmtDate(dateStr, true)}</span><span class="hidden sm:inline">${fmtDate(dateStr, false)}</span>
+                        </div>` : ''}
+                        <div class="text-[9px] font-black uppercase tracking-[0.15em] ${ptsColor}">${ptsLabel}</div>
                     </div>
                     <div class="grid grid-cols-[minmax(0,1fr)_2.5rem_minmax(0,1fr)] items-center gap-2">
                         <div onclick="showTeamOwners('${safeHome}')" class="min-w-0 text-right truncate text-sm font-black text-gray-900 cursor-pointer hover:text-gray-500 transition-colors">${isHomeMine ? '<span class="text-amber-400">★</span> ' : ''}${homeTeam?.flag || ''}<span class="hidden sm:inline"> ${escapeHtml(match.team_home)}</span></div>
@@ -4700,7 +4722,7 @@ async function setupDashboard() {
                         <div></div>
                         <div>${ownershipMarkup(match.team_away, 'left')}</div>
                     </div>
-                    ${match.was_extra_time ? '<div class="text-[9px] font-black uppercase text-red-400 italic text-center mt-1">ET/Pens</div>' : ''}
+                    ${match.was_extra_time ? '<div class="text-[9px] font-black uppercase text-red-400 italic text-center mt-0.5">ET/Pens</div>' : ''}
                 </div>
             `;
         };
