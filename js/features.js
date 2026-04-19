@@ -4327,16 +4327,16 @@ async function renderDashMapTab() {
                 <div id="dash-map-svg-container" class="relative w-full rounded-xl overflow-hidden bg-gray-50" style="aspect-ratio:2/1; flex-shrink:0;">
                     <div id="dash-map-loading" class="absolute inset-0 flex items-center justify-center text-xs text-gray-400">Loading map…</div>
                     <div id="dash-map-tooltip" class="pointer-events-none absolute hidden z-50 rounded-lg bg-white shadow-lg border border-gray-100 px-2.5 py-1.5 text-xs leading-snug" style="max-width:150px; top:0; left:0;"></div>
-                    <div class="absolute bottom-2 left-2 z-10" style="pointer-events:auto;">
-                        <div style="display:flex; background:rgba(31,41,55,0.82); border-radius:8px; padding:2px; gap:2px;">
-                            <button id="dash-map-mode-picks" onclick="setDashMapMode('picks')"
-                                style="padding:2px 8px; border-radius:6px; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.1em; border:none; cursor:pointer; transition:all 0.15s; ${_dashMapMode === 'picks' ? 'background:#4b5563; color:#fff;' : 'background:transparent; color:#9ca3af;'}">Picks</button>
-                            <button id="dash-map-mode-groups" onclick="setDashMapMode('groups')"
-                                style="padding:2px 8px; border-radius:6px; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.1em; border:none; cursor:pointer; transition:all 0.15s; ${_dashMapMode === 'groups' ? 'background:#4b5563; color:#fff;' : 'background:transparent; color:#9ca3af;'}">Groups</button>
-                        </div>
-                    </div>
                 </div>
                 <div id="dash-map-legend" class="mt-2"></div>
+                <div style="display:flex; justify-content:center; margin-top:10px;">
+                    <div style="display:flex; background:rgba(31,41,55,0.82); border-radius:8px; padding:2px; gap:2px;">
+                        <button id="dash-map-mode-picks" onclick="setDashMapMode('picks')"
+                            style="padding:2px 12px; border-radius:6px; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.1em; border:none; cursor:pointer; transition:all 0.15s; ${_dashMapMode === 'picks' ? 'background:#4b5563; color:#fff;' : 'background:transparent; color:#9ca3af;'}">Picks</button>
+                        <button id="dash-map-mode-groups" onclick="setDashMapMode('groups')"
+                            style="padding:2px 12px; border-radius:6px; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.1em; border:none; cursor:pointer; transition:all 0.15s; ${_dashMapMode === 'groups' ? 'background:#4b5563; color:#fff;' : 'background:transparent; color:#9ca3af;'}">Groups</button>
+                    </div>
+                </div>
             </div>
         </div>
     `;
