@@ -516,30 +516,30 @@
                     <!-- Stats bar -->
                     <div id="dashboard-stats-bar" class="hidden overflow-hidden">
                         <div class="flex divide-x divide-black/10">
-                            <button onclick="showDashPointsModal()" class="flex-1 py-3 text-center hover:opacity-75 transition-opacity flex flex-col items-center gap-1.5">
+                            <button onclick="showDashPointsModal()" class="flex-1 py-2 lg:py-3 text-center hover:opacity-75 transition-opacity flex flex-col items-center gap-1.5">
                                 <div class="text-[9px] font-black uppercase tracking-[0.2em] opacity-60 leading-none">Points</div>
                                 <div id="dashboard-my-points" class="h-8 flex items-center justify-center text-2xl font-black leading-none">0</div>
                             </button>
-                            <button onclick="showDashRankModal()" class="flex-1 py-3 text-center hover:opacity-75 transition-opacity flex flex-col items-center gap-1.5">
+                            <button onclick="showDashRankModal()" class="flex-1 py-2 lg:py-3 text-center hover:opacity-75 transition-opacity flex flex-col items-center gap-1.5">
                                 <div class="text-[9px] font-black uppercase tracking-[0.2em] opacity-60 leading-none">Rank</div>
                                 <div id="dashboard-my-rank" class="h-8 flex items-center justify-center text-2xl font-black leading-none">-</div>
                             </button>
-                            <button onclick="showDashReportCard()" class="flex-1 py-3 text-center hover:opacity-75 transition-opacity flex flex-col items-center gap-1.5">
+                            <button onclick="showDashReportCard()" class="flex-1 py-2 lg:py-3 text-center hover:opacity-75 transition-opacity flex flex-col items-center gap-1.5">
                                 <div class="text-[9px] font-black uppercase tracking-[0.2em] opacity-60 leading-none"><span class="hidden sm:inline">Report Card</span><span class="sm:hidden">Report</span></div>
                                 <div id="dashboard-report-grade" class="h-8 flex items-center justify-center text-2xl font-black leading-none">—</div>
                             </button>
-                            <button onclick="showDashChips()" class="flex-1 py-3 text-center hover:opacity-75 transition-opacity flex flex-col items-center gap-1.5">
+                            <button onclick="showDashChips()" class="flex-1 py-2 lg:py-3 text-center hover:opacity-75 transition-opacity flex flex-col items-center gap-1.5">
                                 <div class="text-[9px] font-black uppercase tracking-[0.2em] opacity-60 leading-none">Chips</div>
                                 <div id="dashboard-chips-preview" class="h-8 flex items-center justify-center text-2xl font-black leading-none">—</div>
                             </button>
-                            <div class="flex-1 py-3 text-center flex flex-col items-center gap-1.5">
+                            <div class="flex-1 py-2 lg:py-3 text-center flex flex-col items-center gap-1.5">
                                 <div id="dashboard-countdown-label" class="text-[9px] font-black uppercase tracking-[0.2em] opacity-60 leading-none">Kick Off</div>
                                 <div class="flex items-end justify-center gap-0.5 sm:gap-1">
-                                    <div class="text-center"><div id="dash-cd-days" class="text-lg font-black leading-none">—</div><div class="text-[7px] font-bold uppercase opacity-50">Days</div></div>
-                                    <div class="text-sm font-bold opacity-30 mb-[11px]">:</div>
-                                    <div class="text-center"><div id="dash-cd-hours" class="text-lg font-black leading-none">—</div><div class="text-[7px] font-bold uppercase opacity-50">Hrs</div></div>
-                                    <div class="text-sm font-bold opacity-30 mb-[11px]">:</div>
-                                    <div class="text-center"><div id="dash-cd-mins" class="text-lg font-black leading-none">—</div><div class="text-[7px] font-bold uppercase opacity-50">Min</div></div>
+                                    <div class="text-center"><div id="dash-cd-days" class="text-sm lg:text-lg font-black leading-none">—</div><div class="text-[7px] font-bold uppercase opacity-50">Days</div></div>
+                                    <div class="text-xs lg:text-sm font-bold opacity-30 mb-[9px] lg:mb-[11px]">:</div>
+                                    <div class="text-center"><div id="dash-cd-hours" class="text-sm lg:text-lg font-black leading-none">—</div><div class="text-[7px] font-bold uppercase opacity-50">Hrs</div></div>
+                                    <div class="text-xs lg:text-sm font-bold opacity-30 mb-[9px] lg:mb-[11px]">:</div>
+                                    <div class="text-center"><div id="dash-cd-mins" class="text-sm lg:text-lg font-black leading-none">—</div><div class="text-[7px] font-bold uppercase opacity-50">Min</div></div>
                                 </div>
                             </div>
                         </div>
@@ -583,7 +583,7 @@
                                 </div>
                             </div>
                             <!-- Tab: Board -->
-                            <div id="dash-tab-content-board" class="flex-1 overflow-y-auto p-4 space-y-3">
+                            <div id="dash-tab-content-board" class="flex-1 overflow-y-auto px-2 py-3 space-y-3">
                                 <div class="flex items-center justify-between">
                                     <p class="text-sm font-black uppercase tracking-[0.12em] text-gray-700"><span id="dashboard-prize-pot">$0</span> pot · <span id="dashboard-player-count">0 entries</span></p>
                                     <button onclick="showPage('leaderboard')" class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400 hover:text-gray-600">Full →</button>

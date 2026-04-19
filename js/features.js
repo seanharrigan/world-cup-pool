@@ -4838,16 +4838,39 @@ async function setupDashboard() {
         const prizes = [Math.floor(pot * 0.65), Math.floor(pot * 0.25), Math.floor(pot * 0.10)];
 
         if (leaderboardEl) {
-            const rankStyles = [
-                { border: 'border-yellow-200', bg: '#fffbeb', bar: '#f59e0b', medal: '🥇' },
-                { border: 'border-gray-200',   bg: '#f8fafc', bar: '#94a3b8', medal: '🥈' },
-                { border: 'border-orange-100', bg: '#fff7f0', bar: '#f97316', medal: '🥉' },
-            ];
-            const renderRow = (entry, index, prize) => {
-                const s = rankStyles[index] || { border: 'border-gray-100', bg: '#f9fafb', bar: '#9ca3af', medal: '' };
+            const rankStyleMap = {
+                1: { border: 'border-yellow-200', bg: '#fffbeb', bar: '#f59e0b', medal: '🥇' },
+                2: { border: 'border-gray-200',   bg: '#f8fafc', bar: '#94a3b8', medal: '🥈' },
+                3: { border: 'border-orange-100', bg: '#fff7f0', bar: '#f97316', medal: '🥉' },
+            };
+            const defaultStyle = { border: 'border-gray-100', bg: '#f9fafb', bar: '#9ca3af', medal: '' };
+
+            // Standard competition ranking: two players tied at top both get rank 1,
+            // next player gets rank 3 (not 2), etc.
+            const ranked = leaderboardData.map((entry) => ({
+                entry,
+                rank: leaderboardData.filter(e => e.totalPoints > entry.totalPoints).length + 1,
+            }));
+
+            // Prize splits: each rank group consumes consecutive prize slots
+            let slotIdx = 0;
+            const prizeForRank = {};
+            for (const rankN of [1, 2, 3]) {
+                const count = ranked.filter(r => r.rank === rankN).length;
+                if (count === 0) continue;
+                const end = Math.min(slotIdx + count, prizes.length);
+                const total = prizes.slice(slotIdx, end).reduce((a, b) => a + b, 0);
+                const perPlayer = Math.floor(total / count);
+                if (perPlayer > 0) prizeForRank[rankN] = `$${perPlayer.toLocaleString()}`;
+                slotIdx += count;
+                if (slotIdx >= prizes.length) break;
+            }
+
+            const renderRow = (entry, rank, prize) => {
+                const s = rankStyleMap[rank] || defaultStyle;
                 return `<div class="relative flex items-center gap-3 rounded-xl border ${s.border} overflow-hidden px-3 py-2 w-full" style="background-color: ${s.bg};">
                     <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color: ${s.bar};"></div>
-                    ${s.medal ? `<span class="text-xl leading-none shrink-0 pl-1">${s.medal}</span>` : `<span class="text-sm font-black text-gray-400 pl-1 shrink-0 w-6 text-center">#${index + 1}</span>`}
+                    ${s.medal ? `<span class="text-xl leading-none shrink-0 pl-1">${s.medal}</span>` : `<span class="text-sm font-black text-gray-400 pl-1 shrink-0 w-6 text-center">#${rank}</span>`}
                     <div class="min-w-0 flex-1">
                         <div class="truncate text-sm font-black uppercase italic text-gray-900 leading-tight">${escapeHtml(entry.nickname)}</div>
                         ${prize ? `<div class="text-xs font-black" style="color: ${s.bar};">${prize}</div>` : ''}
@@ -4859,20 +4882,18 @@ async function setupDashboard() {
                 </div>`;
             };
 
-            const top3 = leaderboardData.slice(0, 3);
-            const myIndex = leaderboardData.findIndex((e) => e.email === userEmail);
-            const isInTop3 = myIndex >= 0 && myIndex < 3;
-            const myEntry = myIndex >= 0 ? leaderboardData[myIndex] : null;
+            const prizeEntries = ranked.filter(({ rank }) => rank <= 3);
+            let html = prizeEntries.map(({ entry, rank }) => renderRow(entry, rank, prizeForRank[rank] || '')).join('');
 
-            let html = top3.map((entry, i) => renderRow(entry, i, prizes[i] > 0 ? `$${prizes[i].toLocaleString()}` : '')).join('');
-
-            if (!isInTop3 && myEntry) {
+            const myRanked = ranked.find(r => r.entry.email === userEmail);
+            const isInPrize = prizeEntries.some(({ entry }) => entry.email === userEmail);
+            if (!isInPrize && myRanked) {
                 html += `<div class="flex items-center gap-2 py-1 my-1">
                     <div class="flex-1 h-px bg-gray-200"></div>
                     <span class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-300">you</span>
                     <div class="flex-1 h-px bg-gray-200"></div>
                 </div>`;
-                html += renderRow(myEntry, myIndex, '');
+                html += renderRow(myRanked.entry, myRanked.rank, '');
             }
 
             leaderboardEl.innerHTML = html || '<div class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No leaderboard data yet</div>';
