@@ -167,6 +167,21 @@
             #team-owners-container.team-owners-expanded #team-owners-left { max-height: 220px; }
         }
 
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+        /* Dark-background panels get a lighter subtle thumb */
+        #team-owners-left ::-webkit-scrollbar-thumb,
+        #team-owners-right ::-webkit-scrollbar-thumb,
+        #dashboard-squad-card ::-webkit-scrollbar-thumb,
+        #dash-chips-modal ::-webkit-scrollbar-thumb { background-color: #374151; }
+        #team-owners-left ::-webkit-scrollbar-thumb:hover,
+        #team-owners-right ::-webkit-scrollbar-thumb:hover,
+        #dashboard-squad-card ::-webkit-scrollbar-thumb:hover,
+        #dash-chips-modal ::-webkit-scrollbar-thumb:hover { background-color: #4b5563; }
+
         @keyframes r32-pulse {
             0%, 100% { box-shadow: 0 0 0 0 rgba(234,179,8,0.5); }
             50% { box-shadow: 0 0 0 6px rgba(234,179,8,0); }

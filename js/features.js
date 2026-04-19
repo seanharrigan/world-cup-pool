@@ -4114,38 +4114,38 @@ function renderDashRankingsTab() {
     };
 
     const arrow = (c) => {
-        if (_dashRankingsSort.col !== c) return `<span class="text-gray-300 ml-0.5">↕</span>`;
+        if (_dashRankingsSort.col !== c) return `<span class="text-gray-300 ml-0.5 text-[7px]">▲▼</span>`;
         return `<span class="ml-0.5">${_dashRankingsSort.dir === 'asc' ? '▲' : '▼'}</span>`;
     };
 
-    const th = (c, label, align = 'right') =>
-        `<th class="py-2 text-[8px] font-black uppercase tracking-[0.12em] text-gray-400 cursor-pointer hover:text-gray-700 select-none ${align === 'left' ? 'text-left' : 'text-right'}" onclick="setDashRankingsSort('${c}')">${label}${arrow(c)}</th>`;
+    const th = (c, label, align = 'left') =>
+        `<th class="py-2 text-[8px] font-black uppercase tracking-[0.1em] text-gray-500 cursor-pointer hover:text-gray-800 select-none text-center" onclick="setDashRankingsSort('${c}')">${label}${arrow(c)}</th>`;
 
     container.innerHTML = `
         <div class="overflow-x-auto">
             <table class="w-full border-collapse">
                 <thead>
                     <tr class="border-b border-gray-100">
-                        ${th('fifaRank', '#')}
-                        ${th('name', 'Country', 'left')}
-                        ${th('cost', '$')}
-                        ${th('tier', 'T')}
+                        ${th('fifaRank', 'FIFA')}
+                        <th class="py-2 text-[8px] font-black uppercase tracking-[0.1em] text-gray-500 cursor-pointer hover:text-gray-800 select-none text-left" onclick="setDashRankingsSort('name')">Country${arrow('name')}</th>
+                        ${th('cost', 'Cost $')}
+                        ${th('tier', 'Tier')}
                         ${th('winProb', 'Win%')}
                     </tr>
                 </thead>
                 <tbody>
                     ${rows.map(({ t, d }) => `
                         <tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors" onclick="showTeamOwners('${t.name.replace(/'/g, "\\'")}')">
-                            <td class="py-1.5 text-[10px] font-black text-gray-300 text-right pr-2 tabular-nums">${d.fifaRank}</td>
+                            <td class="py-1.5 text-[10px] font-black text-gray-600 text-center tabular-nums">${d.fifaRank}</td>
                             <td class="py-1.5 min-w-0">
-                                <div class="flex items-center gap-1">
+                                <div class="flex items-center gap-2.5">
                                     <span class="shrink-0">${t.flag}</span>
                                     <span class="text-[10px] font-black text-gray-900 truncate">${escapeHtml(t.name)}</span>
                                 </div>
                             </td>
-                            <td class="py-1.5 text-[10px] font-black text-gray-600 text-center tabular-nums">$${t.cost}</td>
+                            <td class="py-1.5 text-[10px] font-black text-gray-700 text-center tabular-nums">$${t.cost}</td>
                             <td class="py-1.5 text-center">${tierBadge(t.tier)}</td>
-                            <td class="py-1.5 text-[10px] font-black text-gray-600 text-center tabular-nums">${d.winProb.toFixed(1)}%</td>
+                            <td class="py-1.5 text-[10px] font-black text-gray-700 text-center tabular-nums">${d.winProb.toFixed(1)}%</td>
                         </tr>`).join('')}
                 </tbody>
             </table>
@@ -4168,11 +4168,11 @@ function renderDashGroupsTab() {
             );
             return `
             <div class="rounded-xl border border-gray-100 bg-gray-50 p-2.5">
-                <div class="flex items-center justify-between mb-1.5">
-                    <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Group ${g}</div>
-                    <div class="grid grid-cols-3 gap-x-2 text-[7px] font-black uppercase tracking-[0.1em] text-gray-300">
-                        <span class="text-right">GF</span><span class="text-right">GA</span><span class="text-right">Pts</span>
-                    </div>
+                <div class="grid grid-cols-[1fr_20px_20px_24px] items-center gap-x-1.5 mb-1.5">
+                    <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-600">Group ${g}</div>
+                    <span class="text-[7px] font-black uppercase tracking-[0.08em] text-gray-500 text-center">GF</span>
+                    <span class="text-[7px] font-black uppercase tracking-[0.08em] text-gray-500 text-center">GA</span>
+                    <span class="text-[7px] font-black uppercase tracking-[0.08em] text-gray-500 text-center">Pts</span>
                 </div>
                 <div class="space-y-1">
                     ${sorted.map((teamRow) => {
@@ -4181,16 +4181,14 @@ function renderDashGroupsTab() {
                         const poolPts = teamPointsMap[teamRow.name] || 0;
                         const ga = (teamRow.gf || 0) - (teamRow.gd || 0);
                         return `
-                        <div class="grid grid-cols-[1fr_auto] items-center gap-1 ${isElim ? 'opacity-40' : ''}">
+                        <div class="grid grid-cols-[1fr_20px_20px_24px] items-center gap-x-1.5 ${isElim ? 'opacity-40' : ''}">
                             <div class="flex items-center gap-1 min-w-0">
                                 <span class="text-sm shrink-0">${teamDef?.flag || ''}</span>
                                 <div class="text-[10px] font-black text-gray-800 truncate">${escapeHtml(teamRow.name)}</div>
                             </div>
-                            <div class="grid grid-cols-3 gap-x-2 shrink-0">
-                                <span class="text-[10px] font-black text-gray-500 tabular-nums text-right">${teamRow.gf || 0}</span>
-                                <span class="text-[10px] font-black text-gray-500 tabular-nums text-right">${ga}</span>
-                                <span class="text-[10px] font-black text-gray-700 tabular-nums text-right">${poolPts}</span>
-                            </div>
+                            <span class="text-[10px] font-black text-gray-600 tabular-nums text-center">${teamRow.gf || 0}</span>
+                            <span class="text-[10px] font-black text-gray-600 tabular-nums text-center">${ga}</span>
+                            <span class="text-[10px] font-black text-gray-800 tabular-nums text-center">${poolPts}</span>
                         </div>`;
                     }).join('')}
                 </div>
