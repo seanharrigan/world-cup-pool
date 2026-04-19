@@ -4894,6 +4894,20 @@ async function setupDashboard() {
     } catch (error) {
         if (leaderboardEl) leaderboardEl.innerHTML = '<div class="rounded-2xl border border-red-100 bg-red-50 px-4 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Could not load leaderboard</div>';
     }
+
+    // Mobile hint: nudge the Pool Overview handle twice on load, then again after 5s
+    if (window.innerWidth < 1024) {
+        const nudge = () => {
+            const panel = document.getElementById('dashboard-tabs-panel');
+            if (!panel || !panel.classList.contains('dash-sheet-minimized')) return;
+            panel.classList.remove('dash-sheet-nudge');
+            void panel.offsetWidth; // force reflow to restart animation
+            panel.classList.add('dash-sheet-nudge');
+            panel.addEventListener('animationend', () => panel.classList.remove('dash-sheet-nudge'), { once: true });
+        };
+        setTimeout(nudge, 800);
+        setTimeout(nudge, 5800);
+    }
 }
 
 function updatePublicTeamSortIndicators() {

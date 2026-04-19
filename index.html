@@ -307,6 +307,14 @@
         }
         #dashboard-tabs-panel { transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; height: 56px; }
         #dashboard-tabs-panel.dash-sheet-minimized { height: 56px; }
+        @keyframes dash-sheet-nudge {
+            0%,100% { transform: translateY(0); }
+            20%     { transform: translateY(-10px); }
+            40%     { transform: translateY(0); }
+            60%     { transform: translateY(-10px); }
+            80%     { transform: translateY(0); }
+        }
+        #dashboard-tabs-panel.dash-sheet-nudge { animation: dash-sheet-nudge 0.7s ease-in-out; }
         @media (min-width: 1024px) {
             #dashboard-squad-card { display: flex !important; }
             #dashboard-tabs-panel { height: auto !important; overflow: visible; }
