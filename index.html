@@ -305,11 +305,11 @@
             font-weight: 600;
             pointer-events: none;
         }
-        #dashboard-tabs-panel { transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; max-height: 600px; }
-        #dashboard-tabs-panel.dash-sheet-minimized { max-height: 56px; }
+        #dashboard-tabs-panel { transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; height: 56px; }
+        #dashboard-tabs-panel.dash-sheet-minimized { height: 56px; }
         @media (min-width: 1024px) {
             #dashboard-squad-card { display: flex !important; }
-            #dashboard-tabs-panel { max-height: none !important; overflow: visible; }
+            #dashboard-tabs-panel { height: auto !important; overflow: visible; }
         }
     </style>
 </head>
@@ -518,7 +518,7 @@
                     <div class="relative flex-1 flex flex-col lg:flex-row overflow-hidden lg:overflow-visible">
                         <!-- Left: player card (always visible) -->
                         <div id="dashboard-squad-card" class="flex-1 lg:flex-none flex lg:w-[44%] lg:flex-shrink-0 flex-col pb-14 lg:pb-0" style="background-color: #0f172a;">
-                            <div class="p-6 flex-1" id="dashboard-squad-inner">
+                            <div class="p-6 flex-1 flex flex-col" id="dashboard-squad-inner">
                                 <div id="dashboard-squad-strip" class="grid grid-cols-2 gap-2"></div>
                             </div>
                             <div id="dashboard-squad-budget-bar" class="hidden px-6 pb-5"></div>
@@ -1790,9 +1790,13 @@
                 <div class="text-[11px] font-black uppercase tracking-[0.25em] text-gray-300">Picks Report Card</div>
                 <button onclick="closeDashReportCard()" class="text-gray-500 hover:text-white transition-colors text-xl leading-none">×</button>
             </div>
-            <div class="flex flex-1 min-h-0">
-                <div id="dash-report-sidebar" class="w-44 shrink-0 border-r border-gray-800 overflow-y-auto p-2 space-y-1"></div>
-                <div id="dash-report-modal-body" class="overflow-y-auto flex-1 p-6"></div>
+            <div class="flex flex-1 min-h-0 overflow-hidden relative">
+                <div id="dash-report-sidebar" class="absolute inset-y-0 left-0 z-20 w-44 -translate-x-full lg:static lg:translate-x-0 transition-transform duration-300 ease-in-out shrink-0 border-r border-gray-800 overflow-y-auto p-2 space-y-1 bg-gray-900"></div>
+                <div id="dash-report-drawer-bg" class="hidden absolute inset-0 z-10 bg-black/40 lg:hidden" onclick="closeReportDrawer()"></div>
+                <div class="flex-1 overflow-y-auto min-w-0 relative">
+                    <button onclick="openReportDrawer()" class="lg:hidden absolute top-4 left-4 z-[5] flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 hover:text-white transition-colors">← All players</button>
+                    <div id="dash-report-modal-body" class="p-6 pt-10 lg:pt-6"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -1804,9 +1808,13 @@
                 <div class="text-[11px] font-black uppercase tracking-[0.25em] text-gray-300">Chips</div>
                 <button onclick="closeDashChips()" class="text-gray-500 hover:text-white transition-colors text-xl leading-none">×</button>
             </div>
-            <div class="flex flex-1 min-h-0">
-                <div id="dash-chips-sidebar" class="w-44 shrink-0 border-r border-gray-800 overflow-y-auto p-2 space-y-1"></div>
-                <div id="dash-chips-body" class="overflow-y-auto flex-1 p-6"></div>
+            <div class="flex flex-1 min-h-0 overflow-hidden relative">
+                <div id="dash-chips-sidebar" class="absolute inset-y-0 left-0 z-20 w-44 -translate-x-full lg:static lg:translate-x-0 transition-transform duration-300 ease-in-out shrink-0 border-r border-gray-800 overflow-y-auto p-2 space-y-1 bg-gray-900"></div>
+                <div id="dash-chips-drawer-bg" class="hidden absolute inset-0 z-10 bg-black/40 lg:hidden" onclick="closeChipsDrawer()"></div>
+                <div class="flex-1 overflow-y-auto min-w-0 relative">
+                    <button onclick="openChipsDrawer()" class="lg:hidden absolute top-4 left-4 z-[5] flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 hover:text-white transition-colors">← All players</button>
+                    <div id="dash-chips-body" class="p-6 pt-10 lg:pt-6"></div>
+                </div>
             </div>
         </div>
     </div>

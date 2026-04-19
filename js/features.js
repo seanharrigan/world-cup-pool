@@ -3801,6 +3801,20 @@ function _renderReportSidebar() {
     }).join('');
 }
 
+function openReportDrawer() {
+    const sidebar = document.getElementById('dash-report-sidebar');
+    const bg = document.getElementById('dash-report-drawer-bg');
+    if (sidebar) sidebar.classList.remove('-translate-x-full');
+    if (bg) bg.classList.remove('hidden');
+}
+
+function closeReportDrawer() {
+    const sidebar = document.getElementById('dash-report-sidebar');
+    const bg = document.getElementById('dash-report-drawer-bg');
+    if (sidebar) sidebar.classList.add('-translate-x-full');
+    if (bg) bg.classList.add('hidden');
+}
+
 function selectDashReportCard(email) {
     _dashReportSelectedEmail = email;
     const sidebar = document.getElementById('dash-report-sidebar');
@@ -3812,6 +3826,7 @@ function selectDashReportCard(email) {
         });
     }
     _renderReportCardDetail(email);
+    closeReportDrawer();
 }
 
 function _renderReportCardDetail(email) {
@@ -3912,6 +3927,7 @@ function closeDashReportCard() {
     if (!modal) return;
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    closeReportDrawer();
 }
 
 function showDashChips() {
@@ -3951,6 +3967,20 @@ function _renderChipsSidebar() {
     }).join('');
 }
 
+function openChipsDrawer() {
+    const sidebar = document.getElementById('dash-chips-sidebar');
+    const bg = document.getElementById('dash-chips-drawer-bg');
+    if (sidebar) sidebar.classList.remove('-translate-x-full');
+    if (bg) bg.classList.remove('hidden');
+}
+
+function closeChipsDrawer() {
+    const sidebar = document.getElementById('dash-chips-sidebar');
+    const bg = document.getElementById('dash-chips-drawer-bg');
+    if (sidebar) sidebar.classList.add('-translate-x-full');
+    if (bg) bg.classList.add('hidden');
+}
+
 function selectDashChips(email) {
     _dashChipsSelectedEmail = email;
     const sidebar = document.getElementById('dash-chips-sidebar');
@@ -3962,6 +3992,7 @@ function selectDashChips(email) {
         });
     }
     _renderChipsDetail(email);
+    closeChipsDrawer();
 }
 
 function _renderChipsDetail(email) {
@@ -4042,6 +4073,7 @@ function closeDashChips() {
     if (!modal) return;
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    closeChipsDrawer();
 }
 
 function setDashRightTab(tab) {
@@ -4067,11 +4099,16 @@ function toggleDashSheet() {
     if (!panel) return;
     const isMinimized = panel.classList.toggle('dash-sheet-minimized');
     if (!isMinimized && window.innerWidth < 1024) {
-        // Cap to parent height so the handle never escapes above the flex row on iOS Safari
-        const parentH = panel.parentElement ? panel.parentElement.offsetHeight : 600;
-        panel.style.maxHeight = parentH + 'px';
+        const parent = panel.parentElement;
+        const parentRect = parent ? parent.getBoundingClientRect() : null;
+        const headerEl = document.getElementById('dashboard-squad-header');
+        const headerRect = headerEl ? headerEl.getBoundingClientRect() : null;
+        const targetH = (parentRect && headerRect)
+            ? Math.round(parentRect.bottom - headerRect.bottom) - 12
+            : (parent ? parent.offsetHeight : 600);
+        panel.style.height = targetH + 'px';
     } else {
-        panel.style.maxHeight = '';
+        panel.style.height = '';
     }
     if (arrow) arrow.textContent = isMinimized ? '▲' : '▼';
     if (helper) helper.textContent = isMinimized ? 'Tap to view' : 'Tap to close';
@@ -4686,8 +4723,8 @@ async function setupDashboard() {
                 const first = chips[0];
                 const mobileOverflow = chips.length > 1 ? chips.length - 1 : 0;
                 const mobileHtml = first ? `<div class="relative inline-flex items-center justify-center">
-                    ${mobileOverflow > 0 ? `<span class="absolute -bottom-1 -right-1.5 h-4 w-4 inline-flex items-center justify-center rounded-full bg-gray-200 border border-gray-300 text-[8px] font-black text-gray-600 z-0">+${mobileOverflow}</span>` : ''}
-                    <span class="relative z-10 inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${toneClasses[first.tone] || toneClasses.neutral}">${first.emoji}</span>
+                    <span class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${toneClasses[first.tone] || toneClasses.neutral}">${first.emoji}</span>
+                    ${mobileOverflow > 0 ? `<span class="absolute -top-1 -right-1 h-4 w-4 inline-flex items-center justify-center rounded-full bg-gray-700 border border-gray-500 text-[8px] font-black text-gray-200 z-10">+${mobileOverflow}</span>` : ''}
                 </div>` : '';
                 const deskVisible = chips.slice(0, 3);
                 const deskOverflow = chips.length > 3 ? chips.length - 3 : 0;
@@ -4720,7 +4757,7 @@ async function setupDashboard() {
         }
         if (squadInner) {
             const headerHtml = `
-                <div class="flex items-center gap-4 mb-5">
+                <div id="dashboard-squad-header" class="flex items-center gap-4 mb-5 shrink-0">
                     <div class="h-12 w-12 rounded-2xl flex items-center justify-center text-2xl shrink-0" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.15);">
                         ${favFlag || '⚽'}
                     </div>
@@ -4728,16 +4765,14 @@ async function setupDashboard() {
                         <div class="text-xl font-black uppercase italic tracking-tight text-white truncate">${escapeHtml(currentProfile?.nickname || '')}</div>
                         <div class="text-[10px] font-black uppercase tracking-[0.18em] text-gray-400">${currentProfile?.realname ? escapeHtml(currentProfile.realname) : ''}</div>
                     </div>
-                    <div class="text-right shrink-0 flex flex-col items-end gap-2">
-                        <div>
-                            <div class="text-2xl font-black" style="color: var(--player-card-accent-on-dark);">${myPoints}</div>
-                            <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
-                        </div>
-                        ${!isLocked ? `<button onclick="showPage('picks')" class="rounded-xl bg-gray-700 hover:bg-gray-600 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-white transition-colors">Edit Picks</button>` : ''}
+                    <div class="text-right shrink-0">
+                        <div class="text-2xl font-black" style="color: var(--player-card-accent-on-dark);">${myPoints}</div>
+                        <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">pts</div>
                     </div>
                 </div>
             `;
-            squadInner.innerHTML = headerHtml + `<div id="dashboard-squad-strip" class="grid grid-cols-2 gap-2"></div>`;
+            const editBtn = !isLocked ? `<div class="pt-3 shrink-0"><button onclick="showPage('picks')" class="w-full rounded-xl bg-gray-700 hover:bg-gray-600 px-3 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] text-white transition-colors">Edit Picks</button></div>` : '';
+            squadInner.innerHTML = headerHtml + `<div class="flex-1 overflow-y-auto min-h-0"><div id="dashboard-squad-strip" class="grid grid-cols-2 gap-2"></div></div>` + editBtn;
         }
         const freshStripEl = document.getElementById('dashboard-squad-strip');
         if (freshStripEl) {
@@ -8371,6 +8406,10 @@ Object.assign(window, {
     showDashReportCard,
     closeDashReportCard,
     selectDashReportCard,
+    openReportDrawer,
+    closeReportDrawer,
+    openChipsDrawer,
+    closeChipsDrawer,
     showDashChips,
     closeDashChips,
     selectDashChips,
