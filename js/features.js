@@ -6816,8 +6816,8 @@ async function fetchLeaderboard() {
     const skeletonCell = '<td class="px-2 py-2.5 text-center"><div class="h-4 w-6 bg-gray-200 rounded animate-pulse mx-auto"></div></td>';
     const skeletonRow = `
         <tr class="border-b border-gray-100">
-            <td class="w-[72px] px-2 py-2.5 text-center"><div class="h-5 w-6 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
-            <td class="w-[72px] px-2 py-2.5 text-center"><div class="h-6 w-10 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
+            <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center"><div class="h-5 w-6 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
+            <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center"><div class="h-6 w-10 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
             <td class="px-4 py-2.5"><div class="space-y-2"><div class="h-4 w-28 bg-gray-200 rounded animate-pulse"></div><div class="h-3 w-20 bg-gray-100 rounded animate-pulse"></div></div></td>
             ${skeletonCell.repeat(7)}
         </tr>`;
@@ -6914,8 +6914,8 @@ async function fetchLeaderboard() {
 
         const bestRowMarkup = bestAvailableTeam ? `
             <tr class="border-b border-gray-100 bg-gray-50 text-left text-gray-700">
-                <td class="w-[72px] px-2 py-2.5 text-center text-lg font-black text-gray-400">-</td>
-                <td class="w-[72px] px-2 py-2.5 text-center text-lg font-black text-gray-500">${bestAvailableTeam.totalPoints}</td>
+                <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center text-lg font-black text-gray-400">-</td>
+                <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center text-lg font-black text-gray-500">${bestAvailableTeam.totalPoints}</td>
                 <td class="px-4 py-2.5 text-left">
                     <div class="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400 text-left">${bestAvailableTeam.nickname}</div>
                     <div class="mt-1.5 text-left">
@@ -6957,13 +6957,13 @@ async function fetchLeaderboard() {
 
             return separator + `
             <tr class="theme-hover-row ${rowTone} border-b border-gray-100 transition-colors text-left text-gray-900 cursor-pointer" onclick="showPlayerProfile('${safeEmail}')">
-                <td class="w-[72px] px-2 py-2.5 text-center">
+                <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center">
                     <div class="flex items-center justify-center gap-1.5">
                         <div class="w-4 text-right">${rankIndicator}</div>
                         <div class="text-lg font-black text-gray-900">#${user.displayRank}</div>
                     </div>
                 </td>
-                <td class="w-[72px] px-2 py-2.5 text-center text-lg font-black text-gray-900">${user.totalPoints}</td>
+                <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center text-lg font-black text-gray-900">${user.totalPoints}</td>
                 <td class="px-4 py-2.5 text-left">
                     <div class="flex flex-wrap items-center gap-1.5 text-left">
                         <div class="text-lg font-black uppercase text-left text-gray-900">${user.nickname}</div>
