@@ -4967,17 +4967,19 @@ async function setupDashboard() {
             window._dashUpsideSquad = myEntry?.squad || liveSquad;
             squadScoreBar.classList.remove('hidden');
             squadScoreBar.innerHTML = `
-                <div class="flex items-center justify-between mb-1.5">
-                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Your Score</span>
-                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">${myPts} pts</span>
-                </div>
-                <div class="relative h-2 rounded-full overflow-visible" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.18);">
-                    <div class="h-full rounded-full" style="width: ${pct}%; background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>
-                    ${pct > 0 && pct < 100 ? `<div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-gray-900 shadow" style="left: calc(${pct}% - 6px); background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>` : ''}
-                </div>
-                <div class="flex items-center justify-between mt-1 mb-3">
-                    <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">${minPts} min</span>
-                    <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">${maxPts} max</span>
+                <div class="cursor-pointer hover:opacity-80 transition-opacity mb-3" onclick="showMyScoreCard()">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Your Score <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg></span>
+                        <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">${myPts} pts</span>
+                    </div>
+                    <div class="relative h-2 rounded-full overflow-visible" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.18);">
+                        <div class="h-full rounded-full" style="width: ${pct}%; background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>
+                        ${pct > 0 && pct < 100 ? `<div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-gray-900 shadow" style="left: calc(${pct}% - 6px); background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>` : ''}
+                    </div>
+                    <div class="flex items-center justify-between mt-1">
+                        <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">${minPts} min</span>
+                        <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">${maxPts} max</span>
+                    </div>
                 </div>
                 <div class="cursor-pointer hover:opacity-80 transition-opacity" onclick="showMyUpsideCard()">
                     <div class="flex items-center justify-between mb-1.5">
@@ -8437,6 +8439,119 @@ function closeR32SeatingInfo() {
 
 let _upsideRanked = [];
 let _upsideSelectedEmail = '';
+
+let _scoreRanked = [];
+let _scoreSelectedEmail = '';
+
+function showMyScoreCard() {
+    const modal = document.getElementById('score-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    const lb = window._leaderboardData || [];
+    _scoreRanked = [...lb].sort((a, b) => b.totalPoints - a.totalPoints || (a.nickname || '').localeCompare(b.nickname || ''));
+    _scoreSelectedEmail = userEmail;
+    _renderScoreSidebar();
+    _renderScoreDetail(userEmail);
+}
+
+function _renderScoreSidebar() {
+    const sidebar = document.getElementById('score-sidebar');
+    if (!sidebar) return;
+    sidebar.innerHTML = _scoreRanked.map((u, i) => {
+        const isMe = u.email === userEmail;
+        const isSelected = u.email === _scoreSelectedEmail;
+        const barColor = i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : i === 2 ? '#f97316' : isMe ? '#3b82f6' : '#4b5563';
+        const safeEmail = u.email.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        return `<button data-email="${escapeHtml(u.email)}" onclick="selectScorePlayer('${safeEmail}')"
+            class="w-full text-left rounded-xl px-3 py-2 transition-colors relative overflow-hidden ${isSelected ? 'bg-gray-700' : 'hover:bg-gray-800'}">
+            <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color:${barColor};"></div>
+            <div class="pl-2 text-[11px] font-black text-white truncate">${isMe ? '★ ' + escapeHtml(u.nickname) : escapeHtml(u.nickname)}</div>
+            <div class="pl-2 text-[11px] text-gray-400">${u.totalPoints} pts</div>
+        </button>`;
+    }).join('');
+}
+
+function selectScorePlayer(email) {
+    _scoreSelectedEmail = email;
+    _renderScoreSidebar();
+    _renderScoreDetail(email);
+    closeScoreDrawer();
+}
+
+function openScoreDrawer() {
+    const sidebar = document.getElementById('score-sidebar');
+    const bg = document.getElementById('score-drawer-bg');
+    if (sidebar) sidebar.classList.remove('-translate-x-full');
+    if (bg) bg.classList.remove('hidden');
+}
+
+function closeScoreDrawer() {
+    const sidebar = document.getElementById('score-sidebar');
+    const bg = document.getElementById('score-drawer-bg');
+    if (sidebar) sidebar.classList.add('-translate-x-full');
+    if (bg) bg.classList.add('hidden');
+}
+
+function _renderScoreDetail(email) {
+    const body = document.getElementById('score-modal-body');
+    if (!body) return;
+    const u = _scoreRanked.find((e) => e.email === email);
+    if (!u) return;
+    const isMe = email === userEmail;
+    const teamPointsMap = window._dashTeamPointsMap || {};
+    const squad = u.squad || [];
+    const rank = _scoreRanked.findIndex((e) => e.email === email) + 1;
+    const totalPoints = u.totalPoints ?? 0;
+
+    const rows = [...squad]
+        .map((t) => ({ ...t, pts: teamPointsMap[t.name] || 0 }))
+        .sort((a, b) => b.pts - a.pts);
+    const maxPts = Math.max(...rows.map((r) => r.pts), 1);
+
+    const teamRow = (t) => {
+        const elim = eliminatedTeams.has(t.name);
+        const barPct = Math.min(100, Math.round(t.pts / maxPts * 100));
+        return `<div class="flex items-center gap-3 ${elim ? 'opacity-60' : ''}">
+            <span class="text-lg leading-none shrink-0">${t.flag || ''}</span>
+            <div class="flex-1 min-w-0">
+                <div class="text-xs font-black uppercase ${elim ? 'text-gray-400 line-through' : 'text-white'} truncate">${escapeHtml(t.name)}</div>
+                <div class="mt-1 h-1 rounded-full bg-gray-700 overflow-hidden"><div class="h-full rounded-full bg-blue-400" style="width:${barPct}%;"></div></div>
+            </div>
+            <div class="shrink-0 text-right">
+                <div class="text-xs font-black text-white">${t.pts}</div>
+                <div class="text-[9px] font-black uppercase text-gray-500">${elim ? 'eliminated' : 'pts'}</div>
+            </div>
+        </div>`;
+    };
+
+    body.innerHTML = `
+        <div class="space-y-4">
+            <div class="flex items-center justify-between gap-3">
+                <div>
+                    <div class="text-base font-black uppercase italic text-white">${isMe ? 'Your Score' : escapeHtml(u.nickname)}</div>
+                    <div class="text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 mt-0.5 leading-relaxed">
+                        Rank #${rank} of ${_scoreRanked.length} · points contributed by each team.
+                    </div>
+                </div>
+                <div class="text-right shrink-0">
+                    <div class="text-4xl font-black text-white">${totalPoints}</div>
+                    <div class="text-[10px] font-black uppercase text-gray-400">pts</div>
+                </div>
+            </div>
+            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Squad Breakdown</div>
+            <div class="space-y-3">${rows.map(teamRow).join('')}</div>
+        </div>`;
+}
+
+function closeScoreModal() {
+    const modal = document.getElementById('score-modal');
+    if (!modal) return;
+    closeScoreDrawer();
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
 
 const UPSIDE_BEST_EMAIL = '__best_possible__';
 
