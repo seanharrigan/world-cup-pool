@@ -207,13 +207,13 @@
         .modal-card { animation: modal-pop-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both; }
         .modal-card.modal-exiting { animation: modal-pop-out 0.13s ease-in both; }
 
-        /* Upside dot pulse */
+        /* Dashboard bar dot pulse */
         @keyframes upside-dot-pulse {
-            0%   { transform: translateY(-50%) scale(1);   box-shadow: 0 0 0 0 rgba(var(--player-card-accent-primary-rgb,59,130,246),0.6); }
-            50%  { transform: translateY(-50%) scale(1.5); box-shadow: 0 0 0 7px rgba(var(--player-card-accent-primary-rgb,59,130,246),0); }
-            100% { transform: translateY(-50%) scale(1);   box-shadow: 0 0 0 0 rgba(var(--player-card-accent-primary-rgb,59,130,246),0); }
+            0%   { transform: translateY(-50%) scale(1);    box-shadow: 0 0 0 0 rgba(var(--player-card-accent-primary-rgb,59,130,246),0.5); }
+            50%  { transform: translateY(-50%) scale(1.2);  box-shadow: 0 0 0 4px rgba(var(--player-card-accent-primary-rgb,59,130,246),0); }
+            100% { transform: translateY(-50%) scale(1);    box-shadow: 0 0 0 0 rgba(var(--player-card-accent-primary-rgb,59,130,246),0); }
         }
-        .upside-dot-pulse { animation: upside-dot-pulse 0.55s ease-in-out 3; }
+        .upside-dot-pulse { animation: upside-dot-pulse 0.6s ease-in-out 2; }
 
         /* Player profile two-panel */
         #player-profile-container { transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1); }

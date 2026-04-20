@@ -4852,9 +4852,27 @@ async function setupDashboard() {
         const tiedCount = myDisplayRank ? Object.values(currentRanksMap).filter((r) => r === myDisplayRank).length : 0;
         const isTied = tiedCount > 1;
 
-        const prevPointsMap = JSON.parse(localStorage.getItem('wc_pool_lb_points') || '{}');
-        const prevRank = previousRanks[userEmail];
-        const prevMyPoints = prevPointsMap[userEmail];
+        const nextPointsMap = {};
+        leaderboardData.forEach((entry) => { nextPointsMap[entry.email] = entry.totalPoints; });
+
+        const today = new Date().toISOString().slice(0, 10);
+        let daily = null;
+        try { daily = JSON.parse(localStorage.getItem('wc_pool_lb_daily') || 'null'); } catch (e) { daily = null; }
+        let baseline = null;
+        if (!daily) {
+            daily = { current: { date: today, points: nextPointsMap, ranks: currentRanksMap }, previous: null };
+        } else if (daily.current?.date === today) {
+            baseline = daily.previous;
+            daily.current = { date: today, points: nextPointsMap, ranks: currentRanksMap };
+        } else {
+            baseline = daily.current;
+            daily = { previous: daily.current, current: { date: today, points: nextPointsMap, ranks: currentRanksMap } };
+        }
+        localStorage.setItem('wc_pool_lb_daily', JSON.stringify(daily));
+        localStorage.setItem('wc_pool_lb_ranks', JSON.stringify(currentRanksMap));
+
+        const prevRank = baseline?.ranks?.[userEmail];
+        const prevMyPoints = baseline?.points?.[userEmail];
         const rankDelta = (prevRank !== undefined && myDisplayRank !== null) ? (prevRank - myDisplayRank) : 0;
         const pointsDelta = (prevMyPoints !== undefined) ? (myPoints - prevMyPoints) : 0;
 
@@ -4864,17 +4882,12 @@ async function setupDashboard() {
         if (myRankEl) {
             if (myDisplayRank) {
                 const suffix = _ordinalSuffix(myDisplayRank);
-                const tieLabel = isTied ? 'T' : '';
-                myRankEl.innerHTML = `<span>${tieLabel}${myDisplayRank}<sup class="text-[11px] font-black">${suffix}</sup></span>${_renderDashDelta(rankDelta)}`;
+                const tiePrefix = isTied ? `<span class="text-[11px] font-black text-gray-400 mr-0.5">T</span>` : '';
+                myRankEl.innerHTML = `<span class="inline-flex items-baseline">${tiePrefix}${myDisplayRank}<sup class="text-[11px] font-black ml-0.5">${suffix}</sup></span>${_renderDashDelta(rankDelta)}`;
             } else {
                 myRankEl.textContent = '-';
             }
         }
-
-        const nextPointsMap = {};
-        leaderboardData.forEach((entry) => { nextPointsMap[entry.email] = entry.totalPoints; });
-        localStorage.setItem('wc_pool_lb_ranks', JSON.stringify(currentRanksMap));
-        localStorage.setItem('wc_pool_lb_points', JSON.stringify(nextPointsMap));
         // Report card grade
         if (reportGradeEl && liveSquad.length > 0) {
             const rc = _computeReportCard(liveSquad);
@@ -5000,7 +5013,7 @@ async function setupDashboard() {
                     </div>
                     <div class="relative h-2 rounded-full overflow-visible" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.18);">
                         <div class="h-full rounded-full" style="width: ${pct}%; background: linear-gradient(90deg, var(--player-card-accent-primary, #3b82f6), var(--player-card-accent-on-dark, #93c5fd));"></div>
-                        ${pct > 0 && pct < 100 ? `<div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-gray-900 shadow" style="left: calc(${pct}% - 6px); background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>` : ''}
+                        ${pct > 0 && pct < 100 ? `<div id="score-bar-dot" class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-gray-900 shadow" style="left: calc(${pct}% - 6px); background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>` : ''}
                     </div>
                     <div class="flex items-center justify-between mt-1">
                         <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">${minPts} min</span>
@@ -5023,8 +5036,10 @@ async function setupDashboard() {
                 </div>
             `;
             requestAnimationFrame(() => {
-                const dot = document.getElementById('upside-bar-dot');
-                if (dot) { dot.classList.remove('upside-dot-pulse'); void dot.offsetWidth; dot.classList.add('upside-dot-pulse'); }
+                ['upside-bar-dot', 'score-bar-dot'].forEach((id) => {
+                    const dot = document.getElementById(id);
+                    if (dot) { dot.classList.remove('upside-dot-pulse'); void dot.offsetWidth; dot.classList.add('upside-dot-pulse'); }
+                });
             });
         } else if (squadScoreBar) {
             squadScoreBar.classList.add('hidden');
