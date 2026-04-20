@@ -4943,7 +4943,7 @@ async function setupDashboard() {
                     <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">$${spent} / $150</span>
                 </div>
                 <div class="h-2 rounded-full overflow-hidden" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.18);">
-                    <div class="h-full rounded-full" style="width: ${Math.round(spent / 150 * 100)}%; background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>
+                    <div class="h-full rounded-full" style="width: ${Math.round(spent / 150 * 100)}%; background: linear-gradient(90deg, var(--player-card-accent-on-dark, #93c5fd), var(--player-card-accent-primary, #3b82f6));"></div>
                 </div>
             `;
         } else if (squadBudgetBar) {
@@ -4974,8 +4974,8 @@ async function setupDashboard() {
                         <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">${myPts} pts</span>
                     </div>
                     <div class="relative h-2 rounded-full overflow-visible" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.18);">
-                        <div class="h-full rounded-full" style="width: ${pct}%; background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>
-                        ${pct > 0 && pct < 100 ? `<div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-gray-900 shadow" style="left: calc(${pct}% - 6px); background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>` : ''}
+                        <div class="h-full rounded-full" style="width: ${pct}%; background: linear-gradient(90deg, var(--player-card-accent-on-dark, #93c5fd), var(--player-card-accent-primary, #3b82f6));"></div>
+                        ${pct > 0 && pct < 100 ? `<div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-gray-900 shadow" style="left: calc(${pct}% - 6px); background: linear-gradient(90deg, var(--player-card-accent-on-dark, #93c5fd), var(--player-card-accent-primary, #3b82f6));"></div>` : ''}
                     </div>
                     <div class="flex items-center justify-between mt-1">
                         <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">${minPts} min</span>
@@ -4988,8 +4988,8 @@ async function setupDashboard() {
                         <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">${upside} / 100</span>
                     </div>
                     <div class="relative h-2 rounded-full overflow-visible" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.18);">
-                        <div class="h-full rounded-full" style="width: ${upside}%; background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>
-                        <div id="upside-bar-dot" class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-gray-900 shadow" style="left: calc(${upside}% - 6px); background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>
+                        <div class="h-full rounded-full" style="width: ${upside}%; background: linear-gradient(90deg, var(--player-card-accent-on-dark, #93c5fd), var(--player-card-accent-primary, #3b82f6));"></div>
+                        <div id="upside-bar-dot" class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-gray-900 shadow" style="left: calc(${upside}% - 6px); background: linear-gradient(90deg, var(--player-card-accent-on-dark, #93c5fd), var(--player-card-accent-primary, #3b82f6));"></div>
                     </div>
                     <div class="flex items-center justify-between mt-1">
                         <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">0 worst</span>
@@ -8080,7 +8080,7 @@ async function showPlayerProfile(email) {
                 <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">$${budgetUsed} / $150</span>
             </div>
             <div class="h-2 rounded-full overflow-hidden" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59, 130, 246), 0.18);">
-                <div class="h-full rounded-full" style="width: ${Math.round(budgetUsed / 150 * 100)}%; background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>
+                <div class="h-full rounded-full" style="width: ${Math.round(budgetUsed / 150 * 100)}%; background: linear-gradient(90deg, var(--player-card-accent-on-dark, #93c5fd), var(--player-card-accent-primary, #3b82f6));"></div>
             </div>
         </div>` : '';
 
@@ -8521,7 +8521,7 @@ function _renderScoreDetail(email) {
             <span class="text-lg leading-none shrink-0">${t.flag || ''}</span>
             <div class="flex-1 min-w-0">
                 <div class="text-xs font-black uppercase ${elim ? 'text-gray-400 line-through' : 'text-white'} truncate">${escapeHtml(t.name)}</div>
-                <div class="mt-1 h-1 rounded-full bg-gray-700 overflow-hidden"><div class="h-full rounded-full bg-blue-400" style="width:${barPct}%;"></div></div>
+                <div class="mt-1 h-1 rounded-full bg-gray-700 overflow-hidden"><div class="h-full rounded-full" style="width:${barPct}%; background: linear-gradient(90deg, #93c5fd, #3b82f6);"></div></div>
             </div>
             <div class="shrink-0 text-right">
                 <div class="text-xs font-black text-white">${pts}</div>
@@ -8685,7 +8685,7 @@ function _renderUpsideDetail(email) {
             <span class="text-lg leading-none shrink-0">${t.flag || ''}</span>
             <div class="flex-1 min-w-0">
                 <div class="text-xs font-black uppercase text-white truncate">${escapeHtml(t.name)}</div>
-                ${!dim ? `<div class="mt-1 h-1 rounded-full bg-gray-700 overflow-hidden"><div class="h-full rounded-full bg-blue-400" style="width:${barPct}%;"></div></div>` : ''}
+                ${!dim ? `<div class="mt-1 h-1 rounded-full bg-gray-700 overflow-hidden"><div class="h-full rounded-full" style="width:${barPct}%; background: linear-gradient(90deg, #93c5fd, #3b82f6);"></div></div>` : ''}
             </div>
             <div class="shrink-0 text-right">
                 ${!dim ? `<div class="text-xs font-black text-white">${adj.toFixed(1)}%</div>${shifted ? `<div class="text-[9px] font-black uppercase text-emerald-400/80">was ${orig.toFixed(1)}%</div>` : ''}<div class="text-[9px] font-black uppercase text-gray-500">win odds</div>` : `<div class="text-xs font-black text-gray-400 line-through">${orig.toFixed(1)}%</div><div class="text-[9px] font-black uppercase text-gray-500">eliminated</div>`}
@@ -9087,7 +9087,7 @@ async function showOwnerPlayer(email) {
                 <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">$${budgetUsed} / $150</span>
             </div>
             <div class="h-2 rounded-full overflow-hidden" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59, 130, 246), 0.18);">
-                <div class="h-full rounded-full" style="width: ${Math.round(budgetUsed / 150 * 100)}%; background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>
+                <div class="h-full rounded-full" style="width: ${Math.round(budgetUsed / 150 * 100)}%; background: linear-gradient(90deg, var(--player-card-accent-on-dark, #93c5fd), var(--player-card-accent-primary, #3b82f6));"></div>
             </div>
         </div>` : '';
 
