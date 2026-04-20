@@ -4892,7 +4892,7 @@ async function setupDashboard() {
                     </div>
                     <div class="relative h-2 rounded-full overflow-visible" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.18);">
                         <div class="h-full rounded-full" style="width: ${upside}%; background-color: var(--player-card-accent-primary);"></div>
-                        <div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-gray-900 shadow" style="left: calc(${upside}% - 6px); background-color: var(--player-card-accent-primary);"></div>
+                        <div id="upside-bar-dot" class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-gray-900 shadow" style="left: calc(${upside}% - 6px); background-color: var(--player-card-accent-primary);"></div>
                     </div>
                     <div class="flex items-center justify-between mt-1">
                         <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">0 worst</span>
@@ -4900,6 +4900,10 @@ async function setupDashboard() {
                     </div>
                 </div>
             `;
+            requestAnimationFrame(() => {
+                const dot = document.getElementById('upside-bar-dot');
+                if (dot) { dot.classList.remove('upside-dot-pulse'); void dot.offsetWidth; dot.classList.add('upside-dot-pulse'); }
+            });
         } else if (squadScoreBar) {
             squadScoreBar.classList.add('hidden');
         }
@@ -8337,97 +8341,10 @@ function closeR32SeatingInfo() {
     _closeModalWithAnimation('r32-seating-modal');
 }
 
-function _upsideTeamRows(squad) {
-    const aliveTeams = squad
-        .filter((t) => !eliminatedTeams.has(t.name))
-        .sort((a, b) => (TEAM_REPORT_DATA[b.name]?.winProb || 0) - (TEAM_REPORT_DATA[a.name]?.winProb || 0));
-    const elimTeams = squad.filter((t) => eliminatedTeams.has(t.name));
-    const maxProb = Math.max(...aliveTeams.map((t) => TEAM_REPORT_DATA[t.name]?.winProb || 0), 0.001);
-
-    const row = (t, dim) => {
-        const prob = TEAM_REPORT_DATA[t.name]?.winProb || 0;
-        const barPct = Math.min(100, Math.round(prob / maxProb * 100));
-        return `<div class="flex items-center gap-3 ${dim ? 'opacity-35' : ''}">
-            <span class="text-lg leading-none shrink-0">${t.flag || ''}</span>
-            <div class="flex-1 min-w-0">
-                <div class="text-xs font-black uppercase text-white truncate">${escapeHtml(t.name)}</div>
-                ${!dim ? `<div class="mt-1 h-1 rounded-full bg-gray-700 overflow-hidden"><div class="h-full rounded-full bg-blue-400" style="width:${barPct}%;"></div></div>` : ''}
-            </div>
-            <div class="shrink-0 text-right">
-                ${!dim ? `<div class="text-xs font-black text-white">${prob.toFixed(1)}%</div><div class="text-[9px] font-black uppercase text-gray-500">win odds</div>` : `<div class="text-[9px] font-black uppercase text-gray-500">eliminated</div>`}
-            </div>
-        </div>`;
-    };
-
-    return `
-        ${aliveTeams.length > 0 ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Still Alive</div><div class="space-y-3">${aliveTeams.map((t) => row(t, false)).join('')}</div>` : ''}
-        ${elimTeams.length > 0 ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 mt-4 mb-3">Eliminated</div><div class="space-y-3">${elimTeams.map((t) => row(t, true)).join('')}</div>` : ''}
-    `;
-}
-
-function _renderUpsideCard(email) {
-    const header = document.getElementById('upside-modal-header');
-    const body = document.getElementById('upside-modal-body');
-    if (!header || !body) return;
-    const lb = window._leaderboardData || [];
-    const upsideMap = window._poolUpsideMap || _buildUpsideMap(lb);
-    const entry = lb.find((e) => e.email === email);
-    const isMe = email === userEmail;
-    const upside = upsideMap.get(email) ?? 0;
-    const squad = entry?.squad || (isMe ? window._dashUpsideSquad : null) || [];
-    const nickname = entry?.nickname || email.split('@')[0];
-
-    header.innerHTML = `
-        <div class="flex items-center gap-2 min-w-0">
-            <button onclick="showUpsideDetail()" class="shrink-0 flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400 hover:text-white transition-colors">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
-                All Players
-            </button>
-        </div>
-        <button onclick="closeUpsideModal()" class="shrink-0 text-gray-500 hover:text-white transition-colors text-xl leading-none">×</button>
-    `;
-
-    body.innerHTML = `
-        <div class="p-5 space-y-4">
-            <div class="flex items-center justify-between gap-3">
-                <div>
-                    <div class="text-base font-black uppercase italic text-white">${isMe ? 'Your Upside' : escapeHtml(nickname)}</div>
-                    <div class="text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 mt-0.5 leading-relaxed">
-                        ${isMe ? 'Combined win odds of your surviving teams vs the pool leader.' : 'Combined win odds of surviving teams vs the pool leader.'}
-                    </div>
-                </div>
-                <div class="text-right shrink-0">
-                    <div class="text-4xl font-black text-white">${upside}</div>
-                    <div class="text-[10px] font-black uppercase text-gray-400">/ 100</div>
-                </div>
-            </div>
-            ${_upsideTeamRows(squad)}
-        </div>
-    `;
-}
-
 function showMyUpsideCard() {
     const modal = document.getElementById('upside-modal');
-    const panel = document.getElementById('upside-players-panel');
-    const container = document.getElementById('upside-container');
-    if (!modal) return;
-
-    // Close left panel if open
-    if (panel) { panel.classList.add('hidden'); panel.classList.remove('flex'); }
-    if (container) container.classList.remove('upside-expanded');
-
-    _renderUpsideCard(userEmail);
-
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-}
-
-function showUpsideDetail() {
-    const panel = document.getElementById('upside-players-panel');
-    const list = document.getElementById('upside-players-list');
-    const container = document.getElementById('upside-container');
-    const modal = document.getElementById('upside-modal');
-    if (!panel || !list || !container || !modal) return;
+    const body = document.getElementById('upside-modal-body');
+    if (!modal || !body) return;
 
     const lb = window._leaderboardData || [];
     const upsideMap = window._poolUpsideMap || _buildUpsideMap(lb);
@@ -8435,11 +8352,8 @@ function showUpsideDetail() {
         .map((e) => ({ ...e, upside: upsideMap.get(e.email) ?? 0 }))
         .sort((a, b) => b.upside - a.upside || b.totalPoints - a.totalPoints);
 
-    window._upsideRanked = ranked;
-
-    list.innerHTML = ranked.map((u, i) => {
+    body.innerHTML = ranked.map((u, i) => {
         const isMe = u.email === userEmail;
-        const safeEmail = u.email.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const aliveFlags = u.squad
             .filter((t) => !eliminatedTeams.has(t.name))
             .sort((a, b) => (TEAM_REPORT_DATA[b.name]?.winProb || 0) - (TEAM_REPORT_DATA[a.name]?.winProb || 0))
@@ -8447,51 +8361,29 @@ function showUpsideDetail() {
             .join('');
         const barColor = i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : i === 2 ? '#f97316' : isMe ? '#3b82f6' : '#4b5563';
         return `
-            <button data-upside-email="${escapeHtml(u.email)}" onclick="showUpsidePlayerCard('${safeEmail}')"
-                class="upside-player-row w-full relative flex items-center gap-2 px-4 py-3 text-left border-b border-gray-800 last:border-0 hover:bg-gray-800 transition-colors ${isMe ? 'bg-blue-950/30' : ''}">
-                <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color: ${barColor};"></div>
+            <div data-upside-me="${isMe}" class="relative flex items-center gap-3 px-5 py-3.5 border-b border-gray-800 last:border-0 ${isMe ? 'bg-blue-950/40' : ''}">
+                <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color:${barColor};"></div>
                 <span class="text-[9px] font-black text-gray-500 shrink-0 w-4 text-right">${i + 1}</span>
                 <div class="flex-1 min-w-0">
-                    <div class="text-xs font-black uppercase ${isMe ? 'text-blue-300' : 'text-white'} truncate">${escapeHtml(u.nickname)}</div>
-                    <div class="mt-0.5 flex flex-wrap gap-0.5">${aliveFlags || '<span class="text-[9px] text-gray-600">all out</span>'}</div>
+                    <div class="text-xs font-black uppercase ${isMe ? 'text-blue-300' : 'text-white'} truncate">${escapeHtml(u.nickname)}${isMe ? ' · you' : ''}</div>
+                    <div class="mt-1 flex flex-wrap gap-0.5">${aliveFlags || '<span class="text-[9px] text-gray-600 uppercase font-black">all out</span>'}</div>
                 </div>
                 <div class="shrink-0 text-right">
                     <div class="text-sm font-black text-white">${u.upside}</div>
                     <div class="text-[8px] font-black uppercase text-gray-500">/ 100</div>
                 </div>
-            </button>`;
+            </div>`;
     }).join('');
 
-    panel.classList.remove('hidden');
-    panel.classList.add('flex');
-    container.classList.add('upside-expanded');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
-
     requestAnimationFrame(() => {
-        const myRow = list.querySelector(`[data-upside-email="${CSS.escape(userEmail)}"]`);
+        const myRow = body.querySelector('[data-upside-me="true"]');
         if (myRow) myRow.scrollIntoView({ block: 'center' });
     });
 }
 
-function showUpsidePlayerCard(email) {
-    // Highlight selected row
-    document.querySelectorAll('.upside-player-row').forEach((btn) => {
-        const active = btn.dataset.upsideEmail === email;
-        btn.classList.toggle('bg-gray-800', active);
-    });
-    _renderUpsideCard(email);
-}
-
-function closeUpsidePlayersPanel() {
-    const panel = document.getElementById('upside-players-panel');
-    const container = document.getElementById('upside-container');
-    if (panel) { panel.classList.add('hidden'); panel.classList.remove('flex'); }
-    if (container) container.classList.remove('upside-expanded');
-}
-
 function closeUpsideModal() {
-    closeUpsidePlayersPanel();
     _closeModalWithAnimation('upside-modal');
 }
 
