@@ -4846,10 +4846,35 @@ async function setupDashboard() {
 
         const spent = liveSquad.reduce((sum, team) => sum + team.cost, 0);
         const myPoints = currentUserRows.reduce((sum, pick) => sum + (teamPointsMap[pick.team_name] || 0), 0);
-        const myRank = leaderboardData.findIndex((entry) => entry.email === userEmail);
 
-        if (myPointsEl) myPointsEl.textContent = `${myPoints}`;
-        if (myRankEl) myRankEl.textContent = myRank >= 0 ? `#${myRank + 1}` : '-';
+        const currentRanksMap = _getPlayerDisplayRanks(leaderboardData);
+        const myDisplayRank = currentRanksMap[userEmail] || null;
+        const tiedCount = myDisplayRank ? Object.values(currentRanksMap).filter((r) => r === myDisplayRank).length : 0;
+        const isTied = tiedCount > 1;
+
+        const prevPointsMap = JSON.parse(localStorage.getItem('wc_pool_lb_points') || '{}');
+        const prevRank = previousRanks[userEmail];
+        const prevMyPoints = prevPointsMap[userEmail];
+        const rankDelta = (prevRank !== undefined && myDisplayRank !== null) ? (prevRank - myDisplayRank) : 0;
+        const pointsDelta = (prevMyPoints !== undefined) ? (myPoints - prevMyPoints) : 0;
+
+        if (myPointsEl) {
+            myPointsEl.innerHTML = `<span>${myPoints}</span>${_renderDashDelta(pointsDelta)}`;
+        }
+        if (myRankEl) {
+            if (myDisplayRank) {
+                const suffix = _ordinalSuffix(myDisplayRank);
+                const tieLabel = isTied ? 'T' : '';
+                myRankEl.innerHTML = `<span>${tieLabel}${myDisplayRank}<sup class="text-[11px] font-black">${suffix}</sup></span>${_renderDashDelta(rankDelta)}`;
+            } else {
+                myRankEl.textContent = '-';
+            }
+        }
+
+        const nextPointsMap = {};
+        leaderboardData.forEach((entry) => { nextPointsMap[entry.email] = entry.totalPoints; });
+        localStorage.setItem('wc_pool_lb_ranks', JSON.stringify(currentRanksMap));
+        localStorage.setItem('wc_pool_lb_points', JSON.stringify(nextPointsMap));
         // Report card grade
         if (reportGradeEl && liveSquad.length > 0) {
             const rc = _computeReportCard(liveSquad);
@@ -6456,6 +6481,23 @@ async function submitManualResult() {
         button.innerText = 'Log Result';
         button.disabled = false;
     }
+}
+
+function _ordinalSuffix(n) {
+    const m100 = n % 100;
+    if (m100 >= 11 && m100 <= 13) return 'th';
+    switch (n % 10) {
+        case 1: return 'st';
+        case 2: return 'nd';
+        case 3: return 'rd';
+        default: return 'th';
+    }
+}
+
+function _renderDashDelta(delta) {
+    if (!delta || delta === 0) return '';
+    if (delta > 0) return `<span class="ml-1 text-[10px] font-black text-green-400 leading-none">↑${delta}</span>`;
+    return `<span class="ml-1 text-[10px] font-black text-red-400 leading-none">↓${Math.abs(delta)}</span>`;
 }
 
 function _getPlayerDisplayRanks(leaderboardData = []) {
