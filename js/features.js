@@ -523,12 +523,86 @@ function _computeRawUpside(squad) {
         .reduce((s, t) => s + (TEAM_REPORT_DATA[t.name]?.winProb || 0), 0);
 }
 
-// Returns Map<email, 0-100> normalised so the pool leader = 100.
+// Solves the pool's constrained knapsack: pick 8 non-eliminated teams,
+// cost ≤ 150, ≤ 1 Tier 1, ≥ 3 Tier 3, maximising Σ winProb.
+// Returns { squad: [...], rawTotal } or { squad: [], rawTotal: 0 } if infeasible.
+function _computeMaxPossibleSquad() {
+    const candidates = (typeof teams !== 'undefined' ? teams : [])
+        .filter((t) => t && t.name && t.qualified !== false && !eliminatedTeams.has(t.name))
+        .map((t) => ({
+            name: t.name,
+            flag: t.flag || '',
+            cost: t.cost || 0,
+            tier: t.tier,
+            group: t.group || '',
+            winProb: (TEAM_REPORT_DATA[t.name]?.winProb) || 0
+        }));
+
+    const memo = new Map();
+    const decision = new Map();
+
+    function bestFrom(i, count, cost, t1, t3) {
+        if (count === 8) return (cost <= 150 && t1 <= 1 && t3 >= 3) ? 0 : -Infinity;
+        if (i >= candidates.length) return -Infinity;
+        if (count + (candidates.length - i) < 8) return -Infinity;
+
+        const key = `${i}|${count}|${cost}|${t1}|${Math.min(t3, 3)}`;
+        if (memo.has(key)) return memo.get(key);
+
+        const skip = bestFrom(i + 1, count, cost, t1, t3);
+
+        let take = -Infinity;
+        const c = candidates[i];
+        const newT1 = t1 + (c.tier === 1 ? 1 : 0);
+        const newCost = cost + c.cost;
+        if (newT1 <= 1 && newCost <= 150) {
+            const newT3 = t3 + (c.tier === 3 ? 1 : 0);
+            const sub = bestFrom(i + 1, count + 1, newCost, newT1, newT3);
+            if (sub > -Infinity) take = sub + c.winProb;
+        }
+
+        const best = Math.max(skip, take);
+        memo.set(key, best);
+        decision.set(key, take > skip ? 'take' : 'skip');
+        return best;
+    }
+
+    const total = bestFrom(0, 0, 0, 0, 0);
+    if (!isFinite(total) || total <= 0) return { squad: [], rawTotal: 0 };
+
+    const picks = [];
+    let i = 0, count = 0, cost = 0, t1 = 0, t3 = 0;
+    while (i < candidates.length && picks.length < 8) {
+        const key = `${i}|${count}|${cost}|${t1}|${Math.min(t3, 3)}`;
+        if (decision.get(key) === 'take') {
+            const c = candidates[i];
+            picks.push(c);
+            cost += c.cost;
+            t1 += (c.tier === 1 ? 1 : 0);
+            t3 += (c.tier === 3 ? 1 : 0);
+            count++;
+        }
+        i++;
+    }
+
+    return { squad: picks, rawTotal: total };
+}
+
+// Returns Map<email, 0-100> normalised so the theoretical best legal squad = 100.
+// Also stashes the best squad + raw total on window for modal reference.
 function _buildUpsideMap(leaderboardData) {
-    const raws = (leaderboardData || []).map((e) => ({ email: e.email, raw: _computeRawUpside(e.squad) }));
-    const maxRaw = Math.max(...raws.map((r) => r.raw), 0.001);
+    const best = _computeMaxPossibleSquad();
+    const leaderboardRaws = (leaderboardData || []).map((e) => _computeRawUpside(e.squad));
+    const fallbackMax = Math.max(...leaderboardRaws, 0.001);
+    const maxRaw = best.rawTotal > 0 ? best.rawTotal : fallbackMax;
+
+    window._poolBestUpsideSquad = best.squad;
+    window._poolBestUpsideRaw = best.rawTotal;
+
     const map = new Map();
-    raws.forEach(({ email, raw }) => map.set(email, Math.round(raw / maxRaw * 100)));
+    (leaderboardData || []).forEach((e, idx) => {
+        map.set(e.email, Math.round(leaderboardRaws[idx] / maxRaw * 100));
+    });
     return map;
 }
 
@@ -8344,6 +8418,8 @@ function closeR32SeatingInfo() {
 let _upsideRanked = [];
 let _upsideSelectedEmail = '';
 
+const UPSIDE_BEST_EMAIL = '__best_possible__';
+
 function showMyUpsideCard() {
     const modal = document.getElementById('upside-modal');
     if (!modal) return;
@@ -8364,7 +8440,19 @@ function showMyUpsideCard() {
 function _renderUpsideSidebar() {
     const sidebar = document.getElementById('upside-sidebar');
     if (!sidebar) return;
-    sidebar.innerHTML = _upsideRanked.map((u, i) => {
+    const bestSquad = window._poolBestUpsideSquad || [];
+    const bestRow = bestSquad.length === 8
+        ? (() => {
+            const isSelected = _upsideSelectedEmail === UPSIDE_BEST_EMAIL;
+            return `<button data-email="${UPSIDE_BEST_EMAIL}" onclick="selectUpsidePlayer('${UPSIDE_BEST_EMAIL}')"
+                class="w-full text-left rounded-xl px-3 py-2 transition-colors relative overflow-hidden border border-dashed border-emerald-500/60 ${isSelected ? 'bg-emerald-900/40' : 'hover:bg-emerald-900/20'}">
+                <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color:#10b981;"></div>
+                <div class="pl-2 text-[11px] font-black text-emerald-300 truncate uppercase tracking-[0.12em]">Best Possible</div>
+                <div class="pl-2 text-[11px] text-emerald-400/80">100 / 100 · benchmark</div>
+            </button>`;
+        })()
+        : '';
+    const playerRows = _upsideRanked.map((u, i) => {
         const isMe = u.email === userEmail;
         const isSelected = u.email === _upsideSelectedEmail;
         const barColor = i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : i === 2 ? '#f97316' : isMe ? '#3b82f6' : '#4b5563';
@@ -8376,18 +8464,12 @@ function _renderUpsideSidebar() {
             <div class="pl-2 text-[11px] text-gray-400">${u.upside} / 100</div>
         </button>`;
     }).join('');
+    sidebar.innerHTML = bestRow + playerRows;
 }
 
 function selectUpsidePlayer(email) {
     _upsideSelectedEmail = email;
-    const sidebar = document.getElementById('upside-sidebar');
-    if (sidebar) {
-        sidebar.querySelectorAll('button[data-email]').forEach((btn) => {
-            const sel = btn.dataset.email === email;
-            btn.classList.toggle('bg-gray-700', sel);
-            btn.classList.toggle('hover:bg-gray-800', !sel);
-        });
-    }
+    _renderUpsideSidebar();
     _renderUpsideDetail(email);
     closeUpsideDrawer();
 }
@@ -8409,18 +8491,8 @@ function closeUpsideDrawer() {
 function _renderUpsideDetail(email) {
     const body = document.getElementById('upside-modal-body');
     if (!body) return;
-    const u = _upsideRanked.find((e) => e.email === email);
-    if (!u) return;
-    const isMe = email === userEmail;
-    const upsideMap = window._poolUpsideMap || _buildUpsideMap(window._leaderboardData || []);
-    const upside = upsideMap.get(email) ?? 0;
-    const squad = u.squad || [];
-    const aliveTeams = squad
-        .filter((t) => !eliminatedTeams.has(t.name))
-        .sort((a, b) => (TEAM_REPORT_DATA[b.name]?.winProb || 0) - (TEAM_REPORT_DATA[a.name]?.winProb || 0));
-    const elimTeams = squad.filter((t) => eliminatedTeams.has(t.name));
-    const maxProb = Math.max(...aliveTeams.map((t) => TEAM_REPORT_DATA[t.name]?.winProb || 0), 0.001);
-    const teamRow = (t, dim) => {
+
+    const teamRow = (t, dim, maxProb) => {
         const prob = TEAM_REPORT_DATA[t.name]?.winProb || 0;
         const barPct = Math.min(100, Math.round(prob / maxProb * 100));
         return `<div class="flex items-center gap-3 ${dim ? 'opacity-35' : ''}">
@@ -8434,13 +8506,53 @@ function _renderUpsideDetail(email) {
             </div>
         </div>`;
     };
+
+    if (email === UPSIDE_BEST_EMAIL) {
+        const squad = window._poolBestUpsideSquad || [];
+        const sorted = [...squad].sort((a, b) => (b.winProb || 0) - (a.winProb || 0));
+        const maxProb = Math.max(...sorted.map((t) => t.winProb || 0), 0.001);
+        const totalCost = squad.reduce((s, t) => s + (t.cost || 0), 0);
+        body.innerHTML = `
+            <div class="space-y-4">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <div class="text-base font-black uppercase italic text-emerald-300">Best Possible Squad</div>
+                        <div class="text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 mt-0.5 leading-relaxed">
+                            The highest-upside legal squad under pool rules — the benchmark everyone is scored against.
+                        </div>
+                        <div class="text-[10px] font-black uppercase tracking-[0.12em] text-gray-500 mt-1">
+                            ${totalCost} / 150 pts · 8 teams
+                        </div>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <div class="text-4xl font-black text-emerald-300">100</div>
+                        <div class="text-[10px] font-black uppercase text-gray-400">/ 100</div>
+                    </div>
+                </div>
+                <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Optimal Lineup</div>
+                <div class="space-y-3">${sorted.map((t) => teamRow(t, false, maxProb)).join('')}</div>
+            </div>`;
+        return;
+    }
+
+    const u = _upsideRanked.find((e) => e.email === email);
+    if (!u) return;
+    const isMe = email === userEmail;
+    const upsideMap = window._poolUpsideMap || _buildUpsideMap(window._leaderboardData || []);
+    const upside = upsideMap.get(email) ?? 0;
+    const squad = u.squad || [];
+    const aliveTeams = squad
+        .filter((t) => !eliminatedTeams.has(t.name))
+        .sort((a, b) => (TEAM_REPORT_DATA[b.name]?.winProb || 0) - (TEAM_REPORT_DATA[a.name]?.winProb || 0));
+    const elimTeams = squad.filter((t) => eliminatedTeams.has(t.name));
+    const maxProb = Math.max(...aliveTeams.map((t) => TEAM_REPORT_DATA[t.name]?.winProb || 0), 0.001);
     body.innerHTML = `
         <div class="space-y-4">
             <div class="flex items-center justify-between gap-3">
                 <div>
                     <div class="text-base font-black uppercase italic text-white">${isMe ? 'Your Upside' : escapeHtml(u.nickname)}</div>
                     <div class="text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 mt-0.5 leading-relaxed">
-                        ${isMe ? 'Combined win odds of your surviving teams vs the pool leader.' : 'Combined win odds of surviving teams vs the pool leader.'}
+                        ${isMe ? 'Combined win odds of your surviving teams vs the best legal squad.' : 'Combined win odds of surviving teams vs the best legal squad.'}
                     </div>
                 </div>
                 <div class="text-right shrink-0">
@@ -8448,8 +8560,8 @@ function _renderUpsideDetail(email) {
                     <div class="text-[10px] font-black uppercase text-gray-400">/ 100</div>
                 </div>
             </div>
-            ${aliveTeams.length > 0 ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Still Alive</div><div class="space-y-3">${aliveTeams.map((t) => teamRow(t, false)).join('')}</div>` : ''}
-            ${elimTeams.length > 0 ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 mt-4 mb-3">Eliminated</div><div class="space-y-3">${elimTeams.map((t) => teamRow(t, true)).join('')}</div>` : ''}
+            ${aliveTeams.length > 0 ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Still Alive</div><div class="space-y-3">${aliveTeams.map((t) => teamRow(t, false, maxProb)).join('')}</div>` : ''}
+            ${elimTeams.length > 0 ? `<div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 mt-4 mb-3">Eliminated</div><div class="space-y-3">${elimTeams.map((t) => teamRow(t, true, maxProb)).join('')}</div>` : ''}
         </div>`;
 }
 
