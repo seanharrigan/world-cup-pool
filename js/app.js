@@ -707,40 +707,15 @@ async function checkAdminStatus() {
     const desktopAdminLink = document.getElementById('nav-admin');
     const mobileAdminLink = document.getElementById('mobile-nav-admin');
 
-    if (desktopAdminLink) {
-        desktopAdminLink.classList.add('hidden');
+    desktopAdminLink?.classList.add('hidden');
+    mobileAdminLink?.classList.add('hidden');
+
+    const isAdmin = Boolean(userEmail) && typeof isProtectedAdminEmail === 'function' && isProtectedAdminEmail(userEmail);
+    if (isAdmin) {
+        desktopAdminLink?.classList.remove('hidden');
+        mobileAdminLink?.classList.remove('hidden');
     }
-
-    if (mobileAdminLink) {
-        mobileAdminLink.classList.add('hidden');
-    }
-
-    if (!userEmail) {
-        return false;
-    }
-
-    try {
-        const { data, error } = await supabaseClient
-            .from('admins')
-            .select('email')
-            .eq('email', userEmail)
-            .maybeSingle();
-
-        if (error) {
-            throw error;
-        }
-
-        const isAdmin = Boolean(data?.email);
-
-        if (isAdmin) {
-            desktopAdminLink?.classList.remove('hidden');
-            mobileAdminLink?.classList.remove('hidden');
-        }
-
-        return isAdmin;
-    } catch (error) {
-        return false;
-    }
+    return isAdmin;
 }
 
 function toggleTeam(name) {
