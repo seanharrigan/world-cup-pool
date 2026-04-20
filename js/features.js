@@ -4733,6 +4733,7 @@ async function setupDashboard() {
         await fetchAdvancedTeams();
         const teamPointsMap = buildTeamPointsMap(matches, teams, advancedTeams);
         window._dashTeamPointsMap = teamPointsMap;
+        window._dashBestAvailableTeam = buildBestAvailableTeamData(matches || [], teams, advancedTeams, eliminatedTeams);
         const leaderboardData = buildLeaderboardData(picks, matches, profilesMap, teams, advancedTeams, eliminatedTeams);
         const previousRanks = JSON.parse(localStorage.getItem('wc_pool_lb_ranks') || '{}');
         const dashPlayerChips = computePlayerChips(leaderboardData, matches, previousRanks);
@@ -8442,6 +8443,7 @@ let _upsideSelectedEmail = '';
 
 let _scoreRanked = [];
 let _scoreSelectedEmail = '';
+const SCORE_BEST_EMAIL = '__best_available__';
 
 function showMyScoreCard() {
     const modal = document.getElementById('score-modal');
@@ -8459,7 +8461,19 @@ function showMyScoreCard() {
 function _renderScoreSidebar() {
     const sidebar = document.getElementById('score-sidebar');
     if (!sidebar) return;
-    sidebar.innerHTML = _scoreRanked.map((u, i) => {
+    const best = window._dashBestAvailableTeam;
+    const bestRow = best && Array.isArray(best.squad) && best.squad.length === 8
+        ? (() => {
+            const isSelected = _scoreSelectedEmail === SCORE_BEST_EMAIL;
+            return `<button data-email="${SCORE_BEST_EMAIL}" onclick="selectScorePlayer('${SCORE_BEST_EMAIL}')"
+                class="w-full text-left rounded-xl px-3 py-2 transition-colors relative overflow-hidden border border-dashed border-emerald-500/60 ${isSelected ? 'bg-emerald-900/40' : 'hover:bg-emerald-900/20'}">
+                <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color:#10b981;"></div>
+                <div class="pl-2 text-[11px] font-black text-emerald-300 truncate uppercase tracking-[0.12em]">Best Available</div>
+                <div class="pl-2 text-[11px] text-emerald-400/80">${best.totalPoints} pts · benchmark</div>
+            </button>`;
+        })()
+        : '';
+    const playerRows = _scoreRanked.map((u, i) => {
         const isMe = u.email === userEmail;
         const isSelected = u.email === _scoreSelectedEmail;
         const barColor = i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : i === 2 ? '#f97316' : isMe ? '#3b82f6' : '#4b5563';
@@ -8471,6 +8485,7 @@ function _renderScoreSidebar() {
             <div class="pl-2 text-[11px] text-gray-400">${u.totalPoints} pts</div>
         </button>`;
     }).join('');
+    sidebar.innerHTML = bestRow + playerRows;
 }
 
 function selectScorePlayer(email) {
@@ -8497,10 +8512,58 @@ function closeScoreDrawer() {
 function _renderScoreDetail(email) {
     const body = document.getElementById('score-modal-body');
     if (!body) return;
+    const teamPointsMap = window._dashTeamPointsMap || {};
+
+    const teamRow = (t, pts, maxPts) => {
+        const elim = eliminatedTeams.has(t.name);
+        const barPct = Math.min(100, Math.round(pts / maxPts * 100));
+        return `<div class="flex items-center gap-3 ${elim ? 'opacity-60' : ''}">
+            <span class="text-lg leading-none shrink-0">${t.flag || ''}</span>
+            <div class="flex-1 min-w-0">
+                <div class="text-xs font-black uppercase ${elim ? 'text-gray-400 line-through' : 'text-white'} truncate">${escapeHtml(t.name)}</div>
+                <div class="mt-1 h-1 rounded-full bg-gray-700 overflow-hidden"><div class="h-full rounded-full bg-blue-400" style="width:${barPct}%;"></div></div>
+            </div>
+            <div class="shrink-0 text-right">
+                <div class="text-xs font-black text-white">${pts}</div>
+                <div class="text-[9px] font-black uppercase text-gray-500">${elim ? 'eliminated' : 'pts'}</div>
+            </div>
+        </div>`;
+    };
+
+    if (email === SCORE_BEST_EMAIL) {
+        const best = window._dashBestAvailableTeam;
+        if (!best) return;
+        const rows = [...(best.squad || [])]
+            .map((t) => ({ ...t, pts: teamPointsMap[t.name] || 0 }))
+            .sort((a, b) => b.pts - a.pts);
+        const maxPts = Math.max(...rows.map((r) => r.pts), 1);
+        const totalCost = (best.squad || []).reduce((s, t) => s + (t.cost || 0), 0);
+        body.innerHTML = `
+            <div class="space-y-4">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <div class="text-base font-black uppercase italic text-emerald-300">Best Available Squad</div>
+                        <div class="text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 mt-0.5 leading-relaxed">
+                            Highest-scoring legal squad to date — the ceiling everyone is chasing.
+                        </div>
+                        <div class="text-[10px] font-black uppercase tracking-[0.12em] text-gray-500 mt-1">
+                            ${totalCost} / 150 pts · 8 teams
+                        </div>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <div class="text-4xl font-black text-emerald-300">${best.totalPoints}</div>
+                        <div class="text-[10px] font-black uppercase text-gray-400">pts</div>
+                    </div>
+                </div>
+                <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Optimal Lineup</div>
+                <div class="space-y-3">${rows.map((r) => teamRow(r, r.pts, maxPts)).join('')}</div>
+            </div>`;
+        return;
+    }
+
     const u = _scoreRanked.find((e) => e.email === email);
     if (!u) return;
     const isMe = email === userEmail;
-    const teamPointsMap = window._dashTeamPointsMap || {};
     const squad = u.squad || [];
     const rank = _scoreRanked.findIndex((e) => e.email === email) + 1;
     const totalPoints = u.totalPoints ?? 0;
@@ -8509,22 +8572,6 @@ function _renderScoreDetail(email) {
         .map((t) => ({ ...t, pts: teamPointsMap[t.name] || 0 }))
         .sort((a, b) => b.pts - a.pts);
     const maxPts = Math.max(...rows.map((r) => r.pts), 1);
-
-    const teamRow = (t) => {
-        const elim = eliminatedTeams.has(t.name);
-        const barPct = Math.min(100, Math.round(t.pts / maxPts * 100));
-        return `<div class="flex items-center gap-3 ${elim ? 'opacity-60' : ''}">
-            <span class="text-lg leading-none shrink-0">${t.flag || ''}</span>
-            <div class="flex-1 min-w-0">
-                <div class="text-xs font-black uppercase ${elim ? 'text-gray-400 line-through' : 'text-white'} truncate">${escapeHtml(t.name)}</div>
-                <div class="mt-1 h-1 rounded-full bg-gray-700 overflow-hidden"><div class="h-full rounded-full bg-blue-400" style="width:${barPct}%;"></div></div>
-            </div>
-            <div class="shrink-0 text-right">
-                <div class="text-xs font-black text-white">${t.pts}</div>
-                <div class="text-[9px] font-black uppercase text-gray-500">${elim ? 'eliminated' : 'pts'}</div>
-            </div>
-        </div>`;
-    };
 
     body.innerHTML = `
         <div class="space-y-4">
@@ -8541,7 +8588,7 @@ function _renderScoreDetail(email) {
                 </div>
             </div>
             <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Squad Breakdown</div>
-            <div class="space-y-3">${rows.map(teamRow).join('')}</div>
+            <div class="space-y-3">${rows.map((r) => teamRow(r, r.pts, maxPts)).join('')}</div>
         </div>`;
 }
 
