@@ -4942,7 +4942,7 @@ async function setupDashboard() {
                     <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">$${spent} / $150</span>
                 </div>
                 <div class="h-2 rounded-full overflow-hidden" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.18);">
-                    <div class="h-full rounded-full" style="width: ${Math.round(spent / 150 * 100)}%; background-color: var(--player-card-accent-primary);"></div>
+                    <div class="h-full rounded-full" style="width: ${Math.round(spent / 150 * 100)}%; background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>
                 </div>
             `;
         } else if (squadBudgetBar) {
@@ -4972,8 +4972,8 @@ async function setupDashboard() {
                     <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">${myPts} pts</span>
                 </div>
                 <div class="relative h-2 rounded-full overflow-visible" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.18);">
-                    <div class="h-full rounded-full" style="width: ${pct}%; background-color: var(--player-card-accent-primary);"></div>
-                    ${pct > 0 && pct < 100 ? `<div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-gray-900 shadow" style="left: calc(${pct}% - 6px); background-color: var(--player-card-accent-primary);"></div>` : ''}
+                    <div class="h-full rounded-full" style="width: ${pct}%; background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>
+                    ${pct > 0 && pct < 100 ? `<div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-gray-900 shadow" style="left: calc(${pct}% - 6px); background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>` : ''}
                 </div>
                 <div class="flex items-center justify-between mt-1 mb-3">
                     <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">${minPts} min</span>
@@ -4985,8 +4985,8 @@ async function setupDashboard() {
                         <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">${upside} / 100</span>
                     </div>
                     <div class="relative h-2 rounded-full overflow-visible" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.18);">
-                        <div class="h-full rounded-full" style="width: ${upside}%; background-color: var(--player-card-accent-primary);"></div>
-                        <div id="upside-bar-dot" class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-gray-900 shadow" style="left: calc(${upside}% - 6px); background-color: var(--player-card-accent-primary);"></div>
+                        <div class="h-full rounded-full" style="width: ${upside}%; background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>
+                        <div id="upside-bar-dot" class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-gray-900 shadow" style="left: calc(${upside}% - 6px); background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>
                     </div>
                     <div class="flex items-center justify-between mt-1">
                         <span class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-600">0 worst</span>
@@ -8077,7 +8077,7 @@ async function showPlayerProfile(email) {
                 <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">$${budgetUsed} / $150</span>
             </div>
             <div class="h-2 rounded-full overflow-hidden" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59, 130, 246), 0.18);">
-                <div class="h-full rounded-full" style="width: ${Math.round(budgetUsed / 150 * 100)}%; background-color: var(--player-card-accent-primary);"></div>
+                <div class="h-full rounded-full" style="width: ${Math.round(budgetUsed / 150 * 100)}%; background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>
             </div>
         </div>` : '';
 
@@ -8925,7 +8925,7 @@ async function showOwnerPlayer(email) {
                 <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white">$${budgetUsed} / $150</span>
             </div>
             <div class="h-2 rounded-full overflow-hidden" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59, 130, 246), 0.18);">
-                <div class="h-full rounded-full" style="width: ${Math.round(budgetUsed / 150 * 100)}%; background-color: var(--player-card-accent-primary);"></div>
+                <div class="h-full rounded-full" style="width: ${Math.round(budgetUsed / 150 * 100)}%; background-color: var(--player-card-accent-on-dark, var(--player-card-accent-primary));"></div>
             </div>
         </div>` : '';
 
