@@ -523,6 +523,26 @@ function _computeRawUpside(squad) {
         .reduce((s, t) => s + (TEAM_REPORT_DATA[t.name]?.winProb || 0), 0);
 }
 
+// Pro-rata redistribute eliminated teams' win% across survivors so they still
+// sum to the original pre-tournament total. Returns Map<teamName, adjustedProb>.
+function _buildAdjustedWinProbMap() {
+    let originalTotal = 0;
+    let survivingTotal = 0;
+    for (const name in TEAM_REPORT_DATA) {
+        const prob = TEAM_REPORT_DATA[name]?.winProb || 0;
+        originalTotal += prob;
+        if (!eliminatedTeams.has(name)) survivingTotal += prob;
+    }
+    const scale = survivingTotal > 0 ? originalTotal / survivingTotal : 1;
+    const map = new Map();
+    for (const name in TEAM_REPORT_DATA) {
+        if (!eliminatedTeams.has(name)) {
+            map.set(name, (TEAM_REPORT_DATA[name].winProb || 0) * scale);
+        }
+    }
+    return map;
+}
+
 // Solves the pool's constrained knapsack: pick 8 non-eliminated teams,
 // cost ≤ 150, ≤ 1 Tier 1, ≥ 3 Tier 3, maximising Σ winProb.
 // Returns { squad: [...], rawTotal } or { squad: [], rawTotal: 0 } if infeasible.
@@ -8492,9 +8512,13 @@ function _renderUpsideDetail(email) {
     const body = document.getElementById('upside-modal-body');
     if (!body) return;
 
+    const adjustedMap = _buildAdjustedWinProbMap();
+
     const teamRow = (t, dim, maxProb) => {
-        const prob = TEAM_REPORT_DATA[t.name]?.winProb || 0;
-        const barPct = Math.min(100, Math.round(prob / maxProb * 100));
+        const orig = TEAM_REPORT_DATA[t.name]?.winProb || 0;
+        const adj = adjustedMap.get(t.name) ?? orig;
+        const barPct = Math.min(100, Math.round(adj / maxProb * 100));
+        const shifted = Math.abs(adj - orig) >= 0.05;
         return `<div class="flex items-center gap-3 ${dim ? 'opacity-35' : ''}">
             <span class="text-lg leading-none shrink-0">${t.flag || ''}</span>
             <div class="flex-1 min-w-0">
@@ -8502,15 +8526,15 @@ function _renderUpsideDetail(email) {
                 ${!dim ? `<div class="mt-1 h-1 rounded-full bg-gray-700 overflow-hidden"><div class="h-full rounded-full bg-blue-400" style="width:${barPct}%;"></div></div>` : ''}
             </div>
             <div class="shrink-0 text-right">
-                ${!dim ? `<div class="text-xs font-black text-white">${prob.toFixed(1)}%</div><div class="text-[9px] font-black uppercase text-gray-500">win odds</div>` : `<div class="text-[9px] font-black uppercase text-gray-500">eliminated</div>`}
+                ${!dim ? `<div class="text-xs font-black text-white">${adj.toFixed(1)}%</div>${shifted ? `<div class="text-[9px] font-black uppercase text-emerald-400/80">was ${orig.toFixed(1)}%</div>` : ''}<div class="text-[9px] font-black uppercase text-gray-500">win odds</div>` : `<div class="text-[9px] font-black uppercase text-gray-500">eliminated</div>`}
             </div>
         </div>`;
     };
 
     if (email === UPSIDE_BEST_EMAIL) {
         const squad = window._poolBestUpsideSquad || [];
-        const sorted = [...squad].sort((a, b) => (b.winProb || 0) - (a.winProb || 0));
-        const maxProb = Math.max(...sorted.map((t) => t.winProb || 0), 0.001);
+        const sorted = [...squad].sort((a, b) => (adjustedMap.get(b.name) ?? b.winProb ?? 0) - (adjustedMap.get(a.name) ?? a.winProb ?? 0));
+        const maxProb = Math.max(...sorted.map((t) => adjustedMap.get(t.name) ?? t.winProb ?? 0), 0.001);
         const totalCost = squad.reduce((s, t) => s + (t.cost || 0), 0);
         body.innerHTML = `
             <div class="space-y-4">
@@ -8543,9 +8567,9 @@ function _renderUpsideDetail(email) {
     const squad = u.squad || [];
     const aliveTeams = squad
         .filter((t) => !eliminatedTeams.has(t.name))
-        .sort((a, b) => (TEAM_REPORT_DATA[b.name]?.winProb || 0) - (TEAM_REPORT_DATA[a.name]?.winProb || 0));
+        .sort((a, b) => (adjustedMap.get(b.name) ?? 0) - (adjustedMap.get(a.name) ?? 0));
     const elimTeams = squad.filter((t) => eliminatedTeams.has(t.name));
-    const maxProb = Math.max(...aliveTeams.map((t) => TEAM_REPORT_DATA[t.name]?.winProb || 0), 0.001);
+    const maxProb = Math.max(...aliveTeams.map((t) => adjustedMap.get(t.name) ?? 0), 0.001);
     body.innerHTML = `
         <div class="space-y-4">
             <div class="flex items-center justify-between gap-3">
