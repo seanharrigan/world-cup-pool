@@ -1921,16 +1921,24 @@
         </div>
     </div>
 
-    <div id="upside-modal" class="hidden fixed inset-0 z-[118] bg-black/60 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closeUpsideModal()">
-        <div class="modal-card w-full max-w-sm rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
-            <div class="shrink-0 flex items-center justify-between px-5 py-4 border-b border-gray-800">
+    <!-- Dashboard: Upside modal -->
+    <div id="upside-modal" class="hidden fixed inset-0 z-[118] bg-black/80 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closeUpsideModal()">
+        <div class="w-full max-w-4xl rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col" style="height:min(700px,90vh)">
+            <div class="shrink-0 flex items-center justify-between px-6 py-4 border-b border-gray-800">
                 <div>
                     <div class="text-[11px] font-black uppercase tracking-[0.25em] text-gray-300">Upside Rankings</div>
                     <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500 mt-0.5">Win odds · surviving teams only</div>
                 </div>
                 <button onclick="closeUpsideModal()" class="text-gray-500 hover:text-white transition-colors text-xl leading-none">×</button>
             </div>
-            <div id="upside-modal-body" class="overflow-y-auto flex-1"></div>
+            <div class="flex flex-1 min-h-0 overflow-hidden relative">
+                <div id="upside-sidebar" class="absolute inset-y-0 left-0 z-20 w-44 -translate-x-full lg:static lg:translate-x-0 transition-transform duration-300 ease-in-out shrink-0 border-r border-gray-800 overflow-y-auto p-2 space-y-1 bg-gray-900"></div>
+                <div id="upside-drawer-bg" class="hidden absolute inset-0 z-10 bg-black/40 lg:hidden" onclick="closeUpsideDrawer()"></div>
+                <div class="flex-1 overflow-y-auto min-w-0 relative">
+                    <button onclick="openUpsideDrawer()" class="lg:hidden absolute top-4 left-4 z-[5] flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 hover:text-white transition-colors">← All players</button>
+                    <div id="upside-modal-body" class="p-6 pt-10 lg:pt-6"></div>
+                </div>
+            </div>
         </div>
     </div>
 
