@@ -8526,7 +8526,7 @@ function _renderUpsideDetail(email) {
                 ${!dim ? `<div class="mt-1 h-1 rounded-full bg-gray-700 overflow-hidden"><div class="h-full rounded-full bg-blue-400" style="width:${barPct}%;"></div></div>` : ''}
             </div>
             <div class="shrink-0 text-right">
-                ${!dim ? `<div class="text-xs font-black text-white">${adj.toFixed(1)}%</div>${shifted ? `<div class="text-[9px] font-black uppercase text-emerald-400/80">was ${orig.toFixed(1)}%</div>` : ''}<div class="text-[9px] font-black uppercase text-gray-500">win odds</div>` : `<div class="text-[9px] font-black uppercase text-gray-500">eliminated</div>`}
+                ${!dim ? `<div class="text-xs font-black text-white">${adj.toFixed(1)}%</div>${shifted ? `<div class="text-[9px] font-black uppercase text-emerald-400/80">was ${orig.toFixed(1)}%</div>` : ''}<div class="text-[9px] font-black uppercase text-gray-500">win odds</div>` : `<div class="text-xs font-black text-gray-400 line-through">${orig.toFixed(1)}%</div><div class="text-[9px] font-black uppercase text-gray-500">eliminated</div>`}
             </div>
         </div>`;
     };
