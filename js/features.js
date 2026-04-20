@@ -4830,10 +4830,10 @@ async function setupDashboard() {
                         <div class="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 flex items-center gap-2 cursor-pointer hover:border-gray-500 transition-colors ${team.eliminated ? 'opacity-40' : ''}" onclick="showDashTeamStats('${team.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">
                             <span class="text-xl">${team.flag || ''}</span>
                             <div class="flex-1 min-w-0">
-                                <div class="text-xs font-black uppercase text-white truncate">${escapeHtml(team.name)}</div>
-                                <div class="text-[10px] font-bold text-gray-400">${team.group ? `Grp ${team.group} · ` : ''}$${team.cost}${team.eliminated ? ' · out' : ''}</div>
+                                <div class="text-[10px] sm:text-xs font-black uppercase text-white truncate">${escapeHtml(team.name)}</div>
+                                <div class="text-[10px] font-bold text-gray-400">${team.group ? `${team.group} · ` : ''}$${team.cost}${team.eliminated ? ' · out' : ''}</div>
                             </div>
-                            <div class="text-xs font-black shrink-0" style="color: var(--player-card-accent-on-dark);">${teamPointsMap[team.name] || 0} pts</div>
+                            <div class="text-[10px] sm:text-xs font-black shrink-0" style="color: var(--player-card-accent-on-dark);">${teamPointsMap[team.name] || 0} pts</div>
                             <svg class="w-3 h-3 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                         </div>
                     `)
