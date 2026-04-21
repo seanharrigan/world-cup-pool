@@ -4852,38 +4852,33 @@ async function setupDashboard() {
         const tiedCount = myDisplayRank ? Object.values(currentRanksMap).filter((r) => r === myDisplayRank).length : 0;
         const isTied = tiedCount > 1;
 
-        const nextPointsMap = {};
-        leaderboardData.forEach((entry) => { nextPointsMap[entry.email] = entry.totalPoints; });
-
-        const today = new Date().toISOString().slice(0, 10);
-        let daily = null;
-        try { daily = JSON.parse(localStorage.getItem('wc_pool_lb_daily') || 'null'); } catch (e) { daily = null; }
-        let baseline = null;
-        if (!daily) {
-            daily = { current: { date: today, points: nextPointsMap, ranks: currentRanksMap }, previous: null };
-        } else if (daily.current?.date === today) {
-            baseline = daily.previous;
-            daily.current = { date: today, points: nextPointsMap, ranks: currentRanksMap };
-        } else {
-            baseline = daily.current;
-            daily = { previous: daily.current, current: { date: today, points: nextPointsMap, ranks: currentRanksMap } };
-        }
-        localStorage.setItem('wc_pool_lb_daily', JSON.stringify(daily));
         localStorage.setItem('wc_pool_lb_ranks', JSON.stringify(currentRanksMap));
 
-        const prevRank = baseline?.ranks?.[userEmail];
-        const prevMyPoints = baseline?.points?.[userEmail];
-        const rankDelta = (prevRank !== undefined && myDisplayRank !== null) ? (prevRank - myDisplayRank) : 0;
-        const pointsDelta = (prevMyPoints !== undefined) ? (myPoints - prevMyPoints) : 0;
+        // Deltas compare against the state BEFORE the most recent match-input date.
+        let pointsDelta = 0;
+        let rankDelta = 0;
+        const datedMatches = matches.filter((m) => m.match_date_manual);
+        const uniqueMatchDates = [...new Set(datedMatches.map((m) => m.match_date_manual))].sort((a, b) => b.localeCompare(a));
+        if (uniqueMatchDates.length >= 2) {
+            const mostRecentDate = uniqueMatchDates[0];
+            const prevMatches = datedMatches.filter((m) => m.match_date_manual < mostRecentDate);
+            const prevLeaderboard = buildLeaderboardData(picks, prevMatches, profilesMap, teams, advancedTeams, eliminatedTeams);
+            const prevRanksMap = _getPlayerDisplayRanks(prevLeaderboard);
+            const prevEntry = prevLeaderboard.find((e) => e.email === userEmail);
+            const prevMyPoints = prevEntry?.totalPoints ?? myPoints;
+            const prevMyRank = prevRanksMap[userEmail] ?? myDisplayRank;
+            pointsDelta = myPoints - prevMyPoints;
+            rankDelta = (prevMyRank && myDisplayRank) ? (prevMyRank - myDisplayRank) : 0;
+        }
 
         if (myPointsEl) {
-            myPointsEl.innerHTML = `<span>${myPoints}</span>${_renderDashDelta(pointsDelta)}`;
+            myPointsEl.innerHTML = `${_renderDashDelta(pointsDelta)}<span>${myPoints}</span>`;
         }
         if (myRankEl) {
             if (myDisplayRank) {
                 const suffix = _ordinalSuffix(myDisplayRank);
                 const tiePrefix = isTied ? `<span class="text-[11px] font-black text-gray-400 mr-0.5">T</span>` : '';
-                myRankEl.innerHTML = `<span class="inline-flex items-baseline">${tiePrefix}${myDisplayRank}<sup class="text-[11px] font-black ml-0.5">${suffix}</sup></span>${_renderDashDelta(rankDelta)}`;
+                myRankEl.innerHTML = `${_renderDashDelta(rankDelta)}<span class="inline-flex items-baseline">${tiePrefix}${myDisplayRank}<sup class="text-[11px] font-black ml-0.5">${suffix}</sup></span>`;
             } else {
                 myRankEl.textContent = '-';
             }
@@ -6511,8 +6506,8 @@ function _ordinalSuffix(n) {
 
 function _renderDashDelta(delta) {
     if (!delta || delta === 0) return '';
-    if (delta > 0) return `<span class="ml-1 text-[10px] font-black text-green-400 leading-none">↑${delta}</span>`;
-    return `<span class="ml-1 text-[10px] font-black text-red-400 leading-none">↓${Math.abs(delta)}</span>`;
+    if (delta > 0) return `<span class="mr-1 text-[10px] font-black text-green-500 leading-none">↑${delta}</span>`;
+    return `<span class="mr-1 text-[10px] font-black text-red-500 leading-none">↓${Math.abs(delta)}</span>`;
 }
 
 function _getPlayerDisplayRanks(leaderboardData = []) {
