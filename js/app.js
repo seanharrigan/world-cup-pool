@@ -707,13 +707,16 @@ async function checkAdminStatus() {
     const desktopAdminLink = document.getElementById('nav-admin');
     const mobileAdminLink = document.getElementById('mobile-nav-admin');
 
-    desktopAdminLink?.classList.add('hidden');
-    mobileAdminLink?.classList.add('hidden');
+    const hide = (el) => { if (!el) return; el.classList.add('hidden'); el.style.display = 'none'; };
+    const show = (el) => { if (!el) return; el.classList.remove('hidden'); el.style.display = ''; };
+
+    hide(desktopAdminLink);
+    hide(mobileAdminLink);
 
     const isAdmin = Boolean(userEmail) && typeof isProtectedAdminEmail === 'function' && isProtectedAdminEmail(userEmail);
     if (isAdmin) {
-        desktopAdminLink?.classList.remove('hidden');
-        mobileAdminLink?.classList.remove('hidden');
+        show(desktopAdminLink);
+        show(mobileAdminLink);
     }
     return isAdmin;
 }
