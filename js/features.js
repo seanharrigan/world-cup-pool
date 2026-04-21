@@ -5095,7 +5095,7 @@ async function setupDashboard() {
                     <div class="shrink-0 text-right">
                         <div class="text-xl font-black text-gray-900">${entry.totalPoints}</div>
                         <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">pts</div>
-                        <div class="text-[9px] font-black uppercase tracking-[0.15em] mt-0.5" style="color: ${s.bar};">↑ ${upside}</div>
+                        <div class="text-[9px] font-black uppercase tracking-[0.15em] mt-0.5" style="color: ${s.bar};">${upside} up</div>
                     </div>
                 </div>`;
             };
