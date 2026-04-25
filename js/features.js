@@ -7109,20 +7109,30 @@ function closeChipPopover() {
 }
 
 let _lbShowSelection = true;
-let _lbShowBadges = true;
+let _lbShowChips = true;
+
+function _updateLbToggleBtn(btnId, isOn) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.classList.toggle('bg-gray-900', isOn);
+    btn.classList.toggle('text-white', isOn);
+    btn.classList.toggle('border-gray-900', isOn);
+    btn.classList.toggle('bg-white', !isOn);
+    btn.classList.toggle('text-gray-400', !isOn);
+    btn.classList.toggle('border-gray-200', !isOn);
+    btn.classList.toggle('opacity-50', !isOn);
+}
 
 function toggleLbSelection() {
     _lbShowSelection = !_lbShowSelection;
     document.querySelectorAll('.lb-squad-cell').forEach((el) => { el.style.display = _lbShowSelection ? '' : 'none'; });
-    const btn = document.getElementById('lb-toggle-selection');
-    if (btn) btn.textContent = _lbShowSelection ? 'Hide Picks' : 'Show Picks';
+    _updateLbToggleBtn('lb-toggle-selection', _lbShowSelection);
 }
 
-function toggleLbBadges() {
-    _lbShowBadges = !_lbShowBadges;
-    document.querySelectorAll('.lb-badge-cell').forEach((el) => { el.style.display = _lbShowBadges ? '' : 'none'; });
-    const btn = document.getElementById('lb-toggle-badges');
-    if (btn) btn.textContent = _lbShowBadges ? 'Hide Badges' : 'Show Badges';
+function toggleLbChips() {
+    _lbShowChips = !_lbShowChips;
+    document.querySelectorAll('.lb-badge-cell').forEach((el) => { el.style.display = _lbShowChips ? '' : 'none'; });
+    _updateLbToggleBtn('lb-toggle-chips', _lbShowChips);
 }
 
 async function fetchLeaderboard() {
@@ -7221,9 +7231,9 @@ async function fetchLeaderboard() {
             const eliminatedTone = muted ? 'text-gray-300' : 'text-gray-400';
 
             return `
-                <div class="lb-squad-cell text-left">
-                    <div class="text-[8px] font-black tracking-[0.18em] ${remainingTone}">Rem: <span class="ml-1 inline-flex gap-1 align-middle">${remainingFlags || '<span class="text-gray-300">-</span>'}</span></div>
-                    <div class="text-[8px] font-black tracking-[0.18em] ${eliminatedTone}">Elim: <span class="ml-1 inline-flex gap-1 align-middle">${eliminatedFlags || '<span class="text-gray-300">-</span>'}</span></div>
+                <div class="lb-squad-cell text-left leading-none">
+                    <div class="text-[8px] font-black tracking-[0.18em] ${remainingTone}">Rem: <span class="ml-0.5 inline-flex gap-0.5 align-middle" style="font-size:13px">${remainingFlags || '<span class="text-gray-300" style="font-size:8px">-</span>'}</span></div>
+                    <div class="text-[8px] font-black tracking-[0.18em] mt-0.5 ${eliminatedTone}">Elim: <span class="ml-0.5 inline-flex gap-0.5 align-middle" style="font-size:13px">${eliminatedFlags || '<span class="text-gray-300" style="font-size:8px">-</span>'}</span></div>
                 </div>
             `;
         };
@@ -7272,7 +7282,7 @@ async function fetchLeaderboard() {
                 else rankIndicator = '';
             }
 
-            const rowTone = (Number(user.displayRank || 0) % 2) === 1 ? 'bg-white' : 'bg-gray-50';
+            const rowTone = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50';
             const safeEmail = user.email.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
             const separator = idx === 2 ? glowDividerRow : '';
 
@@ -7312,7 +7322,7 @@ async function fetchLeaderboard() {
         }).join('') || '<tr><td colspan="10" class="p-8 text-center text-gray-900">No players found</td></tr>');
 
         if (!_lbShowSelection) document.querySelectorAll('.lb-squad-cell').forEach((el) => { el.style.display = 'none'; });
-        if (!_lbShowBadges) document.querySelectorAll('.lb-badge-cell').forEach((el) => { el.style.display = 'none'; });
+        if (!_lbShowChips) document.querySelectorAll('.lb-badge-cell').forEach((el) => { el.style.display = 'none'; });
 
         // Persist ranks for next page load comparison, cache data for player profile modal
         localStorage.setItem('wc_pool_lb_ranks', JSON.stringify(newRanks));
