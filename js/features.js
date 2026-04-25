@@ -7216,9 +7216,9 @@ async function fetchLeaderboard() {
             const eliminatedTone = muted ? 'text-gray-300' : 'text-gray-400';
 
             return `
-                <div class="lb-squad-cell text-left leading-none">
-                    <div class="text-[8px] font-black tracking-[0.18em] ${remainingTone}">Rem: <span class="ml-0.5 inline-flex gap-0.5 align-middle" style="font-size:12px">${remainingFlags || '<span class="text-gray-300" style="font-size:8px">-</span>'}</span></div>
-                    <div class="text-[8px] font-black tracking-[0.18em] mt-0.5 ${eliminatedTone}">Elim: <span class="ml-0.5 inline-flex gap-0.5 align-middle" style="font-size:12px">${eliminatedFlags || '<span class="text-gray-300" style="font-size:8px">-</span>'}</span></div>
+                <div class="lb-squad-cell text-left">
+                    <div class="leading-none text-[8px] font-black tracking-[0.18em] ${remainingTone}">Rem: <span class="ml-0.5 inline-flex gap-0.5 align-middle" style="font-size:12px">${remainingFlags || '<span class="text-gray-300" style="font-size:8px">-</span>'}</span></div>
+                    <div class="leading-none text-[8px] font-black tracking-[0.18em] mt-px ${eliminatedTone}">Elim: <span class="ml-0.5 inline-flex gap-0.5 align-middle" style="font-size:12px">${eliminatedFlags || '<span class="text-gray-300" style="font-size:8px">-</span>'}</span></div>
                 </div>
             `;
         };
@@ -7288,7 +7288,7 @@ async function fetchLeaderboard() {
                                 <div class="text-sm font-black text-left text-gray-900">${user.nickname}</div>
                                 <span class="lb-badge-cell">${renderPlayerChips(user.chips, user.email, 'row')}</span>
                             </div>
-                            <div class="text-[9px] font-bold tracking-[0.08em] text-gray-400 text-left leading-none">${user.realname}</div>
+                            <div class="text-[9px] font-bold tracking-[0.08em] text-gray-400 text-left">${user.realname}</div>
                             <div class="mt-0.5 text-left">
                                 ${renderSquadSummary(user)}
                             </div>
