@@ -7310,8 +7310,8 @@ async function fetchLeaderboard() {
             const separator = idx === 2 ? glowDividerRow : '';
             const ptsDelta = lbPointsDeltaMap.get(user.email) ?? 0;
             const ptsDeltaHtml = ptsDelta > 0
-                ? `<div class="text-[9px] font-black text-green-500 leading-none">↑${ptsDelta}</div>`
-                : ptsDelta < 0 ? `<div class="text-[9px] font-black text-red-500 leading-none">↓${Math.abs(ptsDelta)}</div>` : '';
+                ? `<span class="text-green-500 text-xs font-black">↑${ptsDelta}</span>`
+                : ptsDelta < 0 ? `<span class="text-red-400 text-xs font-black">↓${Math.abs(ptsDelta)}</span>` : '';
             const upside = lbUpsideMap.get(user.email) ?? 0;
 
             return separator + `
@@ -7323,8 +7323,10 @@ async function fetchLeaderboard() {
                     </div>
                 </td>
                 <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center">
-                    <div class="text-lg font-black text-gray-900">${user.totalPoints}</div>
-                    ${ptsDeltaHtml}
+                    <div class="flex items-center justify-center gap-1.5">
+                        <div class="w-4 text-right">${ptsDeltaHtml}</div>
+                        <div class="text-lg font-black text-gray-900">${user.totalPoints}</div>
+                    </div>
                 </td>
                 <td class="px-4 py-2.5 text-left">
                     <div class="flex items-center gap-3">
