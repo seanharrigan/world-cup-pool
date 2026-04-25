@@ -7210,8 +7210,8 @@ async function fetchLeaderboard() {
             }
 
             const sortedSquad = [...user.squad].sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name));
-            const remainingFlags = sortedSquad.filter((team) => !team.eliminated).map((team) => `<span class="lb-flag text-lg">${team.flag}</span>`).join('');
-            const eliminatedFlags = sortedSquad.filter((team) => team.eliminated).map((team) => `<span class="lb-flag text-lg opacity-70">${team.flag}</span>`).join('');
+            const remainingFlags = sortedSquad.filter((team) => !team.eliminated).map((team) => `<span class="lb-flag text-lg leading-none">${team.flag}</span>`).join('');
+            const eliminatedFlags = sortedSquad.filter((team) => team.eliminated).map((team) => `<span class="lb-flag text-lg leading-none opacity-70">${team.flag}</span>`).join('');
             const remainingTone = muted ? 'text-gray-400' : 'text-gray-500';
             const eliminatedTone = muted ? 'text-gray-300' : 'text-gray-400';
 
@@ -7288,7 +7288,7 @@ async function fetchLeaderboard() {
                                 <div class="text-sm font-black text-left text-gray-900">${user.nickname}</div>
                                 <span class="lb-badge-cell">${renderPlayerChips(user.chips, user.email, 'row')}</span>
                             </div>
-                            <div class="text-[9px] font-bold tracking-[0.08em] text-gray-400 text-left">${user.realname}</div>
+                            <div class="mt-0.5 text-[9px] font-bold tracking-[0.08em] text-gray-400 text-left">${user.realname}</div>
                             <div class="mt-0.5 text-left">
                                 ${renderSquadSummary(user)}
                             </div>
