@@ -7143,7 +7143,7 @@ async function fetchLeaderboard() {
         ] = await Promise.all([
             supabaseClient.from('picks').select('*'),
             supabaseClient.from('matches').select('*'),
-            supabaseClient.from('profiles').select('email, nickname, realname, has_paid, avatar_url, updated_at')
+            supabaseClient.from('profiles').select('email, nickname, realname, favorite_team, has_paid, avatar_url, updated_at')
         ]);
 
         if (picksError) {
