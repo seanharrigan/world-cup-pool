@@ -3845,14 +3845,15 @@ function showDashRankModal() {
         return;
     }
 
-    const medals = ['🥇', '🥈', '🥉'];
+    const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
     body.innerHTML = lb.map((entry, i) => {
         const isMe = entry.email === userEmail;
-        const medal = medals[i] || '';
+        const rank = i === 0 ? 1 : (entry.totalPoints < lb[i - 1].totalPoints ? i + 1 : lb.slice(0, i).findIndex((e) => e.totalPoints === entry.totalPoints) + 1);
+        const medal = medals[rank] || '';
         return `
             <div class="flex items-center justify-between rounded-xl px-4 py-3 ${isMe ? 'bg-gray-700 border border-gray-600' : 'bg-gray-800 border border-gray-800'}">
                 <div class="flex items-center gap-2.5 min-w-0">
-                    <div class="w-8 text-center shrink-0">${medal || `<span class="text-[10px] font-black text-gray-500">#${i + 1}</span>`}</div>
+                    <div class="w-8 text-center shrink-0">${medal || `<span class="text-[10px] font-black text-gray-500">#${rank}</span>`}</div>
                     ${_renderPlayerAvatar(entry.avatarUrl, entry.favoriteTeam, 32, entry.nickname)}
                     <div class="min-w-0">
                         <div class="text-sm font-black uppercase italic text-white truncate">${escapeHtml(entry.nickname)}</div>
