@@ -6945,9 +6945,9 @@ function renderPlayerChips(chips = [], email = '', variant = 'row', scopeId = ''
                     return `<button type="button"
                         title="${escapeHtml(`${chip.label} — ${chip.description}`)}"
                         onclick="showPlayerChipInfo('${chip.id}', '${safeEmail}', event)"
-                        class="inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${toneClasses} transition-transform hover:scale-110 shrink-0">${chip.emoji}</button>`;
+                        class="inline-flex items-center justify-center rounded-full text-[10px] ${toneClasses} transition-transform hover:scale-110 shrink-0" style="width:19px;height:19px">${chip.emoji}</button>`;
                 }).join('')}
-                ${overflowCount > 0 ? `<span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 border border-gray-400 text-[8px] font-black text-gray-600">+${overflowCount}</span>` : ''}
+                ${overflowCount > 0 ? `<span class="inline-flex items-center justify-center rounded-full bg-gray-200 border border-gray-400 text-[7px] font-black text-gray-600" style="width:19px;height:19px">+${overflowCount}</span>` : ''}
             </div>
         `;
     }
@@ -7218,8 +7218,8 @@ async function fetchLeaderboard() {
 
             return `
                 <div class="lb-squad-cell text-left leading-none">
-                    <div class="text-[8px] font-black tracking-[0.18em] ${remainingTone}">Rem: <span class="ml-0.5 inline-flex gap-0.5 align-middle" style="font-size:13px">${remainingFlags || '<span class="text-gray-300" style="font-size:8px">-</span>'}</span></div>
-                    <div class="text-[8px] font-black tracking-[0.18em] mt-0.5 ${eliminatedTone}">Elim: <span class="ml-0.5 inline-flex gap-0.5 align-middle" style="font-size:13px">${eliminatedFlags || '<span class="text-gray-300" style="font-size:8px">-</span>'}</span></div>
+                    <div class="text-[8px] font-black tracking-[0.18em] ${remainingTone}">Rem: <span class="ml-0.5 inline-flex gap-0.5 align-middle" style="font-size:12px">${remainingFlags || '<span class="text-gray-300" style="font-size:8px">-</span>'}</span></div>
+                    <div class="text-[8px] font-black tracking-[0.18em] mt-0.5 ${eliminatedTone}">Elim: <span class="ml-0.5 inline-flex gap-0.5 align-middle" style="font-size:12px">${eliminatedFlags || '<span class="text-gray-300" style="font-size:8px">-</span>'}</span></div>
                 </div>
             `;
         };
