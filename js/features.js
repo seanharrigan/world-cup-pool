@@ -6945,9 +6945,9 @@ function renderPlayerChips(chips = [], email = '', variant = 'row', scopeId = ''
                     return `<button type="button"
                         title="${escapeHtml(`${chip.label} — ${chip.description}`)}"
                         onclick="showPlayerChipInfo('${chip.id}', '${safeEmail}', event)"
-                        class="inline-flex items-center justify-center rounded-full text-[10px] ${toneClasses} transition-transform hover:scale-110 shrink-0" style="width:19px;height:19px">${chip.emoji}</button>`;
+                        class="lb-chip-row inline-flex items-center justify-center rounded-full text-[10px] ${toneClasses} transition-transform hover:scale-110 shrink-0" style="width:19px;height:19px">${chip.emoji}</button>`;
                 }).join('')}
-                ${overflowCount > 0 ? `<span class="inline-flex items-center justify-center rounded-full bg-gray-200 border border-gray-400 text-[7px] font-black text-gray-600" style="width:19px;height:19px">+${overflowCount}</span>` : ''}
+                ${overflowCount > 0 ? `<span class="lb-chip-row inline-flex items-center justify-center rounded-full bg-gray-200 border border-gray-400 text-[7px] font-black text-gray-600" style="width:19px;height:19px">+${overflowCount}</span>` : ''}
             </div>
         `;
     }
@@ -7211,8 +7211,8 @@ async function fetchLeaderboard() {
             }
 
             const sortedSquad = [...user.squad].sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name));
-            const remainingFlags = sortedSquad.filter((team) => !team.eliminated).map((team) => `<span class="text-lg">${team.flag}</span>`).join('');
-            const eliminatedFlags = sortedSquad.filter((team) => team.eliminated).map((team) => `<span class="text-lg opacity-70">${team.flag}</span>`).join('');
+            const remainingFlags = sortedSquad.filter((team) => !team.eliminated).map((team) => `<span class="lb-flag text-lg">${team.flag}</span>`).join('');
+            const eliminatedFlags = sortedSquad.filter((team) => team.eliminated).map((team) => `<span class="lb-flag text-lg opacity-70">${team.flag}</span>`).join('');
             const remainingTone = muted ? 'text-gray-400' : 'text-gray-500';
             const eliminatedTone = muted ? 'text-gray-300' : 'text-gray-400';
 
