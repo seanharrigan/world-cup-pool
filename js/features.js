@@ -6512,13 +6512,24 @@ function _renderPlayerAvatar(avatarUrl, favoriteTeam, size = 32, nickname = '') 
         : null;
     const flag = fav?.flag || '';
     const initial = (nickname || '').trim().charAt(0).toUpperCase() || '?';
+
+    let badgeBg = '#111827';
+    let badgeBorder = '#374151';
+    if (fav && typeof getFavoriteTeamAccentTokens === 'function') {
+        try {
+            const tokens = getFavoriteTeamAccentTokens(fav.name);
+            if (tokens?.softStrong) badgeBg = tokens.softStrong;
+            if (tokens?.primary) badgeBorder = tokens.primary;
+        } catch (e) { /* keep defaults */ }
+    }
+
     const img = avatarUrl
         ? `<img src="${escapeHtml(avatarUrl)}" alt="" class="w-full h-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling && (this.nextElementSibling.style.display='flex');">
            <div class="w-full h-full bg-gray-700 text-gray-200 font-black flex items-center justify-center" style="display:none;font-size:${Math.round(size * 0.45)}px">${escapeHtml(initial)}</div>`
         : `<div class="w-full h-full bg-gray-700 text-gray-200 font-black flex items-center justify-center" style="font-size:${Math.round(size * 0.45)}px">${escapeHtml(initial)}</div>`;
     const badgeSize = Math.max(16, Math.round(size * 0.5));
     const flagBadge = flag
-        ? `<span class="absolute -top-1 -left-1 rounded-full bg-gray-900 border border-gray-700 flex items-center justify-center leading-none z-10" style="width:${badgeSize}px;height:${badgeSize}px;font-size:${Math.round(badgeSize * 0.78)}px">${flag}</span>`
+        ? `<span class="absolute -top-1 -left-1 rounded-full flex items-center justify-center leading-none z-10" style="background-color:${badgeBg};border:1.5px solid ${badgeBorder};width:${badgeSize}px;height:${badgeSize}px;font-size:${Math.round(badgeSize * 0.78)}px">${flag}</span>`
         : '';
     return `<div class="relative rounded-full overflow-visible shrink-0" style="width:${size}px;height:${size}px">
         <div class="absolute inset-0 rounded-full overflow-hidden">${img}</div>
