@@ -7108,6 +7108,23 @@ function closeChipPopover() {
     }
 }
 
+let _lbShowSelection = true;
+let _lbShowBadges = true;
+
+function toggleLbSelection() {
+    _lbShowSelection = !_lbShowSelection;
+    document.querySelectorAll('.lb-squad-cell').forEach((el) => { el.style.display = _lbShowSelection ? '' : 'none'; });
+    const btn = document.getElementById('lb-toggle-selection');
+    if (btn) btn.textContent = _lbShowSelection ? 'Hide Picks' : 'Show Picks';
+}
+
+function toggleLbBadges() {
+    _lbShowBadges = !_lbShowBadges;
+    document.querySelectorAll('.lb-badge-cell').forEach((el) => { el.style.display = _lbShowBadges ? '' : 'none'; });
+    const btn = document.getElementById('lb-toggle-badges');
+    if (btn) btn.textContent = _lbShowBadges ? 'Hide Badges' : 'Show Badges';
+}
+
 async function fetchLeaderboard() {
     const body = document.getElementById('leaderboard-body');
     // Show animated placeholder rows while scores are calculated.
@@ -7194,7 +7211,7 @@ async function fetchLeaderboard() {
 
         const renderSquadSummary = (user, muted = false) => {
             if (appSettings.hideTeamSelection) {
-                return '<div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-400">Teams to be displayed when WC starts</div>';
+                return '<div class="lb-squad-cell text-[8px] font-black tracking-[0.18em] text-gray-400">Teams to be displayed when WC starts</div>';
             }
 
             const sortedSquad = [...user.squad].sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name));
@@ -7204,9 +7221,9 @@ async function fetchLeaderboard() {
             const eliminatedTone = muted ? 'text-gray-300' : 'text-gray-400';
 
             return `
-                <div class="space-y-1 text-left">
-                    <div class="text-[8px] font-black uppercase tracking-[0.18em] ${remainingTone}">Remaining: <span class="ml-1 inline-flex gap-1 align-middle">${remainingFlags || '<span class="text-gray-300">-</span>'}</span></div>
-                    <div class="text-[8px] font-black uppercase tracking-[0.18em] ${eliminatedTone}">Eliminated: <span class="ml-1 inline-flex gap-1 align-middle">${eliminatedFlags || '<span class="text-gray-300">-</span>'}</span></div>
+                <div class="lb-squad-cell text-left">
+                    <div class="text-[8px] font-black tracking-[0.18em] ${remainingTone}">Rem: <span class="ml-1 inline-flex gap-1 align-middle">${remainingFlags || '<span class="text-gray-300">-</span>'}</span></div>
+                    <div class="text-[8px] font-black tracking-[0.18em] ${eliminatedTone}">Elim: <span class="ml-1 inline-flex gap-1 align-middle">${eliminatedFlags || '<span class="text-gray-300">-</span>'}</span></div>
                 </div>
             `;
         };
@@ -7268,11 +7285,11 @@ async function fetchLeaderboard() {
                         ${_renderPlayerAvatar(user.avatarUrl, user.favoriteTeam, 36, user.nickname)}
                         <div class="flex-1 min-w-0">
                             <div class="flex flex-wrap items-center gap-1.5 text-left">
-                                <div class="text-lg font-black uppercase text-left text-gray-900">${user.nickname}</div>
-                                ${renderPlayerChips(user.chips, user.email, 'row')}
+                                <div class="text-sm font-black text-left text-gray-900">${user.nickname}</div>
+                                <span class="lb-badge-cell">${renderPlayerChips(user.chips, user.email, 'row')}</span>
                             </div>
-                            <div class="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400 text-left">${user.realname}</div>
-                            <div class="mt-1.5 text-left">
+                            <div class="text-[9px] font-bold tracking-[0.08em] text-gray-400 text-left">${user.realname}</div>
+                            <div class="mt-1 text-left">
                                 ${renderSquadSummary(user)}
                             </div>
                         </div>
@@ -7288,6 +7305,9 @@ async function fetchLeaderboard() {
             </tr>
         `;
         }).join('') || '<tr><td colspan="10" class="p-8 text-center text-gray-900">No players found</td></tr>');
+
+        if (!_lbShowSelection) document.querySelectorAll('.lb-squad-cell').forEach((el) => { el.style.display = 'none'; });
+        if (!_lbShowBadges) document.querySelectorAll('.lb-badge-cell').forEach((el) => { el.style.display = 'none'; });
 
         // Persist ranks for next page load comparison, cache data for player profile modal
         localStorage.setItem('wc_pool_lb_ranks', JSON.stringify(newRanks));
