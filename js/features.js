@@ -7131,7 +7131,8 @@ function toggleLbChips(checked) {
 
 function toggleLbLegend() {
     const el = document.getElementById('lb-legend');
-    if (el) el.classList.toggle('hidden');
+    if (!el) return;
+    el.classList.toggle('lb-legend-open');
 }
 
 async function fetchLeaderboard() {
