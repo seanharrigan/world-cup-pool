@@ -7944,12 +7944,12 @@ function renderMessage(message) {
             <div class="text-[9px] mt-1 text-left font-medium ${isMe ? 'opacity-60' : 'opacity-40'}">${formatMessageTime(message.created_at)}</div>
         </div>`;
 
-    const senderEntry = !isMe ? (window._leaderboardData || []).find((e) => e.email === message.user_email) : null;
-    const avatarHtml = senderEntry ? _renderPlayerAvatar(senderEntry.avatarUrl, senderEntry.favoriteTeam, 32, message.nickname) : (!isMe ? _renderPlayerAvatar(null, '', 32, message.nickname) : '');
+    const senderEntry = (window._leaderboardData || []).find((e) => e.email === message.user_email);
+    const avatarHtml = _renderPlayerAvatar(senderEntry?.avatarUrl || null, senderEntry?.favoriteTeam || '', 32, message.nickname);
 
     wrapper.innerHTML = `
         <div class="flex items-start gap-1.5 ${isMe ? 'justify-end' : 'justify-start'}">
-            ${isMe ? addBtnContainer + bubble : avatarHtml + bubble + addBtnContainer}
+            ${isMe ? addBtnContainer + bubble + avatarHtml : avatarHtml + bubble + addBtnContainer}
         </div>
         <div id="reactions-${message.id}" class="flex flex-wrap items-center gap-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}"></div>
     `;
