@@ -7112,12 +7112,12 @@ let _lbShowChips = true;
 
 function toggleLbSelection(checked) {
     _lbShowSelection = checked !== undefined ? checked : !_lbShowSelection;
-    document.querySelectorAll('.lb-squad-cell').forEach((el) => { el.style.display = _lbShowSelection ? '' : 'none'; });
+    document.querySelectorAll('.lb-squad-cell').forEach((el) => { el.classList.toggle('lb-collapsed', !_lbShowSelection); });
 }
 
 function toggleLbChips(checked) {
     _lbShowChips = checked !== undefined ? checked : !_lbShowChips;
-    document.querySelectorAll('.lb-badge-cell').forEach((el) => { el.style.display = _lbShowChips ? '' : 'none'; });
+    document.querySelectorAll('.lb-badge-cell').forEach((el) => { el.classList.toggle('lb-collapsed', !_lbShowChips); });
 }
 
 async function fetchLeaderboard() {
@@ -7281,7 +7281,7 @@ async function fetchLeaderboard() {
                 </td>
                 <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center text-lg font-black text-gray-900">${user.totalPoints}</td>
                 <td class="px-4 py-2.5 text-left">
-                    <div class="flex items-start gap-3">
+                    <div class="flex items-center gap-3">
                         ${_renderPlayerAvatar(user.avatarUrl, user.favoriteTeam, 36, user.nickname)}
                         <div class="flex-1 min-w-0">
                             <div class="flex flex-wrap items-center gap-1.5 text-left">
@@ -7306,8 +7306,8 @@ async function fetchLeaderboard() {
         `;
         }).join('') || '<tr><td colspan="10" class="p-8 text-center text-gray-900">No players found</td></tr>');
 
-        if (!_lbShowSelection) document.querySelectorAll('.lb-squad-cell').forEach((el) => { el.style.display = 'none'; });
-        if (!_lbShowChips) document.querySelectorAll('.lb-badge-cell').forEach((el) => { el.style.display = 'none'; });
+        if (!_lbShowSelection) document.querySelectorAll('.lb-squad-cell').forEach((el) => { el.classList.add('lb-collapsed'); });
+        if (!_lbShowChips) document.querySelectorAll('.lb-badge-cell').forEach((el) => { el.classList.add('lb-collapsed'); });
 
         // Persist ranks for next page load comparison, cache data for player profile modal
         localStorage.setItem('wc_pool_lb_ranks', JSON.stringify(newRanks));
