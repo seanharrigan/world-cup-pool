@@ -3853,6 +3853,7 @@ function showDashRankModal() {
             <div class="flex items-center justify-between rounded-xl px-4 py-3 ${isMe ? 'bg-gray-700 border border-gray-600' : 'bg-gray-800 border border-gray-800'}">
                 <div class="flex items-center gap-2.5 min-w-0">
                     <div class="w-8 text-center shrink-0">${medal || `<span class="text-[10px] font-black text-gray-500">#${i + 1}</span>`}</div>
+                    ${_renderPlayerAvatar(entry.avatarUrl, entry.favoriteTeam, 32, entry.nickname)}
                     <div class="min-w-0">
                         <div class="text-sm font-black uppercase italic text-white truncate">${escapeHtml(entry.nickname)}</div>
                         ${isMe ? '<div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">You</div>' : ''}
@@ -3908,11 +3909,16 @@ function _renderReportSidebar() {
         const color = _RC_GRADE_COLORS[rc.grade] || '#9ca3af';
         return `<button data-email="${escapeHtml(entry.email)}" onclick="selectDashReportCard('${escapeHtml(entry.email)}')"
             class="w-full text-left rounded-xl px-3 py-2 transition-colors ${isSelected ? 'bg-gray-700' : 'hover:bg-gray-800'}">
-            <div class="flex items-center justify-between gap-1">
-                <div class="text-[11px] font-black text-white truncate">${isMe ? '★ ' + escapeHtml(entry.nickname) : escapeHtml(entry.nickname)}</div>
-                <div class="text-sm font-black italic shrink-0" style="color:${color};">${rc.grade}</div>
+            <div class="flex items-center gap-2">
+                ${_renderPlayerAvatar(entry.avatarUrl, entry.favoriteTeam, 28, entry.nickname)}
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-1">
+                        <div class="text-[11px] font-black text-white truncate">${isMe ? '★ ' + escapeHtml(entry.nickname) : escapeHtml(entry.nickname)}</div>
+                        <div class="text-sm font-black italic shrink-0" style="color:${color};">${rc.grade}</div>
+                    </div>
+                    <div class="text-[9px] text-gray-500">${Math.round(rc.total)}/100</div>
+                </div>
             </div>
-            <div class="text-[9px] text-gray-500">${Math.round(rc.total)}/100</div>
         </button>`;
     }).join('');
 }
@@ -4077,8 +4083,13 @@ function _renderChipsSidebar() {
             : '—';
         return `<button data-email="${escapeHtml(entry.email)}" onclick="selectDashChips('${escapeHtml(entry.email)}')"
             class="w-full text-left rounded-xl px-3 py-2 transition-colors ${isSelected ? 'bg-gray-700' : 'hover:bg-gray-800'}">
-            <div class="text-[11px] font-black text-white truncate">${isMe ? '★ ' + escapeHtml(entry.nickname) : escapeHtml(entry.nickname)}</div>
-            <div class="text-[11px] text-gray-400">${preview}</div>
+            <div class="flex items-center gap-2">
+                ${_renderPlayerAvatar(entry.avatarUrl, entry.favoriteTeam, 28, entry.nickname)}
+                <div class="flex-1 min-w-0">
+                    <div class="text-[11px] font-black text-white truncate">${isMe ? '★ ' + escapeHtml(entry.nickname) : escapeHtml(entry.nickname)}</div>
+                    <div class="text-[11px] text-gray-400">${preview}</div>
+                </div>
+            </div>
         </button>`;
     }).join('');
 }
@@ -6502,9 +6513,9 @@ function _renderPlayerAvatar(avatarUrl, favoriteTeam, size = 32, nickname = '') 
         ? `<img src="${escapeHtml(avatarUrl)}" alt="" class="w-full h-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling && (this.nextElementSibling.style.display='flex');">
            <div class="w-full h-full bg-gray-700 text-gray-200 font-black flex items-center justify-center" style="display:none;font-size:${Math.round(size * 0.45)}px">${escapeHtml(initial)}</div>`
         : `<div class="w-full h-full bg-gray-700 text-gray-200 font-black flex items-center justify-center" style="font-size:${Math.round(size * 0.45)}px">${escapeHtml(initial)}</div>`;
-    const badgeSize = Math.max(14, Math.round(size * 0.42));
+    const badgeSize = Math.max(16, Math.round(size * 0.5));
     const flagBadge = flag
-        ? `<span class="absolute -top-0.5 -left-0.5 rounded-full bg-gray-900 border border-gray-700 flex items-center justify-center leading-none" style="width:${badgeSize}px;height:${badgeSize}px;font-size:${Math.round(badgeSize * 0.72)}px">${flag}</span>`
+        ? `<span class="absolute -top-1 -left-1 rounded-full bg-gray-900 border border-gray-700 flex items-center justify-center leading-none z-10" style="width:${badgeSize}px;height:${badgeSize}px;font-size:${Math.round(badgeSize * 0.78)}px">${flag}</span>`
         : '';
     return `<div class="relative rounded-full overflow-visible shrink-0" style="width:${size}px;height:${size}px">
         <div class="absolute inset-0 rounded-full overflow-hidden">${img}</div>
@@ -8553,10 +8564,15 @@ function _renderScoreSidebar() {
         const barColor = i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : i === 2 ? '#f97316' : isMe ? '#3b82f6' : '#4b5563';
         const safeEmail = u.email.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         return `<button data-email="${escapeHtml(u.email)}" onclick="selectScorePlayer('${safeEmail}')"
-            class="w-full text-left rounded-xl px-3 py-2 transition-colors relative overflow-hidden ${isSelected ? 'bg-gray-700' : 'hover:bg-gray-800'}">
+            class="w-full text-left rounded-xl px-3 py-2 transition-colors relative ${isSelected ? 'bg-gray-700' : 'hover:bg-gray-800'}">
             <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color:${barColor};"></div>
-            <div class="pl-2 text-[11px] font-black text-white truncate">${isMe ? '★ ' + escapeHtml(u.nickname) : escapeHtml(u.nickname)}</div>
-            <div class="pl-2 text-[11px] text-gray-400">${u.totalPoints} pts</div>
+            <div class="pl-2 flex items-center gap-2">
+                ${_renderPlayerAvatar(u.avatarUrl, u.favoriteTeam, 28, u.nickname)}
+                <div class="flex-1 min-w-0">
+                    <div class="text-[11px] font-black text-white truncate">${isMe ? '★ ' + escapeHtml(u.nickname) : escapeHtml(u.nickname)}</div>
+                    <div class="text-[11px] text-gray-400">${u.totalPoints} pts</div>
+                </div>
+            </div>
         </button>`;
     }).join('');
     sidebar.innerHTML = bestRow + playerRows;
@@ -8714,10 +8730,15 @@ function _renderUpsideSidebar() {
         const barColor = i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : i === 2 ? '#f97316' : isMe ? '#3b82f6' : '#4b5563';
         const safeEmail = u.email.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         return `<button data-email="${escapeHtml(u.email)}" onclick="selectUpsidePlayer('${safeEmail}')"
-            class="w-full text-left rounded-xl px-3 py-2 transition-colors relative overflow-hidden ${isSelected ? 'bg-gray-700' : 'hover:bg-gray-800'}">
+            class="w-full text-left rounded-xl px-3 py-2 transition-colors relative ${isSelected ? 'bg-gray-700' : 'hover:bg-gray-800'}">
             <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color:${barColor};"></div>
-            <div class="pl-2 text-[11px] font-black text-white truncate">${isMe ? '★ ' + escapeHtml(u.nickname) : escapeHtml(u.nickname)}</div>
-            <div class="pl-2 text-[11px] text-gray-400">${u.upside} / 100</div>
+            <div class="pl-2 flex items-center gap-2">
+                ${_renderPlayerAvatar(u.avatarUrl, u.favoriteTeam, 28, u.nickname)}
+                <div class="flex-1 min-w-0">
+                    <div class="text-[11px] font-black text-white truncate">${isMe ? '★ ' + escapeHtml(u.nickname) : escapeHtml(u.nickname)}</div>
+                    <div class="text-[11px] text-gray-400">${u.upside} / 100</div>
+                </div>
+            </div>
         </button>`;
     }).join('');
     sidebar.innerHTML = bestRow + playerRows;
