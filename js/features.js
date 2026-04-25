@@ -6528,7 +6528,7 @@ function _renderPlayerAvatar(avatarUrl, favoriteTeam, size = 32, nickname = '') 
            <div class="w-full h-full bg-gray-700 text-gray-200 font-black flex items-center justify-center" style="display:none;font-size:${Math.round(size * 0.45)}px">${escapeHtml(initial)}</div>`
         : `<div class="w-full h-full bg-gray-700 text-gray-200 font-black flex items-center justify-center" style="font-size:${Math.round(size * 0.45)}px">${escapeHtml(initial)}</div>`;
     const badgeSize = Math.max(16, Math.round(size * 0.6));
-    const badgeOffset = -Math.round(badgeSize * 0.18);
+    const badgeOffset = -Math.round(badgeSize * 0.3);
     const flagBadge = flag
         ? `<span class="absolute rounded-full flex items-center justify-center leading-none" style="top:${badgeOffset}px;left:${badgeOffset}px;background-color:${badgeBg};border:1.5px solid ${badgeBorder};width:${badgeSize}px;height:${badgeSize}px;font-size:${Math.round(badgeSize * 0.65)}px;z-index:10">${flag}</span>`
         : '';
