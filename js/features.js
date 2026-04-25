@@ -7112,15 +7112,12 @@ let _lbShowSelection = true;
 let _lbShowChips = true;
 
 function _updateLbToggleBtn(btnId, isOn) {
-    const btn = document.getElementById(btnId);
-    if (!btn) return;
-    btn.classList.toggle('bg-gray-900', isOn);
-    btn.classList.toggle('text-white', isOn);
-    btn.classList.toggle('border-gray-900', isOn);
-    btn.classList.toggle('bg-white', !isOn);
-    btn.classList.toggle('text-gray-400', !isOn);
-    btn.classList.toggle('border-gray-200', !isOn);
-    btn.classList.toggle('opacity-50', !isOn);
+    const el = document.getElementById(btnId);
+    if (!el) return;
+    const dot = el.querySelector('span');
+    el.classList.toggle('bg-gray-900', isOn);
+    el.classList.toggle('bg-gray-300', !isOn);
+    if (dot) dot.style.transform = isOn ? 'translateX(18px)' : 'translateX(2px)';
 }
 
 function toggleLbSelection() {
