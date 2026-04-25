@@ -5080,9 +5080,10 @@ async function setupDashboard() {
                 const s = rankStyleMap[rank] || defaultStyle;
                 const safeEmail = (entry.email || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                 const upside = poolUpsideMap.get(entry.email) ?? 0;
-                return `<div class="dash-lb-row relative flex items-center gap-3 rounded-xl border ${s.border} overflow-hidden px-3 py-2 w-full cursor-pointer hover:opacity-90 transition-opacity" style="background-color: ${s.bg};" onclick="showPlayerProfile('${safeEmail}')">
+                return `<div class="dash-lb-row relative flex items-center gap-3 rounded-xl border ${s.border} overflow-visible px-3 py-2 w-full cursor-pointer hover:opacity-90 transition-opacity" style="background-color: ${s.bg};" onclick="showPlayerProfile('${safeEmail}')">
                     <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color: ${s.bar};"></div>
                     ${s.medal ? `<span class="text-xl leading-none shrink-0 pl-1">${s.medal}</span>` : `<span class="text-sm font-black text-gray-400 pl-1 shrink-0 w-6 text-center">#${rank}</span>`}
+                    ${_renderPlayerAvatar(entry.avatarUrl, entry.favoriteTeam, 32, entry.nickname)}
                     <div class="min-w-0 flex-1">
                         <div class="truncate text-sm font-black uppercase italic text-gray-900 leading-tight">${escapeHtml(entry.nickname)}</div>
                         ${prize ? `<div class="text-xs font-black" style="color: ${s.bar};">${prize}</div>` : ''}
@@ -6493,6 +6494,24 @@ async function submitManualResult() {
     }
 }
 
+function _renderPlayerAvatar(avatarUrl, favoriteTeam, size = 32, nickname = '') {
+    const fav = (typeof teams !== 'undefined' ? teams : []).find((t) => t.name === favoriteTeam);
+    const flag = fav?.flag || '';
+    const initial = (nickname || '').trim().charAt(0).toUpperCase() || '?';
+    const img = avatarUrl
+        ? `<img src="${escapeHtml(avatarUrl)}" alt="" class="w-full h-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling && (this.nextElementSibling.style.display='flex');">
+           <div class="w-full h-full bg-gray-700 text-gray-200 font-black flex items-center justify-center" style="display:none;font-size:${Math.round(size * 0.45)}px">${escapeHtml(initial)}</div>`
+        : `<div class="w-full h-full bg-gray-700 text-gray-200 font-black flex items-center justify-center" style="font-size:${Math.round(size * 0.45)}px">${escapeHtml(initial)}</div>`;
+    const badgeSize = Math.max(14, Math.round(size * 0.42));
+    const flagBadge = flag
+        ? `<span class="absolute -top-0.5 -left-0.5 rounded-full bg-gray-900 border border-gray-700 flex items-center justify-center leading-none" style="width:${badgeSize}px;height:${badgeSize}px;font-size:${Math.round(badgeSize * 0.72)}px">${flag}</span>`
+        : '';
+    return `<div class="relative rounded-full overflow-visible shrink-0" style="width:${size}px;height:${size}px">
+        <div class="absolute inset-0 rounded-full overflow-hidden">${img}</div>
+        ${flagBadge}
+    </div>`;
+}
+
 function _ordinalSuffix(n) {
     const m100 = n % 100;
     if (m100 >= 11 && m100 <= 13) return 'th';
@@ -7219,13 +7238,18 @@ async function fetchLeaderboard() {
                 </td>
                 <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center text-lg font-black text-gray-900">${user.totalPoints}</td>
                 <td class="px-4 py-2.5 text-left">
-                    <div class="flex flex-wrap items-center gap-1.5 text-left">
-                        <div class="text-lg font-black uppercase text-left text-gray-900">${user.nickname}</div>
-                        ${renderPlayerChips(user.chips, user.email, 'row')}
-                    </div>
-                    <div class="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400 text-left">${user.realname}</div>
-                    <div class="mt-1.5 text-left">
-                        ${renderSquadSummary(user)}
+                    <div class="flex items-start gap-3">
+                        ${_renderPlayerAvatar(user.avatarUrl, user.favoriteTeam, 36, user.nickname)}
+                        <div class="flex-1 min-w-0">
+                            <div class="flex flex-wrap items-center gap-1.5 text-left">
+                                <div class="text-lg font-black uppercase text-left text-gray-900">${user.nickname}</div>
+                                ${renderPlayerChips(user.chips, user.email, 'row')}
+                            </div>
+                            <div class="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400 text-left">${user.realname}</div>
+                            <div class="mt-1.5 text-left">
+                                ${renderSquadSummary(user)}
+                            </div>
+                        </div>
                     </div>
                 </td>
                 <td class="px-2 py-2.5 text-center font-black text-gray-900">${(user.stagePoints.G1 + user.stagePoints.G2 + user.stagePoints.G3) || '-'}</td>
@@ -8139,9 +8163,7 @@ async function showPlayerProfile(email) {
     content.innerHTML = `
         <div class="p-6 space-y-4" style="${cardAccent.style}">
             <div class="flex items-center gap-3">
-                <div class="h-11 w-11 rounded-2xl flex items-center justify-center text-2xl shrink-0" style="background-color: ${rgbaFromHex(cardAccent.tokens.primary, 0.15)};">
-                    ${favFlag || '👤'}
-                </div>
+                ${_renderPlayerAvatar(profile?.avatar_url, profile?.favorite_team, 48, nickname)}
                 <div class="min-w-0 flex-1 flex flex-col gap-0.5">
                     <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0">
                         <span class="text-lg font-black uppercase italic tracking-tight text-white">${escapeHtml(nickname)}</span>

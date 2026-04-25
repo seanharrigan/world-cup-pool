@@ -163,6 +163,8 @@
                     email: pick.user_email,
                     nickname: displayProfile.nickname,
                     realname: displayProfile.realname,
+                    avatarUrl: displayProfile.avatarUrl,
+                    favoriteTeam: displayProfile.favoriteTeam,
                     totalPoints: 0,
                     stagePoints: {
                         G1: 0,
