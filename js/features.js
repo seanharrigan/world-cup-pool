@@ -7233,9 +7233,14 @@ async function fetchLeaderboard() {
                 <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center text-lg font-black text-gray-400">-</td>
                 <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center text-lg font-black text-gray-500">${bestAvailableTeam.totalPoints}</td>
                 <td class="px-4 py-2.5 text-left">
-                    <div class="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400 text-left">${bestAvailableTeam.nickname}</div>
-                    <div class="mt-1.5 text-left">
-                        ${renderSquadSummary(bestAvailableTeam, true)}
+                    <div class="flex items-start gap-3">
+                        <div class="relative rounded-full shrink-0 bg-gray-300 flex items-center justify-center overflow-hidden" style="width:36px;height:36px;font-size:18px">🤖</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-black text-gray-500 text-left">${bestAvailableTeam.nickname}</div>
+                            <div class="mt-1 text-left">
+                                ${renderSquadSummary(bestAvailableTeam, true)}
+                            </div>
+                        </div>
                     </div>
                 </td>
                 <td class="px-2 py-2.5 text-center font-black text-gray-500">${(bestAvailableTeam.stagePoints.G1 + bestAvailableTeam.stagePoints.G2 + bestAvailableTeam.stagePoints.G3) || '-'}</td>
