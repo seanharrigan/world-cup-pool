@@ -282,6 +282,54 @@ function showProfileSetupModal(email, defaults = {}) {
     favoriteTeamInput.value = defaults.favoriteTeam || '';
     homeCountryInput.value = defaults.homeCountry || '';
 
+    const avatarPreviewEl = document.getElementById('profile-setup-avatar-preview');
+    const fileInput = document.getElementById('profile-setup-file-input');
+    const uploadBtn = document.getElementById('profile-setup-upload-btn');
+    const useGoogleBtn = document.getElementById('profile-setup-use-google-btn');
+    const avatarStatusEl = document.getElementById('profile-setup-avatar-status');
+    const googleAvatarUrl = defaults.googleAvatarUrl || '';
+    let currentAvatarUrl = defaults.avatarUrl || googleAvatarUrl || '';
+
+    const renderAvatarPreview = () => {
+        if (avatarPreviewEl && typeof _renderPlayerAvatar === 'function') {
+            avatarPreviewEl.innerHTML = _renderPlayerAvatar(currentAvatarUrl, favoriteTeamInput.value, 64, nicknameInput.value);
+        }
+        if (useGoogleBtn) {
+            useGoogleBtn.classList.toggle('hidden', !googleAvatarUrl || currentAvatarUrl === googleAvatarUrl);
+        }
+    };
+    renderAvatarPreview();
+
+    const handleNicknameInput = () => renderAvatarPreview();
+    const handleFavoriteChange = () => renderAvatarPreview();
+    const handleUploadClick = () => fileInput?.click();
+    const handleUseGoogleClick = () => {
+        currentAvatarUrl = googleAvatarUrl;
+        if (avatarStatusEl) avatarStatusEl.textContent = 'Using Google photo';
+        renderAvatarPreview();
+    };
+    const handleFileChange = async (event) => {
+        const file = event.target?.files?.[0];
+        if (!file) return;
+        try {
+            if (avatarStatusEl) avatarStatusEl.textContent = 'Uploading…';
+            const url = await pickAndUploadAvatar(file, email);
+            currentAvatarUrl = url;
+            if (avatarStatusEl) avatarStatusEl.textContent = 'Ready ✓';
+            renderAvatarPreview();
+        } catch (err) {
+            if (avatarStatusEl) avatarStatusEl.textContent = err.message || 'Upload failed';
+        } finally {
+            event.target.value = '';
+        }
+    };
+
+    nicknameInput.addEventListener('input', handleNicknameInput);
+    favoriteTeamInput.addEventListener('change', handleFavoriteChange);
+    uploadBtn?.addEventListener('click', handleUploadClick);
+    useGoogleBtn?.addEventListener('click', handleUseGoogleClick);
+    fileInput?.addEventListener('change', handleFileChange);
+
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 
@@ -298,6 +346,11 @@ function showProfileSetupModal(email, defaults = {}) {
             favoriteTeamInput.removeEventListener('keydown', handleEnter);
             homeCountryInput.removeEventListener('keydown', handleEnter);
             poolPasswordInput.removeEventListener('keydown', handleEnter);
+            nicknameInput.removeEventListener('input', handleNicknameInput);
+            favoriteTeamInput.removeEventListener('change', handleFavoriteChange);
+            uploadBtn?.removeEventListener('click', handleUploadClick);
+            useGoogleBtn?.removeEventListener('click', handleUseGoogleClick);
+            fileInput?.removeEventListener('change', handleFileChange);
             resolve(result);
         };
 
@@ -318,7 +371,7 @@ function showProfileSetupModal(email, defaults = {}) {
                 return;
             }
 
-            cleanup({ poolPassword, nickname, realname, favoriteTeam, homeCountry });
+            cleanup({ poolPassword, nickname, realname, favoriteTeam, homeCountry, avatarUrl: currentAvatarUrl });
         };
 
         const handleConfirm = () => submitIfValid();

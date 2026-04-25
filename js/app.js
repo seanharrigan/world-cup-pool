@@ -23,6 +23,88 @@ function getAuthRedirectUrl() {
     return `${window.location.origin}${window.location.pathname}`;
 }
 
+async function _cropImageToSquareBlob(file, targetSize = 256, quality = 0.85) {
+    const url = URL.createObjectURL(file);
+    try {
+        const img = await new Promise((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve(image);
+            image.onerror = () => reject(new Error('Could not load image'));
+            image.src = url;
+        });
+        const side = Math.min(img.naturalWidth, img.naturalHeight);
+        const sx = (img.naturalWidth - side) / 2;
+        const sy = (img.naturalHeight - side) / 2;
+        const canvas = document.createElement('canvas');
+        canvas.width = targetSize;
+        canvas.height = targetSize;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, targetSize, targetSize);
+        return await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+    } finally {
+        URL.revokeObjectURL(url);
+    }
+}
+
+async function pickAndUploadAvatar(file, email) {
+    if (!file || !file.type?.startsWith('image/')) throw new Error('Please choose an image file.');
+    if (file.size > 10 * 1024 * 1024) throw new Error('Image is too large (max 10 MB).');
+    const blob = await _cropImageToSquareBlob(file, 256, 0.85);
+    const safeEmail = (email || '').replace(/[^a-zA-Z0-9.@_-]/g, '_');
+    const path = `${safeEmail}/avatar.jpg`;
+    const { error } = await supabaseClient.storage
+        .from('avatars')
+        .upload(path, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '3600' });
+    if (error) throw error;
+    const { data } = supabaseClient.storage.from('avatars').getPublicUrl(path);
+    return `${data.publicUrl}?t=${Date.now()}`;
+}
+
+function _updateProfileAvatarPreview(avatarUrl) {
+    const preview = document.getElementById('profile-avatar-preview');
+    if (!preview) return;
+    const favorite = document.getElementById('favorite-team-input')?.value || '';
+    const nickname = document.getElementById('nickname-input')?.value || '';
+    if (typeof _renderPlayerAvatar === 'function') {
+        preview.innerHTML = _renderPlayerAvatar(avatarUrl, favorite, 72, nickname);
+    }
+    const removeBtn = document.getElementById('profile-avatar-remove');
+    if (removeBtn) removeBtn.classList.toggle('hidden', !avatarUrl);
+}
+
+async function handleProfileAvatarChange(event) {
+    const file = event.target?.files?.[0];
+    if (!file) return;
+    const statusEl = document.getElementById('profile-avatar-status');
+    try {
+        if (statusEl) statusEl.textContent = 'Uploading…';
+        const url = await pickAndUploadAvatar(file, userEmail);
+        const { error } = await supabaseClient.from('profiles').upsert({ email: userEmail, avatar_url: url }, { onConflict: 'email' });
+        if (error) throw error;
+        _updateProfileAvatarPreview(url);
+        if (statusEl) statusEl.textContent = 'Saved ✓';
+        setTimeout(() => { if (statusEl && statusEl.textContent === 'Saved ✓') statusEl.textContent = ''; }, 2000);
+    } catch (error) {
+        if (statusEl) statusEl.textContent = error.message || 'Upload failed';
+    } finally {
+        event.target.value = '';
+    }
+}
+
+async function removeProfileAvatar() {
+    const statusEl = document.getElementById('profile-avatar-status');
+    try {
+        if (statusEl) statusEl.textContent = 'Removing…';
+        const { error } = await supabaseClient.from('profiles').upsert({ email: userEmail, avatar_url: '' }, { onConflict: 'email' });
+        if (error) throw error;
+        _updateProfileAvatarPreview('');
+        if (statusEl) statusEl.textContent = 'Removed ✓';
+        setTimeout(() => { if (statusEl && statusEl.textContent === 'Removed ✓') statusEl.textContent = ''; }, 2000);
+    } catch (error) {
+        if (statusEl) statusEl.textContent = error.message || 'Remove failed';
+    }
+}
+
 function saveProfileIdentityLocal(email, profile) {
     const storageKey = getProfileStorageKey(email);
     if (!storageKey || !profile) {
@@ -1042,11 +1124,13 @@ async function completeLogin(email, existingProfile = null, options = {}) {
         document.getElementById('realname-input').value = existingProfile.realname || '';
         document.getElementById('favorite-team-input').value = existingProfile.favorite_team || '';
         document.getElementById('home-country-input').value = existingProfile.home_country || '';
+        _updateProfileAvatarPreview(existingProfile.avatar_url || '');
     } else {
         document.getElementById('nickname-input').value = '';
         document.getElementById('realname-input').value = '';
         document.getElementById('favorite-team-input').value = '';
         document.getElementById('home-country-input').value = '';
+        _updateProfileAvatarPreview('');
     }
 
     syncProfileDropdownValues();
@@ -1098,8 +1182,11 @@ async function handleAuthenticatedUser(authUser) {
     const existingProfile = await getExistingProfile(email);
 
     if (!existingProfile) {
+        const googleAvatar = authUser.user_metadata?.avatar_url || '';
         const newProfile = await showProfileSetupModal(email, {
-            realname: authUser.user_metadata?.full_name || authUser.user_metadata?.name || ''
+            realname: authUser.user_metadata?.full_name || authUser.user_metadata?.name || '',
+            avatarUrl: googleAvatar,
+            googleAvatarUrl: googleAvatar
         });
 
         if (!newProfile) {
@@ -1113,10 +1200,11 @@ async function handleAuthenticatedUser(authUser) {
             return false;
         }
 
+        const chosenAvatarUrl = newProfile.avatarUrl || googleAvatar || '';
         saveProfileIdentityLocal(email, newProfile);
         await upsertProfile(email, {
             ...newProfile,
-            avatar_url: authUser.user_metadata?.avatar_url || ''
+            avatar_url: chosenAvatarUrl
         });
 
         await completeLogin(email, {
@@ -1124,7 +1212,7 @@ async function handleAuthenticatedUser(authUser) {
             realname: newProfile.realname,
             favorite_team: newProfile.favoriteTeam,
             home_country: newProfile.homeCountry,
-            avatar_url: authUser.user_metadata?.avatar_url || '',
+            avatar_url: chosenAvatarUrl,
             has_paid: false
         }, {
             showWelcome: true

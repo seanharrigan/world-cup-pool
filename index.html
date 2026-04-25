@@ -1633,6 +1633,18 @@
                         </div>
                         <button onclick="signOutUser()" class="hidden md:flex self-start rounded-2xl border border-gray-300 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-700 transition-colors hover:bg-gray-100">Sign Out</button>
                     </div>
+                    <div class="flex items-center gap-4 border-t border-gray-200 pt-5">
+                        <div id="profile-avatar-preview" class="shrink-0"></div>
+                        <div class="flex flex-col gap-2 flex-1 min-w-0">
+                            <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.25em]">Profile Picture</div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <input type="file" accept="image/*" id="profile-avatar-file-input" class="hidden" onchange="handleProfileAvatarChange(event)">
+                                <button type="button" onclick="document.getElementById('profile-avatar-file-input').click()" class="rounded-2xl border border-gray-300 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] text-gray-700 hover:bg-gray-100 transition-colors">Upload Photo</button>
+                                <button type="button" onclick="removeProfileAvatar()" id="profile-avatar-remove" class="hidden rounded-2xl border border-gray-300 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 hover:bg-gray-100 transition-colors">Remove</button>
+                            </div>
+                            <div id="profile-avatar-status" class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400"></div>
+                        </div>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="theme-accent-text block text-[10px] font-black uppercase mb-1">Nickname</label>
@@ -2059,6 +2071,18 @@
                     <p id="profile-setup-message" class="text-sm md:text-base font-bold text-gray-100 leading-relaxed text-left">Before you enter the pool, choose the name people will see.</p>
                     <p id="profile-setup-submessage" class="text-xs uppercase tracking-wider text-gray-400 text-left">This keeps every new entry named from the start.</p>
                 </div>
+                <div class="flex items-center gap-4 rounded-2xl border border-gray-800 bg-gray-950/50 p-4">
+                    <div id="profile-setup-avatar-preview" class="shrink-0"></div>
+                    <div class="flex flex-col gap-2 flex-1 min-w-0">
+                        <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.25em]">Profile Picture</div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <input type="file" accept="image/*" id="profile-setup-file-input" class="hidden">
+                            <button type="button" id="profile-setup-upload-btn" class="rounded-2xl border border-gray-700 bg-gray-800 px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] text-gray-200 hover:bg-gray-700 transition-colors">Upload Photo</button>
+                            <button type="button" id="profile-setup-use-google-btn" class="hidden rounded-2xl border border-gray-700 bg-gray-800 px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] text-gray-200 hover:bg-gray-700 transition-colors">Use Google Photo</button>
+                        </div>
+                        <div id="profile-setup-avatar-status" class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400"></div>
+                    </div>
+                </div>
                 <div class="grid grid-cols-1 gap-4">
                     <div>
                         <label class="theme-accent-text mb-1 block text-[10px] font-black uppercase tracking-[0.2em]">Pool Password</label>
@@ -2094,10 +2118,10 @@
     </div>
 
     <script src="js/data.js?v=20260409b"></script>
-    <script src="js/ui.js?v=20260416b"></script>
+    <script src="js/ui.js?v=20260424c"></script>
     <script src="js/scoring.js?v=20260424a"></script>
     <script src="js/third-place-mapping.js?v=20260416b"></script>
-    <script src="js/features.js?v=20260424b"></script>
-    <script src="js/app.js?v=20260420d"></script>
+    <script src="js/features.js?v=20260424c"></script>
+    <script src="js/app.js?v=20260424c"></script>
 </body>
 </html>
