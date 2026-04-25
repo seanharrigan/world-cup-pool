@@ -4945,11 +4945,9 @@ async function setupDashboard() {
         if (squadInner) {
             const headerHtml = `
                 <div id="dashboard-squad-header" class="flex items-center gap-4 mb-5 shrink-0">
-                    <div class="h-12 w-12 rounded-2xl flex items-center justify-center text-2xl shrink-0" style="background-color: rgba(var(--player-card-accent-primary-rgb, 59,130,246), 0.15);">
-                        ${favFlag || '⚽'}
-                    </div>
+                    ${_renderPlayerAvatar(currentProfile?.avatarUrl, currentProfile?.favoriteTeam, 48, currentProfile?.nickname || '')}
                     <div class="min-w-0 flex-1">
-                        <div class="text-xl font-black uppercase italic tracking-tight text-white truncate">${escapeHtml(currentProfile?.nickname || '')}</div>
+                        <div class="text-xl font-black italic tracking-tight text-white truncate">${escapeHtml(currentProfile?.nickname || '')}</div>
                         <div class="text-[10px] font-black uppercase tracking-[0.18em] text-gray-400">${currentProfile?.realname ? escapeHtml(currentProfile.realname) : ''}</div>
                     </div>
                     <div class="text-right shrink-0">
