@@ -7290,8 +7290,8 @@ async function fetchLeaderboard() {
                                 <div class="text-sm font-black text-left text-gray-900">${user.nickname}</div>
                                 <span class="lb-badge-cell">${renderPlayerChips(user.chips, user.email, 'row')}</span>
                             </div>
-                            <div class="text-[9px] font-bold tracking-[0.08em] text-gray-400 text-left">${user.realname}</div>
-                            <div class="mt-1 text-left">
+                            <div class="text-[9px] font-bold tracking-[0.08em] text-gray-400 text-left leading-none">${user.realname}</div>
+                            <div class="mt-0.5 text-left">
                                 ${renderSquadSummary(user)}
                             </div>
                         </div>
