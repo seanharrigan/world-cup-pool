@@ -318,8 +318,11 @@ function showProfileSetupModal(email, defaults = {}) {
         const file = event.target?.files?.[0];
         if (!file) return;
         try {
-            if (avatarStatusEl) avatarStatusEl.textContent = 'Uploading…';
-            const url = await pickAndUploadAvatar(file, email, isPreview ? 'preview-avatar.jpg' : 'avatar.jpg');
+            const url = await pickAndUploadAvatar(file, email, isPreview ? 'preview-avatar.jpg' : 'avatar.jpg', favoriteTeamInput.value);
+            if (!url) {
+                if (avatarStatusEl) avatarStatusEl.textContent = '';
+                return;
+            }
             currentAvatarUrl = url;
             if (avatarStatusEl) avatarStatusEl.textContent = 'Ready ✓';
             renderAvatarPreview();

@@ -23,6 +23,152 @@ function getAuthRedirectUrl() {
     return `${window.location.origin}${window.location.pathname}`;
 }
 
+async function showAvatarCropModal(file, favoriteTeam = '') {
+    const modal = document.getElementById('avatar-crop-modal');
+    const img = document.getElementById('avatar-crop-image');
+    const stage = document.getElementById('avatar-crop-stage');
+    const zoomInput = document.getElementById('avatar-crop-zoom');
+    const flagBadge = document.getElementById('avatar-crop-flag-badge');
+    const saveBtn = document.getElementById('avatar-crop-save');
+    const cancelBtn = document.getElementById('avatar-crop-cancel');
+    const closeBtn = document.getElementById('avatar-crop-close');
+    if (!modal || !img || !stage || !zoomInput || !saveBtn || !cancelBtn) return null;
+
+    const STAGE_SIZE = 280;
+    const TARGET_SIZE = 256;
+
+    const favKey = (favoriteTeam || '').trim().toLowerCase();
+    const fav = (typeof teams !== 'undefined' ? teams : []).find((t) => (t.name || '').trim().toLowerCase() === favKey);
+    if (flagBadge) {
+        flagBadge.textContent = fav?.flag || '';
+        flagBadge.style.display = fav?.flag ? '' : 'none';
+    }
+
+    const url = URL.createObjectURL(file);
+    img.src = url;
+    try {
+        await new Promise((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error('Could not load image'));
+        });
+    } catch (err) {
+        URL.revokeObjectURL(url);
+        return null;
+    }
+
+    const nw = img.naturalWidth;
+    const nh = img.naturalHeight;
+    const coverScale = Math.max(STAGE_SIZE / nw, STAGE_SIZE / nh);
+
+    let zoomFactor = 1.0;
+    let tx = 0;
+    let ty = 0;
+    zoomInput.value = '1';
+
+    const updateTransform = () => {
+        const displayW = nw * coverScale * zoomFactor;
+        const displayH = nh * coverScale * zoomFactor;
+        const baseLeft = (STAGE_SIZE - displayW) / 2;
+        const baseTop = (STAGE_SIZE - displayH) / 2;
+        // Constrain so image always covers the stage (no empty edges)
+        const minTx = STAGE_SIZE - displayW - baseLeft;
+        const maxTx = -baseLeft;
+        const minTy = STAGE_SIZE - displayH - baseTop;
+        const maxTy = -baseTop;
+        tx = Math.min(maxTx, Math.max(minTx, tx));
+        ty = Math.min(maxTy, Math.max(minTy, ty));
+        img.style.width = displayW + 'px';
+        img.style.height = displayH + 'px';
+        img.style.left = (baseLeft + tx) + 'px';
+        img.style.top = (baseTop + ty) + 'px';
+    };
+    updateTransform();
+
+    const handleZoom = () => {
+        zoomFactor = parseFloat(zoomInput.value) || 1;
+        updateTransform();
+    };
+
+    let dragging = false;
+    let lastX = 0;
+    let lastY = 0;
+    const getPoint = (e) => (e.touches?.[0] ?? e);
+    const onPointerDown = (e) => {
+        dragging = true;
+        const p = getPoint(e);
+        lastX = p.clientX;
+        lastY = p.clientY;
+        stage.style.cursor = 'grabbing';
+        e.preventDefault();
+    };
+    const onPointerMove = (e) => {
+        if (!dragging) return;
+        const p = getPoint(e);
+        tx += p.clientX - lastX;
+        ty += p.clientY - lastY;
+        lastX = p.clientX;
+        lastY = p.clientY;
+        updateTransform();
+        e.preventDefault();
+    };
+    const onPointerUp = () => {
+        dragging = false;
+        stage.style.cursor = 'grab';
+    };
+
+    zoomInput.addEventListener('input', handleZoom);
+    stage.addEventListener('mousedown', onPointerDown);
+    stage.addEventListener('touchstart', onPointerDown, { passive: false });
+    document.addEventListener('mousemove', onPointerMove);
+    document.addEventListener('touchmove', onPointerMove, { passive: false });
+    document.addEventListener('mouseup', onPointerUp);
+    document.addEventListener('touchend', onPointerUp);
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    return new Promise((resolve) => {
+        const cleanup = (result) => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            URL.revokeObjectURL(url);
+            zoomInput.removeEventListener('input', handleZoom);
+            stage.removeEventListener('mousedown', onPointerDown);
+            stage.removeEventListener('touchstart', onPointerDown);
+            document.removeEventListener('mousemove', onPointerMove);
+            document.removeEventListener('touchmove', onPointerMove);
+            document.removeEventListener('mouseup', onPointerUp);
+            document.removeEventListener('touchend', onPointerUp);
+            saveBtn.removeEventListener('click', handleSave);
+            cancelBtn.removeEventListener('click', handleCancel);
+            closeBtn?.removeEventListener('click', handleCancel);
+            resolve(result);
+        };
+        const handleSave = async () => {
+            const displayW = nw * coverScale * zoomFactor;
+            const displayH = nh * coverScale * zoomFactor;
+            const baseLeft = (STAGE_SIZE - displayW) / 2;
+            const baseTop = (STAGE_SIZE - displayH) / 2;
+            const left = baseLeft + tx;
+            const top = baseTop + ty;
+            const sx = -left / (coverScale * zoomFactor);
+            const sy = -top / (coverScale * zoomFactor);
+            const sSize = STAGE_SIZE / (coverScale * zoomFactor);
+            const canvas = document.createElement('canvas');
+            canvas.width = TARGET_SIZE;
+            canvas.height = TARGET_SIZE;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, sx, sy, sSize, sSize, 0, 0, TARGET_SIZE, TARGET_SIZE);
+            const blob = await new Promise((r) => canvas.toBlob(r, 'image/jpeg', 0.85));
+            cleanup(blob);
+        };
+        const handleCancel = () => cleanup(null);
+        saveBtn.addEventListener('click', handleSave);
+        cancelBtn.addEventListener('click', handleCancel);
+        closeBtn?.addEventListener('click', handleCancel);
+    });
+}
+
 async function _cropImageToSquareBlob(file, targetSize = 256, quality = 0.85) {
     const url = URL.createObjectURL(file);
     try {
@@ -46,10 +192,8 @@ async function _cropImageToSquareBlob(file, targetSize = 256, quality = 0.85) {
     }
 }
 
-async function pickAndUploadAvatar(file, email, filename = 'avatar.jpg') {
-    if (!file || !file.type?.startsWith('image/')) throw new Error('Please choose an image file.');
-    if (file.size > 10 * 1024 * 1024) throw new Error('Image is too large (max 10 MB).');
-    const blob = await _cropImageToSquareBlob(file, 256, 0.85);
+async function uploadAvatarBlob(blob, email, filename = 'avatar.jpg') {
+    if (!blob) throw new Error('No image to upload.');
     const safeEmail = (email || '').replace(/[^a-zA-Z0-9.@_-]/g, '_');
     const safeFilename = (filename || 'avatar.jpg').replace(/[^a-zA-Z0-9._-]/g, '_');
     const path = `${safeEmail}/${safeFilename}`;
@@ -59,6 +203,19 @@ async function pickAndUploadAvatar(file, email, filename = 'avatar.jpg') {
     if (error) throw error;
     const { data } = supabaseClient.storage.from('avatars').getPublicUrl(path);
     return `${data.publicUrl}?t=${Date.now()}`;
+}
+
+async function pickAndUploadAvatar(file, email, filename = 'avatar.jpg', favoriteTeam = '') {
+    if (!file || !file.type?.startsWith('image/')) throw new Error('Please choose an image file.');
+    if (file.size > 10 * 1024 * 1024) throw new Error('Image is too large (max 10 MB).');
+    let blob = null;
+    if (typeof showAvatarCropModal === 'function') {
+        blob = await showAvatarCropModal(file, favoriteTeam);
+        if (!blob) return null; // user cancelled
+    } else {
+        blob = await _cropImageToSquareBlob(file, 256, 0.85);
+    }
+    return await uploadAvatarBlob(blob, email, filename);
 }
 
 async function previewNewUserOnboarding() {
@@ -96,9 +253,14 @@ async function handleProfileAvatarChange(event) {
     const file = event.target?.files?.[0];
     if (!file) return;
     const statusEl = document.getElementById('profile-avatar-status');
+    const favoriteTeam = document.getElementById('favorite-team-input')?.value || '';
     try {
-        if (statusEl) statusEl.textContent = 'Uploading…';
-        const url = await pickAndUploadAvatar(file, userEmail);
+        const url = await pickAndUploadAvatar(file, userEmail, 'avatar.jpg', favoriteTeam);
+        if (!url) {
+            if (statusEl) statusEl.textContent = '';
+            return;
+        }
+        if (statusEl) statusEl.textContent = 'Saving…';
         const { error } = await supabaseClient.from('profiles').upsert({ email: userEmail, avatar_url: url }, { onConflict: 'email' });
         if (error) throw error;
         _updateProfileAvatarPreview(url);

@@ -6506,7 +6506,10 @@ async function submitManualResult() {
 }
 
 function _renderPlayerAvatar(avatarUrl, favoriteTeam, size = 32, nickname = '') {
-    const fav = (typeof teams !== 'undefined' ? teams : []).find((t) => t.name === favoriteTeam);
+    const favKey = (favoriteTeam || '').trim().toLowerCase();
+    const fav = favKey
+        ? (typeof teams !== 'undefined' ? teams : []).find((t) => (t.name || '').trim().toLowerCase() === favKey)
+        : null;
     const flag = fav?.flag || '';
     const initial = (nickname || '').trim().charAt(0).toUpperCase() || '?';
     const img = avatarUrl

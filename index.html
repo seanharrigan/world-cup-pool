@@ -2131,11 +2131,40 @@
         </div>
     </div>
 
+    <div id="avatar-crop-modal" class="hidden fixed inset-0 z-[125] bg-black/85 backdrop-blur-sm items-center justify-center p-4">
+        <div class="w-full max-w-sm rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden">
+            <div class="p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="theme-accent-text text-[10px] font-black uppercase tracking-[0.25em]">Crop Photo</div>
+                        <h3 class="text-lg font-black uppercase italic tracking-tight text-white">Adjust Your Avatar</h3>
+                    </div>
+                    <button id="avatar-crop-close" class="text-gray-500 hover:text-white text-xl leading-none">×</button>
+                </div>
+                <div id="avatar-crop-stage" class="relative mx-auto bg-black overflow-hidden touch-none cursor-grab" style="width:280px;height:280px">
+                    <img id="avatar-crop-image" alt="" class="absolute select-none pointer-events-none" draggable="false">
+                    <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(circle at 140px 140px, transparent 0, transparent 139px, rgba(0,0,0,0.6) 140px); mix-blend-mode: normal;"></div>
+                    <div class="absolute inset-0 pointer-events-none rounded-full border-2 border-white/40" style="margin: 0 auto;"></div>
+                    <span id="avatar-crop-flag-badge" class="absolute z-10 rounded-full bg-gray-900 border border-gray-700 flex items-center justify-center leading-none" style="top:8px;left:8px;width:30px;height:30px;font-size:18px"></span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Zoom</span>
+                    <input type="range" id="avatar-crop-zoom" min="1" max="3" step="0.01" value="1" class="flex-1 accent-blue-500">
+                </div>
+                <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-500 text-center">Drag the photo to reposition</div>
+            </div>
+            <div class="border-t border-gray-800 bg-gray-950/70 p-4 flex gap-3">
+                <button id="avatar-crop-cancel" class="flex-1 rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-gray-300 hover:bg-gray-700 transition-colors">Cancel</button>
+                <button id="avatar-crop-save" class="theme-primary-button flex-1 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-white transition-colors">Save</button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/data.js?v=20260409b"></script>
-    <script src="js/ui.js?v=20260424d"></script>
+    <script src="js/ui.js?v=20260424e"></script>
     <script src="js/scoring.js?v=20260424a"></script>
     <script src="js/third-place-mapping.js?v=20260416b"></script>
-    <script src="js/features.js?v=20260424c"></script>
-    <script src="js/app.js?v=20260424d"></script>
+    <script src="js/features.js?v=20260424e"></script>
+    <script src="js/app.js?v=20260424e"></script>
 </body>
 </html>
