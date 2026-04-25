@@ -7109,7 +7109,7 @@ function closeChipPopover() {
     }
 }
 
-let _lbShowSelection = true;
+let _lbShowSelection = false;
 let _lbShowChips = true;
 
 function toggleLbSelection(checked) {
