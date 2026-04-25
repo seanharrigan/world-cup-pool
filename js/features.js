@@ -7111,25 +7111,14 @@ function closeChipPopover() {
 let _lbShowSelection = true;
 let _lbShowChips = true;
 
-function _updateLbToggleBtn(btnId, isOn) {
-    const el = document.getElementById(btnId);
-    if (!el) return;
-    const dot = el.querySelector('span');
-    el.classList.toggle('bg-gray-900', isOn);
-    el.classList.toggle('bg-gray-300', !isOn);
-    if (dot) dot.style.transform = isOn ? 'translateX(18px)' : 'translateX(2px)';
-}
-
-function toggleLbSelection() {
-    _lbShowSelection = !_lbShowSelection;
+function toggleLbSelection(checked) {
+    _lbShowSelection = checked !== undefined ? checked : !_lbShowSelection;
     document.querySelectorAll('.lb-squad-cell').forEach((el) => { el.style.display = _lbShowSelection ? '' : 'none'; });
-    _updateLbToggleBtn('lb-toggle-selection', _lbShowSelection);
 }
 
-function toggleLbChips() {
-    _lbShowChips = !_lbShowChips;
+function toggleLbChips(checked) {
+    _lbShowChips = checked !== undefined ? checked : !_lbShowChips;
     document.querySelectorAll('.lb-badge-cell').forEach((el) => { el.style.display = _lbShowChips ? '' : 'none'; });
-    _updateLbToggleBtn('lb-toggle-chips', _lbShowChips);
 }
 
 async function fetchLeaderboard() {
