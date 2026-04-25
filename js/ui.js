@@ -274,8 +274,14 @@ function showProfileSetupModal(email, defaults = {}) {
     attachAlphaJumpToSelect(favoriteTeamInput);
     attachAlphaJumpToSelect(homeCountryInput);
 
-    messageEl.textContent = `You're creating a new profile for ${email}.`;
-    submessageEl.textContent = 'Enter the shared pool password once, then set your pool identity.';
+    const isPreview = Boolean(defaults.preview);
+    if (isPreview) {
+        messageEl.textContent = 'Preview mode — this is exactly what new users see when signing up.';
+        submessageEl.textContent = 'Click Continue to close. Avatar uploads land in a separate preview file, so your real avatar is untouched.';
+    } else {
+        messageEl.textContent = `You're creating a new profile for ${email}.`;
+        submessageEl.textContent = 'Enter the shared pool password once, then set your pool identity.';
+    }
     poolPasswordInput.value = '';
     nicknameInput.value = defaults.nickname || '';
     realnameInput.value = defaults.realname || '';
@@ -313,7 +319,7 @@ function showProfileSetupModal(email, defaults = {}) {
         if (!file) return;
         try {
             if (avatarStatusEl) avatarStatusEl.textContent = 'Uploading…';
-            const url = await pickAndUploadAvatar(file, email);
+            const url = await pickAndUploadAvatar(file, email, isPreview ? 'preview-avatar.jpg' : 'avatar.jpg');
             currentAvatarUrl = url;
             if (avatarStatusEl) avatarStatusEl.textContent = 'Ready ✓';
             renderAvatarPreview();

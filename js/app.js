@@ -46,18 +46,38 @@ async function _cropImageToSquareBlob(file, targetSize = 256, quality = 0.85) {
     }
 }
 
-async function pickAndUploadAvatar(file, email) {
+async function pickAndUploadAvatar(file, email, filename = 'avatar.jpg') {
     if (!file || !file.type?.startsWith('image/')) throw new Error('Please choose an image file.');
     if (file.size > 10 * 1024 * 1024) throw new Error('Image is too large (max 10 MB).');
     const blob = await _cropImageToSquareBlob(file, 256, 0.85);
     const safeEmail = (email || '').replace(/[^a-zA-Z0-9.@_-]/g, '_');
-    const path = `${safeEmail}/avatar.jpg`;
+    const safeFilename = (filename || 'avatar.jpg').replace(/[^a-zA-Z0-9._-]/g, '_');
+    const path = `${safeEmail}/${safeFilename}`;
     const { error } = await supabaseClient.storage
         .from('avatars')
         .upload(path, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '3600' });
     if (error) throw error;
     const { data } = supabaseClient.storage.from('avatars').getPublicUrl(path);
     return `${data.publicUrl}?t=${Date.now()}`;
+}
+
+async function previewNewUserOnboarding() {
+    if (!userEmail) {
+        showToast('Sign in first.');
+        return;
+    }
+    const result = await showProfileSetupModal(userEmail, {
+        nickname: '',
+        realname: '',
+        favoriteTeam: '',
+        homeCountry: '',
+        avatarUrl: '',
+        googleAvatarUrl: '',
+        preview: true
+    });
+    if (result) {
+        showToast('Preview only — nothing was saved.');
+    }
 }
 
 function _updateProfileAvatarPreview(avatarUrl) {
