@@ -4869,6 +4869,7 @@ async function setupDashboard() {
         // Deltas compare against the state BEFORE the most recent match-input date.
         let pointsDelta = 0;
         let rankDelta = 0;
+        const allPointsDeltaMap = new Map();
         const datedMatches = matches.filter((m) => m.match_date_manual);
         const uniqueMatchDates = [...new Set(datedMatches.map((m) => m.match_date_manual))].sort((a, b) => b.localeCompare(a));
         if (uniqueMatchDates.length >= 2) {
@@ -4881,6 +4882,10 @@ async function setupDashboard() {
             const prevMyRank = prevRanksMap[userEmail] ?? myDisplayRank;
             pointsDelta = myPoints - prevMyPoints;
             rankDelta = (prevMyRank && myDisplayRank) ? (prevMyRank - myDisplayRank) : 0;
+            prevLeaderboard.forEach((prev) => {
+                const curr = leaderboardData.find((l) => l.email === prev.email);
+                if (curr) allPointsDeltaMap.set(prev.email, curr.totalPoints - prev.totalPoints);
+            });
         }
 
         if (myPointsEl) {
@@ -5090,6 +5095,7 @@ async function setupDashboard() {
                 const s = rankStyleMap[rank] || defaultStyle;
                 const safeEmail = (entry.email || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                 const upside = poolUpsideMap.get(entry.email) ?? 0;
+                const ptsDelta = allPointsDeltaMap.get(entry.email) ?? 0;
                 return `<div class="dash-lb-row relative flex items-center gap-3 rounded-xl border ${s.border} overflow-visible px-3 py-2 w-full cursor-pointer hover:opacity-90 transition-opacity" style="background-color: ${s.bg};" onclick="showPlayerProfile('${safeEmail}')">
                     <div class="absolute left-0 top-0 bottom-0 w-[3px]" style="background-color: ${s.bar};"></div>
                     ${s.medal ? `<span class="text-xl leading-none shrink-0 pl-1">${s.medal}</span>` : `<span class="text-sm font-black text-gray-400 pl-1 shrink-0 w-6 text-center">#${rank}</span>`}
@@ -5099,9 +5105,12 @@ async function setupDashboard() {
                         ${prize ? `<div class="text-xs font-black" style="color: ${s.bar};">${prize}</div>` : ''}
                     </div>
                     <div class="shrink-0 text-right">
-                        <div class="text-xl font-black text-gray-900">${entry.totalPoints}</div>
+                        <div class="flex items-center justify-end gap-1">
+                            ${_renderDashDelta(ptsDelta)}
+                            <span class="text-xl font-black text-gray-900">${entry.totalPoints}</span>
+                        </div>
                         <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">pts</div>
-                        <div class="text-[9px] font-black uppercase tracking-[0.15em] mt-0.5" style="color: ${s.bar};">${upside} up</div>
+                        <div class="text-[9px] font-black uppercase tracking-[0.15em] mt-0.5" style="color: ${s.bar};">Upside: ${upside}</div>
                     </div>
                 </div>`;
             };
@@ -7120,17 +7129,22 @@ function toggleLbChips(checked) {
     document.querySelectorAll('.lb-badge-cell').forEach((el) => { el.classList.toggle('lb-collapsed', !_lbShowChips); });
 }
 
+function toggleLbLegend() {
+    const el = document.getElementById('lb-legend');
+    if (el) el.classList.toggle('hidden');
+}
+
 async function fetchLeaderboard() {
     const body = document.getElementById('leaderboard-body');
     // Show animated placeholder rows while scores are calculated.
-    // Columns: rank, points, player+squad, then 7 stage-points cols (G, Bonus, R32, R16, QF, SM, F)
+    // Columns: rank, points, player+squad, upside, then 7 stage-points cols (G, Bonus, R32, R16, QF, SM, F)
     const skeletonCell = '<td class="px-2 py-2.5 text-center"><div class="h-4 w-6 bg-gray-200 rounded animate-pulse mx-auto"></div></td>';
     const skeletonRow = `
         <tr class="border-b border-gray-100">
             <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center"><div class="h-5 w-6 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
             <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center"><div class="h-6 w-10 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
             <td class="px-4 py-2.5"><div class="space-y-2"><div class="h-4 w-28 bg-gray-200 rounded animate-pulse"></div><div class="h-3 w-20 bg-gray-100 rounded animate-pulse"></div></div></td>
-            ${skeletonCell.repeat(7)}
+            ${skeletonCell.repeat(8)}
         </tr>`;
     body.innerHTML = skeletonRow.repeat(5);
 
@@ -7175,6 +7189,29 @@ async function fetchLeaderboard() {
             displayRank: currentRanks[user.email] || null,
             chips: playerChips.get(user.email) || []
         }));
+
+        const lbUpsideMap = _buildUpsideMap(leaderboardData);
+
+        const lbPointsDeltaMap = new Map();
+        const lbRankDeltaMap = new Map();
+        {
+            const lbDatedMatches = (allMatches || []).filter((m) => m.match_date_manual);
+            const lbUniqueDates = [...new Set(lbDatedMatches.map((m) => m.match_date_manual))].sort((a, b) => b.localeCompare(a));
+            if (lbUniqueDates.length >= 2) {
+                const prevMatches = lbDatedMatches.filter((m) => m.match_date_manual < lbUniqueDates[0]);
+                const prevLb = buildLeaderboardData(allPicks || [], prevMatches, profilesMap, teams, advancedTeams, eliminatedTeams);
+                const prevRanks = _getPlayerDisplayRanks(prevLb);
+                prevLb.forEach((prev) => {
+                    const curr = leaderboardData.find((l) => l.email === prev.email);
+                    if (curr) {
+                        lbPointsDeltaMap.set(prev.email, curr.totalPoints - prev.totalPoints);
+                        const prevR = prevRanks[prev.email];
+                        const currR = currentRanks[prev.email];
+                        if (prevR != null && currR != null) lbRankDeltaMap.set(prev.email, prevR - currR);
+                    }
+                });
+            }
+        }
 
         if (countryFilterBtn) {
             countryFilterBtn.disabled = Boolean(appSettings.hideTeamSelection);
@@ -7238,6 +7275,7 @@ async function fetchLeaderboard() {
                         </div>
                     </div>
                 </td>
+                <td class="px-2 py-2.5 text-center font-black text-gray-500">100</td>
                 <td class="px-2 py-2.5 text-center font-black text-gray-500">${(bestAvailableTeam.stagePoints.G1 + bestAvailableTeam.stagePoints.G2 + bestAvailableTeam.stagePoints.G3) || '-'}</td>
                 <td class="px-2 py-2.5 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.Bonus || '-'}</td>
                 <td class="px-2 py-2.5 text-center font-black text-gray-500">${bestAvailableTeam.stagePoints.R32 || '-'}</td>
@@ -7250,7 +7288,7 @@ async function fetchLeaderboard() {
 
         const newRanks = { ...currentRanks };
 
-        const glowDividerRow = `<tr><td colspan="10" class="p-0">
+        const glowDividerRow = `<tr><td colspan="11" class="p-0">
             <div class="h-px w-full opacity-40" style="background: linear-gradient(90deg, transparent 0%, var(--theme-accent-primary) 30%, var(--theme-accent-primary) 70%, transparent 100%); box-shadow: 0 0 6px 0px var(--theme-accent-primary);"></div>
         </td></tr>`;
 
@@ -7261,7 +7299,7 @@ async function fetchLeaderboard() {
             if (prevRank === undefined || prevRank === null) {
                 rankIndicator = '';
             } else {
-                const delta = prevRank - user.displayRank;
+                const delta = lbRankDeltaMap.get(user.email) ?? (prevRank - user.displayRank);
                 if (delta > 0) rankIndicator = `<span class="text-green-500 text-xs font-black">↑${delta}</span>`;
                 else if (delta < 0) rankIndicator = `<span class="text-red-400 text-xs font-black">↓${Math.abs(delta)}</span>`;
                 else rankIndicator = '';
@@ -7270,6 +7308,11 @@ async function fetchLeaderboard() {
             const rowTone = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50';
             const safeEmail = user.email.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
             const separator = idx === 2 ? glowDividerRow : '';
+            const ptsDelta = lbPointsDeltaMap.get(user.email) ?? 0;
+            const ptsDeltaHtml = ptsDelta > 0
+                ? `<div class="text-[9px] font-black text-green-500 leading-none">↑${ptsDelta}</div>`
+                : ptsDelta < 0 ? `<div class="text-[9px] font-black text-red-500 leading-none">↓${Math.abs(ptsDelta)}</div>` : '';
+            const upside = lbUpsideMap.get(user.email) ?? 0;
 
             return separator + `
             <tr class="theme-hover-row ${rowTone} border-b border-gray-100 transition-colors text-left text-gray-900 cursor-pointer" onclick="showPlayerProfile('${safeEmail}')">
@@ -7279,7 +7322,10 @@ async function fetchLeaderboard() {
                         <div class="text-lg font-black text-gray-900">#${user.displayRank}</div>
                     </div>
                 </td>
-                <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center text-lg font-black text-gray-900">${user.totalPoints}</td>
+                <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center">
+                    <div class="text-lg font-black text-gray-900">${user.totalPoints}</div>
+                    ${ptsDeltaHtml}
+                </td>
                 <td class="px-4 py-2.5 text-left">
                     <div class="flex items-center gap-3">
                         ${_renderPlayerAvatar(user.avatarUrl, user.favoriteTeam, 36, user.nickname)}
@@ -7295,6 +7341,10 @@ async function fetchLeaderboard() {
                         </div>
                     </div>
                 </td>
+                <td class="px-2 py-2.5 text-center">
+                    <div class="text-sm font-black text-gray-900">${upside}</div>
+                    <div class="text-[8px] font-black text-gray-400 leading-none">/100</div>
+                </td>
                 <td class="px-2 py-2.5 text-center font-black text-gray-900">${(user.stagePoints.G1 + user.stagePoints.G2 + user.stagePoints.G3) || '-'}</td>
                 <td class="px-2 py-2.5 text-center font-black text-gray-900">${user.stagePoints.Bonus || '-'}</td>
                 <td class="px-2 py-2.5 text-center font-black text-gray-900">${user.stagePoints.R32 || '-'}</td>
@@ -7304,7 +7354,7 @@ async function fetchLeaderboard() {
                 <td class="px-2 py-2.5 text-center font-black text-gray-900">${user.stagePoints.F || '-'}</td>
             </tr>
         `;
-        }).join('') || '<tr><td colspan="10" class="p-8 text-center text-gray-900">No players found</td></tr>');
+        }).join('') || '<tr><td colspan="11" class="p-8 text-center text-gray-900">No players found</td></tr>');
 
         if (!_lbShowSelection) document.querySelectorAll('.lb-squad-cell').forEach((el) => { el.classList.add('lb-collapsed'); });
         if (!_lbShowChips) document.querySelectorAll('.lb-badge-cell').forEach((el) => { el.classList.add('lb-collapsed'); });
@@ -7317,7 +7367,7 @@ async function fetchLeaderboard() {
         window._picksCache = allPicks || [];
         window._profilesTotalCount = new Set((allProfiles || []).map((p) => p.email).filter(Boolean)).size;
     } catch (error) {
-        body.innerHTML = '<tr><td colspan="10" class="p-8 text-center text-red-500 text-gray-900">Error calculating scores</td></tr>';
+        body.innerHTML = '<tr><td colspan="11" class="p-8 text-center text-red-500 text-gray-900">Error calculating scores</td></tr>';
     }
 }
 
