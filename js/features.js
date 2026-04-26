@@ -2307,6 +2307,119 @@ async function fetchFdApiTest() {
     }
 }
 
+const MATCH_SYNC_URL = 'https://ttqvchhzuyzhzeumysks.supabase.co/functions/v1/sync-world-cup';
+
+async function runMatchSync(execute = true) {
+    const btn = document.getElementById('matchsync-btn');
+    const lastEl = document.getElementById('matchsync-last-synced');
+    const rowsEl = document.getElementById('matchsync-rows');
+    const summaryEl = document.getElementById('matchsync-summary');
+    if (!btn || !rowsEl) return;
+    btn.disabled = true;
+    if (lastEl) lastEl.textContent = 'Syncing…';
+    if (rowsEl) rowsEl.innerHTML = '<div class="px-4 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 animate-pulse">Calling API…</div>';
+    try {
+        const url = execute ? `${MATCH_SYNC_URL}?execute=true` : MATCH_SYNC_URL;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Sync failed');
+        _renderMatchSyncSummary(data.summary, summaryEl);
+        _renderMatchSyncRows(data.planned || [], rowsEl);
+        if (lastEl) lastEl.textContent = `Last synced ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Vancouver' })} PT · ${data.summary.totalApiMatches} matches`;
+    } catch (err) {
+        if (rowsEl) rowsEl.innerHTML = `<div class="px-4 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-red-400">Error: ${escapeHtml(err.message || String(err))}</div>`;
+        if (lastEl) lastEl.textContent = 'Sync failed';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+function _renderMatchSyncSummary(summary, el) {
+    if (!el || !summary) return;
+    el.classList.remove('hidden');
+    const cell = (label, value, color = 'text-white') => `
+        <div class="text-center">
+            <div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-500">${label}</div>
+            <div class="text-base font-black ${color}">${value}</div>
+        </div>`;
+    el.innerHTML = [
+        cell('Total', summary.totalApiMatches),
+        cell('Upcoming', summary.upcoming || 0, 'text-gray-300'),
+        cell('In Play', summary.inPlay || 0, summary.inPlay ? 'text-yellow-300' : 'text-gray-500'),
+        cell('Auto-synced', summary.executedInserts + summary.executedUpdates, 'text-green-400'),
+        cell('Skip Manual', summary.plannedSkipManual || 0, 'text-orange-300'),
+        cell('Errors', (summary.errors || []).length, summary.errors?.length ? 'text-red-400' : 'text-gray-500'),
+    ].join('');
+}
+
+function _renderMatchSyncRows(planned, rowsEl) {
+    if (!rowsEl) return;
+    if (!planned.length) {
+        rowsEl.innerHTML = '<div class="px-4 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">No matches in the API response.</div>';
+        return;
+    }
+    const sorted = [...planned].sort((a, b) => (a.utc_date || '').localeCompare(b.utc_date || ''));
+    rowsEl.innerHTML = sorted.map((p) => {
+        const dt = p.utc_date ? new Date(p.utc_date) : null;
+        const dateStr = dt ? dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Vancouver' }) : '—';
+        const timeStr = dt ? dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Vancouver' }) : '';
+        const apiBadge = _matchSyncApiBadge(p.api_status);
+        const score = (p.score_home != null && p.score_away != null)
+            ? `<span class="font-black text-white">${p.score_home}–${p.score_away}</span>${p.was_extra_time ? '<span class="text-[8px] font-black text-yellow-300 ml-1">ET</span>' : ''}`
+            : '<span class="text-gray-600">–</span>';
+        const dbBadge = _matchSyncDbBadge(p);
+        return `<div class="grid grid-cols-12 gap-2 px-4 py-2.5 items-center text-[11px] text-gray-300">
+            <div class="col-span-2 font-black text-white">${dateStr}<div class="text-[9px] font-bold text-gray-500">${timeStr}</div></div>
+            <div class="col-span-4 font-black text-gray-200">${escapeHtml(p.team_home)} <span class="text-gray-600 font-normal">v</span> ${escapeHtml(p.team_away)}</div>
+            <div class="col-span-2 text-center">${apiBadge}</div>
+            <div class="col-span-2 text-center">${score}</div>
+            <div class="col-span-2 text-right text-[10px]">${dbBadge}</div>
+        </div>`;
+    }).join('');
+}
+
+function _matchSyncApiBadge(status) {
+    const map = {
+        FINISHED: ['🟢', 'Finished', 'text-green-400'],
+        IN_PLAY: ['🟡', 'Live', 'text-yellow-400 animate-pulse'],
+        PAUSED: ['🟡', 'HT', 'text-yellow-400'],
+        TIMED: ['⚪️', 'Upcoming', 'text-gray-400'],
+        SCHEDULED: ['⚪️', 'Sched', 'text-gray-400'],
+        POSTPONED: ['⚠️', 'Postponed', 'text-orange-400'],
+        CANCELLED: ['❌', 'Cancelled', 'text-red-400'],
+        SUSPENDED: ['⚠️', 'Suspended', 'text-orange-400'],
+    };
+    const [icon, label, color] = map[status] || ['•', status || '?', 'text-gray-500'];
+    return `<span class="text-[10px] font-black uppercase tracking-[0.12em] ${color}">${icon} ${label}</span>`;
+}
+
+function _matchSyncDbBadge(p) {
+    if (p.db_manual_override === true) {
+        return '<span class="text-orange-300 font-black">✏️ Manual</span>';
+    }
+    if (p.db_auto_synced_at) {
+        const ago = _shortAgo(p.db_auto_synced_at);
+        return `<span class="text-green-400 font-black">🟢 Auto · ${ago}</span>`;
+    }
+    if (p.action === 'insert') return '<span class="text-blue-300 font-black">＋ New</span>';
+    if (p.action === 'update') return '<span class="text-blue-300 font-black">↻ Update</span>';
+    if (p.action === 'no-change') return '<span class="text-gray-500">unchanged</span>';
+    if (p.action === 'skip-unmapped') return `<span class="text-red-300 font-black" title="${escapeHtml(p.reason || '')}">⚠️ Unmapped</span>`;
+    return '<span class="text-gray-600">–</span>';
+}
+
+function _shortAgo(isoString) {
+    const ms = Date.now() - new Date(isoString).getTime();
+    if (!isFinite(ms) || ms < 0) return 'just now';
+    const min = Math.floor(ms / 60000);
+    if (min < 1) return 'just now';
+    if (min < 60) return `${min}m ago`;
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return `${hr}h ago`;
+    const day = Math.floor(hr / 24);
+    return `${day}d ago`;
+}
+
 function showAdminTab(tabId) {
     const panels = document.querySelectorAll('.admin-panel');
     const tabs = document.querySelectorAll('.admin-tab');
@@ -2338,6 +2451,13 @@ function showAdminTab(tabId) {
         const saved = localStorage.getItem('wc_pool_fd_api_key');
         const statusEl = document.getElementById('fd-api-key-status');
         if (saved && statusEl) statusEl.textContent = '✓ Key saved to this browser.';
+    }
+    if (tabId === 'matchsync') {
+        // Auto-load on first open (read-only, no execute)
+        const rowsEl = document.getElementById('matchsync-rows');
+        if (rowsEl && rowsEl.children.length === 1 && rowsEl.firstElementChild?.textContent?.includes('No data loaded')) {
+            runMatchSync(false);
+        }
     }
 }
 

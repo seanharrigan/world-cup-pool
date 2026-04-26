@@ -34,15 +34,19 @@ interface ApiMatch {
 }
 
 interface PlannedChange {
-    action: "insert" | "update" | "skip-manual" | "skip-unmapped" | "no-change";
+    action: "insert" | "update" | "skip-manual" | "skip-unmapped" | "no-change" | "upcoming" | "in-play";
+    api_status: string;
     team_home: string;
     team_away: string;
     score_home: number | null;
     score_away: number | null;
     stage: string | null;
     match_date: string;
+    utc_date: string;
     was_extra_time: boolean;
     api_id: number;
+    db_manual_override: boolean | null;
+    db_auto_synced_at: string | null;
     reason?: string;
 }
 
@@ -75,7 +79,7 @@ serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { data: existing, error: existingErr } = await supabase
         .from("matches")
-        .select("id, team_home, team_away, match_date_manual, score_home, score_away, was_extra_time, manual_override");
+        .select("id, team_home, team_away, match_date_manual, score_home, score_away, was_extra_time, manual_override, auto_synced_at");
     if (existingErr) return jsonResponse({ ok: false, error: `Failed to load existing matches: ${existingErr.message}` }, 500);
 
     // Index existing rows by both (home|away|date) and (away|home|date) so a swapped
@@ -87,41 +91,61 @@ serve(async (req: Request) => {
         existingMap.set(`${row.team_away}|${row.team_home}|${date}`, row);
     }
 
-    // 3. Plan changes
+    // 3. Plan changes (every match gets an entry, including upcoming/in-play)
     const planned: PlannedChange[] = [];
     let skippedUnfinished = 0;
 
     for (const m of apiMatches) {
-        if (m.status !== "FINISHED") {
-            skippedUnfinished++;
-            continue;
-        }
-
         const team_home = mapTeam(m.homeTeam.name);
         const team_away = mapTeam(m.awayTeam.name);
         const stage = mapStage(m.stage);
-        const match_date = m.utcDate.slice(0, 10); // YYYY-MM-DD
+        const match_date = m.utcDate.slice(0, 10);
+        const utc_date = m.utcDate;
+        const existingRow = existingMap.get(`${team_home}|${team_away}|${match_date}`);
+        const baseRow = {
+            api_status: m.status,
+            team_home, team_away,
+            stage,
+            match_date,
+            utc_date,
+            api_id: m.id,
+            db_manual_override: existingRow?.manual_override ?? null,
+            db_auto_synced_at: existingRow?.auto_synced_at ?? null,
+        };
+
+        // Non-finished matches: just record their schedule status
+        if (m.status !== "FINISHED") {
+            skippedUnfinished++;
+            const action = m.status === "IN_PLAY" || m.status === "PAUSED" ? "in-play" : "upcoming";
+            planned.push({
+                ...baseRow,
+                action,
+                score_home: m.score.fullTime.home,
+                score_away: m.score.fullTime.away,
+                was_extra_time: false,
+            });
+            continue;
+        }
+
         const score_home = m.score.fullTime.home;
         const score_away = m.score.fullTime.away;
         const was_extra_time = m.score.duration === "EXTRA_TIME" || m.score.duration === "PENALTY_SHOOTOUT";
 
         if (!stage) {
             planned.push({
+                ...baseRow,
                 action: "skip-unmapped",
-                team_home, team_away, score_home, score_away, stage,
-                match_date, was_extra_time, api_id: m.id,
+                score_home, score_away, was_extra_time,
                 reason: `Unmapped stage ${m.stage}`,
             });
             continue;
         }
 
-        const existingRow = existingMap.get(`${team_home}|${team_away}|${match_date}`);
-
         if (existingRow?.manual_override) {
             planned.push({
+                ...baseRow,
                 action: "skip-manual",
-                team_home, team_away, score_home, score_away, stage,
-                match_date, was_extra_time, api_id: m.id,
+                score_home, score_away, was_extra_time,
                 reason: `Row #${existingRow.id} has manual_override=true`,
             });
             continue;
@@ -133,15 +157,15 @@ serve(async (req: Request) => {
                 existingRow.score_away === score_away &&
                 existingRow.was_extra_time === was_extra_time;
             planned.push({
+                ...baseRow,
                 action: unchanged ? "no-change" : "update",
-                team_home, team_away, score_home, score_away, stage,
-                match_date, was_extra_time, api_id: m.id,
+                score_home, score_away, was_extra_time,
             });
         } else {
             planned.push({
+                ...baseRow,
                 action: "insert",
-                team_home, team_away, score_home, score_away, stage,
-                match_date, was_extra_time, api_id: m.id,
+                score_home, score_away, was_extra_time,
             });
         }
     }
@@ -156,6 +180,8 @@ serve(async (req: Request) => {
         plannedNoChange: planned.filter((p) => p.action === "no-change").length,
         plannedSkipManual: planned.filter((p) => p.action === "skip-manual").length,
         plannedSkipUnmapped: planned.filter((p) => p.action === "skip-unmapped").length,
+        upcoming: planned.filter((p) => p.action === "upcoming").length,
+        inPlay: planned.filter((p) => p.action === "in-play").length,
         executedInserts: 0,
         executedUpdates: 0,
         errors: [] as string[],
