@@ -752,95 +752,95 @@ function _computeReportCard(squad) {
 // the global `teams` array exactly so flag lookups work automatically.
 
 const GROUP_STAGE_SCHEDULE = [
-    // June 11
-    { date: '2026-06-11', group: 'A', home: 'Mexico',         away: 'South Africa' },
-    { date: '2026-06-11', group: 'A', home: 'South Korea', away: 'Czechia' },
-    // June 12
-    { date: '2026-06-12', group: 'B', home: 'Canada',         away: 'Bosnia' },
-    { date: '2026-06-12', group: 'D', home: 'USA',  away: 'Paraguay' },
-    // June 13
-    { date: '2026-06-13', group: 'B', home: 'Qatar',          away: 'Switzerland' },
-    { date: '2026-06-13', group: 'C', home: 'Brazil',         away: 'Morocco' },
-    { date: '2026-06-13', group: 'C', home: 'Haiti',          away: 'Scotland' },
-    { date: '2026-06-13', group: 'D', home: 'Australia',      away: 'Turkiye' },
-    // June 14
-    { date: '2026-06-14', group: 'E', home: 'Germany',        away: 'Curacao' },
-    { date: '2026-06-14', group: 'E', home: 'Ivory Coast',    away: 'Ecuador' },
-    { date: '2026-06-14', group: 'F', home: 'Netherlands',    away: 'Japan' },
-    { date: '2026-06-14', group: 'F', home: 'Sweden',         away: 'Tunisia' },
-    // June 15
-    { date: '2026-06-15', group: 'G', home: 'Belgium',        away: 'Egypt' },
-    { date: '2026-06-15', group: 'G', home: 'Iran',           away: 'New Zealand' },
-    { date: '2026-06-15', group: 'H', home: 'Spain',          away: 'Cape Verde' },
-    { date: '2026-06-15', group: 'H', home: 'Saudi Arabia',   away: 'Uruguay' },
-    // June 16
-    { date: '2026-06-16', group: 'I', home: 'France',         away: 'Senegal' },
-    { date: '2026-06-16', group: 'I', home: 'Iraq',           away: 'Norway' },
-    { date: '2026-06-16', group: 'J', home: 'Argentina',      away: 'Algeria' },
-    { date: '2026-06-16', group: 'J', home: 'Austria',        away: 'Jordan' },
-    // June 17
-    { date: '2026-06-17', group: 'K', home: 'Portugal',       away: 'DR Congo' },
-    { date: '2026-06-17', group: 'K', home: 'Uzbekistan',     away: 'Colombia' },
-    { date: '2026-06-17', group: 'L', home: 'England',        away: 'Croatia' },
-    { date: '2026-06-17', group: 'L', home: 'Ghana',          away: 'Panama' },
-    // June 18
-    { date: '2026-06-18', group: 'A', home: 'Czechia',        away: 'South Africa' },
-    { date: '2026-06-18', group: 'A', home: 'Mexico',         away: 'South Korea' },
-    { date: '2026-06-18', group: 'B', home: 'Switzerland',    away: 'Bosnia' },
-    { date: '2026-06-18', group: 'B', home: 'Canada',         away: 'Qatar' },
-    // June 19
-    { date: '2026-06-19', group: 'C', home: 'Scotland',       away: 'Morocco' },
-    { date: '2026-06-19', group: 'C', home: 'Brazil',         away: 'Haiti' },
-    { date: '2026-06-19', group: 'D', home: 'USA',  away: 'Australia' },
-    { date: '2026-06-19', group: 'D', home: 'Turkiye',         away: 'Paraguay' },
-    // June 20
-    { date: '2026-06-20', group: 'E', home: 'Germany',        away: 'Ivory Coast' },
-    { date: '2026-06-20', group: 'E', home: 'Ecuador',        away: 'Curacao' },
-    { date: '2026-06-20', group: 'F', home: 'Netherlands',    away: 'Sweden' },
-    { date: '2026-06-20', group: 'F', home: 'Tunisia',        away: 'Japan' },
-    // June 21
-    { date: '2026-06-21', group: 'G', home: 'Belgium',        away: 'Iran' },
-    { date: '2026-06-21', group: 'G', home: 'New Zealand',    away: 'Egypt' },
-    { date: '2026-06-21', group: 'H', home: 'Spain',          away: 'Saudi Arabia' },
-    { date: '2026-06-21', group: 'H', home: 'Uruguay',        away: 'Cape Verde' },
-    // June 22
-    { date: '2026-06-22', group: 'I', home: 'France',         away: 'Iraq' },
-    { date: '2026-06-22', group: 'I', home: 'Norway',         away: 'Senegal' },
-    { date: '2026-06-22', group: 'J', home: 'Argentina',      away: 'Austria' },
-    { date: '2026-06-22', group: 'J', home: 'Jordan',         away: 'Algeria' },
-    // June 23
-    { date: '2026-06-23', group: 'K', home: 'Portugal',       away: 'Uzbekistan' },
-    { date: '2026-06-23', group: 'K', home: 'Colombia',       away: 'DR Congo' },
-    { date: '2026-06-23', group: 'L', home: 'England',        away: 'Ghana' },
-    { date: '2026-06-23', group: 'L', home: 'Panama',         away: 'Croatia' },
-    // June 24
-    { date: '2026-06-24', group: 'A', home: 'Czechia',        away: 'Mexico' },
-    { date: '2026-06-24', group: 'A', home: 'South Africa',   away: 'South Korea' },
-    { date: '2026-06-24', group: 'B', home: 'Switzerland',    away: 'Canada' },
-    { date: '2026-06-24', group: 'B', home: 'Bosnia', away: 'Qatar' },
-    { date: '2026-06-24', group: 'C', home: 'Scotland',       away: 'Brazil' },
-    { date: '2026-06-24', group: 'C', home: 'Morocco',        away: 'Haiti' },
-    // June 25
-    { date: '2026-06-25', group: 'D', home: 'Turkiye',         away: 'USA' },
-    { date: '2026-06-25', group: 'D', home: 'Paraguay',       away: 'Australia' },
-    { date: '2026-06-25', group: 'E', home: 'Curacao',        away: 'Ivory Coast' },
-    { date: '2026-06-25', group: 'E', home: 'Ecuador',        away: 'Germany' },
-    { date: '2026-06-25', group: 'F', home: 'Japan',          away: 'Sweden' },
-    { date: '2026-06-25', group: 'F', home: 'Tunisia',        away: 'Netherlands' },
-    // June 26
-    { date: '2026-06-26', group: 'G', home: 'Egypt',          away: 'Iran' },
-    { date: '2026-06-26', group: 'G', home: 'New Zealand',    away: 'Belgium' },
-    { date: '2026-06-26', group: 'H', home: 'Cape Verde',     away: 'Saudi Arabia' },
-    { date: '2026-06-26', group: 'H', home: 'Uruguay',        away: 'Spain' },
-    { date: '2026-06-26', group: 'I', home: 'Norway',         away: 'France' },
-    { date: '2026-06-26', group: 'I', home: 'Senegal',        away: 'Iraq' },
-    // June 27
-    { date: '2026-06-27', group: 'J', home: 'Jordan',         away: 'Argentina' },
-    { date: '2026-06-27', group: 'J', home: 'Algeria',        away: 'Austria' },
-    { date: '2026-06-27', group: 'K', home: 'Colombia',       away: 'Portugal' },
-    { date: '2026-06-27', group: 'K', home: 'DR Congo',       away: 'Uzbekistan' },
-    { date: '2026-06-27', group: 'L', home: 'Panama',         away: 'England' },
-    { date: '2026-06-27', group: 'L', home: 'Croatia',        away: 'Ghana' },
+    // Jun 11
+    { date: '2026-06-11', time: '12:00', group: 'A', home: 'Mexico'            , away: 'South Africa' },
+    { date: '2026-06-11', time: '19:00', group: 'A', home: 'South Korea'       , away: 'Czechia' },
+    // Jun 12
+    { date: '2026-06-12', time: '12:00', group: 'B', home: 'Canada'            , away: 'Bosnia' },
+    { date: '2026-06-12', time: '18:00', group: 'D', home: 'USA'               , away: 'Paraguay' },
+    // Jun 13
+    { date: '2026-06-13', time: '12:00', group: 'B', home: 'Qatar'             , away: 'Switzerland' },
+    { date: '2026-06-13', time: '15:00', group: 'C', home: 'Brazil'            , away: 'Morocco' },
+    { date: '2026-06-13', time: '18:00', group: 'C', home: 'Haiti'             , away: 'Scotland' },
+    { date: '2026-06-13', time: '21:00', group: 'D', home: 'Australia'         , away: 'Turkiye' },
+    // Jun 14
+    { date: '2026-06-14', time: '10:00', group: 'E', home: 'Germany'           , away: 'Curacao' },
+    { date: '2026-06-14', time: '16:00', group: 'E', home: 'Ivory Coast'       , away: 'Ecuador' },
+    { date: '2026-06-14', time: '13:00', group: 'F', home: 'Netherlands'       , away: 'Japan' },
+    { date: '2026-06-14', time: '19:00', group: 'F', home: 'Sweden'            , away: 'Tunisia' },
+    // Jun 15
+    { date: '2026-06-15', time: '12:00', group: 'G', home: 'Belgium'           , away: 'Egypt' },
+    { date: '2026-06-15', time: '18:00', group: 'G', home: 'Iran'              , away: 'New Zealand' },
+    { date: '2026-06-15', time: '09:00', group: 'H', home: 'Spain'             , away: 'Cape Verde' },
+    { date: '2026-06-15', time: '15:00', group: 'H', home: 'Saudi Arabia'      , away: 'Uruguay' },
+    // Jun 16
+    { date: '2026-06-16', time: '12:00', group: 'I', home: 'France'            , away: 'Senegal' },
+    { date: '2026-06-16', time: '15:00', group: 'I', home: 'Iraq'              , away: 'Norway' },
+    { date: '2026-06-16', time: '18:00', group: 'J', home: 'Argentina'         , away: 'Algeria' },
+    { date: '2026-06-16', time: '21:00', group: 'J', home: 'Austria'           , away: 'Jordan' },
+    // Jun 17
+    { date: '2026-06-17', time: '10:00', group: 'K', home: 'Portugal'          , away: 'DR Congo' },
+    { date: '2026-06-17', time: '19:00', group: 'K', home: 'Uzbekistan'        , away: 'Colombia' },
+    { date: '2026-06-17', time: '13:00', group: 'L', home: 'England'           , away: 'Croatia' },
+    { date: '2026-06-17', time: '16:00', group: 'L', home: 'Ghana'             , away: 'Panama' },
+    // Jun 18
+    { date: '2026-06-18', time: '09:00', group: 'A', home: 'Czechia'           , away: 'South Africa' },
+    { date: '2026-06-18', time: '18:00', group: 'A', home: 'Mexico'            , away: 'South Korea' },
+    { date: '2026-06-18', time: '12:00', group: 'B', home: 'Switzerland'       , away: 'Bosnia' },
+    { date: '2026-06-18', time: '15:00', group: 'B', home: 'Canada'            , away: 'Qatar' },
+    // Jun 19
+    { date: '2026-06-19', time: '15:00', group: 'C', home: 'Scotland'          , away: 'Morocco' },
+    { date: '2026-06-19', time: '17:30', group: 'C', home: 'Brazil'            , away: 'Haiti' },
+    { date: '2026-06-19', time: '12:00', group: 'D', home: 'USA'               , away: 'Australia' },
+    { date: '2026-06-19', time: '20:00', group: 'D', home: 'Turkiye'           , away: 'Paraguay' },
+    // Jun 20
+    { date: '2026-06-20', time: '13:00', group: 'E', home: 'Germany'           , away: 'Ivory Coast' },
+    { date: '2026-06-20', time: '17:00', group: 'E', home: 'Ecuador'           , away: 'Curacao' },
+    { date: '2026-06-20', time: '10:00', group: 'F', home: 'Netherlands'       , away: 'Sweden' },
+    { date: '2026-06-20', time: '21:00', group: 'F', home: 'Tunisia'           , away: 'Japan' },
+    // Jun 21
+    { date: '2026-06-21', time: '12:00', group: 'G', home: 'Belgium'           , away: 'Iran' },
+    { date: '2026-06-21', time: '18:00', group: 'G', home: 'New Zealand'       , away: 'Egypt' },
+    { date: '2026-06-21', time: '09:00', group: 'H', home: 'Spain'             , away: 'Saudi Arabia' },
+    { date: '2026-06-21', time: '15:00', group: 'H', home: 'Uruguay'           , away: 'Cape Verde' },
+    // Jun 22
+    { date: '2026-06-22', time: '14:00', group: 'I', home: 'France'            , away: 'Iraq' },
+    { date: '2026-06-22', time: '17:00', group: 'I', home: 'Norway'            , away: 'Senegal' },
+    { date: '2026-06-22', time: '10:00', group: 'J', home: 'Argentina'         , away: 'Austria' },
+    { date: '2026-06-22', time: '20:00', group: 'J', home: 'Jordan'            , away: 'Algeria' },
+    // Jun 23
+    { date: '2026-06-23', time: '10:00', group: 'K', home: 'Portugal'          , away: 'Uzbekistan' },
+    { date: '2026-06-23', time: '19:00', group: 'K', home: 'Colombia'          , away: 'DR Congo' },
+    { date: '2026-06-23', time: '13:00', group: 'L', home: 'England'           , away: 'Ghana' },
+    { date: '2026-06-23', time: '16:00', group: 'L', home: 'Panama'            , away: 'Croatia' },
+    // Jun 24
+    { date: '2026-06-24', time: '18:00', group: 'A', home: 'Czechia'           , away: 'Mexico' },
+    { date: '2026-06-24', time: '18:00', group: 'A', home: 'South Africa'      , away: 'South Korea' },
+    { date: '2026-06-24', time: '12:00', group: 'B', home: 'Switzerland'       , away: 'Canada' },
+    { date: '2026-06-24', time: '12:00', group: 'B', home: 'Bosnia'            , away: 'Qatar' },
+    { date: '2026-06-24', time: '15:00', group: 'C', home: 'Scotland'          , away: 'Brazil' },
+    { date: '2026-06-24', time: '15:00', group: 'C', home: 'Morocco'           , away: 'Haiti' },
+    // Jun 25
+    { date: '2026-06-25', time: '19:00', group: 'D', home: 'Turkiye'           , away: 'USA' },
+    { date: '2026-06-25', time: '19:00', group: 'D', home: 'Paraguay'          , away: 'Australia' },
+    { date: '2026-06-25', time: '13:00', group: 'E', home: 'Curacao'           , away: 'Ivory Coast' },
+    { date: '2026-06-25', time: '13:00', group: 'E', home: 'Ecuador'           , away: 'Germany' },
+    { date: '2026-06-25', time: '16:00', group: 'F', home: 'Japan'             , away: 'Sweden' },
+    { date: '2026-06-25', time: '16:00', group: 'F', home: 'Tunisia'           , away: 'Netherlands' },
+    // Jun 26
+    { date: '2026-06-26', time: '20:00', group: 'G', home: 'Egypt'             , away: 'Iran' },
+    { date: '2026-06-26', time: '20:00', group: 'G', home: 'New Zealand'       , away: 'Belgium' },
+    { date: '2026-06-26', time: '17:00', group: 'H', home: 'Cape Verde'        , away: 'Saudi Arabia' },
+    { date: '2026-06-26', time: '17:00', group: 'H', home: 'Uruguay'           , away: 'Spain' },
+    { date: '2026-06-26', time: '12:00', group: 'I', home: 'Norway'            , away: 'France' },
+    { date: '2026-06-26', time: '12:00', group: 'I', home: 'Senegal'           , away: 'Iraq' },
+    // Jun 27
+    { date: '2026-06-27', time: '19:00', group: 'J', home: 'Jordan'            , away: 'Argentina' },
+    { date: '2026-06-27', time: '19:00', group: 'J', home: 'Algeria'           , away: 'Austria' },
+    { date: '2026-06-27', time: '16:30', group: 'K', home: 'Colombia'          , away: 'Portugal' },
+    { date: '2026-06-27', time: '16:30', group: 'K', home: 'DR Congo'          , away: 'Uzbekistan' },
+    { date: '2026-06-27', time: '14:00', group: 'L', home: 'Panama'            , away: 'England' },
+    { date: '2026-06-27', time: '14:00', group: 'L', home: 'Croatia'           , away: 'Ghana' },
 ];
 
 // ── 2026 World Cup Knockout Stage Schedule ───────────────────────────────────
@@ -849,44 +849,44 @@ const GROUP_STAGE_SCHEDULE = [
 // after the group stage). R16 and beyond are TBD until prior results are known.
 
 const KNOCKOUT_SCHEDULE = [
-    // ── Round of 32 ─── July 1–4, 2026 ───────────────────────────────────────
-    { slotKey: 'r32-01', date: '2026-07-01', stage: 'R32', home: '2A', away: '2B' },
-    { slotKey: 'r32-02', date: '2026-07-01', stage: 'R32', home: '1F', away: '2C' },
-    { slotKey: 'r32-03', date: '2026-07-01', stage: 'R32', home: '1C', away: '2F' },
-    { slotKey: 'r32-04', date: '2026-07-01', stage: 'R32', home: '2E', away: '2I' },
-    { slotKey: 'r32-05', date: '2026-07-02', stage: 'R32', home: '2K', away: '2L' },
-    { slotKey: 'r32-06', date: '2026-07-02', stage: 'R32', home: '1H', away: '2J' },
-    { slotKey: 'r32-07', date: '2026-07-02', stage: 'R32', home: '1J', away: '2H' },
-    { slotKey: 'r32-08', date: '2026-07-02', stage: 'R32', home: '2D', away: '2G' },
-    { slotKey: 'r32-09', date: '2026-07-03', stage: 'R32', home: '1E', away: 'Best 3rd', awayCandidates: ['A', 'B', 'C', 'D', 'F'] },
-    { slotKey: 'r32-10', date: '2026-07-03', stage: 'R32', home: '1I', away: 'Best 3rd', awayCandidates: ['C', 'D', 'F', 'G', 'H'] },
-    { slotKey: 'r32-11', date: '2026-07-03', stage: 'R32', home: '1A', away: 'Best 3rd', awayCandidates: ['C', 'E', 'F', 'H', 'I'] },
-    { slotKey: 'r32-12', date: '2026-07-03', stage: 'R32', home: '1L', away: 'Best 3rd', awayCandidates: ['E', 'H', 'I', 'J', 'K'] },
-    { slotKey: 'r32-13', date: '2026-07-04', stage: 'R32', home: '1D', away: 'Best 3rd', awayCandidates: ['B', 'E', 'F', 'I', 'J'] },
-    { slotKey: 'r32-14', date: '2026-07-04', stage: 'R32', home: '1G', away: 'Best 3rd', awayCandidates: ['A', 'E', 'H', 'I', 'J'] },
-    { slotKey: 'r32-15', date: '2026-07-04', stage: 'R32', home: '1B', away: 'Best 3rd', awayCandidates: ['E', 'F', 'G', 'I', 'J'] },
-    { slotKey: 'r32-16', date: '2026-07-04', stage: 'R32', home: '1K', away: 'Best 3rd', awayCandidates: ['D', 'E', 'I', 'J', 'L'] },
-    // ── Round of 16 ─── July 6–9, 2026 ───────────────────────────────────────
-    { slotKey: 'r16-01', date: '2026-07-06', stage: 'R16', home: 'W:r32-01', away: 'W:r32-02' },
-    { slotKey: 'r16-02', date: '2026-07-06', stage: 'R16', home: 'W:r32-03', away: 'W:r32-04' },
-    { slotKey: 'r16-03', date: '2026-07-07', stage: 'R16', home: 'W:r32-05', away: 'W:r32-06' },
-    { slotKey: 'r16-04', date: '2026-07-07', stage: 'R16', home: 'W:r32-07', away: 'W:r32-08' },
-    { slotKey: 'r16-05', date: '2026-07-08', stage: 'R16', home: 'W:r32-09', away: 'W:r32-10' },
-    { slotKey: 'r16-06', date: '2026-07-08', stage: 'R16', home: 'W:r32-11', away: 'W:r32-12' },
-    { slotKey: 'r16-07', date: '2026-07-09', stage: 'R16', home: 'W:r32-13', away: 'W:r32-14' },
-    { slotKey: 'r16-08', date: '2026-07-09', stage: 'R16', home: 'W:r32-15', away: 'W:r32-16' },
-    // ── Quarter-finals ─── July 11–12, 2026 ──────────────────────────────────
-    { slotKey: 'qf-01', date: '2026-07-11', stage: 'Quarters', home: 'W:r16-01', away: 'W:r16-02' },
-    { slotKey: 'qf-02', date: '2026-07-11', stage: 'Quarters', home: 'W:r16-03', away: 'W:r16-04' },
-    { slotKey: 'qf-03', date: '2026-07-12', stage: 'Quarters', home: 'W:r16-05', away: 'W:r16-06' },
-    { slotKey: 'qf-04', date: '2026-07-12', stage: 'Quarters', home: 'W:r16-07', away: 'W:r16-08' },
-    // ── Semi-finals ─── July 15–16, 2026 ─────────────────────────────────────
-    { slotKey: 'sf-01', date: '2026-07-15', stage: 'Semis', home: 'W:qf-01', away: 'W:qf-02' },
-    { slotKey: 'sf-02', date: '2026-07-16', stage: 'Semis', home: 'W:qf-03', away: 'W:qf-04' },
-    // ── Third-place play-off ─── July 18, 2026 ───────────────────────────────
-    { slotKey: 'finals-01', date: '2026-07-18', stage: 'Finals', home: 'L:sf-01', away: 'L:sf-02' },
-    // ── Grand Final ─── July 19, 2026 ────────────────────────────────────────
-    { slotKey: 'finals-02', date: '2026-07-19', stage: 'Finals', home: 'W:sf-01', away: 'W:sf-02' },
+    // ── Round of 32 ─── Jun 28 – Jul 3, 2026 (Pacific) ───────────────────────
+    { slotKey: 'r32-01', date: '2026-06-28', time: '12:00', stage: 'R32', home: '2A', away: '2B' },
+    { slotKey: 'r32-02', date: '2026-06-29', time: '10:00', stage: 'R32', home: '1F', away: '2C' },
+    { slotKey: 'r32-03', date: '2026-06-29', time: '13:30', stage: 'R32', home: '1C', away: '2F' },
+    { slotKey: 'r32-04', date: '2026-06-29', time: '18:00', stage: 'R32', home: '2E', away: '2I' },
+    { slotKey: 'r32-05', date: '2026-06-30', time: '10:00', stage: 'R32', home: '2K', away: '2L' },
+    { slotKey: 'r32-06', date: '2026-06-30', time: '14:00', stage: 'R32', home: '1H', away: '2J' },
+    { slotKey: 'r32-07', date: '2026-06-30', time: '18:00', stage: 'R32', home: '1J', away: '2H' },
+    { slotKey: 'r32-08', date: '2026-07-01', time: '09:00', stage: 'R32', home: '2D', away: '2G' },
+    { slotKey: 'r32-09', date: '2026-07-01', time: '13:00', stage: 'R32', home: '1E', away: 'Best 3rd', awayCandidates: ['A', 'B', 'C', 'D', 'F'] },
+    { slotKey: 'r32-10', date: '2026-07-01', time: '17:00', stage: 'R32', home: '1I', away: 'Best 3rd', awayCandidates: ['C', 'D', 'F', 'G', 'H'] },
+    { slotKey: 'r32-11', date: '2026-07-02', time: '12:00', stage: 'R32', home: '1A', away: 'Best 3rd', awayCandidates: ['C', 'E', 'F', 'H', 'I'] },
+    { slotKey: 'r32-12', date: '2026-07-02', time: '16:00', stage: 'R32', home: '1L', away: 'Best 3rd', awayCandidates: ['E', 'H', 'I', 'J', 'K'] },
+    { slotKey: 'r32-13', date: '2026-07-02', time: '20:00', stage: 'R32', home: '1D', away: 'Best 3rd', awayCandidates: ['B', 'E', 'F', 'I', 'J'] },
+    { slotKey: 'r32-14', date: '2026-07-03', time: '11:00', stage: 'R32', home: '1G', away: 'Best 3rd', awayCandidates: ['A', 'E', 'H', 'I', 'J'] },
+    { slotKey: 'r32-15', date: '2026-07-03', time: '15:00', stage: 'R32', home: '1B', away: 'Best 3rd', awayCandidates: ['E', 'F', 'G', 'I', 'J'] },
+    { slotKey: 'r32-16', date: '2026-07-03', time: '18:30', stage: 'R32', home: '1K', away: 'Best 3rd', awayCandidates: ['D', 'E', 'I', 'J', 'L'] },
+    // ── Round of 16 ─── Jul 4 – 6, 2026 ──────────────────────────────────────
+    { slotKey: 'r16-01', date: '2026-07-04', time: '10:00', stage: 'R16', home: 'W:r32-01', away: 'W:r32-02' },
+    { slotKey: 'r16-02', date: '2026-07-04', time: '14:00', stage: 'R16', home: 'W:r32-03', away: 'W:r32-04' },
+    { slotKey: 'r16-03', date: '2026-07-05', time: '13:00', stage: 'R16', home: 'W:r32-05', away: 'W:r32-06' },
+    { slotKey: 'r16-04', date: '2026-07-05', time: '17:00', stage: 'R16', home: 'W:r32-07', away: 'W:r32-08' },
+    { slotKey: 'r16-05', date: '2026-07-06', time: '12:00', stage: 'R16', home: 'W:r32-09', away: 'W:r32-10' },
+    { slotKey: 'r16-06', date: '2026-07-06', time: '17:00', stage: 'R16', home: 'W:r32-11', away: 'W:r32-12' },
+    { slotKey: 'r16-07', date: '2026-07-07', time: '12:00', stage: 'R16', home: 'W:r32-13', away: 'W:r32-14' },
+    { slotKey: 'r16-08', date: '2026-07-07', time: '16:00', stage: 'R16', home: 'W:r32-15', away: 'W:r32-16' },
+    // ── Quarter-finals ─── Jul 9 – 11, 2026 ──────────────────────────────────
+    { slotKey: 'qf-01', date: '2026-07-09', time: '13:00', stage: 'Quarters', home: 'W:r16-01', away: 'W:r16-02' },
+    { slotKey: 'qf-02', date: '2026-07-10', time: '12:00', stage: 'Quarters', home: 'W:r16-03', away: 'W:r16-04' },
+    { slotKey: 'qf-03', date: '2026-07-11', time: '14:00', stage: 'Quarters', home: 'W:r16-05', away: 'W:r16-06' },
+    { slotKey: 'qf-04', date: '2026-07-11', time: '18:00', stage: 'Quarters', home: 'W:r16-07', away: 'W:r16-08' },
+    // ── Semi-finals ─── Jul 14 – 15, 2026 ────────────────────────────────────
+    { slotKey: 'sf-01', date: '2026-07-14', time: '12:00', stage: 'Semis', home: 'W:qf-01', away: 'W:qf-02' },
+    { slotKey: 'sf-02', date: '2026-07-15', time: '12:00', stage: 'Semis', home: 'W:qf-03', away: 'W:qf-04' },
+    // ── Third-place play-off ─── Jul 18, 2026 ────────────────────────────────
+    { slotKey: 'finals-01', date: '2026-07-18', time: '14:00', stage: 'Finals', home: 'L:sf-01', away: 'L:sf-02' },
+    // ── Grand Final ─── Jul 19, 2026 ─────────────────────────────────────────
+    { slotKey: 'finals-02', date: '2026-07-19', time: '12:00', stage: 'Finals', home: 'W:sf-01', away: 'W:sf-02' },
 ];
 
 // Cache of already-logged matches for the schedule browser done/undone state

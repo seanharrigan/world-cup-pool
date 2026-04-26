@@ -25,6 +25,7 @@ export const TEAM_NAME_MAP: Record<string, string> = {
     "Bosnia-Herzegovina": "Bosnia",
     "Czech Republic": "Czechia",
     "Curaçao": "Curacao",
+    "Cape Verde Islands": "Cape Verde",
 };
 
 // football-data.org stage names → this repo's `matches.stage` codes.
