@@ -6122,7 +6122,7 @@ async function simulateAllScheduledMatches() {
         ({ error } = await supabaseClient.from('matches').delete().neq('id', 0));
         if (error) throw error;
 
-        ({ error } = await supabaseClient.from('matches').insert(allRows));
+        ({ error } = await supabaseClient.from('matches').insert(allRows.map((r) => ({ ...r, manual_override: true }))));
         if (error) throw error;
 
         const derivedTeamStatusRows = _buildDerivedTeamStatusRows(allRows);
@@ -6508,7 +6508,8 @@ async function submitManualResult() {
                 stage,
                 is_finished: true,
                 match_date_manual: matchDate,
-                was_extra_time: wasExtraTime
+                was_extra_time: wasExtraTime,
+                manual_override: true
             }).eq('id', editId));
         } else {
             ({ error } = await supabaseClient.from('matches').insert([{
@@ -6520,7 +6521,8 @@ async function submitManualResult() {
                 is_finished: true,
                 match_date: new Date().toISOString(),
                 match_date_manual: matchDate,
-                was_extra_time: wasExtraTime
+                was_extra_time: wasExtraTime,
+                manual_override: true
             }]));
         }
 
