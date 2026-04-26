@@ -30,7 +30,7 @@ export const TEAM_NAME_MAP: Record<string, string> = {
 // football-data.org stage names → this repo's `matches.stage` codes.
 // `THIRD_PLACE_PLAYOFF` deliberately omitted — pool doesn't track it.
 export const STAGE_MAP: Record<string, string> = {
-    GROUP_STAGE: "group",
+    GROUP_STAGE: "Group",
     LAST_16: "R16",
     ROUND_OF_32: "R32",
     ROUND_OF_16: "R16",
