@@ -2408,6 +2408,16 @@ function _matchSyncDbBadge(p) {
     return '<span class="text-gray-600">–</span>';
 }
 
+function _matchSourceBadge(match) {
+    if (match?.manual_override === true) {
+        return '<div class="mt-0.5 text-[8px] font-black uppercase tracking-[0.12em] text-orange-300" title="Saved by an admin — auto-sync skips this row">✏️ Manual</div>';
+    }
+    if (match?.auto_synced_at) {
+        return `<div class="mt-0.5 text-[8px] font-black uppercase tracking-[0.12em] text-green-400" title="Last synced ${new Date(match.auto_synced_at).toLocaleString()}">🟢 Auto · ${escapeHtml(_shortAgo(match.auto_synced_at))}</div>`;
+    }
+    return '';
+}
+
 function _shortAgo(isoString) {
     const ms = Date.now() - new Date(isoString).getTime();
     if (!isFinite(ms) || ms < 0) return 'just now';
@@ -6408,6 +6418,7 @@ async function fetchAdminHistory(highlightLatest = false) {
                                     <div class="bg-gray-950 text-white font-mono font-black text-sm md:text-base tabular-nums px-2.5 py-1 rounded-lg text-center">${match.score_home} – ${match.score_away}</div>
                                     <div class="mt-1 text-[8px] font-black uppercase tracking-[0.12em] text-gray-500">${buildPointsLabel(match)}</div>
                                     ${match.was_extra_time ? '<div class="mt-0.5 text-[8px] font-black uppercase text-red-400">E/P</div>' : ''}
+                                    ${_matchSourceBadge(match)}
                                 </div>
                                 <div class="text-right min-w-0">
                                     <div class="text-sm md:text-base font-black text-white truncate">${match.team_away} ${awayTeam?.flag || ''}</div>
