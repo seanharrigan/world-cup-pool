@@ -905,6 +905,15 @@ function _formatScheduleDate(dateStr) {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
+function _formatScheduleTime(timeStr) {
+    if (!timeStr) return '';
+    const [h, m] = String(timeStr).split(':').map(Number);
+    if (Number.isNaN(h)) return '';
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return m ? `${h12}:${String(m).padStart(2, '0')} ${ampm}` : `${h12} ${ampm}`;
+}
+
 function _findGroupScheduleMatch(teamHome, teamAway, matchDate = '') {
     return GROUP_STAGE_SCHEDULE.find((match) =>
         (!matchDate || match.date === matchDate) &&
@@ -1631,9 +1640,11 @@ function renderScheduleBrowser() {
                 if (isLogged) {
                     const homeTeam = _scheduleTeam(result.team_home);
                     const awayTeam = _scheduleTeam(result.team_away);
+                    const timeChip = m.time ? `<span class="hidden sm:inline-block shrink-0 mr-3 text-[9px] font-black uppercase tracking-[0.15em] text-gray-500 w-16">${_formatScheduleTime(m.time)} PT</span>` : '';
                     return `
                         <div class="w-full rounded-2xl border border-gray-800 bg-gray-900/50 px-4 py-3">
                             <div class="flex items-center justify-between">
+                                ${timeChip}
                                 <div class="flex items-center gap-2 min-w-0 flex-1">
                                     <span class="text-xl shrink-0">${homeTeam.flag}</span>
                                     <span class="font-black text-sm text-white truncate">${result.team_home}</span>
@@ -1696,10 +1707,12 @@ function renderScheduleBrowser() {
                 const enterHomeName = (homeRes && homeRes.status !== 'none' ? homeRes.name : '').replace(/'/g,"\\'");
                 const enterAwayName = (awayRes && awayRes.status !== 'none' ? awayRes.name : '').replace(/'/g,"\\'");
 
+                const koTimeChip = m.time ? `<span class="hidden sm:inline-block shrink-0 mr-3 text-[9px] font-black uppercase tracking-[0.15em] text-gray-500 w-16">${_formatScheduleTime(m.time)} PT</span>` : '';
                 return `
                     <button onclick="prefillFromSchedule('${enterHomeName}','${enterAwayName}','${m.stage}','${m.date}')"
                         class="w-full text-left rounded-2xl border border-gray-700 bg-gray-800 hover:border-blue-500/50 hover:bg-gray-700 active:scale-[0.99] px-4 py-3 transition-all">
                         <div class="flex items-center justify-between">
+                            ${koTimeChip}
                             <div class="flex items-center gap-2 min-w-0 flex-1">
                                 ${_seedLabel(homeRes, m.home)}
                             </div>
@@ -1748,10 +1761,12 @@ function renderScheduleBrowser() {
                 scoreHtml = `<span class="text-gray-600 font-black text-sm mx-2">vs</span>`;
             }
 
+            const groupTimeChip = m.time ? `<span class="hidden sm:inline-block shrink-0 mr-3 text-[9px] font-black uppercase tracking-[0.15em] text-gray-500 w-16">${_formatScheduleTime(m.time)} PT</span>` : '';
             if (logged) {
                 return `
                     <div class="w-full rounded-2xl border border-gray-800 bg-gray-900/50 px-4 py-3">
                         <div class="flex items-center justify-between">
+                            ${groupTimeChip}
                             <div class="flex items-center gap-2 min-w-0 flex-1">
                                 <span class="text-xl shrink-0">${homeTeam.flag}</span>
                                 <span class="font-black text-sm text-white truncate">${m.home}</span>
@@ -1775,6 +1790,7 @@ function renderScheduleBrowser() {
                 <button onclick="prefillFromSchedule('${m.home.replace(/'/g,"\\'")}','${m.away.replace(/'/g,"\\'")}','${m.group}','${m.date}')"
                     class="w-full text-left rounded-2xl border border-gray-700 bg-gray-800 hover:border-blue-500/50 hover:bg-gray-700 active:scale-[0.99] px-4 py-3 transition-all">
                     <div class="flex items-center justify-between">
+                        ${groupTimeChip}
                         <div class="flex items-center gap-2 min-w-0 flex-1">
                             <span class="text-xl shrink-0">${homeTeam.flag}</span>
                             <span class="font-black text-sm text-white truncate">${m.home}</span>
