@@ -84,13 +84,26 @@ If `apiKeyConfigured` is `false`, step 3 didn't take.
 
 ---
 
-## What's coming in later commits
+## Auto-sync schedule (pg_cron)
 
-- [ ] Real fetch from `https://api.football-data.org/v4/competitions/WC/matches`
-- [ ] Map team names + stage codes (already in `team-map.ts`)
-- [ ] Upsert each FINISHED match into `matches`, skipping `manual_override = true`
-- [ ] Track `auto_synced_at` per row
-- [ ] Supabase Cron schedule (every 10 min during the tournament window)
-- [ ] Admin "Sync Now" button (manual trigger)
-- [ ] Admin "Dry Run" toggle (logs what would change without writing)
-- [ ] Trigger on `matches` UPDATE that flips `manual_override = true` when the admin form saves
+The Edge Function runs every 30 minutes during Pacific game-day hours, only on tournament dates (2026-06-11 → 2026-07-19). Setup is in `cron-setup.sql` in this folder.
+
+**One-time setup before kickoff:**
+
+1. Supabase Dashboard → Database → Extensions → toggle ON `pg_cron` and `pg_net`
+2. Open `cron-setup.sql`, copy the full contents
+3. Supabase Dashboard → SQL Editor → New query → paste → Run
+4. Verify with `SELECT jobname, schedule, active FROM cron.job WHERE jobname LIKE 'sync-wc-%';`
+
+**After the tournament**, run the unschedule commands from the bottom of `cron-setup.sql`.
+
+The admin **Match Sync** tab also has a manual `Sync Now` button that hits the same Edge Function on demand — useful between cron fires or before kickoff for testing.
+
+## Manual override
+
+When an admin saves a match through the existing "Log Match" form (or the simulate-tournament tool), that row is flagged `manual_override = true`. The Edge Function skips any row with that flag, so admin corrections are sticky and the auto-sync will never overwrite them.
+
+The admin Match Results list shows source badges:
+- 🟢 Auto · Nm ago — last touched by auto-sync
+- ✏️ Manual — admin-saved, sticky
+- (nothing) — legacy row from before this feature shipped
