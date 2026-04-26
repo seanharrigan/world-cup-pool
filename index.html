@@ -1334,7 +1334,6 @@
                         <button onclick="showAdminTab('stats')" id="admin-tab-stats" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Statistics</button>
                         <button onclick="showAdminTab('toggle')" id="admin-tab-toggle" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Pool Settings</button>
                         <button onclick="showAdminTab('matchsync')" id="admin-tab-matchsync" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Match Sync</button>
-                        <button onclick="showAdminTab('apitest')" id="admin-tab-apitest" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">API Test</button>
                     </div>
                 </div>
             </div>
@@ -1677,30 +1676,6 @@
                     </div>
                 </div>
 
-                <div id="admin-panel-apitest" class="admin-panel hidden max-w-2xl mx-auto space-y-6">
-                    <div class="border-l-[3px] pl-3 border-blue-500 mb-6">
-                        <h2 class="text-lg font-black uppercase italic tracking-tight text-white">Football Data API Test</h2>
-                        <p class="text-blue-400 font-black uppercase tracking-[0.18em] text-[9px]">Verify your football-data.org connection</p>
-                    </div>
-                    <div class="rounded-2xl border border-gray-800 bg-gray-950/50 p-5 space-y-3">
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">API Key</div>
-                        <div class="flex gap-2">
-                            <input id="fd-api-key-input" type="password" placeholder="Paste your X-Auth-Token here" class="flex-1 rounded-xl border border-gray-700 bg-gray-900 px-4 py-2.5 text-sm font-bold text-white outline-none placeholder-gray-600">
-                            <button onclick="saveFdApiKey()" class="rounded-xl border border-gray-700 bg-gray-800 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-200 hover:bg-gray-700 transition-colors">Save</button>
-                        </div>
-                        <div id="fd-api-key-status" class="text-[10px] font-black uppercase tracking-[0.18em] text-gray-500"></div>
-                    </div>
-                    <div class="rounded-2xl border border-gray-800 bg-gray-950/50 p-5 space-y-4">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Chelsea FC — Last 5 Results</div>
-                                <div class="text-[9px] font-bold text-gray-600 mt-0.5">Premier League · football-data.org free tier</div>
-                            </div>
-                            <button onclick="fetchFdApiTest()" class="rounded-xl bg-blue-600 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-blue-500 transition-colors">Fetch</button>
-                        </div>
-                        <div id="fd-api-test-results" class="space-y-2"></div>
-                    </div>
-                </div>
                 </div>
             </div>
         </div>
@@ -2253,7 +2228,7 @@
     <script src="js/ui.js?v=20260424e"></script>
     <script src="js/scoring.js?v=20260424a"></script>
     <script src="js/third-place-mapping.js?v=20260416b"></script>
-    <script src="js/features.js?v=20260426c"></script>
+    <script src="js/features.js?v=20260426d"></script>
     <script src="js/app.js?v=20260424f"></script>
 </body>
 </html>
