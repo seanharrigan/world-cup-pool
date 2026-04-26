@@ -22,6 +22,7 @@ export const TEAM_NAME_MAP: Record<string, string> = {
     "Congo DR": "DR Congo",
     "DR Congo": "DR Congo",
     "Bosnia and Herzegovina": "Bosnia",
+    "Bosnia-Herzegovina": "Bosnia",
     "Czech Republic": "Czechia",
     "Curaçao": "Curacao",
 };
