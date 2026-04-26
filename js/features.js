@@ -2393,6 +2393,349 @@ function _shortAgo(isoString) {
     return `${day}d ago`;
 }
 
+// ── Match Manager admin tab ───────────────────────────────────────────────────
+let _managerApiPlanned = [];
+let _managerLastSyncAt = null;
+let _managerFilter = 'all';
+let _managerExpandedKey = null;
+
+async function runManagerSync() {
+    const btn = document.getElementById('manager-refresh-btn');
+    const statusEl = document.getElementById('manager-status');
+    if (btn) btn.disabled = true;
+    if (statusEl) statusEl.textContent = 'Refreshing…';
+    try {
+        const res = await fetch(`${MATCH_SYNC_URL}?execute=true`);
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Sync failed');
+        _managerApiPlanned = data.planned || [];
+        _managerLastSyncAt = new Date();
+        await fetchAdminHistory();
+        _renderMatchManager();
+        const writes = (data.summary?.executedInserts || 0) + (data.summary?.executedUpdates || 0);
+        const t = _managerLastSyncAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Vancouver' });
+        if (statusEl) statusEl.textContent = `Synced ${data.summary?.totalApiMatches ?? '?'} matches at ${t} PT${writes ? ` · ${writes} new from API` : ''}`;
+    } catch (err) {
+        if (statusEl) statusEl.textContent = `Error: ${err.message || String(err)}`;
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+function _managerBuildApiIndex() {
+    const byPair = new Map();
+    const byStage = { R32: [], R16: [], QF: [], SM: [], F: [], NULL: [] };
+    for (const p of _managerApiPlanned) {
+        if (p.team_home && p.team_away) {
+            byPair.set(`${p.team_home}|${p.team_away}`, p);
+            byPair.set(`${p.team_away}|${p.team_home}`, p);
+        }
+        const stageKey = p.stage || 'NULL';
+        if (byStage[stageKey]) byStage[stageKey].push(p);
+    }
+    Object.values(byStage).forEach(arr => arr.sort((a, b) => (a.utc_date || '').localeCompare(b.utc_date || '')));
+    // Split NULL into R32 (date < 2026-07-15) and 3rd place (>= 2026-07-15)
+    const nulls = byStage.NULL;
+    const r32FromNull = nulls.filter(p => p.utc_date < '2026-07-15');
+    const thirdPlace = nulls.filter(p => p.utc_date >= '2026-07-15');
+    return { byPair, byStage, r32FromNull, thirdPlace };
+}
+
+function _managerFindApiMatch(scheduleEntry, apiIndex, stageOrderCounters) {
+    // Try team-pair match first (works for groups + post-bracket KO)
+    if (apiIndex.byPair.has(`${scheduleEntry.home}|${scheduleEntry.away}`)) {
+        return apiIndex.byPair.get(`${scheduleEntry.home}|${scheduleEntry.away}`);
+    }
+    // Fall back to stage + chronological position (knockout pre-resolution)
+    const stageMap = {
+        R32: apiIndex.r32FromNull,
+        R16: apiIndex.byStage.R16,
+        Quarters: apiIndex.byStage.QF,
+        Semis: apiIndex.byStage.SM,
+        Finals: scheduleEntry.slotKey === 'finals-01' ? apiIndex.thirdPlace : apiIndex.byStage.F,
+    };
+    const list = stageMap[scheduleEntry.stage];
+    if (!list) return null;
+    const counterKey = scheduleEntry.stage + (scheduleEntry.slotKey === 'finals-01' ? '-3rd' : '');
+    const idx = stageOrderCounters[counterKey] || 0;
+    stageOrderCounters[counterKey] = idx + 1;
+    return list[idx] || null;
+}
+
+function _managerFindDbRow(scheduleEntry, dbCache) {
+    // Group: match by team-pair (any direction) + date
+    if (scheduleEntry.group) {
+        return dbCache.find(r =>
+            r.match_date_manual === scheduleEntry.date &&
+            ((r.team_home === scheduleEntry.home && r.team_away === scheduleEntry.away) ||
+             (r.team_home === scheduleEntry.away && r.team_away === scheduleEntry.home))
+        ) || null;
+    }
+    // Knockout: try team-pair if both are real names; else match by stage + date
+    return dbCache.find(r => r.stage === scheduleEntry.stage && r.match_date_manual === scheduleEntry.date) || null;
+}
+
+function _managerStatusBadge(status) {
+    const map = {
+        FINISHED: ['🟢', 'Finished', 'text-green-400'],
+        IN_PLAY: ['🟡', 'Live', 'text-yellow-400 animate-pulse'],
+        PAUSED: ['🟡', 'HT', 'text-yellow-400'],
+        TIMED: ['⚪️', 'Upcoming', 'text-gray-400'],
+        SCHEDULED: ['⚪️', 'Sched', 'text-gray-400'],
+        POSTPONED: ['⚠️', 'Postponed', 'text-orange-400'],
+        CANCELLED: ['❌', 'Cancelled', 'text-red-400'],
+    };
+    const [icon, label, color] = map[status] || ['•', status || '?', 'text-gray-500'];
+    return `<span class="text-[10px] font-black uppercase tracking-[0.12em] ${color}">${icon} ${label}</span>`;
+}
+
+function _renderMatchManager() {
+    const rowsEl = document.getElementById('manager-rows');
+    const filterEl = document.getElementById('manager-filter-strip');
+    if (!rowsEl || !filterEl) return;
+
+    const apiIndex = _managerBuildApiIndex();
+    const dbCache = _scheduleBrowserLoggedCache || [];
+
+    // Filter strip (reuse Schedule tab pattern)
+    const allGroups = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+    const koStages = [['R32','R32'], ['R16','R16'], ['Quarters','QF'], ['Semis','Semi'], ['Finals','Final']];
+    const f = _managerFilter;
+    const tabClass = (filter, wide = false) => {
+        const active = filter === f;
+        const wcls = wide ? 'min-w-[84px]' : 'min-w-[42px]';
+        return `shrink-0 ${wcls} rounded-xl border px-3 py-2 text-center text-[9px] font-black uppercase tracking-[0.18em] transition-all duration-200 ${active ? 'border-blue-400/40 bg-white text-gray-950 shadow-lg shadow-blue-500/10' : 'border-transparent bg-transparent text-gray-400 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white'}`;
+    };
+    filterEl.innerHTML = `
+        <div class="overflow-x-auto no-scrollbar">
+            <div class="flex min-w-full items-center gap-2 rounded-3xl border border-gray-800 bg-gray-950/70 p-2">
+                <div class="flex flex-1 items-center justify-between gap-1.5">
+                    <button onclick="setManagerFilter('all')" class="${tabClass('all', true)}">All</button>
+                    <button onclick="setManagerFilter('groups')" class="${tabClass('groups', true)}">Groups</button>
+                    ${allGroups.map(g => `<button onclick="setManagerFilter('${g}')" class="${tabClass(g)}">${g}</button>`).join('')}
+                </div>
+                <span class="mx-1 h-7 w-px shrink-0 bg-gray-800"></span>
+                <div class="flex flex-1 items-center justify-between gap-1.5">
+                    <button onclick="setManagerFilter('knockout')" class="${tabClass('knockout', true)}">KO</button>
+                    ${koStages.map(([key, label]) => `<button onclick="setManagerFilter('${key}')" class="${tabClass(key)}">${label}</button>`).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Filter the schedule
+    let allEntries;
+    if (f === 'all') allEntries = [...GROUP_STAGE_SCHEDULE, ...KNOCKOUT_SCHEDULE];
+    else if (f === 'groups') allEntries = [...GROUP_STAGE_SCHEDULE];
+    else if (f === 'knockout') allEntries = [...KNOCKOUT_SCHEDULE];
+    else if (allGroups.includes(f)) allEntries = GROUP_STAGE_SCHEDULE.filter(e => e.group === f);
+    else allEntries = KNOCKOUT_SCHEDULE.filter(e => e.stage === f);
+
+    if (!allEntries.length) {
+        rowsEl.innerHTML = '<div class="px-4 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">No matches</div>';
+        return;
+    }
+
+    // Group by date
+    const byDate = {};
+    for (const e of allEntries) {
+        if (!byDate[e.date]) byDate[e.date] = [];
+        byDate[e.date].push(e);
+    }
+
+    // Reset stage-order counters per render
+    const stageCounters = {};
+
+    rowsEl.innerHTML = Object.entries(byDate)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([date, matches]) => {
+            const dayHeader = `
+                <div class="flex items-center gap-3 pt-2 pb-1">
+                    <div class="h-px flex-1 bg-gray-800"></div>
+                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">${_formatScheduleDate(date)}</div>
+                    <div class="h-px flex-1 bg-gray-800"></div>
+                </div>`;
+            const cards = matches.map(entry => _managerRenderRow(entry, apiIndex, dbCache, stageCounters)).join('');
+            return dayHeader + cards;
+        }).join('');
+}
+
+function _managerRenderRow(entry, apiIndex, dbCache, stageCounters) {
+    const apiMatch = _managerFindApiMatch(entry, apiIndex, stageCounters);
+    const dbRow = _managerFindDbRow(entry, dbCache);
+    const rowKey = entry.slotKey || `${entry.home}|${entry.away}|${entry.date}`;
+    const isExpanded = _managerExpandedKey === rowKey;
+    const safeKey = rowKey.replace(/'/g, "\\'");
+
+    const homeLabel = entry.home;
+    const awayLabel = entry.away;
+    const homeFlag = (typeof teams !== 'undefined' ? teams : []).find(t => t.name === homeLabel)?.flag || '';
+    const awayFlag = (typeof teams !== 'undefined' ? teams : []).find(t => t.name === awayLabel)?.flag || '';
+
+    // LEFT column — your pool
+    const leftScore = dbRow
+        ? `<div class="flex items-center gap-2"><span class="text-2xl font-black font-mono text-white">${dbRow.score_home}–${dbRow.score_away}</span>${dbRow.was_extra_time ? '<span class="text-[9px] font-black text-yellow-300">ET</span>' : ''}</div>`
+        : `<div class="text-2xl font-black font-mono text-gray-700">— : —</div>`;
+    const leftBadge = dbRow?.manual_override
+        ? '<span class="text-[9px] font-black uppercase tracking-[0.12em] text-orange-300">✏️ Manual</span>'
+        : dbRow?.auto_synced_at
+            ? `<span class="text-[9px] font-black uppercase tracking-[0.12em] text-green-400">🟢 Auto · ${_shortAgo(dbRow.auto_synced_at)}</span>`
+            : '<span class="text-[9px] font-black uppercase tracking-[0.12em] text-gray-600">no entry</span>';
+    const editLabel = dbRow ? 'Edit' : 'Log Result';
+
+    // RIGHT column — API
+    let rightContent;
+    if (!apiMatch) {
+        rightContent = '<span class="text-[10px] font-black uppercase tracking-[0.18em] text-gray-600">no api data</span>';
+    } else {
+        const apiScore = (apiMatch.score_home != null && apiMatch.score_away != null)
+            ? `<span class="text-xl font-black font-mono text-white">${apiMatch.score_home}–${apiMatch.score_away}</span>${apiMatch.was_extra_time ? '<span class="text-[9px] font-black text-yellow-300 ml-1">ET</span>' : ''}`
+            : '<span class="text-xl font-black font-mono text-gray-700">— : —</span>';
+        rightContent = `
+            <div class="flex flex-col items-end gap-1">
+                ${_managerStatusBadge(apiMatch.api_status)}
+                ${apiScore}
+            </div>`;
+    }
+
+    const editForm = isExpanded ? _managerEditForm(entry, dbRow, safeKey) : '';
+
+    return `
+        <div class="rounded-2xl border ${isExpanded ? 'border-blue-500/60' : 'border-gray-800'} bg-gray-900/50 overflow-hidden transition-colors">
+            <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-800">
+                <div class="p-4 space-y-2">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-500">
+                            ${entry.time ? _formatScheduleTime(entry.time) + ' PT' : ''}
+                            ${entry.group ? ` · Group ${entry.group}` : ''}
+                            ${!entry.group && entry.stage ? ` · ${entry.stage}` : ''}
+                        </div>
+                        ${leftBadge}
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="text-lg shrink-0">${homeFlag || ''}</span>
+                            <span class="font-black text-sm text-white truncate">${escapeHtml(homeLabel)}</span>
+                        </div>
+                        ${leftScore}
+                        <div class="flex items-center gap-2 min-w-0 justify-end">
+                            <span class="font-black text-sm text-white truncate">${escapeHtml(awayLabel)}</span>
+                            <span class="text-lg shrink-0">${awayFlag || ''}</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-end pt-1">
+                        <button onclick="toggleManagerEdit('${safeKey}')" class="px-3 py-1 rounded-lg border ${isExpanded ? 'border-blue-500 text-blue-300' : 'border-gray-700 text-gray-300'} bg-gray-800 text-[10px] font-black uppercase tracking-[0.18em] hover:border-blue-500/60 hover:text-blue-300 transition-colors">${isExpanded ? 'Cancel' : editLabel}</button>
+                    </div>
+                </div>
+                <div class="p-4 bg-gray-950/40">
+                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-600 mb-2">football-data.org</div>
+                    ${rightContent}
+                </div>
+            </div>
+            ${editForm}
+        </div>`;
+}
+
+function _managerEditForm(entry, dbRow, safeKey) {
+    const home = entry.home;
+    const away = entry.away;
+    // Knockout entries can have placeholder names like "1A" — only allow editing if real names
+    const isPlaceholder = (n) => /^[12][A-L]$|^W:|^L:|^Best /.test(n);
+    if (isPlaceholder(home) || isPlaceholder(away)) {
+        return `
+            <div class="px-4 py-3 border-t border-gray-800 bg-gray-950/40">
+                <p class="text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">Teams not yet known — log this match in <span class="text-blue-300">Match Results</span> after the bracket fills.</p>
+            </div>`;
+    }
+    const sh = dbRow?.score_home ?? '';
+    const sa = dbRow?.score_away ?? '';
+    const et = dbRow?.was_extra_time ? 'true' : 'false';
+    const editId = dbRow?.id || '';
+    const stage = entry.stage || (entry.group ? 'Group' : '');
+    return `
+        <div class="px-4 py-3 border-t border-blue-500/30 bg-gray-950/60">
+            <form class="flex flex-wrap items-end gap-3" onsubmit="event.preventDefault(); managerSubmitEdit('${safeKey}'); return false;">
+                <div class="flex flex-col gap-1">
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-500">${escapeHtml(home)}</label>
+                    <input id="mgr-home-${safeKey}" type="number" inputmode="numeric" min="0" value="${sh}" class="w-20 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-center text-base font-black text-white outline-none focus:border-blue-500">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-500">${escapeHtml(away)}</label>
+                    <input id="mgr-away-${safeKey}" type="number" inputmode="numeric" min="0" value="${sa}" class="w-20 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-center text-base font-black text-white outline-none focus:border-blue-500">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-500">ET / Pens?</label>
+                    <select id="mgr-et-${safeKey}" class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm font-bold text-white outline-none focus:border-blue-500">
+                        <option value="false" ${et === 'false' ? 'selected' : ''}>No</option>
+                        <option value="true" ${et === 'true' ? 'selected' : ''}>Yes</option>
+                    </select>
+                </div>
+                <input type="hidden" id="mgr-stage-${safeKey}" value="${escapeHtml(stage)}">
+                <input type="hidden" id="mgr-date-${safeKey}" value="${entry.date}">
+                <input type="hidden" id="mgr-home-name-${safeKey}" value="${escapeHtml(home)}">
+                <input type="hidden" id="mgr-away-name-${safeKey}" value="${escapeHtml(away)}">
+                <input type="hidden" id="mgr-edit-id-${safeKey}" value="${editId}">
+                <button type="submit" class="rounded-2xl bg-green-500 px-5 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-gray-950 hover:bg-green-400 transition-colors">Save</button>
+            </form>
+            <div id="mgr-status-${safeKey}" class="mt-2 text-[9px] font-black uppercase tracking-[0.18em] text-gray-500"></div>
+        </div>`;
+}
+
+async function managerSubmitEdit(safeKey) {
+    const home = document.getElementById(`mgr-home-name-${safeKey}`)?.value || '';
+    const away = document.getElementById(`mgr-away-name-${safeKey}`)?.value || '';
+    const stage = document.getElementById(`mgr-stage-${safeKey}`)?.value || '';
+    const matchDate = document.getElementById(`mgr-date-${safeKey}`)?.value || '';
+    const editId = document.getElementById(`mgr-edit-id-${safeKey}`)?.value || '';
+    const sh = parseInt(document.getElementById(`mgr-home-${safeKey}`)?.value, 10);
+    const sa = parseInt(document.getElementById(`mgr-away-${safeKey}`)?.value, 10);
+    const et = document.getElementById(`mgr-et-${safeKey}`)?.value === 'true';
+    const statusEl = document.getElementById(`mgr-status-${safeKey}`);
+
+    if (Number.isNaN(sh) || Number.isNaN(sa) || sh < 0 || sa < 0) {
+        if (statusEl) statusEl.textContent = 'Enter valid scores.';
+        return;
+    }
+    if (statusEl) statusEl.textContent = 'Saving…';
+
+    try {
+        let error;
+        if (editId) {
+            ({ error } = await supabaseClient.from('matches').update({
+                team_home: home, team_away: away, score_home: sh, score_away: sa,
+                stage, is_finished: true, match_date_manual: matchDate,
+                was_extra_time: et, manual_override: true,
+            }).eq('id', parseInt(editId, 10)));
+        } else {
+            ({ error } = await supabaseClient.from('matches').insert([{
+                team_home: home, team_away: away, score_home: sh, score_away: sa,
+                stage, is_finished: true,
+                match_date: new Date().toISOString(),
+                match_date_manual: matchDate,
+                was_extra_time: et, manual_override: true,
+            }]));
+        }
+        if (error) throw error;
+        if (statusEl) statusEl.textContent = 'Saved ✓';
+        _managerExpandedKey = null;
+        await fetchAdminHistory();
+        _renderMatchManager();
+    } catch (err) {
+        if (statusEl) statusEl.textContent = `Error: ${err.message || String(err)}`;
+    }
+}
+
+function toggleManagerEdit(safeKey) {
+    _managerExpandedKey = _managerExpandedKey === safeKey ? null : safeKey;
+    _renderMatchManager();
+}
+
+function setManagerFilter(filter) {
+    _managerFilter = filter;
+    _managerExpandedKey = null;
+    _renderMatchManager();
+}
+
 function showAdminTab(tabId) {
     const panels = document.querySelectorAll('.admin-panel');
     const tabs = document.querySelectorAll('.admin-tab');
@@ -2425,6 +2768,14 @@ function showAdminTab(tabId) {
         const rowsEl = document.getElementById('matchsync-rows');
         if (rowsEl && rowsEl.children.length === 1 && rowsEl.firstElementChild?.textContent?.includes('No data loaded')) {
             runMatchSync(false);
+        }
+    }
+    if (tabId === 'manager') {
+        // First open: refresh both API + DB cache, then render. Subsequent opens just re-render.
+        if (!_managerApiPlanned.length) {
+            runManagerSync();
+        } else {
+            _renderMatchManager();
         }
     }
 }
