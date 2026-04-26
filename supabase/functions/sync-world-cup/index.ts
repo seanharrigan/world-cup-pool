@@ -234,9 +234,12 @@ serve(async (req: Request) => {
                     score_home: p.score_home,
                     score_away: p.score_away,
                     stage: p.stage,
+                    is_finished: true,
+                    match_date: now,
                     match_date_manual: p.match_date,
                     was_extra_time: p.was_extra_time,
                     auto_synced_at: now,
+                    manual_override: false,
                 }]);
                 if (error) summary.errors.push(`Insert ${p.team_home}-${p.team_away}: ${error.message}`);
                 else summary.executedInserts++;
@@ -249,6 +252,7 @@ serve(async (req: Request) => {
                         score_home: p.score_home,
                         score_away: p.score_away,
                         was_extra_time: p.was_extra_time,
+                        is_finished: true,
                         auto_synced_at: now,
                     })
                     .eq("id", existingRow.id);
