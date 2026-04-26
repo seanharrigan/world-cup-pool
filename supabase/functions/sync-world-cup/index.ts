@@ -15,6 +15,12 @@ import { mapTeam, mapStage } from "./team-map.ts";
 
 const FOOTBALL_DATA_URL = "https://api.football-data.org/v4/competitions/WC/matches";
 
+const CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+};
+
 interface ApiMatch {
     id: number;
     utcDate: string;
@@ -51,6 +57,10 @@ interface PlannedChange {
 }
 
 serve(async (req: Request) => {
+    if (req.method === "OPTIONS") {
+        return new Response(null, { status: 204, headers: CORS_HEADERS });
+    }
+
     const url = new URL(req.url);
     const execute = url.searchParams.get("execute") === "true";
 
@@ -227,6 +237,6 @@ serve(async (req: Request) => {
 function jsonResponse(body: unknown, status: number): Response {
     return new Response(JSON.stringify(body, null, 2), {
         status,
-        headers: { "Content-Type": "application/json" },
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
 }
