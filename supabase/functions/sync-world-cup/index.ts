@@ -64,6 +64,23 @@ serve(async (req: Request) => {
     const url = new URL(req.url);
     const execute = url.searchParams.get("execute") === "true";
 
+    // Test mode: ?test_finish=<api_id>:<home>-<away>
+    // When set, treats that one API match as if it had status FINISHED with the
+    // given score, so the full insert/update/skip-manual path can be exercised
+    // before any real WC match has actually played. Otherwise no effect.
+    let testFinishId: number | null = null;
+    let testFinishHome: number | null = null;
+    let testFinishAway: number | null = null;
+    const testFinishRaw = url.searchParams.get("test_finish");
+    if (testFinishRaw) {
+        const m = testFinishRaw.match(/^(\d+):(\d+)-(\d+)$/);
+        if (m) {
+            testFinishId = parseInt(m[1], 10);
+            testFinishHome = parseInt(m[2], 10);
+            testFinishAway = parseInt(m[3], 10);
+        }
+    }
+
     const apiKey = Deno.env.get("FOOTBALL_DATA_API_KEY") || "";
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -106,6 +123,16 @@ serve(async (req: Request) => {
     let skippedUnfinished = 0;
 
     for (const m of apiMatches) {
+        // Test-mode override: pretend this one match is FINISHED with a fake score
+        if (testFinishId !== null && m.id === testFinishId) {
+            m.status = "FINISHED";
+            m.score = {
+                ...m.score,
+                duration: "REGULAR",
+                fullTime: { home: testFinishHome, away: testFinishAway },
+            };
+        }
+
         const team_home = mapTeam(m.homeTeam.name);
         const team_away = mapTeam(m.awayTeam.name);
         const stage = mapStage(m.stage);
