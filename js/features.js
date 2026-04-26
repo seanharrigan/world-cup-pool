@@ -2254,6 +2254,59 @@ function syncAdminToggleControls() {
     }
 }
 
+function saveFdApiKey() {
+    const input = document.getElementById('fd-api-key-input');
+    const status = document.getElementById('fd-api-key-status');
+    const key = (input?.value || '').trim();
+    if (!key) { if (status) status.textContent = 'No key entered.'; return; }
+    localStorage.setItem('wc_pool_fd_api_key', key);
+    if (input) input.value = '';
+    if (status) status.textContent = '✓ Key saved to this browser.';
+}
+
+async function fetchFdApiTest() {
+    const key = localStorage.getItem('wc_pool_fd_api_key') || '';
+    const out = document.getElementById('fd-api-test-results');
+    if (!out) return;
+    if (!key) {
+        out.innerHTML = '<p class="text-red-400 text-sm font-bold">Enter and save your API key first.</p>';
+        return;
+    }
+    out.innerHTML = '<p class="text-gray-400 text-sm animate-pulse">Fetching from football-data.org…</p>';
+    try {
+        const res = await fetch('https://api.football-data.org/v4/teams/61/matches?status=FINISHED&limit=5', {
+            headers: { 'X-Auth-Token': key }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status} — check your API key`);
+        const data = await res.json();
+        const matches = data.matches || [];
+        if (!matches.length) { out.innerHTML = '<p class="text-gray-400 text-sm">No finished matches found.</p>'; return; }
+        out.innerHTML = matches.map((m) => {
+            const date = new Date(m.utcDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Vancouver' });
+            const home = m.homeTeam.shortName || m.homeTeam.name;
+            const away = m.awayTeam.shortName || m.awayTeam.name;
+            const score = `${m.score.fullTime.home} – ${m.score.fullTime.away}`;
+            const isChelsea = m.homeTeam.id === 61;
+            const chealsea = isChelsea ? home : away;
+            const opponent = isChelsea ? away : home;
+            const cheaScore = isChelsea ? m.score.fullTime.home : m.score.fullTime.away;
+            const oppScore = isChelsea ? m.score.fullTime.away : m.score.fullTime.home;
+            const resultColor = cheaScore > oppScore ? 'text-green-400' : cheaScore < oppScore ? 'text-red-400' : 'text-gray-400';
+            const resultLabel = cheaScore > oppScore ? 'W' : cheaScore < oppScore ? 'L' : 'D';
+            const venue = isChelsea ? 'H' : 'A';
+            return `<div class="flex items-center gap-3 rounded-xl border border-gray-800 bg-gray-950 px-4 py-3">
+                <span class="text-[10px] font-black ${resultColor} w-4">${resultLabel}</span>
+                <span class="text-[9px] font-black uppercase tracking-[0.12em] text-gray-600 w-4">${venue}</span>
+                <span class="text-xs font-black text-gray-400 w-20 shrink-0">${date}</span>
+                <span class="flex-1 text-sm font-black text-white">Chelsea <span class="text-gray-500 font-bold text-xs">vs</span> ${opponent}</span>
+                <span class="text-sm font-black text-white">${score}</span>
+            </div>`;
+        }).join('');
+    } catch (e) {
+        out.innerHTML = `<p class="text-red-400 text-sm font-bold">Error: ${e.message}</p>`;
+    }
+}
+
 function showAdminTab(tabId) {
     const panels = document.querySelectorAll('.admin-panel');
     const tabs = document.querySelectorAll('.admin-tab');
@@ -2281,6 +2334,11 @@ function showAdminTab(tabId) {
         _syncScheduleBrowserToCurrentProgress();
     }
     if (tabId === 'verify') fetchAdminKnockoutVerify();
+    if (tabId === 'apitest') {
+        const saved = localStorage.getItem('wc_pool_fd_api_key');
+        const statusEl = document.getElementById('fd-api-key-status');
+        if (saved && statusEl) statusEl.textContent = '✓ Key saved to this browser.';
+    }
 }
 
 function showResultsTab(tabId) {
