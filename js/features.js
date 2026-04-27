@@ -11003,6 +11003,7 @@ if (typeof module !== 'undefined' && module.exports) {
         _buildBestThirdAssignments,
         _buildFallbackBestThirdAssignments,
         _resolveKnockoutMatchTeam,
-        _buildDerivedTeamStatusRows
+        _buildDerivedTeamStatusRows,
+        buildTournamentAudit
     };
 }
