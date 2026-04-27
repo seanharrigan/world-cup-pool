@@ -13,9 +13,15 @@ function loadTournamentApi() {
     const featuresPath = require.resolve('../js/features.js');
     delete require.cache[featuresPath];
 
-    global.window = { WorldCupScoring: scoringApi };
+    global.window = { WorldCupScoring: scoringApi, addEventListener: () => {} };
     global.window.WorldCupThirdPlaceMapping = { THIRD_PLACE_MAPPING };
-    global.document = { getElementById: () => null };
+    global.document = {
+        getElementById: () => null,
+        addEventListener: () => {},
+        querySelector: () => null,
+        querySelectorAll: () => [],
+        body: { appendChild: () => {} }
+    };
     global.supabaseClient = {};
     global.advancedTeams = new Set();
     global.eliminatedTeams = new Set();
@@ -183,7 +189,8 @@ test('round of 32 fixed pairings and best-third slots resolve without duplicates
     const seenTeams = new Set();
     const seenBestThirdTeams = new Set();
 
-    r32Matches.forEach((match, index) => {
+    const fixedLabelRe = /^[12][A-L]$/;
+    r32Matches.forEach((match) => {
         const home = api._resolveKnockoutMatchTeam(match, 'home', standings, bestThirdAssignments);
         const away = api._resolveKnockoutMatchTeam(match, 'away', standings, bestThirdAssignments);
 
@@ -191,8 +198,10 @@ test('round of 32 fixed pairings and best-third slots resolve without duplicates
         assert.ok(away?.name, `resolved away team missing for ${match.slotKey}`);
         assert.notEqual(home.name, away.name, `duplicate matchup in ${match.slotKey}`);
 
-        if (index < 8) {
+        if (fixedLabelRe.test(match.home)) {
             assert.equal(home.name, groupSeedName(rankingByGroup, match.home));
+        }
+        if (fixedLabelRe.test(match.away)) {
             assert.equal(away.name, groupSeedName(rankingByGroup, match.away));
         }
 
@@ -225,13 +234,16 @@ test('best-third assignments follow the official FIFA mapping table for a qualif
     const bestThirdAssignments = api._buildBestThirdAssignments(standings);
 
     const expected = THIRD_PLACE_MAPPING['ABCDEFGH'].assignments;
+    // Slot keys reflect the bracket-vertical R32 ordering — these are the
+    // R32 entries whose away side is 'Best 3rd', keyed by the group-winner
+    // playing home.
     const expectedSlotByWinner = {
-        '1E': 'r32-09:away',
-        '1I': 'r32-10:away',
+        '1E': 'r32-01:away',
+        '1I': 'r32-02:away',
+        '1D': 'r32-07:away',
+        '1G': 'r32-08:away',
         '1A': 'r32-11:away',
         '1L': 'r32-12:away',
-        '1D': 'r32-13:away',
-        '1G': 'r32-14:away',
         '1B': 'r32-15:away',
         '1K': 'r32-16:away'
     };
@@ -276,4 +288,112 @@ test('later knockout slots can resolve one side as soon as an earlier match is f
     assert.equal(resolvedHome.status, 'confirmed');
     assert.equal(resolvedAway.name, 'TBD');
     assert.equal(resolvedAway.status, 'none');
+});
+
+// ── FIFA tiebreaker chain ────────────────────────────────────────────────────
+
+function buildGroupAMatches(api, results) {
+    // results: array of { home, away, scoreHome, scoreAway } using Group A team names
+    const sched = api.GROUP_STAGE_SCHEDULE.filter((m) => m.group === 'A');
+    return results.map((r, idx) => {
+        const match = sched.find((m) =>
+            (m.home === r.home && m.away === r.away) ||
+            (m.home === r.away && m.away === r.home)
+        );
+        return {
+            id: idx + 1,
+            stage: 'Group',
+            match_date_manual: match.date,
+            team_home: r.home,
+            team_away: r.away,
+            score_home: r.scoreHome,
+            score_away: r.scoreAway,
+            is_finished: true,
+            was_extra_time: false
+        };
+    });
+}
+
+test('H2H breaks pts/gd/gf tie between two teams in the same group', () => {
+    const api = loadTournamentApi();
+    // Mexico, South Africa, South Korea, Czechia in Group A. Construct so
+    // Mexico and South Korea finish tied on pts/gd/gf, but Mexico beat South
+    // Korea head-to-head — Mexico should rank higher.
+    const matches = buildGroupAMatches(api, [
+        // Round 1
+        { home: 'Mexico',       away: 'South Africa', scoreHome: 1, scoreAway: 0 }, // MEX +1
+        { home: 'South Korea',  away: 'Czechia',      scoreHome: 1, scoreAway: 0 }, // KOR +1
+        // Round 2
+        { home: 'Czechia',      away: 'South Africa', scoreHome: 1, scoreAway: 0 }, // CZE +1
+        { home: 'Mexico',       away: 'South Korea',  scoreHome: 2, scoreAway: 1 }, // MEX beats KOR
+        // Round 3
+        { home: 'Czechia',      away: 'Mexico',       scoreHome: 1, scoreAway: 0 }, // CZE beats MEX
+        { home: 'South Africa', away: 'South Korea',  scoreHome: 0, scoreAway: 1 }  // KOR +1
+    ]);
+    const standings = api.computeGroupStandings(matches);
+    const teamsA = standings.A.teams;
+    const mex = teamsA.find((t) => t.name === 'Mexico');
+    const kor = teamsA.find((t) => t.name === 'South Korea');
+
+    // Same pts/gd/gf
+    assert.equal(mex.pts, kor.pts);
+    assert.equal(mex.gd, kor.gd);
+    assert.equal(mex.gf, kor.gf);
+
+    // H2H: Mexico beat South Korea 2-1 → Mexico ranks higher
+    const mexIdx = teamsA.findIndex((t) => t.name === 'Mexico');
+    const korIdx = teamsA.findIndex((t) => t.name === 'South Korea');
+    assert.ok(mexIdx < korIdx, `Mexico should rank above South Korea via H2H (got mex=${mexIdx}, kor=${korIdx})`);
+});
+
+test('3-way tie resolves via overall gd after H2H is exhausted', () => {
+    const api = loadTournamentApi();
+    // Construct a three-way tie among Mexico/South Africa/South Korea where
+    // every H2H match between them is 0-0 → H2H pts/gd/gf are all identical.
+    // Each beat Czechia by different margins → overall gd breaks the tie.
+    const matches = buildGroupAMatches(api, [
+        { home: 'Mexico',       away: 'South Africa', scoreHome: 0, scoreAway: 0 },
+        { home: 'South Korea',  away: 'Czechia',      scoreHome: 3, scoreAway: 0 }, // KOR +3
+        { home: 'Czechia',      away: 'South Africa', scoreHome: 0, scoreAway: 2 }, // RSA +2
+        { home: 'Mexico',       away: 'South Korea',  scoreHome: 0, scoreAway: 0 },
+        { home: 'Czechia',      away: 'Mexico',       scoreHome: 0, scoreAway: 1 }, // MEX +1
+        { home: 'South Africa', away: 'South Korea',  scoreHome: 0, scoreAway: 0 }
+    ]);
+    const standings = api.computeGroupStandings(matches);
+    const teamsA = standings.A.teams;
+
+    // All three should have same pts (5 each: W + 2D)
+    const top3 = teamsA.slice(0, 3);
+    assert.deepEqual(top3.map((t) => t.pts), [5, 5, 5]);
+
+    // After exhausting H2H (all 0-0), fallback to overall gd: KOR +3 > RSA +2 > MEX +1
+    assert.deepEqual(top3.map((t) => t.name), ['South Korea', 'South Africa', 'Mexico']);
+});
+
+test('uniqueness-safe fallback assigns Best 3rd slots without duplicates when official mapping is unresolvable', () => {
+    const api = loadTournamentApi();
+    // Run completed group stage but tamper with one team so qualified-thirds
+    // ranking has a tie at the cutoff (the boundary 8th vs 9th place are tied).
+    const { matches } = buildCompletedGroupStage(api.GROUP_STAGE_SCHEDULE);
+    const standings = api.computeGroupStandings(matches);
+    const slots = api._getBestThirdSlots();
+
+    // Force the fallback path even when official mapping resolves.
+    const fallback = api._buildFallbackBestThirdAssignments(standings);
+    assert.equal(fallback.size, slots.length, 'fallback should fill all 8 Best 3rd slots');
+
+    const seen = new Set();
+    for (const team of fallback.values()) {
+        assert.equal(seen.has(team.name), false, `fallback assigned ${team.name} twice`);
+        seen.add(team.name);
+    }
+    assert.equal(seen.size, 8);
+
+    // Every assigned team's group must be in its slot's allowedGroups.
+    for (const slot of slots) {
+        const team = fallback.get(slot.key);
+        assert.ok(team, `fallback missing slot ${slot.key}`);
+        assert.ok(slot.allowedGroups.includes(team.group),
+            `${team.name} (group ${team.group}) is not allowed in ${slot.key} (${slot.allowedGroups.join(',')})`);
+    }
 });

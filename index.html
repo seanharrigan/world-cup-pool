@@ -1328,6 +1328,7 @@
                         <button onclick="showAdminTab('matches')" id="admin-tab-matches" class="admin-tab active rounded-xl border border-blue-400/40 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-950 shadow-lg shadow-blue-500/10 transition-all duration-200">Match Results</button>
                         <button onclick="showAdminTab('schedule')" id="admin-tab-schedule" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Schedule</button>
                         <button onclick="showAdminTab('verify')" id="admin-tab-verify" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Verify</button>
+                        <button onclick="showAdminTab('verifytournament')" id="admin-tab-verifytournament" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Verify Tournament</button>
                         <button onclick="showAdminTab('advancement')" id="admin-tab-advancement" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Tournament Status</button>
                         <button onclick="showAdminTab('manage')" id="admin-tab-manage" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Players</button>
                         <button onclick="showAdminTab('notifications')" id="admin-tab-notifications" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Notifications</button>
@@ -1499,6 +1500,20 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <div id="admin-panel-verifytournament" class="admin-panel hidden space-y-8">
+                    <div class="bg-gray-800 p-8 rounded-3xl border border-gray-700 shadow-2xl space-y-6">
+                        <div>
+                            <h2 class="text-xl font-black uppercase tracking-tight text-white">Verify Tournament</h2>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">End-to-end audit of every match, group standings, best-3rd assignment, and knockout bracket progression</p>
+                        </div>
+                        <div id="admin-vt-summary" class="grid grid-cols-1 md:grid-cols-4 gap-4"></div>
+                        <div id="admin-vt-section-matches"></div>
+                        <div id="admin-vt-section-groups"></div>
+                        <div id="admin-vt-section-thirds"></div>
+                        <div id="admin-vt-section-bracket"></div>
                     </div>
                 </div>
 
@@ -2244,7 +2259,7 @@
     <script src="js/ui.js?v=20260424e"></script>
     <script src="js/scoring.js?v=20260424a"></script>
     <script src="js/third-place-mapping.js?v=20260416b"></script>
-    <script src="js/features.js?v=20260426i"></script>
+    <script src="js/features.js?v=20260427c"></script>
     <script src="js/app.js?v=20260424f"></script>
 </body>
 </html>

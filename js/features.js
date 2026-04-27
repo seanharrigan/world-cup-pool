@@ -753,94 +753,94 @@ function _computeReportCard(squad) {
 
 const GROUP_STAGE_SCHEDULE = [
     // Jun 11
-    { date: '2026-06-11', time: '12:00', group: 'A', home: 'Mexico'            , away: 'South Africa' },
-    { date: '2026-06-11', time: '19:00', group: 'A', home: 'South Korea'       , away: 'Czechia' },
+    { match:  1, date: '2026-06-11', time: '12:00', group: 'A', home: 'Mexico'            , away: 'South Africa' },
+    { match:  2, date: '2026-06-11', time: '19:00', group: 'A', home: 'South Korea'       , away: 'Czechia' },
     // Jun 12
-    { date: '2026-06-12', time: '12:00', group: 'B', home: 'Canada'            , away: 'Bosnia' },
-    { date: '2026-06-12', time: '18:00', group: 'D', home: 'USA'               , away: 'Paraguay' },
+    { match:  3, date: '2026-06-12', time: '12:00', group: 'B', home: 'Canada'            , away: 'Bosnia' },
+    { match:  4, date: '2026-06-12', time: '18:00', group: 'D', home: 'USA'               , away: 'Paraguay' },
     // Jun 13
-    { date: '2026-06-13', time: '12:00', group: 'B', home: 'Qatar'             , away: 'Switzerland' },
-    { date: '2026-06-13', time: '15:00', group: 'C', home: 'Brazil'            , away: 'Morocco' },
-    { date: '2026-06-13', time: '18:00', group: 'C', home: 'Haiti'             , away: 'Scotland' },
-    { date: '2026-06-13', time: '21:00', group: 'D', home: 'Australia'         , away: 'Turkiye' },
+    { match:  8, date: '2026-06-13', time: '12:00', group: 'B', home: 'Qatar'             , away: 'Switzerland' },
+    { match:  7, date: '2026-06-13', time: '15:00', group: 'C', home: 'Brazil'            , away: 'Morocco' },
+    { match:  5, date: '2026-06-13', time: '18:00', group: 'C', home: 'Haiti'             , away: 'Scotland' },
+    { match:  6, date: '2026-06-13', time: '21:00', group: 'D', home: 'Australia'         , away: 'Turkiye' },
     // Jun 14
-    { date: '2026-06-14', time: '10:00', group: 'E', home: 'Germany'           , away: 'Curacao' },
-    { date: '2026-06-14', time: '16:00', group: 'E', home: 'Ivory Coast'       , away: 'Ecuador' },
-    { date: '2026-06-14', time: '13:00', group: 'F', home: 'Netherlands'       , away: 'Japan' },
-    { date: '2026-06-14', time: '19:00', group: 'F', home: 'Sweden'            , away: 'Tunisia' },
+    { match: 10, date: '2026-06-14', time: '10:00', group: 'E', home: 'Germany'           , away: 'Curacao' },
+    { match:  9, date: '2026-06-14', time: '16:00', group: 'E', home: 'Ivory Coast'       , away: 'Ecuador' },
+    { match: 11, date: '2026-06-14', time: '13:00', group: 'F', home: 'Netherlands'       , away: 'Japan' },
+    { match: 12, date: '2026-06-14', time: '19:00', group: 'F', home: 'Sweden'            , away: 'Tunisia' },
     // Jun 15
-    { date: '2026-06-15', time: '12:00', group: 'G', home: 'Belgium'           , away: 'Egypt' },
-    { date: '2026-06-15', time: '18:00', group: 'G', home: 'Iran'              , away: 'New Zealand' },
-    { date: '2026-06-15', time: '09:00', group: 'H', home: 'Spain'             , away: 'Cape Verde' },
-    { date: '2026-06-15', time: '15:00', group: 'H', home: 'Saudi Arabia'      , away: 'Uruguay' },
+    { match: 16, date: '2026-06-15', time: '12:00', group: 'G', home: 'Belgium'           , away: 'Egypt' },
+    { match: 15, date: '2026-06-15', time: '18:00', group: 'G', home: 'Iran'              , away: 'New Zealand' },
+    { match: 14, date: '2026-06-15', time: '09:00', group: 'H', home: 'Spain'             , away: 'Cape Verde' },
+    { match: 13, date: '2026-06-15', time: '15:00', group: 'H', home: 'Saudi Arabia'      , away: 'Uruguay' },
     // Jun 16
-    { date: '2026-06-16', time: '12:00', group: 'I', home: 'France'            , away: 'Senegal' },
-    { date: '2026-06-16', time: '15:00', group: 'I', home: 'Iraq'              , away: 'Norway' },
-    { date: '2026-06-16', time: '18:00', group: 'J', home: 'Argentina'         , away: 'Algeria' },
-    { date: '2026-06-16', time: '21:00', group: 'J', home: 'Austria'           , away: 'Jordan' },
+    { match: 17, date: '2026-06-16', time: '12:00', group: 'I', home: 'France'            , away: 'Senegal' },
+    { match: 18, date: '2026-06-16', time: '15:00', group: 'I', home: 'Iraq'              , away: 'Norway' },
+    { match: 19, date: '2026-06-16', time: '18:00', group: 'J', home: 'Argentina'         , away: 'Algeria' },
+    { match: 20, date: '2026-06-16', time: '21:00', group: 'J', home: 'Austria'           , away: 'Jordan' },
     // Jun 17
-    { date: '2026-06-17', time: '10:00', group: 'K', home: 'Portugal'          , away: 'DR Congo' },
-    { date: '2026-06-17', time: '19:00', group: 'K', home: 'Uzbekistan'        , away: 'Colombia' },
-    { date: '2026-06-17', time: '13:00', group: 'L', home: 'England'           , away: 'Croatia' },
-    { date: '2026-06-17', time: '16:00', group: 'L', home: 'Ghana'             , away: 'Panama' },
+    { match: 23, date: '2026-06-17', time: '10:00', group: 'K', home: 'Portugal'          , away: 'DR Congo' },
+    { match: 24, date: '2026-06-17', time: '19:00', group: 'K', home: 'Uzbekistan'        , away: 'Colombia' },
+    { match: 22, date: '2026-06-17', time: '13:00', group: 'L', home: 'England'           , away: 'Croatia' },
+    { match: 21, date: '2026-06-17', time: '16:00', group: 'L', home: 'Ghana'             , away: 'Panama' },
     // Jun 18
-    { date: '2026-06-18', time: '09:00', group: 'A', home: 'Czechia'           , away: 'South Africa' },
-    { date: '2026-06-18', time: '18:00', group: 'A', home: 'Mexico'            , away: 'South Korea' },
-    { date: '2026-06-18', time: '12:00', group: 'B', home: 'Switzerland'       , away: 'Bosnia' },
-    { date: '2026-06-18', time: '15:00', group: 'B', home: 'Canada'            , away: 'Qatar' },
+    { match: 25, date: '2026-06-18', time: '09:00', group: 'A', home: 'Czechia'           , away: 'South Africa' },
+    { match: 28, date: '2026-06-18', time: '18:00', group: 'A', home: 'Mexico'            , away: 'South Korea' },
+    { match: 26, date: '2026-06-18', time: '12:00', group: 'B', home: 'Switzerland'       , away: 'Bosnia' },
+    { match: 27, date: '2026-06-18', time: '15:00', group: 'B', home: 'Canada'            , away: 'Qatar' },
     // Jun 19
-    { date: '2026-06-19', time: '15:00', group: 'C', home: 'Scotland'          , away: 'Morocco' },
-    { date: '2026-06-19', time: '17:30', group: 'C', home: 'Brazil'            , away: 'Haiti' },
-    { date: '2026-06-19', time: '12:00', group: 'D', home: 'USA'               , away: 'Australia' },
-    { date: '2026-06-19', time: '20:00', group: 'D', home: 'Turkiye'           , away: 'Paraguay' },
+    { match: 30, date: '2026-06-19', time: '15:00', group: 'C', home: 'Scotland'          , away: 'Morocco' },
+    { match: 29, date: '2026-06-19', time: '17:30', group: 'C', home: 'Brazil'            , away: 'Haiti' },
+    { match: 32, date: '2026-06-19', time: '12:00', group: 'D', home: 'USA'               , away: 'Australia' },
+    { match: 31, date: '2026-06-19', time: '20:00', group: 'D', home: 'Turkiye'           , away: 'Paraguay' },
     // Jun 20
-    { date: '2026-06-20', time: '13:00', group: 'E', home: 'Germany'           , away: 'Ivory Coast' },
-    { date: '2026-06-20', time: '17:00', group: 'E', home: 'Ecuador'           , away: 'Curacao' },
-    { date: '2026-06-20', time: '10:00', group: 'F', home: 'Netherlands'       , away: 'Sweden' },
-    { date: '2026-06-20', time: '21:00', group: 'F', home: 'Tunisia'           , away: 'Japan' },
+    { match: 33, date: '2026-06-20', time: '13:00', group: 'E', home: 'Germany'           , away: 'Ivory Coast' },
+    { match: 34, date: '2026-06-20', time: '17:00', group: 'E', home: 'Ecuador'           , away: 'Curacao' },
+    { match: 35, date: '2026-06-20', time: '10:00', group: 'F', home: 'Netherlands'       , away: 'Sweden' },
+    { match: 36, date: '2026-06-20', time: '21:00', group: 'F', home: 'Tunisia'           , away: 'Japan' },
     // Jun 21
-    { date: '2026-06-21', time: '12:00', group: 'G', home: 'Belgium'           , away: 'Iran' },
-    { date: '2026-06-21', time: '18:00', group: 'G', home: 'New Zealand'       , away: 'Egypt' },
-    { date: '2026-06-21', time: '09:00', group: 'H', home: 'Spain'             , away: 'Saudi Arabia' },
-    { date: '2026-06-21', time: '15:00', group: 'H', home: 'Uruguay'           , away: 'Cape Verde' },
+    { match: 39, date: '2026-06-21', time: '12:00', group: 'G', home: 'Belgium'           , away: 'Iran' },
+    { match: 40, date: '2026-06-21', time: '18:00', group: 'G', home: 'New Zealand'       , away: 'Egypt' },
+    { match: 38, date: '2026-06-21', time: '09:00', group: 'H', home: 'Spain'             , away: 'Saudi Arabia' },
+    { match: 37, date: '2026-06-21', time: '15:00', group: 'H', home: 'Uruguay'           , away: 'Cape Verde' },
     // Jun 22
-    { date: '2026-06-22', time: '14:00', group: 'I', home: 'France'            , away: 'Iraq' },
-    { date: '2026-06-22', time: '17:00', group: 'I', home: 'Norway'            , away: 'Senegal' },
-    { date: '2026-06-22', time: '10:00', group: 'J', home: 'Argentina'         , away: 'Austria' },
-    { date: '2026-06-22', time: '20:00', group: 'J', home: 'Jordan'            , away: 'Algeria' },
+    { match: 42, date: '2026-06-22', time: '14:00', group: 'I', home: 'France'            , away: 'Iraq' },
+    { match: 41, date: '2026-06-22', time: '17:00', group: 'I', home: 'Norway'            , away: 'Senegal' },
+    { match: 43, date: '2026-06-22', time: '10:00', group: 'J', home: 'Argentina'         , away: 'Austria' },
+    { match: 44, date: '2026-06-22', time: '20:00', group: 'J', home: 'Jordan'            , away: 'Algeria' },
     // Jun 23
-    { date: '2026-06-23', time: '10:00', group: 'K', home: 'Portugal'          , away: 'Uzbekistan' },
-    { date: '2026-06-23', time: '19:00', group: 'K', home: 'Colombia'          , away: 'DR Congo' },
-    { date: '2026-06-23', time: '13:00', group: 'L', home: 'England'           , away: 'Ghana' },
-    { date: '2026-06-23', time: '16:00', group: 'L', home: 'Panama'            , away: 'Croatia' },
+    { match: 47, date: '2026-06-23', time: '10:00', group: 'K', home: 'Portugal'          , away: 'Uzbekistan' },
+    { match: 48, date: '2026-06-23', time: '19:00', group: 'K', home: 'Colombia'          , away: 'DR Congo' },
+    { match: 45, date: '2026-06-23', time: '13:00', group: 'L', home: 'England'           , away: 'Ghana' },
+    { match: 46, date: '2026-06-23', time: '16:00', group: 'L', home: 'Panama'            , away: 'Croatia' },
     // Jun 24
-    { date: '2026-06-24', time: '18:00', group: 'A', home: 'Czechia'           , away: 'Mexico' },
-    { date: '2026-06-24', time: '18:00', group: 'A', home: 'South Africa'      , away: 'South Korea' },
-    { date: '2026-06-24', time: '12:00', group: 'B', home: 'Switzerland'       , away: 'Canada' },
-    { date: '2026-06-24', time: '12:00', group: 'B', home: 'Bosnia'            , away: 'Qatar' },
-    { date: '2026-06-24', time: '15:00', group: 'C', home: 'Scotland'          , away: 'Brazil' },
-    { date: '2026-06-24', time: '15:00', group: 'C', home: 'Morocco'           , away: 'Haiti' },
+    { match: 53, date: '2026-06-24', time: '18:00', group: 'A', home: 'Czechia'           , away: 'Mexico' },
+    { match: 54, date: '2026-06-24', time: '18:00', group: 'A', home: 'South Africa'      , away: 'South Korea' },
+    { match: 51, date: '2026-06-24', time: '12:00', group: 'B', home: 'Switzerland'       , away: 'Canada' },
+    { match: 52, date: '2026-06-24', time: '12:00', group: 'B', home: 'Bosnia'            , away: 'Qatar' },
+    { match: 49, date: '2026-06-24', time: '15:00', group: 'C', home: 'Scotland'          , away: 'Brazil' },
+    { match: 50, date: '2026-06-24', time: '15:00', group: 'C', home: 'Morocco'           , away: 'Haiti' },
     // Jun 25
-    { date: '2026-06-25', time: '19:00', group: 'D', home: 'Turkiye'           , away: 'USA' },
-    { date: '2026-06-25', time: '19:00', group: 'D', home: 'Paraguay'          , away: 'Australia' },
-    { date: '2026-06-25', time: '13:00', group: 'E', home: 'Curacao'           , away: 'Ivory Coast' },
-    { date: '2026-06-25', time: '13:00', group: 'E', home: 'Ecuador'           , away: 'Germany' },
-    { date: '2026-06-25', time: '16:00', group: 'F', home: 'Japan'             , away: 'Sweden' },
-    { date: '2026-06-25', time: '16:00', group: 'F', home: 'Tunisia'           , away: 'Netherlands' },
+    { match: 59, date: '2026-06-25', time: '19:00', group: 'D', home: 'Turkiye'           , away: 'USA' },
+    { match: 60, date: '2026-06-25', time: '19:00', group: 'D', home: 'Paraguay'          , away: 'Australia' },
+    { match: 55, date: '2026-06-25', time: '13:00', group: 'E', home: 'Curacao'           , away: 'Ivory Coast' },
+    { match: 56, date: '2026-06-25', time: '13:00', group: 'E', home: 'Ecuador'           , away: 'Germany' },
+    { match: 57, date: '2026-06-25', time: '16:00', group: 'F', home: 'Japan'             , away: 'Sweden' },
+    { match: 58, date: '2026-06-25', time: '16:00', group: 'F', home: 'Tunisia'           , away: 'Netherlands' },
     // Jun 26
-    { date: '2026-06-26', time: '20:00', group: 'G', home: 'Egypt'             , away: 'Iran' },
-    { date: '2026-06-26', time: '20:00', group: 'G', home: 'New Zealand'       , away: 'Belgium' },
-    { date: '2026-06-26', time: '17:00', group: 'H', home: 'Cape Verde'        , away: 'Saudi Arabia' },
-    { date: '2026-06-26', time: '17:00', group: 'H', home: 'Uruguay'           , away: 'Spain' },
-    { date: '2026-06-26', time: '12:00', group: 'I', home: 'Norway'            , away: 'France' },
-    { date: '2026-06-26', time: '12:00', group: 'I', home: 'Senegal'           , away: 'Iraq' },
+    { match: 63, date: '2026-06-26', time: '20:00', group: 'G', home: 'Egypt'             , away: 'Iran' },
+    { match: 64, date: '2026-06-26', time: '20:00', group: 'G', home: 'New Zealand'       , away: 'Belgium' },
+    { match: 65, date: '2026-06-26', time: '17:00', group: 'H', home: 'Cape Verde'        , away: 'Saudi Arabia' },
+    { match: 66, date: '2026-06-26', time: '17:00', group: 'H', home: 'Uruguay'           , away: 'Spain' },
+    { match: 61, date: '2026-06-26', time: '12:00', group: 'I', home: 'Norway'            , away: 'France' },
+    { match: 62, date: '2026-06-26', time: '12:00', group: 'I', home: 'Senegal'           , away: 'Iraq' },
     // Jun 27
-    { date: '2026-06-27', time: '19:00', group: 'J', home: 'Jordan'            , away: 'Argentina' },
-    { date: '2026-06-27', time: '19:00', group: 'J', home: 'Algeria'           , away: 'Austria' },
-    { date: '2026-06-27', time: '16:30', group: 'K', home: 'Colombia'          , away: 'Portugal' },
-    { date: '2026-06-27', time: '16:30', group: 'K', home: 'DR Congo'          , away: 'Uzbekistan' },
-    { date: '2026-06-27', time: '14:00', group: 'L', home: 'Panama'            , away: 'England' },
-    { date: '2026-06-27', time: '14:00', group: 'L', home: 'Croatia'           , away: 'Ghana' },
+    { match: 70, date: '2026-06-27', time: '19:00', group: 'J', home: 'Jordan'            , away: 'Argentina' },
+    { match: 69, date: '2026-06-27', time: '19:00', group: 'J', home: 'Algeria'           , away: 'Austria' },
+    { match: 71, date: '2026-06-27', time: '16:30', group: 'K', home: 'Colombia'          , away: 'Portugal' },
+    { match: 72, date: '2026-06-27', time: '16:30', group: 'K', home: 'DR Congo'          , away: 'Uzbekistan' },
+    { match: 67, date: '2026-06-27', time: '14:00', group: 'L', home: 'Panama'            , away: 'England' },
+    { match: 68, date: '2026-06-27', time: '14:00', group: 'L', home: 'Croatia'           , away: 'Ghana' },
 ];
 
 // ── 2026 World Cup Knockout Stage Schedule ───────────────────────────────────
@@ -850,43 +850,48 @@ const GROUP_STAGE_SCHEDULE = [
 
 const KNOCKOUT_SCHEDULE = [
     // ── Round of 32 ─── Jun 28 – Jul 3, 2026 (Pacific) ───────────────────────
-    { slotKey: 'r32-01', date: '2026-06-28', time: '12:00', stage: 'R32', home: '2A', away: '2B' },
-    { slotKey: 'r32-02', date: '2026-06-29', time: '10:00', stage: 'R32', home: '1F', away: '2C' },
-    { slotKey: 'r32-03', date: '2026-06-29', time: '13:30', stage: 'R32', home: '1C', away: '2F' },
-    { slotKey: 'r32-04', date: '2026-06-29', time: '18:00', stage: 'R32', home: '2E', away: '2I' },
-    { slotKey: 'r32-05', date: '2026-06-30', time: '10:00', stage: 'R32', home: '2K', away: '2L' },
-    { slotKey: 'r32-06', date: '2026-06-30', time: '14:00', stage: 'R32', home: '1H', away: '2J' },
-    { slotKey: 'r32-07', date: '2026-06-30', time: '18:00', stage: 'R32', home: '1J', away: '2H' },
-    { slotKey: 'r32-08', date: '2026-07-01', time: '09:00', stage: 'R32', home: '2D', away: '2G' },
-    { slotKey: 'r32-09', date: '2026-07-01', time: '13:00', stage: 'R32', home: '1E', away: 'Best 3rd', awayCandidates: ['A', 'B', 'C', 'D', 'F'] },
-    { slotKey: 'r32-10', date: '2026-07-01', time: '17:00', stage: 'R32', home: '1I', away: 'Best 3rd', awayCandidates: ['C', 'D', 'F', 'G', 'H'] },
-    { slotKey: 'r32-11', date: '2026-07-02', time: '12:00', stage: 'R32', home: '1A', away: 'Best 3rd', awayCandidates: ['C', 'E', 'F', 'H', 'I'] },
-    { slotKey: 'r32-12', date: '2026-07-02', time: '16:00', stage: 'R32', home: '1L', away: 'Best 3rd', awayCandidates: ['E', 'H', 'I', 'J', 'K'] },
-    { slotKey: 'r32-13', date: '2026-07-02', time: '20:00', stage: 'R32', home: '1D', away: 'Best 3rd', awayCandidates: ['B', 'E', 'F', 'I', 'J'] },
-    { slotKey: 'r32-14', date: '2026-07-03', time: '11:00', stage: 'R32', home: '1G', away: 'Best 3rd', awayCandidates: ['A', 'E', 'H', 'I', 'J'] },
-    { slotKey: 'r32-15', date: '2026-07-03', time: '15:00', stage: 'R32', home: '1B', away: 'Best 3rd', awayCandidates: ['E', 'F', 'G', 'I', 'J'] },
-    { slotKey: 'r32-16', date: '2026-07-03', time: '18:30', stage: 'R32', home: '1K', away: 'Best 3rd', awayCandidates: ['D', 'E', 'I', 'J', 'L'] },
-    // ── Round of 16 ─── Jul 4 – 6, 2026 ──────────────────────────────────────
-    { slotKey: 'r16-01', date: '2026-07-04', time: '10:00', stage: 'R16', home: 'W:r32-01', away: 'W:r32-02' },
-    { slotKey: 'r16-02', date: '2026-07-04', time: '14:00', stage: 'R16', home: 'W:r32-03', away: 'W:r32-04' },
-    { slotKey: 'r16-03', date: '2026-07-05', time: '13:00', stage: 'R16', home: 'W:r32-05', away: 'W:r32-06' },
-    { slotKey: 'r16-04', date: '2026-07-05', time: '17:00', stage: 'R16', home: 'W:r32-07', away: 'W:r32-08' },
-    { slotKey: 'r16-05', date: '2026-07-06', time: '12:00', stage: 'R16', home: 'W:r32-09', away: 'W:r32-10' },
-    { slotKey: 'r16-06', date: '2026-07-06', time: '17:00', stage: 'R16', home: 'W:r32-11', away: 'W:r32-12' },
-    { slotKey: 'r16-07', date: '2026-07-07', time: '12:00', stage: 'R16', home: 'W:r32-13', away: 'W:r32-14' },
-    { slotKey: 'r16-08', date: '2026-07-07', time: '16:00', stage: 'R16', home: 'W:r32-15', away: 'W:r32-16' },
+    // Array order = bracket-vertical order so adjacency pairs (0+1, 2+3, …) feed
+    // the matching R16 slot. Slot keys are NOT in chronological order; the FIFA
+    // match # comments give the chronological mapping.
+    { slotKey: 'r32-01', match: 74, date: '2026-06-29', time: '13:30', stage: 'R32', home: '1E', away: 'Best 3rd', awayCandidates: ['A', 'B', 'C', 'D', 'F'] },
+    { slotKey: 'r32-02', match: 77, date: '2026-06-30', time: '14:00', stage: 'R32', home: '1I', away: 'Best 3rd', awayCandidates: ['C', 'D', 'F', 'G', 'H'] },
+    { slotKey: 'r32-03', match: 73, date: '2026-06-28', time: '12:00', stage: 'R32', home: '2A', away: '2B' },
+    { slotKey: 'r32-04', match: 75, date: '2026-06-29', time: '18:00', stage: 'R32', home: '1F', away: '2C' },
+    { slotKey: 'r32-05', match: 83, date: '2026-07-02', time: '16:00', stage: 'R32', home: '2K', away: '2L' },
+    { slotKey: 'r32-06', match: 84, date: '2026-07-02', time: '12:00', stage: 'R32', home: '1H', away: '2J' },
+    { slotKey: 'r32-07', match: 81, date: '2026-07-01', time: '17:00', stage: 'R32', home: '1D', away: 'Best 3rd', awayCandidates: ['B', 'E', 'F', 'I', 'J'] },
+    { slotKey: 'r32-08', match: 82, date: '2026-07-01', time: '13:00', stage: 'R32', home: '1G', away: 'Best 3rd', awayCandidates: ['A', 'E', 'H', 'I', 'J'] },
+    { slotKey: 'r32-09', match: 76, date: '2026-06-29', time: '10:00', stage: 'R32', home: '1C', away: '2F' },
+    { slotKey: 'r32-10', match: 78, date: '2026-06-30', time: '10:00', stage: 'R32', home: '2E', away: '2I' },
+    { slotKey: 'r32-11', match: 79, date: '2026-06-30', time: '18:00', stage: 'R32', home: '1A', away: 'Best 3rd', awayCandidates: ['C', 'E', 'F', 'H', 'I'] },
+    { slotKey: 'r32-12', match: 80, date: '2026-07-01', time: '09:00', stage: 'R32', home: '1L', away: 'Best 3rd', awayCandidates: ['E', 'H', 'I', 'J', 'K'] },
+    { slotKey: 'r32-13', match: 86, date: '2026-07-03', time: '15:00', stage: 'R32', home: '1J', away: '2H' },
+    { slotKey: 'r32-14', match: 88, date: '2026-07-03', time: '11:00', stage: 'R32', home: '2D', away: '2G' },
+    { slotKey: 'r32-15', match: 85, date: '2026-07-02', time: '20:00', stage: 'R32', home: '1B', away: 'Best 3rd', awayCandidates: ['E', 'F', 'G', 'I', 'J'] },
+    { slotKey: 'r32-16', match: 87, date: '2026-07-03', time: '18:30', stage: 'R32', home: '1K', away: 'Best 3rd', awayCandidates: ['D', 'E', 'I', 'J', 'L'] },
+    // ── Round of 16 ─── Jul 4 – 7, 2026 ──────────────────────────────────────
+    // Array order = bracket-vertical order, sequential pairing with R32.
+    { slotKey: 'r16-01', match: 89, date: '2026-07-04', time: '14:00', stage: 'R16', home: 'W:r32-01', away: 'W:r32-02' },
+    { slotKey: 'r16-02', match: 90, date: '2026-07-05', time: '10:00', stage: 'R16', home: 'W:r32-03', away: 'W:r32-04' },
+    { slotKey: 'r16-03', match: 93, date: '2026-07-06', time: '12:00', stage: 'R16', home: 'W:r32-05', away: 'W:r32-06' },
+    { slotKey: 'r16-04', match: 94, date: '2026-07-06', time: '17:00', stage: 'R16', home: 'W:r32-07', away: 'W:r32-08' },
+    { slotKey: 'r16-05', match: 91, date: '2026-07-05', time: '13:00', stage: 'R16', home: 'W:r32-09', away: 'W:r32-10' },
+    { slotKey: 'r16-06', match: 92, date: '2026-07-05', time: '17:00', stage: 'R16', home: 'W:r32-11', away: 'W:r32-12' },
+    { slotKey: 'r16-07', match: 95, date: '2026-07-07', time: '09:00', stage: 'R16', home: 'W:r32-13', away: 'W:r32-14' },
+    { slotKey: 'r16-08', match: 96, date: '2026-07-07', time: '13:00', stage: 'R16', home: 'W:r32-15', away: 'W:r32-16' },
     // ── Quarter-finals ─── Jul 9 – 11, 2026 ──────────────────────────────────
-    { slotKey: 'qf-01', date: '2026-07-09', time: '13:00', stage: 'Quarters', home: 'W:r16-01', away: 'W:r16-02' },
-    { slotKey: 'qf-02', date: '2026-07-10', time: '12:00', stage: 'Quarters', home: 'W:r16-03', away: 'W:r16-04' },
-    { slotKey: 'qf-03', date: '2026-07-11', time: '14:00', stage: 'Quarters', home: 'W:r16-05', away: 'W:r16-06' },
-    { slotKey: 'qf-04', date: '2026-07-11', time: '18:00', stage: 'Quarters', home: 'W:r16-07', away: 'W:r16-08' },
+    // Sequential pairing — R16 is bracket-ordered so adjacency feeds correctly.
+    { slotKey: 'qf-01', match: 97,  date: '2026-07-09', time: '13:00', stage: 'Quarters', home: 'W:r16-01', away: 'W:r16-02' },
+    { slotKey: 'qf-02', match: 98,  date: '2026-07-10', time: '12:00', stage: 'Quarters', home: 'W:r16-03', away: 'W:r16-04' },
+    { slotKey: 'qf-03', match: 99,  date: '2026-07-11', time: '14:00', stage: 'Quarters', home: 'W:r16-05', away: 'W:r16-06' },
+    { slotKey: 'qf-04', match: 100, date: '2026-07-11', time: '18:00', stage: 'Quarters', home: 'W:r16-07', away: 'W:r16-08' },
     // ── Semi-finals ─── Jul 14 – 15, 2026 ────────────────────────────────────
-    { slotKey: 'sf-01', date: '2026-07-14', time: '12:00', stage: 'Semis', home: 'W:qf-01', away: 'W:qf-02' },
-    { slotKey: 'sf-02', date: '2026-07-15', time: '12:00', stage: 'Semis', home: 'W:qf-03', away: 'W:qf-04' },
+    { slotKey: 'sf-01', match: 101, date: '2026-07-14', time: '12:00', stage: 'Semis', home: 'W:qf-01', away: 'W:qf-02' },
+    { slotKey: 'sf-02', match: 102, date: '2026-07-15', time: '12:00', stage: 'Semis', home: 'W:qf-03', away: 'W:qf-04' },
     // ── Third-place play-off ─── Jul 18, 2026 ────────────────────────────────
-    { slotKey: 'finals-01', date: '2026-07-18', time: '14:00', stage: 'Finals', home: 'L:sf-01', away: 'L:sf-02' },
+    { slotKey: 'finals-01', match: 103, date: '2026-07-18', time: '14:00', stage: 'Finals', home: 'L:sf-01', away: 'L:sf-02' },
     // ── Grand Final ─── Jul 19, 2026 ─────────────────────────────────────────
-    { slotKey: 'finals-02', date: '2026-07-19', time: '12:00', stage: 'Finals', home: 'W:sf-01', away: 'W:sf-02' },
+    { slotKey: 'finals-02', match: 104, date: '2026-07-19', time: '12:00', stage: 'Finals', home: 'W:sf-01', away: 'W:sf-02' },
 ];
 
 // Cache of already-logged matches for the schedule browser done/undone state
@@ -1091,6 +1096,16 @@ function _findKnockoutResultForMatch(scheduleMatch, standings, bestThirdAssignme
 
 // Compute standings for every group from a match cache.
 // status: 'none' = 0 matches played, 'partial' = some, 'complete' = all 6 played.
+//
+// Within-group ranking applies FIFA 2026 tiebreakers in order:
+//   1. Most points
+//   2. H2H points (between tied teams only)
+//   3. H2H goal difference
+//   4. H2H goals scored
+//   5. Re-apply 2-4 to any still-tied subset
+//   6. Overall goal difference
+//   7. Overall goals scored
+//   8. (Fair play — not tracked)  →  team cost desc → name (deterministic fallback)
 function computeGroupStandings(matchesCache) {
     if (matchesCache === undefined) matchesCache = _scheduleBrowserLoggedCache;
     const result = {};
@@ -1098,8 +1113,9 @@ function computeGroupStandings(matchesCache) {
         const sched = GROUP_STAGE_SCHEDULE.filter((m) => m.group === g);
         const names = [...new Set(sched.flatMap((m) => [m.home, m.away]))];
         const stats = {};
-        names.forEach((n) => { stats[n] = { name: n, group: g, played: 0, pts: 0, gd: 0, gf: 0 }; });
+        names.forEach((n) => { stats[n] = { name: n, group: g, played: 0, w: 0, d: 0, l: 0, pts: 0, gf: 0, ga: 0, gd: 0 }; });
         let logged = 0;
+        const groupMatches = [];
         sched.forEach((m) => {
             const r = matchesCache.find((r) =>
                 r.stage === 'Group' &&
@@ -1108,36 +1124,131 @@ function computeGroupStandings(matchesCache) {
             );
             if (!r) return;
             logged++;
+            groupMatches.push(r);
             const h = stats[r.team_home];
             const a = stats[r.team_away];
             if (!h || !a) return;
             h.played++; a.played++;
-            h.gf += r.score_home; h.gd += r.score_home - r.score_away;
-            a.gf += r.score_away; a.gd += r.score_away - r.score_home;
-            if (r.score_home > r.score_away)      { h.pts += 3; }
-            else if (r.score_home < r.score_away) { a.pts += 3; }
-            else                                  { h.pts += 1; a.pts += 1; }
+            h.gf += r.score_home; h.ga += r.score_away; h.gd += r.score_home - r.score_away;
+            a.gf += r.score_away; a.ga += r.score_home; a.gd += r.score_away - r.score_home;
+            if (r.score_home > r.score_away)      { h.pts += 3; h.w++; a.l++; }
+            else if (r.score_home < r.score_away) { a.pts += 3; a.w++; h.l++; }
+            else                                  { h.pts += 1; a.pts += 1; h.d++; a.d++; }
         });
         const status = logged === 0 ? 'none' : logged < sched.length ? 'partial' : 'complete';
-        const sorted = Object.values(stats).sort((a, b) => {
-            if (status === 'none') {
+        const allTeams = Object.values(stats);
+        let sorted;
+        if (status === 'none') {
+            sorted = allTeams.slice().sort((a, b) => {
                 const teamA = teams.find((team) => team.name === a.name);
                 const teamB = teams.find((team) => team.name === b.name);
                 return (teamB?.cost || 0) - (teamA?.cost || 0) || a.name.localeCompare(b.name);
-            }
-            return b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name);
-        });
+            });
+        } else {
+            sorted = _rankGroupTeams(allTeams, groupMatches);
+        }
         result[g] = { teams: sorted, status };
     });
     return result;
 }
 
-function _compareStandingRows(a, b) {
-    return b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name);
+// Phase 1 of within-group ranking: bucket by points, then resolve each
+// bucket's tie chain via _rankTiedGroup.
+function _rankGroupTeams(allTeams, groupMatches) {
+    const byPoints = new Map();
+    allTeams.forEach((t) => {
+        if (!byPoints.has(t.pts)) byPoints.set(t.pts, []);
+        byPoints.get(t.pts).push(t);
+    });
+    const sortedPointBuckets = [...byPoints.keys()].sort((a, b) => b - a);
+    const ranked = [];
+    for (const pts of sortedPointBuckets) {
+        const bucket = byPoints.get(pts);
+        if (bucket.length === 1) ranked.push(bucket[0]);
+        else ranked.push(..._rankTiedGroup(bucket, groupMatches));
+    }
+    return ranked;
 }
 
+// FIFA tiebreaker steps 2-4 (H2H pts/gd/gf) with recursive narrowing for
+// 3+ team ties. Falls through to overall gd/gf, then cost desc, then name.
+function _rankTiedGroup(tied, groupMatches) {
+    if (tied.length <= 1) return tied.slice();
+
+    const tiedSet = new Set(tied.map((t) => t.name));
+    const h2h = new Map();
+    tied.forEach((t) => h2h.set(t.name, { pts: 0, gd: 0, gf: 0 }));
+    groupMatches.forEach((m) => {
+        if (!tiedSet.has(m.team_home) || !tiedSet.has(m.team_away)) return;
+        const h = h2h.get(m.team_home);
+        const a = h2h.get(m.team_away);
+        h.gf += m.score_home; h.gd += m.score_home - m.score_away;
+        a.gf += m.score_away; a.gd += m.score_away - m.score_home;
+        if (m.score_home > m.score_away) h.pts += 3;
+        else if (m.score_home < m.score_away) a.pts += 3;
+        else { h.pts += 1; a.pts += 1; }
+    });
+
+    const sorted = tied.slice().sort((a, b) => {
+        const ha = h2h.get(a.name);
+        const hb = h2h.get(b.name);
+        return (hb.pts - ha.pts) || (hb.gd - ha.gd) || (hb.gf - ha.gf);
+    });
+
+    const result = [];
+    let i = 0;
+    while (i < sorted.length) {
+        let j = i + 1;
+        while (j < sorted.length) {
+            const ha = h2h.get(sorted[j - 1].name);
+            const hb = h2h.get(sorted[j].name);
+            if (ha.pts === hb.pts && ha.gd === hb.gd && ha.gf === hb.gf) j++;
+            else break;
+        }
+        const subTied = sorted.slice(i, j);
+        if (subTied.length === 1) {
+            result.push(subTied[0]);
+        } else if (subTied.length === tied.length) {
+            // No progress in H2H — apply final overall + cost + name fallback.
+            result.push(...subTied.slice().sort((a, b) => {
+                if (b.gd !== a.gd) return b.gd - a.gd;
+                if (b.gf !== a.gf) return b.gf - a.gf;
+                const teamA = teams.find((t) => t.name === a.name);
+                const teamB = teams.find((t) => t.name === b.name);
+                const costA = teamA?.cost || 0;
+                const costB = teamB?.cost || 0;
+                if (costB !== costA) return costB - costA;
+                return a.name.localeCompare(b.name);
+            }));
+        } else {
+            // Strict subset of original tie — recurse to re-narrow H2H scope.
+            result.push(..._rankTiedGroup(subTied, groupMatches));
+        }
+        i = j;
+    }
+    return result;
+}
+
+// Cross-group comparator (used to rank 3rd-placed teams across groups, where
+// H2H doesn't apply because the teams never met). Falls through to cost desc,
+// then name, in lieu of fair-play / FIFA ranking which we don't track.
+function _compareStandingRows(a, b) {
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    if (b.gd !== a.gd) return b.gd - a.gd;
+    if (b.gf !== a.gf) return b.gf - a.gf;
+    const teamA = teams.find((team) => team.name === a.name);
+    const teamB = teams.find((team) => team.name === b.name);
+    const costA = teamA?.cost || 0;
+    const costB = teamB?.cost || 0;
+    if (costB !== costA) return costB - costA;
+    return a.name.localeCompare(b.name);
+}
+
+// Cross-group tie detector — true only if even cost can't separate them
+// (extremely rare). Used to flag ambiguous 3rd-place ranks for Annex C lookup.
 function _isStandingTie(a, b) {
-    return !!a && !!b && a.pts === b.pts && a.gd === b.gd && a.gf === b.gf;
+    if (!a || !b) return false;
+    return _compareStandingRows(a, b) === 0;
 }
 
 function _hasClinchedGroupSlot(group, pos) {
@@ -1244,13 +1355,16 @@ function _getBestThirdSlots() {
         });
 }
 
+// Maps each group-winner seed (1X) to the R32 slot:side where its Best-3rd
+// opponent sits. Must stay in sync with KNOCKOUT_SCHEDULE — the slot key
+// here must match the R32 entry whose home === '1X' and away === 'Best 3rd'.
 const THIRD_PLACE_WINNER_SLOT_MAP = {
-    '1E': 'r32-09:away',
-    '1I': 'r32-10:away',
+    '1E': 'r32-01:away',
+    '1I': 'r32-02:away',
+    '1D': 'r32-07:away',
+    '1G': 'r32-08:away',
     '1A': 'r32-11:away',
     '1L': 'r32-12:away',
-    '1D': 'r32-13:away',
-    '1G': 'r32-14:away',
     '1B': 'r32-15:away',
     '1K': 'r32-16:away'
 };
@@ -1298,18 +1412,56 @@ function _buildBestThirdAssignments(standings) {
     const assignments = new Map();
     const slots = _getBestThirdSlots();
     const { qualifiedThirds, mappingEntry, isResolvable } = _getOfficialBestThirdMappingContext(standings);
-    if (!isResolvable || !mappingEntry) return assignments;
 
-    const officialAssignments = mappingEntry.assignments || {};
-    const teamByGroup = new Map(qualifiedThirds.map((team) => [team.group, team]));
-    Object.entries(officialAssignments).forEach(([winnerSeed, thirdSeed]) => {
-        const slotKey = THIRD_PLACE_WINNER_SLOT_MAP[winnerSeed];
-        const groupLetter = thirdSeed?.[1];
-        const team = teamByGroup.get(groupLetter);
-        if (slotKey && team) assignments.set(slotKey, team);
-    });
+    // Preferred path: official FIFA Annex C mapping
+    if (isResolvable && mappingEntry) {
+        const officialAssignments = mappingEntry.assignments || {};
+        const teamByGroup = new Map(qualifiedThirds.map((team) => [team.group, team]));
+        Object.entries(officialAssignments).forEach(([winnerSeed, thirdSeed]) => {
+            const slotKey = THIRD_PLACE_WINNER_SLOT_MAP[winnerSeed];
+            const groupLetter = thirdSeed?.[1];
+            const team = teamByGroup.get(groupLetter);
+            if (slotKey && team) assignments.set(slotKey, team);
+        });
+        if (assignments.size === slots.length) return assignments;
+    }
 
-    return assignments.size === slots.length ? assignments : new Map();
+    // Fallback path: uniqueness-safe greedy assignment when Annex C can't
+    // resolve (e.g., ambiguous 3rd-place ranking after the full tiebreaker
+    // chain — almost only happens in randomized simulations, never in real
+    // tournaments where ties resolve via fair play / FIFA ranking).
+    return _buildFallbackBestThirdAssignments(standings);
+}
+
+// Backtracking matcher: assigns top-8 third-placed teams to the 8 R32 "Best
+// 3rd" slots respecting each slot's allowedGroups, with strict uniqueness.
+// Returns a Map<slotKey:side, team> or empty Map if standings aren't ready.
+function _buildFallbackBestThirdAssignments(standings) {
+    const slots = _getBestThirdSlots();
+    const allThirds = _getBestThirdPlaceTeams(standings);
+    if (allThirds.length < slots.length) return new Map();
+    const top8 = allThirds.slice(0, slots.length);
+
+    const assignments = new Map();
+    const used = new Set();
+
+    function tryAssign(slotIdx) {
+        if (slotIdx >= slots.length) return true;
+        const slot = slots[slotIdx];
+        for (const team of top8) {
+            if (used.has(team.name)) continue;
+            if (!slot.allowedGroups.includes(team.group)) continue;
+            assignments.set(slot.key, team);
+            used.add(team.name);
+            if (tryAssign(slotIdx + 1)) return true;
+            assignments.delete(slot.key);
+            used.delete(team.name);
+        }
+        return false;
+    }
+
+    tryAssign(0);
+    return assignments;
 }
 
 function _buildAdminVerifyGroupCards(standings, mappingContext) {
@@ -1419,6 +1571,584 @@ async function fetchAdminKnockoutVerify() {
             </tr>
         `;
     }).join('');
+}
+
+// ── Tournament Audit ─────────────────────────────────────────────────────────
+// Pure auditor: takes a `matches` cache (rows from Supabase), returns one
+// canonical object the Verify Tournament tab renders + downloads.
+function buildTournamentAudit(matchesCache) {
+    const dbRows = Array.isArray(matchesCache) ? matchesCache : [];
+    const standings = computeGroupStandings(dbRows);
+    const mappingContext = _getOfficialBestThirdMappingContext(standings);
+    const bestThirdAssignments = _buildBestThirdAssignments(standings);
+    const memo = {};
+
+    const todayPt = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' });
+    const claimedDbIds = new Set();
+
+    const findDbRow = (entry) => {
+        const wantStage = entry.stage || (entry.group ? 'Group' : null);
+        const candidates = dbRows.filter((row) => {
+            if (claimedDbIds.has(row.id)) return false;
+            if (wantStage && row.stage !== wantStage) return false;
+            return true;
+        });
+        const sameDate = candidates.find((row) => row.match_date_manual === entry.date && (
+            (row.team_home === entry.home && row.team_away === entry.away) ||
+            (row.team_home === entry.away && row.team_away === entry.home)
+        ));
+        if (sameDate) return sameDate;
+        return candidates.find((row) =>
+            (row.team_home === entry.home && row.team_away === entry.away) ||
+            (row.team_home === entry.away && row.team_away === entry.home)
+        ) || null;
+    };
+
+    const findKnockoutDbRow = (entry, resolvedHome, resolvedAway) => {
+        const candidates = dbRows.filter((row) => {
+            if (claimedDbIds.has(row.id)) return false;
+            return row.stage === entry.stage;
+        });
+        const homeName = resolvedHome?.name;
+        const awayName = resolvedAway?.name;
+        if (homeName && awayName) {
+            const teamMatch = candidates.find((row) =>
+                (row.team_home === homeName && row.team_away === awayName) ||
+                (row.team_home === awayName && row.team_away === homeName)
+            );
+            if (teamMatch) return teamMatch;
+        }
+        return candidates.find((row) => row.match_date_manual === entry.date) || null;
+    };
+
+    // Section A: per-match audit rows for all 104 fixtures
+    const matchRows = [];
+    const groupEntries = (typeof GROUP_STAGE_SCHEDULE !== 'undefined' ? GROUP_STAGE_SCHEDULE : []).slice();
+    const knockoutEntries = (typeof KNOCKOUT_SCHEDULE !== 'undefined' ? KNOCKOUT_SCHEDULE : []).slice();
+
+    groupEntries.forEach((entry) => {
+        const dbRow = findDbRow(entry);
+        if (dbRow) claimedDbIds.add(dbRow.id);
+        const issues = [];
+        let schedulePass = true;
+        if (dbRow) {
+            const teamsMatch =
+                (dbRow.team_home === entry.home && dbRow.team_away === entry.away) ||
+                (dbRow.team_home === entry.away && dbRow.team_away === entry.home);
+            const dateMatches = dbRow.match_date_manual === entry.date;
+            if (!teamsMatch) { issues.push('mismatch_teams'); schedulePass = false; }
+            if (!dateMatches) { issues.push('mismatch_date'); schedulePass = false; }
+        } else if (entry.date < todayPt) {
+            issues.push('missing_finished');
+            schedulePass = false;
+        }
+        matchRows.push({
+            matchNum: entry.match || null,
+            stage: 'Group',
+            group: entry.group || null,
+            schedule: { date: entry.date, time: entry.time, home: entry.home, away: entry.away, slotKey: null },
+            resolved: { home: { name: entry.home }, away: { name: entry.away } },
+            db: dbRow,
+            issues,
+            schedulePass,
+            bracketPass: null,
+            isFuture: entry.date > todayPt
+        });
+    });
+
+    knockoutEntries.forEach((entry) => {
+        const resolvedHome = _resolveKnockoutMatchTeam(entry, 'home', standings, bestThirdAssignments, { matchesCache: dbRows, memo });
+        const resolvedAway = _resolveKnockoutMatchTeam(entry, 'away', standings, bestThirdAssignments, { matchesCache: dbRows, memo });
+        const dbRow = findKnockoutDbRow(entry, resolvedHome, resolvedAway);
+        if (dbRow) claimedDbIds.add(dbRow.id);
+
+        const issues = [];
+        let schedulePass = true;
+        let bracketPass = null;
+
+        const hasResolved = resolvedHome?.status === 'confirmed' && resolvedAway?.status === 'confirmed';
+
+        if (dbRow) {
+            const teamsValid = !!(dbRow.team_home && dbRow.team_away);
+            if (!teamsValid) {
+                issues.push('mismatch_teams');
+                schedulePass = false;
+            }
+            if (hasResolved) {
+                const homeOk = dbRow.team_home === resolvedHome.name;
+                const awayOk = dbRow.team_away === resolvedAway.name;
+                if (!homeOk) issues.push('mismatch_home');
+                if (!awayOk) issues.push('mismatch_away');
+                bracketPass = homeOk && awayOk;
+            } else {
+                bracketPass = null; // provisional — can't fail until resolution is locked
+            }
+        } else if (entry.date < todayPt) {
+            issues.push('missing_finished');
+            schedulePass = false;
+        }
+
+        matchRows.push({
+            matchNum: entry.match || null,
+            stage: entry.stage,
+            group: null,
+            schedule: { date: entry.date, time: entry.time, home: entry.home, away: entry.away, slotKey: entry.slotKey },
+            resolved: { home: resolvedHome, away: resolvedAway },
+            db: dbRow,
+            issues,
+            schedulePass,
+            bracketPass,
+            isFuture: entry.date > todayPt
+        });
+    });
+
+    matchRows.sort((a, b) => (a.matchNum || 0) - (b.matchNum || 0));
+
+    // Orphan db rows (no schedule entry claimed them)
+    const orphanRows = dbRows.filter((row) => !claimedDbIds.has(row.id));
+
+    // Section B: per-group advancement audit
+    const groupAudit = ['A','B','C','D','E','F','G','H','I','J','K','L'].map((groupLetter) => {
+        const groupStandings = standings[groupLetter];
+        const status = groupStandings?.status || 'none';
+        const top1 = groupStandings?.teams?.[0]?.name || null;
+        const top2 = groupStandings?.teams?.[1]?.name || null;
+
+        // Pull actual R32 entrants for slots labelled 1X / 2X
+        const slot1Entry = knockoutEntries.find((m) => m.stage === 'R32' && m.home === `1${groupLetter}`);
+        const slot2Entry = knockoutEntries.find((m) =>
+            m.stage === 'R32' && (m.home === `2${groupLetter}` || m.away === `2${groupLetter}`)
+        );
+        const findActualForLabel = (label) => {
+            for (const m of knockoutEntries) {
+                if (m.stage !== 'R32') continue;
+                const isHome = m.home === label;
+                const isAway = m.away === label;
+                if (!isHome && !isAway) continue;
+                const dbRow = matchRows.find((r) => r.schedule.slotKey === m.slotKey)?.db;
+                if (dbRow) return isHome ? dbRow.team_home : dbRow.team_away;
+            }
+            return null;
+        };
+        const actualTop1 = findActualForLabel(`1${groupLetter}`);
+        const actualTop2 = findActualForLabel(`2${groupLetter}`);
+
+        let pass = null;
+        if (status === 'none') pass = null; // not started
+        else if (status === 'partial') pass = null; // in progress — provisional
+        else {
+            // Complete group — check top-2 match
+            const top1Pass = !actualTop1 || actualTop1 === top1;
+            const top2Pass = !actualTop2 || actualTop2 === top2;
+            pass = top1Pass && top2Pass;
+        }
+
+        return {
+            group: groupLetter,
+            status,
+            expectedTop1: top1,
+            expectedTop2: top2,
+            actualTop1,
+            actualTop2,
+            pass
+        };
+    });
+
+    // Section C: best-3rd audit (mostly delegated to mappingContext + bestThirdAssignments)
+    const bestThirdAudit = {
+        qualifiedKey: mappingContext.qualifiedKey || null,
+        mappingEntry: mappingContext.mappingEntry || null,
+        isResolvable: mappingContext.isResolvable,
+        rankings: mappingContext.allThirds || [],
+        qualifiedSet: new Set((mappingContext.qualifiedThirds || []).map((t) => t.name)),
+        assignments: bestThirdAssignments
+    };
+
+    // Section D: knockout bracket audit (32 entries, one per KO fixture)
+    const bracketAudit = matchRows
+        .filter((row) => row.stage !== 'Group')
+        .map((row) => ({
+            slotKey: row.schedule.slotKey,
+            stage: row.stage,
+            matchNum: row.matchNum,
+            schedHome: row.schedule.home,
+            schedAway: row.schedule.away,
+            resolvedHome: row.resolved.home,
+            resolvedAway: row.resolved.away,
+            dbHome: row.db?.team_home || null,
+            dbAway: row.db?.team_away || null,
+            schedulePass: row.schedulePass,
+            bracketPass: row.bracketPass,
+            issues: row.issues
+        }));
+
+    // Duplicate detection per round (excluding Group)
+    const duplicatesByRound = {};
+    ['R32','R16','Quarters','Semis','Finals'].forEach((stage) => {
+        const seen = new Map();
+        const dupes = new Set();
+        bracketAudit.filter((b) => b.stage === stage).forEach((b) => {
+            [b.dbHome, b.dbAway].forEach((name) => {
+                if (!name) return;
+                if (seen.has(name)) dupes.add(name);
+                else seen.set(name, true);
+            });
+        });
+        duplicatesByRound[stage] = [...dupes];
+    });
+
+    // Summary counts
+    const schedulePassCount = matchRows.filter((r) => r.schedulePass).length;
+    const scheduleFailCount = matchRows.filter((r) => !r.schedulePass && !r.isFuture).length;
+    const bracketPassCount = matchRows.filter((r) => r.bracketPass === true).length;
+    const bracketFailCount = matchRows.filter((r) => r.bracketPass === false).length;
+    const groupPassCount = groupAudit.filter((g) => g.pass === true).length;
+    const groupFailCount = groupAudit.filter((g) => g.pass === false).length;
+    const overallPass = scheduleFailCount === 0 && bracketFailCount === 0 && groupFailCount === 0
+        && Object.values(duplicatesByRound).every((arr) => arr.length === 0);
+
+    return {
+        standings,
+        mappingContext,
+        bestThirdAssignments,
+        matchRows,
+        orphanRows,
+        groupAudit,
+        bestThirdAudit,
+        bracketAudit,
+        duplicatesByRound,
+        summary: {
+            totalMatches: matchRows.length,
+            dbMatchCount: dbRows.length,
+            schedulePassCount,
+            scheduleFailCount,
+            bracketPassCount,
+            bracketFailCount,
+            groupPassCount,
+            groupFailCount,
+            bestThirdResolved: !!mappingContext.isResolvable,
+            overallPass
+        }
+    };
+}
+
+let _verifyTournamentLastAudit = null;
+let _verifyTournamentFilter = 'all'; // 'all' | 'failures'
+
+async function fetchAdminVerifyTournament() {
+    const summaryEl = document.getElementById('admin-vt-summary');
+    const matchesEl = document.getElementById('admin-vt-section-matches');
+    const groupsEl = document.getElementById('admin-vt-section-groups');
+    const thirdsEl = document.getElementById('admin-vt-section-thirds');
+    const bracketEl = document.getElementById('admin-vt-section-bracket');
+    if (!summaryEl || !matchesEl || !groupsEl || !thirdsEl || !bracketEl) return;
+
+    summaryEl.innerHTML = '<div class="md:col-span-4 rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-8 text-center text-xs font-black uppercase tracking-[0.25em] text-gray-400">Auditing tournament…</div>';
+    matchesEl.innerHTML = '';
+    groupsEl.innerHTML = '';
+    thirdsEl.innerHTML = '';
+    bracketEl.innerHTML = '';
+
+    const { data: matches, error } = await supabaseClient.from('matches').select('*');
+    if (error) {
+        summaryEl.innerHTML = `<div class="md:col-span-4 rounded-2xl border border-red-900/40 bg-red-950/30 px-5 py-8 text-center text-xs font-black uppercase tracking-[0.2em] text-red-300">${error.message || 'Unable to load audit data.'}</div>`;
+        return;
+    }
+
+    const audit = buildTournamentAudit(matches || []);
+    _verifyTournamentLastAudit = audit;
+
+    summaryEl.innerHTML = _renderVerifyTournamentSummary(audit);
+    matchesEl.innerHTML = _renderVerifyTournamentMatchTable(audit);
+    groupsEl.innerHTML = _renderVerifyTournamentGroupAudit(audit);
+    thirdsEl.innerHTML = _renderVerifyTournamentThirdsAudit(audit);
+    bracketEl.innerHTML = _renderVerifyTournamentBracketAudit(audit);
+}
+
+function _renderVerifyTournamentSummary(audit) {
+    const { summary, duplicatesByRound } = audit;
+    const overallTone = summary.overallPass ? 'text-emerald-300' : (summary.scheduleFailCount + summary.bracketFailCount + summary.groupFailCount > 0 ? 'text-red-300' : 'text-amber-300');
+    const dupCount = Object.values(duplicatesByRound).reduce((sum, arr) => sum + arr.length, 0);
+    const card = (title, value, tone) => `
+        <div class="rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-4">
+            <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">${title}</div>
+            <div class="mt-2 text-xl font-black uppercase ${tone}">${value}</div>
+        </div>`;
+    const scheduleTone = summary.scheduleFailCount === 0 ? 'text-emerald-300' : 'text-red-300';
+    const bracketTone = summary.bracketFailCount === 0 ? 'text-emerald-300' : 'text-red-300';
+    const groupsTone = summary.groupFailCount === 0 ? 'text-emerald-300' : 'text-red-300';
+    const thirdsTone = summary.bestThirdResolved ? 'text-emerald-300' : 'text-amber-300';
+    return `
+        ${card('Schedule Pass', `${summary.schedulePassCount}/${summary.totalMatches}${summary.scheduleFailCount ? ` · ${summary.scheduleFailCount} fail` : ''}`, scheduleTone)}
+        ${card('Bracket Pass', `${summary.bracketPassCount}/32${summary.bracketFailCount ? ` · ${summary.bracketFailCount} fail` : ''}`, bracketTone)}
+        ${card('Groups Verified', `${summary.groupPassCount}/12${summary.groupFailCount ? ` · ${summary.groupFailCount} fail` : ''}`, groupsTone)}
+        ${card('Best 3rd', summary.bestThirdResolved ? 'Resolved' : 'Pending', thirdsTone)}
+        <div class="md:col-span-4 rounded-2xl border ${summary.overallPass ? 'border-emerald-700 bg-emerald-950/30' : 'border-gray-700 bg-gray-900/70'} px-5 py-4 flex items-center justify-between gap-3">
+            <div>
+                <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Overall</div>
+                <div class="mt-1 text-sm font-black uppercase tracking-[0.2em] ${overallTone}">${summary.overallPass ? '✅ All checks passing' : `${summary.scheduleFailCount + summary.bracketFailCount + summary.groupFailCount + dupCount} issue(s) found`}</div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="fetchAdminVerifyTournament()" class="px-3 py-1.5 rounded-lg border border-gray-700 bg-gray-800 text-[10px] font-black uppercase tracking-[0.2em] text-gray-200 hover:border-blue-500/60 hover:text-blue-300">Refresh</button>
+                <button onclick="downloadTournamentVerifyCsv()" class="px-3 py-1.5 rounded-lg border border-emerald-500/50 bg-emerald-950/30 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200 hover:border-emerald-400">Download CSV</button>
+            </div>
+        </div>`;
+}
+
+function _vtIssueBadge(row) {
+    if (row.isFuture && !row.db) return '<span class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-500">Upcoming</span>';
+    if (!row.schedulePass && row.issues.includes('missing_finished')) return '<span class="text-[9px] font-black uppercase tracking-[0.18em] text-red-300">Missing</span>';
+    if (!row.schedulePass) return `<span class="text-[9px] font-black uppercase tracking-[0.18em] text-red-300">Mismatch · ${row.issues.join(',')}</span>`;
+    if (row.bracketPass === false) return `<span class="text-[9px] font-black uppercase tracking-[0.18em] text-red-300">Bracket fail · ${row.issues.join(',')}</span>`;
+    if (row.bracketPass === null && row.stage !== 'Group' && row.db) return '<span class="text-[9px] font-black uppercase tracking-[0.18em] text-amber-300">Provisional</span>';
+    if (row.db) return '<span class="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-300">Pass</span>';
+    return '<span class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-500">—</span>';
+}
+
+function _renderVerifyTournamentMatchTable(audit) {
+    const filter = _verifyTournamentFilter;
+    const visible = audit.matchRows.filter((row) => {
+        if (filter === 'failures') return !row.schedulePass || row.bracketPass === false;
+        return true;
+    });
+    const orphanRowsHtml = audit.orphanRows.length === 0 ? '' : `
+        <div class="rounded-3xl border border-red-700/50 bg-red-950/20 overflow-hidden mt-4">
+            <div class="border-b border-red-700/50 bg-red-900/40 px-5 py-3">
+                <h3 class="text-sm font-black uppercase tracking-[0.2em] text-red-200">Unscheduled DB Rows · ${audit.orphanRows.length}</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-[11px] font-bold text-gray-100">
+                    <thead class="bg-red-950 text-red-200 uppercase text-[9px] tracking-[0.18em] font-black">
+                        <tr><th class="px-3 py-2">Stage</th><th class="px-3 py-2">Date</th><th class="px-3 py-2">Home</th><th class="px-3 py-2">Away</th><th class="px-3 py-2">Score</th></tr>
+                    </thead>
+                    <tbody>
+                        ${audit.orphanRows.map((r) => `<tr><td class="px-3 py-2">${escapeHtml(r.stage || '—')}</td><td class="px-3 py-2">${escapeHtml(r.match_date_manual || '—')}</td><td class="px-3 py-2">${escapeHtml(r.team_home || '—')}</td><td class="px-3 py-2">${escapeHtml(r.team_away || '—')}</td><td class="px-3 py-2">${r.score_home == null ? '—' : `${r.score_home}–${r.score_away}`}</td></tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>`;
+
+    return `
+        <div class="rounded-3xl border border-gray-700 overflow-hidden">
+            <div class="border-b border-gray-700 bg-gray-900/80 px-5 py-4 flex items-center justify-between gap-3">
+                <h3 class="text-sm font-black uppercase tracking-[0.2em] text-white">Match Schedule Audit · ${visible.length}/${audit.matchRows.length}</h3>
+                <div class="flex gap-2">
+                    <button onclick="setVerifyTournamentFilter('all')" class="px-3 py-1.5 rounded-lg border ${filter === 'all' ? 'border-blue-500 text-blue-300' : 'border-gray-700 text-gray-300'} bg-gray-800 text-[10px] font-black uppercase tracking-[0.2em] hover:border-blue-500/60">All</button>
+                    <button onclick="setVerifyTournamentFilter('failures')" class="px-3 py-1.5 rounded-lg border ${filter === 'failures' ? 'border-red-500 text-red-300' : 'border-gray-700 text-gray-300'} bg-gray-800 text-[10px] font-black uppercase tracking-[0.2em] hover:border-red-500/60">Failures Only</button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-[11px] font-bold text-gray-100">
+                    <thead class="bg-gray-950 text-white uppercase text-[9px] tracking-[0.18em] font-black">
+                        <tr>
+                            <th class="px-3 py-2">G#</th>
+                            <th class="px-3 py-2">Stage</th>
+                            <th class="px-3 py-2">Date</th>
+                            <th class="px-3 py-2">Sched Home</th>
+                            <th class="px-3 py-2">Sched Away</th>
+                            <th class="px-3 py-2">DB Home</th>
+                            <th class="px-3 py-2">DB Away</th>
+                            <th class="px-3 py-2 text-center">Score</th>
+                            <th class="px-3 py-2">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-gray-900">
+                        ${visible.map((row) => {
+                            const stageLbl = row.group ? `Group ${row.group}` : row.stage;
+                            const dateLbl = row.schedule.date ? `${row.schedule.date} · ${row.schedule.time || ''}` : '';
+                            const score = row.db && row.db.score_home != null ? `${row.db.score_home}–${row.db.score_away}${row.db.was_extra_time ? ' ET' : ''}` : '—';
+                            const rowTone = !row.schedulePass && !row.isFuture ? 'bg-red-950/20'
+                                : row.bracketPass === false ? 'bg-red-950/20'
+                                : row.bracketPass === null && row.stage !== 'Group' && row.db ? 'bg-amber-950/20'
+                                : row.db ? 'bg-emerald-950/10'
+                                : '';
+                            return `<tr class="${rowTone}">
+                                <td class="px-3 py-2 text-amber-300">G${row.matchNum || '?'}</td>
+                                <td class="px-3 py-2 text-gray-300">${escapeHtml(stageLbl)}</td>
+                                <td class="px-3 py-2 text-gray-300">${escapeHtml(dateLbl)}</td>
+                                <td class="px-3 py-2 text-gray-200">${escapeHtml(row.schedule.home || '—')}</td>
+                                <td class="px-3 py-2 text-gray-200">${escapeHtml(row.schedule.away || '—')}</td>
+                                <td class="px-3 py-2 text-white">${escapeHtml(row.db?.team_home || '—')}</td>
+                                <td class="px-3 py-2 text-white">${escapeHtml(row.db?.team_away || '—')}</td>
+                                <td class="px-3 py-2 text-center text-gray-200">${score}</td>
+                                <td class="px-3 py-2">${_vtIssueBadge(row)}</td>
+                            </tr>`;
+                        }).join('') || '<tr><td colspan="9" class="px-3 py-6 text-center text-xs font-black uppercase tracking-[0.2em] text-gray-500">No rows match this filter.</td></tr>'}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        ${orphanRowsHtml}`;
+}
+
+function _renderVerifyTournamentGroupAudit(audit) {
+    const cards = _buildAdminVerifyGroupCards(audit.standings, audit.mappingContext);
+    const tableRows = audit.groupAudit.map((g) => {
+        const tone = g.pass === true ? 'bg-emerald-950/20' : g.pass === false ? 'bg-red-950/20' : '';
+        const statusLabel = g.pass === true ? '<span class="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-300">Pass</span>'
+            : g.pass === false ? '<span class="text-[9px] font-black uppercase tracking-[0.18em] text-red-300">Fail</span>'
+            : g.status === 'none' ? '<span class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-500">Not started</span>'
+            : '<span class="text-[9px] font-black uppercase tracking-[0.18em] text-amber-300">In progress</span>';
+        return `<tr class="${tone}">
+            <td class="px-3 py-2 text-blue-300">${g.group}</td>
+            <td class="px-3 py-2 text-gray-200">${escapeHtml(g.expectedTop1 || '—')}</td>
+            <td class="px-3 py-2 text-gray-200">${escapeHtml(g.expectedTop2 || '—')}</td>
+            <td class="px-3 py-2 text-white">${escapeHtml(g.actualTop1 || '—')}</td>
+            <td class="px-3 py-2 text-white">${escapeHtml(g.actualTop2 || '—')}</td>
+            <td class="px-3 py-2">${statusLabel}</td>
+        </tr>`;
+    }).join('');
+    return `
+        <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">${cards}</div>
+            <div class="rounded-3xl border border-gray-700 overflow-hidden">
+                <div class="border-b border-gray-700 bg-gray-900/80 px-5 py-3">
+                    <h3 class="text-sm font-black uppercase tracking-[0.2em] text-white">Top-2 Advancement Audit</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-[11px] font-bold text-gray-100">
+                        <thead class="bg-gray-950 text-white uppercase text-[9px] tracking-[0.18em] font-black">
+                            <tr><th class="px-3 py-2">Grp</th><th class="px-3 py-2">Expected #1</th><th class="px-3 py-2">Expected #2</th><th class="px-3 py-2">R32 #1</th><th class="px-3 py-2">R32 #2</th><th class="px-3 py-2">Status</th></tr>
+                        </thead>
+                        <tbody class="bg-gray-900">${tableRows}</tbody>
+                    </table>
+                </div>
+            </div>
+        </div>`;
+}
+
+function _renderVerifyTournamentThirdsAudit(audit) {
+    const { mappingContext, bestThirdAssignments } = audit;
+    const qualifiedSet = audit.bestThirdAudit.qualifiedSet;
+    const thirdsHtml = (mappingContext.allThirds || []).map((team, index) => {
+        const isQualified = qualifiedSet.has(team.name) && mappingContext.isResolvable;
+        const isProvisional = qualifiedSet.has(team.name) && !mappingContext.isResolvable;
+        return `<tr class="${isQualified ? 'bg-emerald-950/25' : ''}">
+            <td class="px-3 py-2 text-gray-400">${index + 1}</td>
+            <td class="px-3 py-2 ${isQualified ? 'text-emerald-300' : 'text-gray-400'}">3${team.group}</td>
+            <td class="px-3 py-2 text-white">${escapeHtml(team.name)}</td>
+            <td class="px-3 py-2 text-center text-gray-200">${team.pts}</td>
+            <td class="px-3 py-2 text-center text-gray-200">${team.gd}</td>
+            <td class="px-3 py-2 text-center text-gray-200">${team.gf}</td>
+            <td class="px-3 py-2 text-center ${isQualified ? 'text-emerald-300' : isProvisional ? 'text-amber-300' : 'text-gray-500'}">${isQualified ? 'IN' : isProvisional ? 'LIVE' : 'OUT'}</td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="7" class="px-3 py-6 text-center text-xs font-black uppercase tracking-[0.2em] text-gray-500">No third-place data yet.</td></tr>';
+
+    const winnerSeedOrder = ['1A','1B','1D','1E','1G','1I','1K','1L'];
+    const mappingAssignments = mappingContext.mappingEntry?.assignments || {};
+    const mappingHtml = winnerSeedOrder.map((winnerSeed) => {
+        const csvSeed = mappingAssignments[winnerSeed] || 'TBD';
+        const slotKey = (typeof THIRD_PLACE_WINNER_SLOT_MAP !== 'undefined') ? THIRD_PLACE_WINNER_SLOT_MAP[winnerSeed] : null;
+        const assignedTeam = slotKey ? bestThirdAssignments.get(slotKey) : null;
+        const winnerTeam = _resolveKnockoutTeam(winnerSeed, audit.standings, [], 0);
+        const slotLabel = slotKey ? slotKey.split(':')[0].toUpperCase() : 'TBD';
+        return `<tr>
+            <td class="px-3 py-2 text-blue-300">${winnerSeed}</td>
+            <td class="px-3 py-2 text-white">${csvSeed}</td>
+            <td class="px-3 py-2 text-gray-200">${assignedTeam ? escapeHtml(assignedTeam.name) : 'TBD'}</td>
+            <td class="px-3 py-2 text-gray-200">${winnerTeam?.name ? escapeHtml(winnerTeam.name) : 'TBD'}</td>
+            <td class="px-3 py-2 text-gray-400">${slotLabel}</td>
+        </tr>`;
+    }).join('');
+
+    return `
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div class="rounded-3xl border border-gray-700 overflow-hidden">
+                <div class="border-b border-gray-700 bg-gray-900/80 px-5 py-3"><h3 class="text-sm font-black uppercase tracking-[0.2em] text-white">Third-Place Ranking</h3></div>
+                <div class="overflow-x-auto"><table class="w-full text-left text-[11px] font-bold text-gray-100"><thead class="bg-gray-950 text-white uppercase text-[9px] tracking-[0.18em] font-black"><tr><th class="px-3 py-2">Pos</th><th class="px-3 py-2">Seed</th><th class="px-3 py-2">Team</th><th class="px-3 py-2 text-center">Pts</th><th class="px-3 py-2 text-center">GD</th><th class="px-3 py-2 text-center">GF</th><th class="px-3 py-2 text-center">Status</th></tr></thead><tbody class="bg-gray-900">${thirdsHtml}</tbody></table></div>
+            </div>
+            <div class="rounded-3xl border border-gray-700 overflow-hidden">
+                <div class="border-b border-gray-700 bg-gray-900/80 px-5 py-3"><h3 class="text-sm font-black uppercase tracking-[0.2em] text-white">FIFA Annex C Mapping</h3></div>
+                <div class="overflow-x-auto"><table class="w-full text-left text-[11px] font-bold text-gray-100"><thead class="bg-gray-950 text-white uppercase text-[9px] tracking-[0.18em] font-black"><tr><th class="px-3 py-2">Winner Seed</th><th class="px-3 py-2">CSV Seed</th><th class="px-3 py-2">Assigned Team</th><th class="px-3 py-2">Plays Against</th><th class="px-3 py-2">R32 Slot</th></tr></thead><tbody class="bg-gray-900">${mappingHtml}</tbody></table></div>
+            </div>
+        </div>`;
+}
+
+function _renderVerifyTournamentBracketAudit(audit) {
+    const stages = ['R32','R16','Quarters','Semis','Finals'];
+    const dupes = audit.duplicatesByRound;
+    const dupeHtml = stages.flatMap((stage) => dupes[stage] || []).length === 0
+        ? '<div class="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-300">✓ No duplicate teams within any round</div>'
+        : `<div class="text-[10px] font-black uppercase tracking-[0.18em] text-red-300">⚠ Duplicates: ${stages.filter((s) => (dupes[s] || []).length).map((s) => `${s}: ${dupes[s].join(', ')}`).join(' · ')}</div>`;
+
+    const sectionForStage = (stage) => {
+        const rows = audit.bracketAudit.filter((b) => b.stage === stage);
+        if (rows.length === 0) return '';
+        const trs = rows.map((b) => {
+            const tone = b.bracketPass === false ? 'bg-red-950/20'
+                : b.bracketPass === null && b.dbHome ? 'bg-amber-950/20'
+                : b.dbHome ? 'bg-emerald-950/10' : '';
+            const statusLabel = b.bracketPass === true ? '<span class="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-300">Pass</span>'
+                : b.bracketPass === false ? `<span class="text-[9px] font-black uppercase tracking-[0.18em] text-red-300">Fail · ${b.issues.join(',')}</span>`
+                : b.dbHome ? '<span class="text-[9px] font-black uppercase tracking-[0.18em] text-amber-300">Provisional</span>'
+                : '<span class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-500">—</span>';
+            return `<tr class="${tone}">
+                <td class="px-3 py-2 text-gray-400">${escapeHtml(b.slotKey || '')}</td>
+                <td class="px-3 py-2 text-amber-300">G${b.matchNum || '?'}</td>
+                <td class="px-3 py-2 text-gray-300">${escapeHtml(b.schedHome || '')}</td>
+                <td class="px-3 py-2 text-blue-300">${escapeHtml(b.resolvedHome?.name || 'TBD')}</td>
+                <td class="px-3 py-2 text-white">${escapeHtml(b.dbHome || '—')}</td>
+                <td class="px-3 py-2 text-gray-300">${escapeHtml(b.schedAway || '')}</td>
+                <td class="px-3 py-2 text-blue-300">${escapeHtml(b.resolvedAway?.name || 'TBD')}</td>
+                <td class="px-3 py-2 text-white">${escapeHtml(b.dbAway || '—')}</td>
+                <td class="px-3 py-2">${statusLabel}</td>
+            </tr>`;
+        }).join('');
+        return `
+            <div class="rounded-3xl border border-gray-700 overflow-hidden">
+                <div class="border-b border-gray-700 bg-gray-900/80 px-5 py-3"><h3 class="text-sm font-black uppercase tracking-[0.2em] text-white">${stage}</h3></div>
+                <div class="overflow-x-auto"><table class="w-full text-left text-[11px] font-bold text-gray-100"><thead class="bg-gray-950 text-white uppercase text-[9px] tracking-[0.18em] font-black"><tr><th class="px-3 py-2">Slot</th><th class="px-3 py-2">G#</th><th class="px-3 py-2">Sched H</th><th class="px-3 py-2">Resolved H</th><th class="px-3 py-2">DB H</th><th class="px-3 py-2">Sched A</th><th class="px-3 py-2">Resolved A</th><th class="px-3 py-2">DB A</th><th class="px-3 py-2">Status</th></tr></thead><tbody class="bg-gray-900">${trs}</tbody></table></div>
+            </div>`;
+    };
+
+    return `
+        <div class="space-y-4">
+            <div class="rounded-2xl border border-gray-700 bg-gray-900/40 px-4 py-3">${dupeHtml}</div>
+            ${stages.map(sectionForStage).join('')}
+        </div>`;
+}
+
+function setVerifyTournamentFilter(filter) {
+    _verifyTournamentFilter = filter;
+    if (_verifyTournamentLastAudit) {
+        const matchesEl = document.getElementById('admin-vt-section-matches');
+        if (matchesEl) matchesEl.innerHTML = _renderVerifyTournamentMatchTable(_verifyTournamentLastAudit);
+    }
+}
+
+function downloadTournamentVerifyCsv() {
+    const audit = _verifyTournamentLastAudit;
+    if (!audit) {
+        if (typeof showToast === 'function') showToast('Run audit first.');
+        return;
+    }
+    const header = ['match_num','stage','group','date_pt','time_pt','schedule_home','schedule_away','db_home','db_away','score_home','score_away','was_extra_time','is_finished','manual_override','auto_synced_at','schedule_pass','bracket_pass','issues'];
+    const rows = [header];
+    audit.matchRows.forEach((row) => {
+        const db = row.db || {};
+        rows.push([
+            row.matchNum || '',
+            row.stage || '',
+            row.group || '',
+            row.schedule.date || '',
+            row.schedule.time || '',
+            row.schedule.home || '',
+            row.schedule.away || '',
+            db.team_home || '',
+            db.team_away || '',
+            db.score_home == null ? '' : db.score_home,
+            db.score_away == null ? '' : db.score_away,
+            db.was_extra_time == null ? '' : (db.was_extra_time ? 'true' : 'false'),
+            db.is_finished == null ? '' : (db.is_finished ? 'true' : 'false'),
+            db.manual_override == null ? '' : (db.manual_override ? 'true' : 'false'),
+            db.auto_synced_at || '',
+            row.schedulePass ? 'Y' : 'N',
+            row.bracketPass === null ? 'N/A' : (row.bracketPass ? 'Y' : 'N'),
+            row.issues.join(';')
+        ]);
+    });
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16);
+    downloadCsv(`wc-pool-tournament-verify-${ts}.csv`, rows);
 }
 
 function _fallbackBestThirdTeamForGroups(allowedGroups, standings) {
@@ -1850,10 +2580,10 @@ function renderKnockoutBracket(matchesCache) {
     const useSeedStatusColours = !_isKnockoutFieldLocked(standings);
     if (guide) guide.classList.toggle('hidden', !useSeedStatusColours);
 
-    const SLOT_H = 68;
+    const SLOT_H = 80;
     const TOTAL_H = SLOT_H * 16;
     const HEADER_H = 64;
-    const CARD_H = 66;
+    const CARD_H = 74;
     const COLUMN_GAP = 20;
     const COLUMN_W = 196;
     const CARD_W = 184;
@@ -1899,6 +2629,9 @@ function renderKnockoutBracket(matchesCache) {
         const matchTag = matchMeta.label
             ? `<div class="px-2.5 pt-2 pb-1 text-[8px] font-black uppercase tracking-[0.2em] ${matchMeta.isTitleMatch ? 'text-amber-600' : matchMeta.isThirdPlace ? 'text-sky-600' : 'text-gray-400'}">${matchMeta.label}</div>`
             : '';
+        const matchNumberTag = matchMeta.matchNumber
+            ? `<div class="px-2.5 pt-1 text-[7px] font-black uppercase tracking-[0.2em] text-gray-300 leading-none">G${matchMeta.matchNumber}</div>`
+            : '';
 
         if (logged) {
             const hWon = logged.score_home > logged.score_away;
@@ -1914,6 +2647,7 @@ function renderKnockoutBracket(matchesCache) {
             );
             return `
                 <div class="${wrapperClass} overflow-hidden" style="width:${matchMeta.width || CARD_W}px">
+                    ${matchNumberTag}
                     ${matchTag}
                     <div onclick="showTeamOwners('${logged.team_home.replace(/'/g, "\\'")}')" class="theme-hover-row cursor-pointer px-2.5 py-1.5 flex items-center justify-between gap-1 ${hWon ? 'bg-green-50' : ''} transition-colors">
                         <div class="flex items-center gap-1 min-w-0">
@@ -1991,6 +2725,7 @@ function renderKnockoutBracket(matchesCache) {
         const hasAny = homeRes.status !== 'none' || awayRes.status !== 'none';
         return `
             <div class="${hasAny ? wrapperClass : 'rounded-xl border border-dashed border-gray-200 bg-gray-50'} overflow-hidden" style="width:${matchMeta.width || CARD_W}px">
+                ${matchNumberTag}
                 ${matchTag}
                 ${_teamRow(homeRes, rawHomeLabel)}
                 <div class="h-px bg-gray-100"></div>
@@ -2021,7 +2756,8 @@ function renderKnockoutBracket(matchesCache) {
                     ? (slotIdx === 0 ? 'Third Place Match' : 'World Cup Final')
                     : '',
                 isThirdPlace: stage === 'Finals' && slotIdx === 0,
-                isTitleMatch: stage === 'Finals' && slotIdx === 1
+                isTitleMatch: stage === 'Finals' && slotIdx === 1,
+                matchNumber: m.match || null
             };
             const centerY = stage === 'Finals'
                 ? (slotIdx === 1 ? sceneMidY - 84 : sceneMidY + 84)
@@ -2571,8 +3307,8 @@ function _managerRenderRow(entry, apiIndex, dbCache, stageCounters) {
     const isExpanded = _managerExpandedKey === rowKey;
     const safeKey = rowKey.replace(/'/g, "\\'");
 
-    const homeLabel = entry.home;
-    const awayLabel = entry.away;
+    const homeLabel = dbRow?.team_home || entry.home;
+    const awayLabel = dbRow?.team_away || entry.away;
     const homeFlag = (typeof teams !== 'undefined' ? teams : []).find(t => t.name === homeLabel)?.flag || '';
     const awayFlag = (typeof teams !== 'undefined' ? teams : []).find(t => t.name === awayLabel)?.flag || '';
 
@@ -2612,15 +3348,15 @@ function _managerRenderRow(entry, apiIndex, dbCache, stageCounters) {
         // Mismatch coloring lifted to outer scope (uses isMismatched defined later)
         rightContent = `
             <div class="flex items-center justify-between gap-2">
-                <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-500">${apiTimeChip}</div>
+                <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-500">${apiTimeChip}${entry.match ? ` · <span class="text-amber-400">G${entry.match}</span>` : ''}</div>
                 ${_managerStatusBadge(apiMatch.api_status)}
             </div>
-            <div class="flex items-center justify-between gap-2">
+            <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                 <div class="flex items-center gap-2 min-w-0">
                     <span class="text-lg shrink-0">${apiHomeFlag}</span>
                     <span class="font-black text-sm text-white truncate">${escapeHtml(apiHome)}</span>
                 </div>
-                ${apiScore}
+                <div class="justify-self-center">${apiScore}</div>
                 <div class="flex items-center gap-2 min-w-0 justify-end">
                     <span class="font-black text-sm text-white truncate">${escapeHtml(apiAway)}</span>
                     <span class="text-lg shrink-0">${apiAwayFlag}</span>
@@ -2658,18 +3394,20 @@ function _managerRenderRow(entry, apiIndex, dbCache, stageCounters) {
                 <div class="p-4 space-y-2">
                     <div class="flex items-center justify-between gap-2">
                         <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-500">
-                            ${entry.time ? _formatScheduleTime(entry.time) + ' PT' : ''}
+                            ${entry.date ? _formatScheduleDate(entry.date) + ' · ' : ''}${entry.time ? _formatScheduleTime(entry.time) + ' PT' : ''}
+                            ${entry.match ? ` · <span class="text-amber-400">G${entry.match}</span>` : ''}
                             ${entry.group ? ` · Group ${entry.group}` : ''}
                             ${!entry.group && entry.stage ? ` · ${entry.stage}` : ''}
+                            ${entry.stage && entry.stage !== 'Group' ? ` · <span class="text-gray-400">${escapeHtml(entry.home)} vs ${escapeHtml(entry.away)}${entry.awayCandidates ? ' ' + entry.awayCandidates.join('') : ''}</span>` : ''}
                         </div>
                         ${leftBadge}
                     </div>
-                    <div class="flex items-center justify-between gap-2">
+                    <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                         <div class="flex items-center gap-2 min-w-0">
                             <span class="text-lg shrink-0">${homeFlag || ''}</span>
                             <span class="font-black text-sm text-white truncate">${escapeHtml(homeLabel)}</span>
                         </div>
-                        ${leftScore}
+                        <div class="justify-self-center">${leftScore}</div>
                         <div class="flex items-center gap-2 min-w-0 justify-end">
                             <span class="font-black text-sm text-white truncate">${escapeHtml(awayLabel)}</span>
                             <span class="text-lg shrink-0">${awayFlag || ''}</span>
@@ -2864,6 +3602,7 @@ function showAdminTab(tabId) {
         _syncScheduleBrowserToCurrentProgress();
     }
     if (tabId === 'verify') fetchAdminKnockoutVerify();
+    if (tabId === 'verifytournament') fetchAdminVerifyTournament();
     if (tabId === 'matchsync') {
         // Auto-load on first open (read-only, no execute)
         const rowsEl = document.getElementById('matchsync-rows');
@@ -10041,7 +10780,10 @@ Object.assign(window, {
     insertMention,
     saveEditMessage,
     cancelEditMessage,
-    undoSendMessage
+    undoSendMessage,
+    fetchAdminVerifyTournament,
+    setVerifyTournamentFilter,
+    downloadTournamentVerifyCsv
 });
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -10052,6 +10794,7 @@ if (typeof module !== 'undefined' && module.exports) {
         _getBestThirdPlaceTeams,
         _getBestThirdSlots,
         _buildBestThirdAssignments,
+        _buildFallbackBestThirdAssignments,
         _resolveKnockoutMatchTeam,
         _buildDerivedTeamStatusRows
     };
