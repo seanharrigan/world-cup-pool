@@ -397,3 +397,81 @@ test('uniqueness-safe fallback assigns Best 3rd slots without duplicates when of
             `${team.name} (group ${team.group}) is not allowed in ${slot.key} (${slot.allowedGroups.join(',')})`);
     }
 });
+
+// ── Randomized stress test ──────────────────────────────────────────────────
+// Quick statistical guard against regressions. The full N-run stress lives at
+// `npm run stress` (see tests/stress-sim.mjs). 25 runs here adds ~100ms to
+// `npm test` and exercises the H2H + Annex C + dedup paths many times over.
+
+function simulateRandomTournament(api) {
+    const randScore = () => [Math.floor(Math.random() * 5), Math.floor(Math.random() * 5)];
+
+    const groupMatches = api.GROUP_STAGE_SCHEDULE.map((m, idx) => {
+        const [h, a] = randScore();
+        return {
+            id: idx + 1, stage: 'Group', match_date_manual: m.date,
+            team_home: m.home, team_away: m.away,
+            score_home: h, score_away: a,
+            is_finished: true, was_extra_time: false
+        };
+    });
+
+    const standings = api.computeGroupStandings(groupMatches);
+    const assigns = api._buildBestThirdAssignments(standings);
+    const memo = {};
+    let allMatches = [...groupMatches];
+
+    const cascadeStage = (stage, idBase) => {
+        const sched = api.KNOCKOUT_SCHEDULE.filter((m) => m.stage === stage);
+        const newRows = sched.map((s, idx) => {
+            const homeRes = api._resolveKnockoutMatchTeam(s, 'home', standings, assigns, { matchesCache: allMatches, memo });
+            const awayRes = api._resolveKnockoutMatchTeam(s, 'away', standings, assigns, { matchesCache: allMatches, memo });
+            let [h, a] = randScore();
+            if (h === a) h += 1;
+            return {
+                id: idBase + idx, stage, match_date_manual: s.date,
+                team_home: homeRes.name, team_away: awayRes.name,
+                score_home: h, score_away: a,
+                is_finished: true, was_extra_time: false
+            };
+        });
+        allMatches = [...allMatches, ...newRows];
+    };
+
+    cascadeStage('R32', 200);
+    cascadeStage('R16', 300);
+    cascadeStage('Quarters', 400);
+    cascadeStage('Semis', 500);
+    cascadeStage('Finals', 600);
+
+    return api.buildTournamentAudit(allMatches);
+}
+
+test('25 randomized tournaments all pass schedule, bracket, group, structural, and dedup checks', () => {
+    const api = loadTournamentApi();
+    const RUNS = 25;
+    let totalDupes = 0;
+    const failures = [];
+
+    for (let i = 0; i < RUNS; i++) {
+        const audit = simulateRandomTournament(api);
+        const dupes = Object.values(audit.duplicatesByRound).reduce((s, arr) => s + arr.length, 0);
+        totalDupes += dupes;
+
+        if (!audit.summary.overallPass || dupes > 0
+            || audit.summary.bracketPassCount !== 32
+            || audit.summary.groupPassCount !== 12) {
+            failures.push({
+                run: i + 1,
+                schedule: audit.summary.scheduleFailCount,
+                bracket: audit.summary.bracketFailCount,
+                groups: audit.summary.groupFailCount,
+                structural: audit.summary.structuralFailCount,
+                dupes
+            });
+        }
+    }
+
+    assert.equal(totalDupes, 0, `expected 0 duplicates across ${RUNS} runs, got ${totalDupes}`);
+    assert.deepEqual(failures, [], `expected no failures, got ${failures.length}: ${JSON.stringify(failures.slice(0, 3))}`);
+});
