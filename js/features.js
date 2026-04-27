@@ -2586,15 +2586,50 @@ function _managerRenderRow(entry, apiIndex, dbCache, stageCounters) {
     // RIGHT column — API
     let rightContent;
     if (!apiMatch) {
-        rightContent = '<span class="text-[10px] font-black uppercase tracking-[0.18em] text-gray-600">no api data</span>';
-    } else {
-        const apiScore = (apiMatch.score_home != null && apiMatch.score_away != null)
-            ? `<span class="text-xl font-black font-mono text-white">${apiMatch.score_home}–${apiMatch.score_away}</span>${apiMatch.was_extra_time ? '<span class="text-[9px] font-black text-yellow-300 ml-1">ET</span>' : ''}`
-            : '<span class="text-xl font-black font-mono text-gray-700">— : —</span>';
         rightContent = `
-            <div class="flex flex-col items-end gap-1">
-                ${_managerStatusBadge(apiMatch.api_status)}
-                ${apiScore}
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-600">no api data</div>
+                </div>
+                <div class="text-[10px] font-black uppercase tracking-[0.18em] text-gray-600">match not yet listed by football-data.org</div>
+            </div>`;
+    } else {
+        const apiHome = apiMatch.team_home || '—';
+        const apiAway = apiMatch.team_away || '—';
+        const apiHomeFlag = (typeof teams !== 'undefined' ? teams : []).find(t => t.name === apiHome)?.flag || '';
+        const apiAwayFlag = (typeof teams !== 'undefined' ? teams : []).find(t => t.name === apiAway)?.flag || '';
+        const apiUtc = apiMatch.utc_date ? new Date(apiMatch.utc_date) : null;
+        const apiTimeChip = apiUtc
+            ? `${apiUtc.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Vancouver' })} · ${apiUtc.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Vancouver' })} PT`
+            : '';
+        const apiScore = (apiMatch.score_home != null && apiMatch.score_away != null)
+            ? `<div class="flex items-center gap-2"><span class="text-2xl font-black font-mono text-white">${apiMatch.score_home}–${apiMatch.score_away}</span>${apiMatch.was_extra_time ? '<span class="text-[9px] font-black text-yellow-300">ET</span>' : ''}</div>`
+            : '<div class="text-2xl font-black font-mono text-gray-700">— : —</div>';
+        // Mismatch detection — flag if API team-pair differs from schedule entry
+        const placeholderRe = /^[12][A-L]$|^W:|^L:|^Best /;
+        const expectsRealNames = !placeholderRe.test(homeLabel) && !placeholderRe.test(awayLabel);
+        const isMismatch = expectsRealNames && apiHome && apiAway && !(
+            (apiHome === homeLabel && apiAway === awayLabel) ||
+            (apiHome === awayLabel && apiAway === homeLabel)
+        );
+        rightContent = `
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-500">${apiTimeChip}</div>
+                    ${_managerStatusBadge(apiMatch.api_status)}
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-lg shrink-0">${apiHomeFlag}</span>
+                        <span class="font-black text-sm ${isMismatch ? 'text-orange-300' : 'text-white'} truncate">${escapeHtml(apiHome)}</span>
+                    </div>
+                    ${apiScore}
+                    <div class="flex items-center gap-2 min-w-0 justify-end">
+                        <span class="font-black text-sm ${isMismatch ? 'text-orange-300' : 'text-white'} truncate">${escapeHtml(apiAway)}</span>
+                        <span class="text-lg shrink-0">${apiAwayFlag}</span>
+                    </div>
+                </div>
+                ${isMismatch ? '<div class="text-[9px] font-black uppercase tracking-[0.15em] text-orange-300">⚠️ Differs from schedule entry</div>' : ''}
             </div>`;
     }
 
