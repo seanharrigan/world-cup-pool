@@ -2605,38 +2605,51 @@ function _managerRenderRow(entry, apiIndex, dbCache, stageCounters) {
         const apiScore = (apiMatch.score_home != null && apiMatch.score_away != null)
             ? `<div class="flex items-center gap-2"><span class="text-2xl font-black font-mono text-white">${apiMatch.score_home}–${apiMatch.score_away}</span>${apiMatch.was_extra_time ? '<span class="text-[9px] font-black text-yellow-300">ET</span>' : ''}</div>`
             : '<div class="text-2xl font-black font-mono text-gray-700">— : —</div>';
-        // Mismatch detection — flag if API team-pair differs from schedule entry
-        const placeholderRe = /^[12][A-L]$|^W:|^L:|^Best /;
-        const expectsRealNames = !placeholderRe.test(homeLabel) && !placeholderRe.test(awayLabel);
-        const isMismatch = expectsRealNames && apiHome && apiAway && !(
-            (apiHome === homeLabel && apiAway === awayLabel) ||
-            (apiHome === awayLabel && apiAway === homeLabel)
-        );
+        // Mismatch coloring lifted to outer scope (uses isMismatched defined later)
         rightContent = `
-            <div class="flex flex-col gap-2">
-                <div class="flex items-center justify-between gap-2">
-                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-500">${apiTimeChip}</div>
-                    ${_managerStatusBadge(apiMatch.api_status)}
+            <div class="flex items-center justify-between gap-2">
+                <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-500">${apiTimeChip}</div>
+                ${_managerStatusBadge(apiMatch.api_status)}
+            </div>
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="text-lg shrink-0">${apiHomeFlag}</span>
+                    <span class="font-black text-sm text-white truncate">${escapeHtml(apiHome)}</span>
                 </div>
-                <div class="flex items-center justify-between gap-2">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <span class="text-lg shrink-0">${apiHomeFlag}</span>
-                        <span class="font-black text-sm ${isMismatch ? 'text-orange-300' : 'text-white'} truncate">${escapeHtml(apiHome)}</span>
-                    </div>
-                    ${apiScore}
-                    <div class="flex items-center gap-2 min-w-0 justify-end">
-                        <span class="font-black text-sm ${isMismatch ? 'text-orange-300' : 'text-white'} truncate">${escapeHtml(apiAway)}</span>
-                        <span class="text-lg shrink-0">${apiAwayFlag}</span>
-                    </div>
+                ${apiScore}
+                <div class="flex items-center gap-2 min-w-0 justify-end">
+                    <span class="font-black text-sm text-white truncate">${escapeHtml(apiAway)}</span>
+                    <span class="text-lg shrink-0">${apiAwayFlag}</span>
                 </div>
-                ${isMismatch ? '<div class="text-[9px] font-black uppercase tracking-[0.15em] text-orange-300">⚠️ Differs from schedule entry</div>' : ''}
             </div>`;
     }
 
     const editForm = isExpanded ? _managerEditForm(entry, dbRow, safeKey) : '';
 
+    // Decide row container styling: red if mismatched, blue if expanded, gray otherwise
+    const placeholderRe = /^[12][A-L]$|^W:|^L:|^Best /;
+    const expectsRealNames = !placeholderRe.test(homeLabel) && !placeholderRe.test(awayLabel);
+    const apiHome = apiMatch?.team_home;
+    const apiAway = apiMatch?.team_away;
+    const isMismatched = expectsRealNames && apiHome && apiAway && !(
+        (apiHome === homeLabel && apiAway === awayLabel) ||
+        (apiHome === awayLabel && apiAway === homeLabel)
+    );
+    const containerClass = isMismatched
+        ? 'border-red-500/60 bg-red-950/20'
+        : isExpanded
+            ? 'border-blue-500/60 bg-gray-900/50'
+            : 'border-gray-800 bg-gray-900/50';
+
+    // Import button — show when API has a FINISHED score AND teams match AND left isn't manual-override
+    const apiHasResult = apiMatch && apiMatch.api_status === 'FINISHED'
+        && apiMatch.score_home != null && apiMatch.score_away != null;
+    const canImport = apiHasResult && !isMismatched && !dbRow?.manual_override;
+    const apiScoreEqualsDb = dbRow && apiMatch && dbRow.score_home === apiMatch.score_home && dbRow.score_away === apiMatch.score_away;
+    const showImportBtn = canImport && (!dbRow || !apiScoreEqualsDb);
+
     return `
-        <div class="rounded-2xl border ${isExpanded ? 'border-blue-500/60' : 'border-gray-800'} bg-gray-900/50 overflow-hidden transition-colors">
+        <div class="rounded-2xl border ${containerClass} overflow-hidden transition-colors">
             <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-800">
                 <div class="p-4 space-y-2">
                     <div class="flex items-center justify-between gap-2">
@@ -2658,17 +2671,66 @@ function _managerRenderRow(entry, apiIndex, dbCache, stageCounters) {
                             <span class="text-lg shrink-0">${awayFlag || ''}</span>
                         </div>
                     </div>
-                    <div class="flex justify-end pt-1">
+                    <div class="flex justify-end gap-2 pt-1">
+                        ${showImportBtn ? `<button onclick="managerImportApi('${safeKey}')" class="px-3 py-1 rounded-lg border border-green-500/50 bg-green-950/40 text-[10px] font-black uppercase tracking-[0.18em] text-green-300 hover:bg-green-900/50 hover:border-green-400 transition-colors">Import API</button>` : ''}
                         <button onclick="toggleManagerEdit('${safeKey}')" class="px-3 py-1 rounded-lg border ${isExpanded ? 'border-blue-500 text-blue-300' : 'border-gray-700 text-gray-300'} bg-gray-800 text-[10px] font-black uppercase tracking-[0.18em] hover:border-blue-500/60 hover:text-blue-300 transition-colors">${isExpanded ? 'Cancel' : editLabel}</button>
                     </div>
                 </div>
-                <div class="p-4 bg-gray-950/40">
-                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-600 mb-2">football-data.org</div>
+                <div class="p-4 ${isMismatched ? 'bg-red-950/20' : 'bg-gray-950/40'} space-y-2">
                     ${rightContent}
+                    ${isMismatched ? '<div class="text-[9px] font-black uppercase tracking-[0.15em] text-red-300">⚠️ API teams differ from schedule</div>' : ''}
                 </div>
             </div>
             ${editForm}
         </div>`;
+}
+
+async function managerImportApi(safeKey) {
+    // Find the entry + apiMatch from current state
+    const allEntries = [...GROUP_STAGE_SCHEDULE, ...KNOCKOUT_SCHEDULE];
+    const entry = allEntries.find(e => (e.slotKey || `${e.home}|${e.away}|${e.date}`) === safeKey);
+    if (!entry) return;
+    const apiIndex = _managerBuildApiIndex();
+    const stageCounters = {};
+    // Walk the schedule in same order as render so the counter ends up right
+    for (const e of allEntries) {
+        if ((e.slotKey || `${e.home}|${e.away}|${e.date}`) === safeKey) break;
+        _managerFindApiMatch(e, apiIndex, stageCounters);
+    }
+    const apiMatch = _managerFindApiMatch(entry, apiIndex, stageCounters);
+    if (!apiMatch || apiMatch.api_status !== 'FINISHED' || apiMatch.score_home == null || apiMatch.score_away == null) {
+        showToast?.('No FINISHED API result for this match.');
+        return;
+    }
+    const dbCache = _scheduleBrowserLoggedCache || [];
+    const dbRow = _managerFindDbRow(entry, dbCache);
+    const stage = entry.stage || (entry.group ? 'Group' : '');
+    const payload = {
+        team_home: apiMatch.team_home,
+        team_away: apiMatch.team_away,
+        score_home: apiMatch.score_home,
+        score_away: apiMatch.score_away,
+        stage,
+        is_finished: true,
+        match_date_manual: entry.date,
+        was_extra_time: !!apiMatch.was_extra_time,
+        manual_override: false,
+        auto_synced_at: new Date().toISOString(),
+    };
+    try {
+        let error;
+        if (dbRow?.id) {
+            ({ error } = await supabaseClient.from('matches').update(payload).eq('id', dbRow.id));
+        } else {
+            ({ error } = await supabaseClient.from('matches').insert([{ ...payload, match_date: new Date().toISOString() }]));
+        }
+        if (error) throw error;
+        showToast?.('Imported from API.');
+        await fetchAdminHistory();
+        _renderMatchManager();
+    } catch (err) {
+        showToast?.(`Import failed: ${err.message || String(err)}`);
+    }
 }
 
 function _managerEditForm(entry, dbRow, safeKey) {
