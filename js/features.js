@@ -1797,6 +1797,11 @@ function buildTournamentAudit(matchesCache) {
         duplicatesByRound[stage] = [...dupes];
     });
 
+    // Independent structural checks (do NOT reuse computeGroupStandings,
+    // _buildBestThirdAssignments, or _resolveKnockoutMatchTeam — pure
+    // parallel implementation so a bug in those functions can't hide).
+    const structural = _buildStructuralAudit(dbRows, standings, matchRows);
+
     // Summary counts
     const schedulePassCount = matchRows.filter((r) => r.schedulePass).length;
     const scheduleFailCount = matchRows.filter((r) => !r.schedulePass && !r.isFuture).length;
@@ -1804,7 +1809,11 @@ function buildTournamentAudit(matchesCache) {
     const bracketFailCount = matchRows.filter((r) => r.bracketPass === false).length;
     const groupPassCount = groupAudit.filter((g) => g.pass === true).length;
     const groupFailCount = groupAudit.filter((g) => g.pass === false).length;
+    const structuralFailCount = structural.standingsRecompute.mismatches.length
+        + structural.r32GroupCheck.issues.length
+        + structural.cascadeCheck.issues.length;
     const overallPass = scheduleFailCount === 0 && bracketFailCount === 0 && groupFailCount === 0
+        && structuralFailCount === 0
         && Object.values(duplicatesByRound).every((arr) => arr.length === 0);
 
     return {
@@ -1817,6 +1826,7 @@ function buildTournamentAudit(matchesCache) {
         bestThirdAudit,
         bracketAudit,
         duplicatesByRound,
+        structural,
         summary: {
             totalMatches: matchRows.length,
             dbMatchCount: dbRows.length,
@@ -1826,8 +1836,148 @@ function buildTournamentAudit(matchesCache) {
             bracketFailCount,
             groupPassCount,
             groupFailCount,
+            structuralFailCount,
             bestThirdResolved: !!mappingContext.isResolvable,
             overallPass
+        }
+    };
+}
+
+// Parallel-implementation auditor. Independent of computeGroupStandings,
+// _buildBestThirdAssignments, _resolveKnockoutMatchTeam — anything those
+// functions might silently agree with the simulator on, this catches.
+function _buildStructuralAudit(dbRows, computedStandings, matchRows) {
+    const groupSched = (typeof GROUP_STAGE_SCHEDULE !== 'undefined' ? GROUP_STAGE_SCHEDULE : []);
+    const koSched = (typeof KNOCKOUT_SCHEDULE !== 'undefined' ? KNOCKOUT_SCHEDULE : []);
+    const teamLookup = new Map((typeof teams !== 'undefined' ? teams : []).map((t) => [t.name, t]));
+
+    // 1. Parallel standings recompute (raw stats only — no sort)
+    const parallelStats = {};
+    'ABCDEFGHIJKL'.split('').forEach((g) => {
+        const sched = groupSched.filter((m) => m.group === g);
+        const names = [...new Set(sched.flatMap((m) => [m.home, m.away]))];
+        const stats = {};
+        names.forEach((n) => { stats[n] = { name: n, group: g, pts: 0, gd: 0, gf: 0 }; });
+        dbRows.filter((r) => r.stage === 'Group').forEach((r) => {
+            if (!stats[r.team_home] || !stats[r.team_away]) return;
+            stats[r.team_home].gf += r.score_home;
+            stats[r.team_home].gd += r.score_home - r.score_away;
+            stats[r.team_away].gf += r.score_away;
+            stats[r.team_away].gd += r.score_away - r.score_home;
+            if (r.score_home > r.score_away) stats[r.team_home].pts += 3;
+            else if (r.score_home < r.score_away) stats[r.team_away].pts += 3;
+            else { stats[r.team_home].pts += 1; stats[r.team_away].pts += 1; }
+        });
+        parallelStats[g] = stats;
+    });
+
+    const standingsMismatches = [];
+    Object.entries(computedStandings).forEach(([g, group]) => {
+        group.teams.forEach((t) => {
+            const p = parallelStats[g]?.[t.name];
+            if (!p) {
+                standingsMismatches.push({ group: g, team: t.name, msg: 'team missing from parallel recompute' });
+                return;
+            }
+            if (p.pts !== t.pts || p.gd !== t.gd || p.gf !== t.gf) {
+                standingsMismatches.push({
+                    group: g,
+                    team: t.name,
+                    msg: `pts ${p.pts}/${t.pts}, gd ${p.gd}/${t.gd}, gf ${p.gf}/${t.gf}`
+                });
+            }
+        });
+    });
+
+    // 2. R32 group-letter sanity (independent of _resolveKnockoutMatchTeam)
+    // Iterates over matchRows (already joined by team-pair in the main audit),
+    // not by date — Jun 29/30/Jul 1-3 each have 3 R32 matches, so date-only
+    // joining was misaligning slots. Team-pair joining is itself a structural
+    // check on the schedule, so reusing it here doesn't compromise independence.
+    const r32Issues = [];
+    const r32Rows = (matchRows || []).filter((row) => row.stage === 'R32' && row.db);
+    r32Rows.forEach((row) => {
+        const entry = koSched.find((m) => m.slotKey === row.schedule.slotKey);
+        if (!entry) return;
+        const checkSide = (label, dbTeamName, side) => {
+            if (!dbTeamName) return;
+            const team = teamLookup.get(dbTeamName);
+            if (!team) {
+                r32Issues.push({ slot: entry.slotKey, side, msg: `unknown team "${dbTeamName}"` });
+                return;
+            }
+            if (/^[12][A-L]$/.test(label)) {
+                const expectedGroup = label[1];
+                if (team.group !== expectedGroup) {
+                    r32Issues.push({
+                        slot: entry.slotKey,
+                        side,
+                        msg: `${dbTeamName} (group ${team.group}) doesn't match slot label ${label}`
+                    });
+                }
+            } else if (label === 'Best 3rd') {
+                const allowed = side === 'home' ? (entry.homeCandidates || []) : (entry.awayCandidates || []);
+                if (allowed.length && !allowed.includes(team.group)) {
+                    r32Issues.push({
+                        slot: entry.slotKey,
+                        side,
+                        msg: `${dbTeamName} (group ${team.group}) not in allowedGroups [${allowed.join(',')}]`
+                    });
+                }
+            }
+        };
+        // matchRows joins by team-pair in either order — the API may store
+        // home/away swapped relative to schedule. Try both and keep the
+        // alignment that produces fewer issues.
+        const tryAlignment = (dbHome, dbAway) => {
+            const beforeCount = r32Issues.length;
+            checkSide(entry.home, dbHome, 'home');
+            checkSide(entry.away, dbAway, 'away');
+            return r32Issues.length - beforeCount;
+        };
+        const issuesA = tryAlignment(row.db.team_home, row.db.team_away);
+        if (issuesA > 0) {
+            const cutoff = r32Issues.length - issuesA;
+            const issuesB = tryAlignment(row.db.team_away, row.db.team_home);
+            if (issuesB < issuesA) r32Issues.splice(cutoff, issuesA);
+            else r32Issues.splice(r32Issues.length - issuesB, issuesB);
+        }
+    });
+
+    // 3. Cascade check: every team in stage X must have appeared in stage X-1
+    const cascadeIssues = [];
+    const stageOrder = ['Group', 'R32', 'R16', 'Quarters', 'Semis', 'Finals'];
+    ['R16', 'Quarters', 'Semis', 'Finals'].forEach((stage) => {
+        const earlierTeams = new Set();
+        const earlierIdx = stageOrder.indexOf(stage);
+        dbRows.forEach((r) => {
+            if (stageOrder.indexOf(r.stage) < earlierIdx && stageOrder.indexOf(r.stage) >= 0) {
+                if (r.team_home) earlierTeams.add(r.team_home);
+                if (r.team_away) earlierTeams.add(r.team_away);
+            }
+        });
+        dbRows.filter((r) => r.stage === stage).forEach((r) => {
+            if (r.team_home && !earlierTeams.has(r.team_home)) {
+                cascadeIssues.push({ stage, msg: `${r.team_home} appears in ${stage} but never played a prior round` });
+            }
+            if (r.team_away && !earlierTeams.has(r.team_away)) {
+                cascadeIssues.push({ stage, msg: `${r.team_away} appears in ${stage} but never played a prior round` });
+            }
+        });
+    });
+
+    return {
+        standingsRecompute: {
+            ok: standingsMismatches.length === 0,
+            mismatches: standingsMismatches
+        },
+        r32GroupCheck: {
+            ok: r32Issues.length === 0,
+            issues: r32Issues
+        },
+        cascadeCheck: {
+            ok: cascadeIssues.length === 0,
+            issues: cascadeIssues
         }
     };
 }
@@ -1841,17 +1991,19 @@ async function fetchAdminVerifyTournament() {
     const groupsEl = document.getElementById('admin-vt-section-groups');
     const thirdsEl = document.getElementById('admin-vt-section-thirds');
     const bracketEl = document.getElementById('admin-vt-section-bracket');
+    const structuralEl = document.getElementById('admin-vt-section-structural');
     if (!summaryEl || !matchesEl || !groupsEl || !thirdsEl || !bracketEl) return;
 
-    summaryEl.innerHTML = '<div class="md:col-span-4 rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-8 text-center text-xs font-black uppercase tracking-[0.25em] text-gray-400">Auditing tournament…</div>';
+    summaryEl.innerHTML = '<div class="md:col-span-5 rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-8 text-center text-xs font-black uppercase tracking-[0.25em] text-gray-400">Auditing tournament…</div>';
     matchesEl.innerHTML = '';
     groupsEl.innerHTML = '';
     thirdsEl.innerHTML = '';
     bracketEl.innerHTML = '';
+    if (structuralEl) structuralEl.innerHTML = '';
 
     const { data: matches, error } = await supabaseClient.from('matches').select('*');
     if (error) {
-        summaryEl.innerHTML = `<div class="md:col-span-4 rounded-2xl border border-red-900/40 bg-red-950/30 px-5 py-8 text-center text-xs font-black uppercase tracking-[0.2em] text-red-300">${error.message || 'Unable to load audit data.'}</div>`;
+        summaryEl.innerHTML = `<div class="md:col-span-5 rounded-2xl border border-red-900/40 bg-red-950/30 px-5 py-8 text-center text-xs font-black uppercase tracking-[0.2em] text-red-300">${error.message || 'Unable to load audit data.'}</div>`;
         return;
     }
 
@@ -1863,12 +2015,14 @@ async function fetchAdminVerifyTournament() {
     groupsEl.innerHTML = _renderVerifyTournamentGroupAudit(audit);
     thirdsEl.innerHTML = _renderVerifyTournamentThirdsAudit(audit);
     bracketEl.innerHTML = _renderVerifyTournamentBracketAudit(audit);
+    if (structuralEl) structuralEl.innerHTML = _renderVerifyTournamentStructural(audit);
 }
 
 function _renderVerifyTournamentSummary(audit) {
     const { summary, duplicatesByRound } = audit;
-    const overallTone = summary.overallPass ? 'text-emerald-300' : (summary.scheduleFailCount + summary.bracketFailCount + summary.groupFailCount > 0 ? 'text-red-300' : 'text-amber-300');
     const dupCount = Object.values(duplicatesByRound).reduce((sum, arr) => sum + arr.length, 0);
+    const totalIssues = summary.scheduleFailCount + summary.bracketFailCount + summary.groupFailCount + (summary.structuralFailCount || 0) + dupCount;
+    const overallTone = summary.overallPass ? 'text-emerald-300' : (totalIssues > 0 ? 'text-red-300' : 'text-amber-300');
     const card = (title, value, tone) => `
         <div class="rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-4">
             <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">${title}</div>
@@ -1878,20 +2032,57 @@ function _renderVerifyTournamentSummary(audit) {
     const bracketTone = summary.bracketFailCount === 0 ? 'text-emerald-300' : 'text-red-300';
     const groupsTone = summary.groupFailCount === 0 ? 'text-emerald-300' : 'text-red-300';
     const thirdsTone = summary.bestThirdResolved ? 'text-emerald-300' : 'text-amber-300';
+    const structTone = (summary.structuralFailCount || 0) === 0 ? 'text-emerald-300' : 'text-red-300';
     return `
         ${card('Schedule Pass', `${summary.schedulePassCount}/${summary.totalMatches}${summary.scheduleFailCount ? ` · ${summary.scheduleFailCount} fail` : ''}`, scheduleTone)}
         ${card('Bracket Pass', `${summary.bracketPassCount}/32${summary.bracketFailCount ? ` · ${summary.bracketFailCount} fail` : ''}`, bracketTone)}
         ${card('Groups Verified', `${summary.groupPassCount}/12${summary.groupFailCount ? ` · ${summary.groupFailCount} fail` : ''}`, groupsTone)}
         ${card('Best 3rd', summary.bestThirdResolved ? 'Resolved' : 'Pending', thirdsTone)}
-        <div class="md:col-span-4 rounded-2xl border ${summary.overallPass ? 'border-emerald-700 bg-emerald-950/30' : 'border-gray-700 bg-gray-900/70'} px-5 py-4 flex items-center justify-between gap-3">
+        ${card('Structural', (summary.structuralFailCount || 0) === 0 ? 'Pass' : `${summary.structuralFailCount} fail`, structTone)}
+        <div class="md:col-span-5 rounded-2xl border ${summary.overallPass ? 'border-emerald-700 bg-emerald-950/30' : 'border-gray-700 bg-gray-900/70'} px-5 py-4 flex items-center justify-between gap-3">
             <div>
                 <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Overall</div>
-                <div class="mt-1 text-sm font-black uppercase tracking-[0.2em] ${overallTone}">${summary.overallPass ? '✅ All checks passing' : `${summary.scheduleFailCount + summary.bracketFailCount + summary.groupFailCount + dupCount} issue(s) found`}</div>
+                <div class="mt-1 text-sm font-black uppercase tracking-[0.2em] ${overallTone}">${summary.overallPass ? '✅ All checks passing' : `${totalIssues} issue(s) found`}</div>
             </div>
             <div class="flex gap-2">
                 <button onclick="fetchAdminVerifyTournament()" class="px-3 py-1.5 rounded-lg border border-gray-700 bg-gray-800 text-[10px] font-black uppercase tracking-[0.2em] text-gray-200 hover:border-blue-500/60 hover:text-blue-300">Refresh</button>
                 <button onclick="downloadTournamentVerifyCsv()" class="px-3 py-1.5 rounded-lg border border-emerald-500/50 bg-emerald-950/30 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200 hover:border-emerald-400">Download CSV</button>
             </div>
+        </div>`;
+}
+
+function _renderVerifyTournamentStructural(audit) {
+    const s = audit.structural;
+    if (!s) return '';
+    const renderBlock = (title, ok, items, msgKey) => {
+        const tone = ok ? 'border-emerald-700 bg-emerald-950/20' : 'border-red-700/50 bg-red-950/20';
+        const headerTone = ok ? 'text-emerald-200' : 'text-red-200';
+        const status = ok ? '✓ Pass' : `⚠ ${items.length} issue${items.length === 1 ? '' : 's'}`;
+        const list = items.length === 0
+            ? ''
+            : `<ul class="space-y-1 text-[11px] font-bold text-gray-200 mt-2">
+                  ${items.slice(0, 20).map((i) => `<li>· ${escapeHtml(i.group ? `Group ${i.group} · ${i.team || ''}` : (i.slot ? `${i.slot}${i.side ? `:${i.side}` : ''}` : i.stage || ''))}: ${escapeHtml(i[msgKey] || '')}</li>`).join('')}
+                  ${items.length > 20 ? `<li class="text-gray-500">…and ${items.length - 20} more</li>` : ''}
+               </ul>`;
+        return `
+            <div class="rounded-2xl border ${tone} px-4 py-3">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="text-[10px] font-black uppercase tracking-[0.2em] ${headerTone}">${title}</div>
+                    <div class="text-[10px] font-black uppercase tracking-[0.2em] ${ok ? 'text-emerald-300' : 'text-red-300'}">${status}</div>
+                </div>
+                ${list}
+            </div>`;
+    };
+
+    return `
+        <div class="rounded-3xl border border-gray-700 bg-gray-950/40 px-5 py-4 space-y-3">
+            <div>
+                <h3 class="text-sm font-black uppercase tracking-[0.2em] text-white">Pure Structural Checks</h3>
+                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">Parallel implementation — does not reuse computeGroupStandings, _buildBestThirdAssignments, or _resolveKnockoutMatchTeam</p>
+            </div>
+            ${renderBlock('Standings recompute', s.standingsRecompute.ok, s.standingsRecompute.mismatches, 'msg')}
+            ${renderBlock('R32 group-letter sanity', s.r32GroupCheck.ok, s.r32GroupCheck.issues, 'msg')}
+            ${renderBlock('Cascade integrity (R16+ teams played a prior round)', s.cascadeCheck.ok, s.cascadeCheck.issues, 'msg')}
         </div>`;
 }
 
@@ -2052,14 +2243,30 @@ function _renderVerifyTournamentThirdsAudit(audit) {
     }).join('');
 
     return `
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div class="rounded-3xl border border-gray-700 overflow-hidden">
-                <div class="border-b border-gray-700 bg-gray-900/80 px-5 py-3"><h3 class="text-sm font-black uppercase tracking-[0.2em] text-white">Third-Place Ranking</h3></div>
-                <div class="overflow-x-auto"><table class="w-full text-left text-[11px] font-bold text-gray-100"><thead class="bg-gray-950 text-white uppercase text-[9px] tracking-[0.18em] font-black"><tr><th class="px-3 py-2">Pos</th><th class="px-3 py-2">Seed</th><th class="px-3 py-2">Team</th><th class="px-3 py-2 text-center">Pts</th><th class="px-3 py-2 text-center">GD</th><th class="px-3 py-2 text-center">GF</th><th class="px-3 py-2 text-center">Status</th></tr></thead><tbody class="bg-gray-900">${thirdsHtml}</tbody></table></div>
+        <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-4">
+                    <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Qualified 3rd Key</div>
+                    <div class="mt-2 text-2xl font-black uppercase text-white">${escapeHtml(mappingContext.qualifiedKey || 'TBD')}</div>
+                </div>
+                <div class="rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-4">
+                    <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">CSV Row</div>
+                    <div class="mt-2 text-2xl font-black uppercase text-white">${mappingContext.mappingEntry?.rowNumber || 'TBD'}</div>
+                </div>
+                <div class="rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-4">
+                    <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Mapping Status</div>
+                    <div class="mt-2 text-sm font-black uppercase tracking-[0.2em] ${mappingContext.isResolvable ? 'text-emerald-300' : 'text-amber-300'}">${mappingContext.isResolvable ? 'Official Row Applied' : 'Waiting For Clear Top 8'}</div>
+                </div>
             </div>
-            <div class="rounded-3xl border border-gray-700 overflow-hidden">
-                <div class="border-b border-gray-700 bg-gray-900/80 px-5 py-3"><h3 class="text-sm font-black uppercase tracking-[0.2em] text-white">FIFA Annex C Mapping</h3></div>
-                <div class="overflow-x-auto"><table class="w-full text-left text-[11px] font-bold text-gray-100"><thead class="bg-gray-950 text-white uppercase text-[9px] tracking-[0.18em] font-black"><tr><th class="px-3 py-2">Winner Seed</th><th class="px-3 py-2">CSV Seed</th><th class="px-3 py-2">Assigned Team</th><th class="px-3 py-2">Plays Against</th><th class="px-3 py-2">R32 Slot</th></tr></thead><tbody class="bg-gray-900">${mappingHtml}</tbody></table></div>
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div class="rounded-3xl border border-gray-700 overflow-hidden">
+                    <div class="border-b border-gray-700 bg-gray-900/80 px-5 py-3"><h3 class="text-sm font-black uppercase tracking-[0.2em] text-white">Third-Place Ranking</h3></div>
+                    <div class="overflow-x-auto"><table class="w-full text-left text-[11px] font-bold text-gray-100"><thead class="bg-gray-950 text-white uppercase text-[9px] tracking-[0.18em] font-black"><tr><th class="px-3 py-2">Pos</th><th class="px-3 py-2">Seed</th><th class="px-3 py-2">Team</th><th class="px-3 py-2 text-center">Pts</th><th class="px-3 py-2 text-center">GD</th><th class="px-3 py-2 text-center">GF</th><th class="px-3 py-2 text-center">Status</th></tr></thead><tbody class="bg-gray-900">${thirdsHtml}</tbody></table></div>
+                </div>
+                <div class="rounded-3xl border border-gray-700 overflow-hidden">
+                    <div class="border-b border-gray-700 bg-gray-900/80 px-5 py-3"><h3 class="text-sm font-black uppercase tracking-[0.2em] text-white">FIFA Annex C Mapping</h3></div>
+                    <div class="overflow-x-auto"><table class="w-full text-left text-[11px] font-bold text-gray-100"><thead class="bg-gray-950 text-white uppercase text-[9px] tracking-[0.18em] font-black"><tr><th class="px-3 py-2">Winner Seed</th><th class="px-3 py-2">CSV Seed</th><th class="px-3 py-2">Assigned Team</th><th class="px-3 py-2">Plays Against</th><th class="px-3 py-2">R32 Slot</th></tr></thead><tbody class="bg-gray-900">${mappingHtml}</tbody></table></div>
+                </div>
             </div>
         </div>`;
 }
