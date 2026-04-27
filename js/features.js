@@ -2405,7 +2405,11 @@ async function runManagerSync() {
     if (btn) btn.disabled = true;
     if (statusEl) statusEl.textContent = 'Refreshing…';
     try {
-        const res = await fetch(`${MATCH_SYNC_URL}?execute=true`);
+        // Pass-through ?test_finish from page URL so admin can simulate a FINISHED match end-to-end
+        const pageParams = new URLSearchParams(window.location.search);
+        const testFinish = pageParams.get('test_finish');
+        const url = `${MATCH_SYNC_URL}?execute=true${testFinish ? `&test_finish=${encodeURIComponent(testFinish)}` : ''}`;
+        const res = await fetch(url);
         const data = await res.json();
         if (!data.ok) throw new Error(data.error || 'Sync failed');
         _managerApiPlanned = data.planned || [];
