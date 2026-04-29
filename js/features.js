@@ -872,7 +872,7 @@ const KNOCKOUT_SCHEDULE = [
     // ── Round of 16 ─── Jul 4 – 7, 2026 ──────────────────────────────────────
     // Array order = bracket-vertical order, sequential pairing with R32.
     { slotKey: 'r16-01', match: 89, date: '2026-07-04', time: '14:00', stage: 'R16', home: 'W:r32-01', away: 'W:r32-02' },
-    { slotKey: 'r16-02', match: 90, date: '2026-07-05', time: '10:00', stage: 'R16', home: 'W:r32-03', away: 'W:r32-04' },
+    { slotKey: 'r16-02', match: 90, date: '2026-07-04', time: '10:00', stage: 'R16', home: 'W:r32-03', away: 'W:r32-04' },
     { slotKey: 'r16-03', match: 93, date: '2026-07-06', time: '12:00', stage: 'R16', home: 'W:r32-05', away: 'W:r32-06' },
     { slotKey: 'r16-04', match: 94, date: '2026-07-06', time: '17:00', stage: 'R16', home: 'W:r32-07', away: 'W:r32-08' },
     { slotKey: 'r16-05', match: 91, date: '2026-07-05', time: '13:00', stage: 'R16', home: 'W:r32-09', away: 'W:r32-10' },
@@ -1097,15 +1097,23 @@ function _findKnockoutResultForMatch(scheduleMatch, standings, bestThirdAssignme
 // Compute standings for every group from a match cache.
 // status: 'none' = 0 matches played, 'partial' = some, 'complete' = all 6 played.
 //
-// Within-group ranking applies FIFA 2026 tiebreakers in order:
-//   1. Most points
+// Within-group ranking applies the FIFA 2026 tiebreakers in order:
+//   1. Most overall points (entry condition)
 //   2. H2H points (between tied teams only)
 //   3. H2H goal difference
 //   4. H2H goals scored
 //   5. Re-apply 2-4 to any still-tied subset
 //   6. Overall goal difference
 //   7. Overall goals scored
-//   8. (Fair play — not tracked)  →  team cost desc → name (deterministic fallback)
+//   8. (Fair play — UNVERIFIABLE: no card data on football-data.org TIER_ONE)
+//   9. FIFA/Coca-Cola Men's World Ranking (lower number is better)
+//  10. Name (deterministic last-resort)
+// When step 9 (fifaRank) decides a tie, a tiebreaker warning is emitted by
+// _detectTiebreakerWarnings so it surfaces in the Verify tab + CSV.
+function _getFifaRank(teamName) {
+    const r = TEAM_REPORT_DATA?.[teamName]?.fifaRank;
+    return Number.isFinite(r) ? r : 999;
+}
 function computeGroupStandings(matchesCache) {
     if (matchesCache === undefined) matchesCache = _scheduleBrowserLoggedCache;
     const result = {};
@@ -1209,15 +1217,14 @@ function _rankTiedGroup(tied, groupMatches) {
         if (subTied.length === 1) {
             result.push(subTied[0]);
         } else if (subTied.length === tied.length) {
-            // No progress in H2H — apply final overall + cost + name fallback.
+            // No H2H progress — fall through overall gd/gf → fifaRank → name.
+            // Step 8 (fair play / cards) is skipped: no card data on TIER_ONE.
             result.push(...subTied.slice().sort((a, b) => {
                 if (b.gd !== a.gd) return b.gd - a.gd;
                 if (b.gf !== a.gf) return b.gf - a.gf;
-                const teamA = teams.find((t) => t.name === a.name);
-                const teamB = teams.find((t) => t.name === b.name);
-                const costA = teamA?.cost || 0;
-                const costB = teamB?.cost || 0;
-                if (costB !== costA) return costB - costA;
+                const rA = _getFifaRank(a.name);
+                const rB = _getFifaRank(b.name);
+                if (rA !== rB) return rA - rB;
                 return a.name.localeCompare(b.name);
             }));
         } else {
@@ -1230,25 +1237,134 @@ function _rankTiedGroup(tied, groupMatches) {
 }
 
 // Cross-group comparator (used to rank 3rd-placed teams across groups, where
-// H2H doesn't apply because the teams never met). Falls through to cost desc,
-// then name, in lieu of fair-play / FIFA ranking which we don't track.
+// H2H doesn't apply because the teams never met). Falls through to overall
+// gd/gf → fifaRank → name. Fair-play (step 8 in the FIFA chain) is skipped:
+// the football-data.org TIER_ONE feed has no card data.
 function _compareStandingRows(a, b) {
     if (b.pts !== a.pts) return b.pts - a.pts;
     if (b.gd !== a.gd) return b.gd - a.gd;
     if (b.gf !== a.gf) return b.gf - a.gf;
-    const teamA = teams.find((team) => team.name === a.name);
-    const teamB = teams.find((team) => team.name === b.name);
-    const costA = teamA?.cost || 0;
-    const costB = teamB?.cost || 0;
-    if (costB !== costA) return costB - costA;
+    const rA = _getFifaRank(a.name);
+    const rB = _getFifaRank(b.name);
+    if (rA !== rB) return rA - rB;
     return a.name.localeCompare(b.name);
 }
 
-// Cross-group tie detector — true only if even cost can't separate them
+// Cross-group tie detector — true only if even fifaRank can't separate them
 // (extremely rare). Used to flag ambiguous 3rd-place ranks for Annex C lookup.
 function _isStandingTie(a, b) {
     if (!a || !b) return false;
     return _compareStandingRows(a, b) === 0;
+}
+
+// Detect ties resolved by step 9 (FIFA ranking) — meaning steps 1-7 of the
+// tiebreaker chain all came up equal. Step 8 (fair-play / cards) is the gap
+// we can't verify because the API feed has no card data, so every fifaRank-
+// resolved tie is also a "fair-play unverifiable" tie.
+//
+// Two scopes:
+//   - in-group: pts + H2H pts/gd/gf + overall gd/gf all tied for adjacent teams
+//   - best-3rd cross-group: pts + overall gd/gf all tied (no H2H — never met)
+//
+// Returns array of warning records:
+//   { scope, group?, teams, sharedStats, resolvedRanks }
+function _detectTiebreakerWarnings(standings, allThirdsRanked, dbRows) {
+    const warnings = [];
+    const groupSched = (typeof GROUP_STAGE_SCHEDULE !== 'undefined' ? GROUP_STAGE_SCHEDULE : []);
+
+    // 1. In-group ties resolved by fifaRank.
+    Object.entries(standings || {}).forEach(([groupLetter, group]) => {
+        if (!group?.teams || group.status !== 'complete') return;
+        const sched = groupSched.filter((m) => m.group === groupLetter);
+        const groupNames = new Set(sched.flatMap((m) => [m.home, m.away]));
+        const groupMatches = (dbRows || []).filter((r) =>
+            r.stage === 'Group' && groupNames.has(r.team_home) && groupNames.has(r.team_away)
+        );
+
+        // Walk each adjacent pair in the sorted order; if two teams share
+        // identical pts + overall gd + overall gf AND identical H2H pts/gd/gf
+        // against each other, then fifaRank decided them.
+        const teams = group.teams;
+        let i = 0;
+        while (i < teams.length - 1) {
+            const tied = [teams[i]];
+            let j = i + 1;
+            while (j < teams.length &&
+                teams[j].pts === teams[i].pts &&
+                teams[j].gd === teams[i].gd &&
+                teams[j].gf === teams[i].gf) {
+                // Compute H2H stats among the running tied set + this candidate
+                const candidate = teams[j];
+                const tiedNames = new Set([...tied.map((t) => t.name), candidate.name]);
+                const h2h = {};
+                tiedNames.forEach((n) => { h2h[n] = { pts: 0, gd: 0, gf: 0 }; });
+                groupMatches.forEach((m) => {
+                    if (!tiedNames.has(m.team_home) || !tiedNames.has(m.team_away)) return;
+                    const h = h2h[m.team_home];
+                    const a = h2h[m.team_away];
+                    h.gf += m.score_home; h.gd += m.score_home - m.score_away;
+                    a.gf += m.score_away; a.gd += m.score_away - m.score_home;
+                    if (m.score_home > m.score_away) h.pts += 3;
+                    else if (m.score_home < m.score_away) a.pts += 3;
+                    else { h.pts += 1; a.pts += 1; }
+                });
+                const allH2hEqual = [...tiedNames].every((n) => {
+                    const ref = h2h[[...tiedNames][0]];
+                    return h2h[n].pts === ref.pts && h2h[n].gd === ref.gd && h2h[n].gf === ref.gf;
+                });
+                if (allH2hEqual) { tied.push(candidate); j++; }
+                else break;
+            }
+            if (tied.length >= 2) {
+                warnings.push({
+                    scope: 'group',
+                    group: groupLetter,
+                    teams: tied.map((t) => ({
+                        name: t.name,
+                        pos: teams.indexOf(t) + 1,
+                        fifaRank: _getFifaRank(t.name)
+                    })),
+                    sharedStats: { pts: tied[0].pts, gd: tied[0].gd, gf: tied[0].gf }
+                });
+                i = j;
+            } else {
+                i++;
+            }
+        }
+    });
+
+    // 2. Best-3rd cross-group ties resolved by fifaRank (no H2H step possible).
+    if (Array.isArray(allThirdsRanked) && allThirdsRanked.length >= 2) {
+        let i = 0;
+        while (i < allThirdsRanked.length - 1) {
+            const tied = [allThirdsRanked[i]];
+            let j = i + 1;
+            while (j < allThirdsRanked.length &&
+                allThirdsRanked[j].pts === allThirdsRanked[i].pts &&
+                allThirdsRanked[j].gd === allThirdsRanked[i].gd &&
+                allThirdsRanked[j].gf === allThirdsRanked[i].gf) {
+                tied.push(allThirdsRanked[j]);
+                j++;
+            }
+            if (tied.length >= 2) {
+                warnings.push({
+                    scope: 'best-3rd',
+                    teams: tied.map((t) => ({
+                        name: t.name,
+                        pos: allThirdsRanked.indexOf(t) + 1,
+                        group: t.group,
+                        fifaRank: _getFifaRank(t.name)
+                    })),
+                    sharedStats: { pts: tied[0].pts, gd: tied[0].gd, gf: tied[0].gf }
+                });
+                i = j;
+            } else {
+                i++;
+            }
+        }
+    }
+
+    return warnings;
 }
 
 function _hasClinchedGroupSlot(group, pos) {
@@ -1802,6 +1918,14 @@ function buildTournamentAudit(matchesCache) {
     // parallel implementation so a bug in those functions can't hide).
     const structural = _buildStructuralAudit(dbRows, standings, matchRows);
 
+    // Tiebreaker warnings — ties resolved by fifaRank because the API has no
+    // card data for FIFA's fair-play step. Surfaces in Verify tab + CSV.
+    const tiebreakerWarnings = _detectTiebreakerWarnings(
+        standings,
+        bestThirdAudit.rankings,
+        dbRows
+    );
+
     // Summary counts
     const schedulePassCount = matchRows.filter((r) => r.schedulePass).length;
     const scheduleFailCount = matchRows.filter((r) => !r.schedulePass && !r.isFuture).length;
@@ -1812,6 +1936,7 @@ function buildTournamentAudit(matchesCache) {
     const structuralFailCount = structural.standingsRecompute.mismatches.length
         + structural.r32GroupCheck.issues.length
         + structural.cascadeCheck.issues.length;
+    // Tiebreaker warnings do NOT count as failures — they're advisory.
     const overallPass = scheduleFailCount === 0 && bracketFailCount === 0 && groupFailCount === 0
         && structuralFailCount === 0
         && Object.values(duplicatesByRound).every((arr) => arr.length === 0);
@@ -1827,6 +1952,7 @@ function buildTournamentAudit(matchesCache) {
         bracketAudit,
         duplicatesByRound,
         structural,
+        tiebreakerWarnings,
         summary: {
             totalMatches: matchRows.length,
             dbMatchCount: dbRows.length,
@@ -1837,6 +1963,7 @@ function buildTournamentAudit(matchesCache) {
             groupPassCount,
             groupFailCount,
             structuralFailCount,
+            tiebreakerWarningCount: tiebreakerWarnings.length,
             bestThirdResolved: !!mappingContext.isResolvable,
             overallPass
         }
@@ -1990,6 +2117,7 @@ async function fetchAdminVerifyTournament() {
     const matchesEl = document.getElementById('admin-vt-section-matches');
     const groupsEl = document.getElementById('admin-vt-section-groups');
     const thirdsEl = document.getElementById('admin-vt-section-thirds');
+    const tiebreakersEl = document.getElementById('admin-vt-section-tiebreakers');
     const bracketEl = document.getElementById('admin-vt-section-bracket');
     const structuralEl = document.getElementById('admin-vt-section-structural');
     if (!summaryEl || !matchesEl || !groupsEl || !thirdsEl || !bracketEl) return;
@@ -1998,6 +2126,7 @@ async function fetchAdminVerifyTournament() {
     matchesEl.innerHTML = '';
     groupsEl.innerHTML = '';
     thirdsEl.innerHTML = '';
+    if (tiebreakersEl) tiebreakersEl.innerHTML = '';
     bracketEl.innerHTML = '';
     if (structuralEl) structuralEl.innerHTML = '';
 
@@ -2014,6 +2143,7 @@ async function fetchAdminVerifyTournament() {
     matchesEl.innerHTML = _renderVerifyTournamentMatchTable(audit);
     groupsEl.innerHTML = _renderVerifyTournamentGroupAudit(audit);
     thirdsEl.innerHTML = _renderVerifyTournamentThirdsAudit(audit);
+    if (tiebreakersEl) tiebreakersEl.innerHTML = _renderVerifyTournamentTiebreakers(audit);
     bracketEl.innerHTML = _renderVerifyTournamentBracketAudit(audit);
     if (structuralEl) structuralEl.innerHTML = _renderVerifyTournamentStructural(audit);
 }
@@ -2048,6 +2178,60 @@ function _renderVerifyTournamentSummary(audit) {
                 <button onclick="fetchAdminVerifyTournament()" class="px-3 py-1.5 rounded-lg border border-gray-700 bg-gray-800 text-[10px] font-black uppercase tracking-[0.2em] text-gray-200 hover:border-blue-500/60 hover:text-blue-300">Refresh</button>
                 <button onclick="downloadTournamentVerifyCsv()" class="px-3 py-1.5 rounded-lg border border-emerald-500/50 bg-emerald-950/30 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200 hover:border-emerald-400">Download CSV</button>
             </div>
+        </div>`;
+}
+
+// Yellow callout for ties resolved by FIFA ranking (because the API has no
+// card data, fair-play is unverifiable). Hidden when there are zero warnings.
+function _renderVerifyTournamentTiebreakers(audit) {
+    const list = audit.tiebreakerWarnings || [];
+    if (list.length === 0) {
+        return `
+            <div class="rounded-3xl border border-gray-800 bg-gray-950/40 px-5 py-3">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">Tiebreaker Resolution</div>
+                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">✓ No fifaRank-decided ties</div>
+                </div>
+                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500 mt-1">Every group + best-3rd ranking was decided by on-pitch stats (overall pts, H2H, gd/gf).</p>
+            </div>`;
+    }
+
+    const renderItem = (w) => {
+        const teamRows = w.teams.map((t) => {
+            const posLabel = w.scope === 'group'
+                ? `Pos ${t.pos}`
+                : `Best 3rd #${t.pos}`;
+            const groupLabel = t.group ? ` · Group ${t.group}` : '';
+            return `
+                <li class="flex items-baseline justify-between gap-3 text-[11px] font-bold text-amber-100">
+                    <span>${escapeHtml(t.name)}${escapeHtml(groupLabel)}</span>
+                    <span class="text-amber-300/80">FIFA #${t.fifaRank} · ${escapeHtml(posLabel)}</span>
+                </li>`;
+        }).join('');
+        const scopeLabel = w.scope === 'group'
+            ? `Group ${escapeHtml(w.group || '?')} — in-group tie`
+            : 'Best 3rd cross-group tie';
+        const stats = w.sharedStats;
+        return `
+            <div class="rounded-2xl border border-amber-700/50 bg-amber-950/20 px-4 py-3 space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-amber-200">${scopeLabel}</div>
+                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-amber-300">⚠ Resolved by FIFA ranking</div>
+                </div>
+                <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300/80">
+                    Tied through: pts ${stats.pts} · gd ${stats.gd} · gf ${stats.gf}${w.scope === 'group' ? ' · all H2H stats equal' : ''}
+                </div>
+                <ul class="space-y-1">${teamRows}</ul>
+            </div>`;
+    };
+
+    return `
+        <div class="rounded-3xl border border-amber-700/50 bg-amber-950/20 px-5 py-4 space-y-3">
+            <div>
+                <h3 class="text-sm font-black uppercase tracking-[0.2em] text-amber-100">⚠ Tiebreaker Warnings (${list.length})</h3>
+                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300/80">FIFA's fair-play step (yellow + red cards) is unverifiable — no card data on football-data.org TIER_ONE. Where a tie survived every on-pitch stat, FIFA world ranking decided it.</p>
+            </div>
+            ${list.map(renderItem).join('')}
         </div>`;
 }
 
@@ -2329,8 +2513,17 @@ function downloadTournamentVerifyCsv() {
         if (typeof showToast === 'function') showToast('Run audit first.');
         return;
     }
-    const header = ['match_num','stage','group','date_pt','time_pt','schedule_home','schedule_away','db_home','db_away','score_home','score_away','was_extra_time','is_finished','manual_override','auto_synced_at','schedule_pass','bracket_pass','issues'];
-    const rows = [header];
+
+    const rows = [];
+    const blank = () => rows.push([]);
+    const sectionHeader = (label) => {
+        blank();
+        rows.push([`=== ${label} ===`]);
+    };
+
+    // ── Section 1: per-match audit ──────────────────────────────────────────
+    rows.push(['=== TOURNAMENT MATCHES ===']);
+    rows.push(['match_num','stage','group','date_pt','time_pt','schedule_home','schedule_away','db_home','db_away','score_home','score_away','was_extra_time','is_finished','manual_override','auto_synced_at','schedule_pass','bracket_pass','issues']);
     audit.matchRows.forEach((row) => {
         const db = row.db || {};
         rows.push([
@@ -2354,6 +2547,191 @@ function downloadTournamentVerifyCsv() {
             row.issues.join(';')
         ]);
     });
+
+    // ── Section 2: group standings ──────────────────────────────────────────
+    sectionHeader('GROUP STANDINGS');
+    rows.push(['group','rank','team','status','played','w','d','l','pts','gf','ga','gd','fifa_rank']);
+    Object.entries(audit.standings || {}).forEach(([groupLetter, group]) => {
+        (group.teams || []).forEach((t, idx) => {
+            rows.push([
+                groupLetter,
+                idx + 1,
+                t.name || '',
+                group.status || '',
+                t.played ?? '',
+                t.w ?? '',
+                t.d ?? '',
+                t.l ?? '',
+                t.pts ?? '',
+                t.gf ?? '',
+                t.ga ?? '',
+                t.gd ?? '',
+                _getFifaRank(t.name)
+            ]);
+        });
+    });
+
+    // ── Section 3: top-3rd ranking (12 third-placed teams across groups) ────
+    sectionHeader('TOP 3 (BEST 3RD RANKING)');
+    rows.push(['rank','seed','team','group','pts','gd','gf','fifa_rank','status']);
+    const qualifiedSet = audit.bestThirdAudit.qualifiedSet;
+    const isResolvable = audit.bestThirdAudit.isResolvable;
+    (audit.bestThirdAudit.rankings || []).forEach((team, idx) => {
+        const isIn = qualifiedSet.has(team.name) && isResolvable;
+        const isLive = qualifiedSet.has(team.name) && !isResolvable;
+        rows.push([
+            idx + 1,
+            `3${team.group || ''}`,
+            team.name || '',
+            team.group || '',
+            team.pts ?? '',
+            team.gd ?? '',
+            team.gf ?? '',
+            _getFifaRank(team.name),
+            isIn ? 'IN' : isLive ? 'LIVE' : 'OUT'
+        ]);
+    });
+
+    // ── Section 4: FIFA Annex C selection (the 1-of-196 row used) ───────────
+    sectionHeader('FIFA ANNEX C MAPPING');
+    rows.push(['qualified_3rd_key','csv_row_number','status']);
+    rows.push([
+        audit.bestThirdAudit.qualifiedKey || 'TBD',
+        audit.bestThirdAudit.mappingEntry?.rowNumber || 'TBD',
+        audit.bestThirdAudit.isResolvable ? 'Official Row Applied' : 'Waiting For Clear Top 8'
+    ]);
+    blank();
+    rows.push(['winner_seed','csv_seed','assigned_team','assigned_group','r32_slot']);
+    const winnerSeedOrder = ['1A','1B','1D','1E','1G','1I','1K','1L'];
+    const officialMap = audit.bestThirdAudit.mappingEntry?.assignments || {};
+    const slotByWinner = (typeof THIRD_PLACE_WINNER_SLOT_MAP !== 'undefined') ? THIRD_PLACE_WINNER_SLOT_MAP : {};
+    winnerSeedOrder.forEach((winnerSeed) => {
+        const csvSeed = officialMap[winnerSeed] || 'TBD';
+        const slotKey = slotByWinner[winnerSeed] || '';
+        const assigned = slotKey ? audit.bestThirdAssignments.get(slotKey) : null;
+        rows.push([
+            winnerSeed,
+            csvSeed,
+            assigned?.name || 'TBD',
+            assigned?.group || '',
+            slotKey ? slotKey.split(':')[0] : ''
+        ]);
+    });
+
+    // ── Section 5: knockout seeding (all 32 R32 entrants) ──────────────────
+    sectionHeader('KNOCKOUT SEEDING');
+    rows.push(['seed','team','group','fifa_rank','route']);
+    'ABCDEFGHIJKL'.split('').forEach((g) => {
+        const groupTeams = audit.standings?.[g]?.teams || [];
+        const winner = groupTeams[0];
+        const runner = groupTeams[1];
+        rows.push([`1${g}`, winner?.name || 'TBD', g, winner ? _getFifaRank(winner.name) : '', `Group ${g} winner`]);
+        rows.push([`2${g}`, runner?.name || 'TBD', g, runner ? _getFifaRank(runner.name) : '', `Group ${g} runner-up`]);
+    });
+    // 8 best-3rd entrants (using Annex C / fallback assignments)
+    const koSched = (typeof KNOCKOUT_SCHEDULE !== 'undefined' ? KNOCKOUT_SCHEDULE : []);
+    const best3rdSlots = koSched.filter((m) => m.stage === 'R32' && m.away === 'Best 3rd');
+    best3rdSlots.forEach((entry) => {
+        const slotKey = `${entry.slotKey}:away`;
+        const assigned = audit.bestThirdAssignments.get(slotKey);
+        rows.push([
+            assigned ? `3${assigned.group}` : 'TBD',
+            assigned?.name || 'TBD',
+            assigned?.group || '',
+            assigned ? _getFifaRank(assigned.name) : '',
+            `Best 3rd -> ${entry.slotKey} (vs ${entry.home})`
+        ]);
+    });
+
+    // ── Section 6: bracket flow (every KO match: winner/loser/next-slot) ────
+    sectionHeader('BRACKET FLOW');
+    rows.push(['match_num','stage','slot','winner','loser','was_et','advances_to']);
+    const koRows = audit.matchRows.filter((r) => r.stage !== 'Group');
+    // Build a reverse-lookup: slotKey → which slotKey references its winner/loser
+    const advancesToBySlot = {};
+    koSched.forEach((s) => {
+        const refSide = (label, side) => {
+            if (!label) return;
+            const m = label.match(/^([WL]):(.+)$/);
+            if (!m) return;
+            const refKey = m[2];
+            const wOrL = m[1] === 'W' ? 'winner' : 'loser';
+            if (!advancesToBySlot[refKey]) advancesToBySlot[refKey] = [];
+            advancesToBySlot[refKey].push(`${s.slotKey} ${side} (${wOrL})`);
+        };
+        refSide(s.home, 'home');
+        refSide(s.away, 'away');
+    });
+    const advancesLabel = (slotKey) => {
+        if (slotKey === 'finals-02') return 'World Cup Champion';
+        if (slotKey === 'finals-01') return '3rd place';
+        const refs = advancesToBySlot[slotKey] || [];
+        return refs.length ? refs.join(' & ') : '—';
+    };
+    koRows.forEach((row) => {
+        const db = row.db;
+        if (!db || db.score_home == null || db.score_away == null) {
+            rows.push([row.matchNum || '', row.stage, row.schedule.slotKey || '', 'TBD', 'TBD', '', advancesLabel(row.schedule.slotKey)]);
+            return;
+        }
+        const winner = _winnerFromMatchRow(db);
+        const loser = _loserFromMatchRow(db);
+        rows.push([
+            row.matchNum || '',
+            row.stage,
+            row.schedule.slotKey || '',
+            winner,
+            loser,
+            db.was_extra_time ? 'Yes' : 'No',
+            advancesLabel(row.schedule.slotKey)
+        ]);
+    });
+
+    // ── Section 7: final standings (gold/silver/bronze/4th) ─────────────────
+    sectionHeader('FINAL STANDINGS');
+    rows.push(['position','team','result']);
+    const finalRow = audit.matchRows.find((r) => r.schedule.slotKey === 'finals-02')?.db;
+    const bronzeRow = audit.matchRows.find((r) => r.schedule.slotKey === 'finals-01')?.db;
+    const goldChamp = finalRow && finalRow.score_home != null ? _winnerFromMatchRow(finalRow) : 'TBD';
+    const silverRunner = finalRow && finalRow.score_home != null ? _loserFromMatchRow(finalRow) : 'TBD';
+    const bronzeWinner = bronzeRow && bronzeRow.score_home != null ? _winnerFromMatchRow(bronzeRow) : 'TBD';
+    const fourth = bronzeRow && bronzeRow.score_home != null ? _loserFromMatchRow(bronzeRow) : 'TBD';
+    rows.push([1, goldChamp, 'World Cup Champion']);
+    rows.push([2, silverRunner, 'Runner-up (lost final)']);
+    rows.push([3, bronzeWinner, 'Bronze (won 3rd-place play-off)']);
+    rows.push([4, fourth, '4th (lost 3rd-place play-off)']);
+
+    // ── Section 8: tiebreaker warnings (ties resolved by FIFA ranking) ──────
+    // FIFA's fair-play tiebreaker (yellow + red cards, step 8) is unverifiable
+    // because football-data.org TIER_ONE has no card data. Where every on-pitch
+    // step came up tied, FIFA world ranking decided the order.
+    sectionHeader('TIEBREAKER WARNINGS');
+    const warnings = audit.tiebreakerWarnings || [];
+    if (warnings.length === 0) {
+        rows.push(['count', 0]);
+        rows.push(['note', 'No fifaRank-decided ties — every group + best-3rd ranking was decided by on-pitch stats.']);
+    } else {
+        rows.push(['count', warnings.length]);
+        rows.push(['note', 'Fair-play (cards) step is UNVERIFIABLE on this data feed; FIFA ranking applied as next available step.']);
+        blank();
+        rows.push(['scope','group','position','team','team_group','fifa_rank','tied_pts','tied_gd','tied_gf']);
+        warnings.forEach((w) => {
+            w.teams.forEach((t) => {
+                rows.push([
+                    w.scope,
+                    w.group || '',
+                    t.pos,
+                    t.name,
+                    t.group || w.group || '',
+                    t.fifaRank,
+                    w.sharedStats.pts,
+                    w.sharedStats.gd,
+                    w.sharedStats.gf
+                ]);
+            });
+        });
+    }
+
     const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16);
     downloadCsv(`wc-pool-tournament-verify-${ts}.csv`, rows);
 }
@@ -3156,7 +3534,7 @@ function setupAdminPage() {
     const teamOneSelect = document.getElementById('admin-team1');
     const teamTwoSelect = document.getElementById('admin-team2');
 
-    showAdminTab('matches');
+    showAdminTab('manager');
 
     if (teamOneSelect && teamTwoSelect) {
         const options = [...teams]
@@ -3342,31 +3720,65 @@ let _managerLastSyncAt = null;
 let _managerFilter = 'all';
 let _managerExpandedKey = null;
 
-async function runManagerSync() {
-    const btn = document.getElementById('manager-refresh-btn');
+// Match Manager API sync. `execute=true` writes API results to DB; `execute=false`
+// is preview-only (fetches API state, refreshes the right column, no DB writes).
+async function runManagerSync(execute = true) {
+    const previewBtn = document.getElementById('manager-preview-btn');
+    const syncBtn = document.getElementById('manager-refresh-btn');
     const statusEl = document.getElementById('manager-status');
-    if (btn) btn.disabled = true;
-    if (statusEl) statusEl.textContent = 'Refreshing…';
+    [previewBtn, syncBtn].forEach((b) => { if (b) b.disabled = true; });
+    if (statusEl) statusEl.textContent = execute ? 'Syncing…' : 'Previewing…';
     try {
         // Pass-through ?test_finish from page URL so admin can simulate a FINISHED match end-to-end
         const pageParams = new URLSearchParams(window.location.search);
         const testFinish = pageParams.get('test_finish');
-        const url = `${MATCH_SYNC_URL}?execute=true${testFinish ? `&test_finish=${encodeURIComponent(testFinish)}` : ''}`;
+        const params = [];
+        if (execute) params.push('execute=true');
+        if (testFinish) params.push(`test_finish=${encodeURIComponent(testFinish)}`);
+        const url = `${MATCH_SYNC_URL}${params.length ? `?${params.join('&')}` : ''}`;
         const res = await fetch(url);
         const data = await res.json();
         if (!data.ok) throw new Error(data.error || 'Sync failed');
         _managerApiPlanned = data.planned || [];
         _managerLastSyncAt = new Date();
-        await fetchAdminHistory();
+        if (execute) await fetchAdminHistory();
         _renderMatchManager();
         const writes = (data.summary?.executedInserts || 0) + (data.summary?.executedUpdates || 0);
         const t = _managerLastSyncAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Vancouver' });
-        if (statusEl) statusEl.textContent = `Synced ${data.summary?.totalApiMatches ?? '?'} matches at ${t} PT${writes ? ` · ${writes} new from API` : ''}`;
+        const verb = execute ? 'Synced' : 'Previewed';
+        const writeNote = execute && writes ? ` · ${writes} new from API` : (execute ? '' : ' · DB unchanged');
+        if (statusEl) statusEl.textContent = `${verb} ${data.summary?.totalApiMatches ?? '?'} matches at ${t} PT${writeNote}`;
     } catch (err) {
         if (statusEl) statusEl.textContent = `Error: ${err.message || String(err)}`;
     } finally {
-        if (btn) btn.disabled = false;
+        [previewBtn, syncBtn].forEach((b) => { if (b) b.disabled = false; });
     }
+}
+
+// Toggle the gear-icon dropdown of archived admin tabs (Schedule, Verify,
+// Match Sync). The tabs themselves still exist as panels — this menu is just
+// how admins reach them now that they're off the main nav.
+function toggleManagerArchiveMenu() {
+    const menu = document.getElementById('manager-archive-menu');
+    if (!menu) return;
+    menu.classList.toggle('hidden');
+    if (!menu.classList.contains('hidden')) {
+        const closeOnOutside = (ev) => {
+            if (!menu.contains(ev.target) && ev.target?.id !== 'manager-archive-btn') {
+                menu.classList.add('hidden');
+                document.removeEventListener('click', closeOnOutside);
+            }
+        };
+        // Defer so the click that opened the menu doesn't immediately close it
+        setTimeout(() => document.addEventListener('click', closeOnOutside), 0);
+    }
+}
+
+// Switch to one of the archived admin tabs from the gear menu.
+function openArchivedAdminTab(tabId) {
+    const menu = document.getElementById('manager-archive-menu');
+    if (menu) menu.classList.add('hidden');
+    showAdminTab(tabId);
 }
 
 function _managerBuildApiIndex() {
@@ -3409,7 +3821,7 @@ function _managerFindApiMatch(scheduleEntry, apiIndex, stageOrderCounters) {
     return list[idx] || null;
 }
 
-function _managerFindDbRow(scheduleEntry, dbCache) {
+function _managerFindDbRow(scheduleEntry, dbCache, claimedIds) {
     // Group: match by team-pair (any direction) + date
     if (scheduleEntry.group) {
         return dbCache.find(r =>
@@ -3418,8 +3830,24 @@ function _managerFindDbRow(scheduleEntry, dbCache) {
              (r.team_home === scheduleEntry.away && r.team_away === scheduleEntry.home))
         ) || null;
     }
-    // Knockout: try team-pair if both are real names; else match by stage + date
-    return dbCache.find(r => r.stage === scheduleEntry.stage && r.match_date_manual === scheduleEntry.date) || null;
+    // Knockout: multiple KO matches can share a date (e.g. 3 R32 on 2026-06-29).
+    // Stage + date alone is ambiguous — every row would map to the SAME db
+    // record. Match by team-pair when possible; fall back to first unclaimed
+    // stage+date row, walking in sorted order so each schedule entry claims a
+    // distinct row.
+    const claimed = claimedIds || new Set();
+    const candidates = dbCache.filter(r =>
+        r.stage === scheduleEntry.stage && r.match_date_manual === scheduleEntry.date && !claimed.has(r.id)
+    );
+    const teamPair = candidates.find(r =>
+        (r.team_home === scheduleEntry.home && r.team_away === scheduleEntry.away) ||
+        (r.team_home === scheduleEntry.away && r.team_away === scheduleEntry.home)
+    );
+    const picked = teamPair
+        || [...candidates].sort((a, b) => (a.id || 0) - (b.id || 0))[0]
+        || null;
+    if (picked && claimedIds) claimedIds.add(picked.id);
+    return picked;
 }
 
 function _managerStatusBadge(status) {
@@ -3492,6 +3920,9 @@ function _renderMatchManager() {
 
     // Reset stage-order counters per render
     const stageCounters = {};
+    // Claim db rows as schedule entries consume them — prevents 3 KO matches
+    // on the same date all returning the same db row.
+    const claimedDbIds = new Set();
 
     rowsEl.innerHTML = Object.entries(byDate)
         .sort((a, b) => a[0].localeCompare(b[0]))
@@ -3502,14 +3933,14 @@ function _renderMatchManager() {
                     <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">${_formatScheduleDate(date)}</div>
                     <div class="h-px flex-1 bg-gray-800"></div>
                 </div>`;
-            const cards = matches.map(entry => _managerRenderRow(entry, apiIndex, dbCache, stageCounters)).join('');
+            const cards = matches.map(entry => _managerRenderRow(entry, apiIndex, dbCache, stageCounters, claimedDbIds)).join('');
             return dayHeader + cards;
         }).join('');
 }
 
-function _managerRenderRow(entry, apiIndex, dbCache, stageCounters) {
+function _managerRenderRow(entry, apiIndex, dbCache, stageCounters, claimedDbIds) {
     const apiMatch = _managerFindApiMatch(entry, apiIndex, stageCounters);
-    const dbRow = _managerFindDbRow(entry, dbCache);
+    const dbRow = _managerFindDbRow(entry, dbCache, claimedDbIds);
     const rowKey = entry.slotKey || `${entry.home}|${entry.away}|${entry.date}`;
     const isExpanded = _managerExpandedKey === rowKey;
     const safeKey = rowKey.replace(/'/g, "\\'");
@@ -3573,7 +4004,8 @@ function _managerRenderRow(entry, apiIndex, dbCache, stageCounters) {
 
     const editForm = isExpanded ? _managerEditForm(entry, dbRow, safeKey) : '';
 
-    // Decide row container styling: red if mismatched, blue if expanded, gray otherwise
+    // Decide row container styling: red if teams mismatched, yellow if API
+    // calendar date doesn't match schedule (PT), blue if expanded, gray default.
     const placeholderRe = /^[12][A-L]$|^W:|^L:|^Best /;
     const expectsRealNames = !placeholderRe.test(homeLabel) && !placeholderRe.test(awayLabel);
     const apiHome = apiMatch?.team_home;
@@ -3582,11 +4014,24 @@ function _managerRenderRow(entry, apiIndex, dbCache, stageCounters) {
         (apiHome === homeLabel && apiAway === awayLabel) ||
         (apiHome === awayLabel && apiAway === homeLabel)
     );
+    const apiUtcForCheck = apiMatch?.utc_date ? new Date(apiMatch.utc_date) : null;
+    const apiUtcValid = apiUtcForCheck && !isNaN(apiUtcForCheck);
+    const apiDatePt = apiUtcValid
+        ? apiUtcForCheck.toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' })
+        : null;
+    const apiTimePt = apiUtcValid
+        ? apiUtcForCheck.toLocaleTimeString('en-GB', { timeZone: 'America/Vancouver', hour: '2-digit', minute: '2-digit', hour12: false })
+        : null;
+    const isDateMismatched = !!(apiDatePt && entry.date && apiDatePt !== entry.date);
+    const isTimeMismatched = !!(apiTimePt && entry.time && !isDateMismatched && apiTimePt !== entry.time);
+    const isWhenMismatched = isDateMismatched || isTimeMismatched;
     const containerClass = isMismatched
         ? 'border-red-500/60 bg-red-950/20'
-        : isExpanded
-            ? 'border-blue-500/60 bg-gray-900/50'
-            : 'border-gray-800 bg-gray-900/50';
+        : isWhenMismatched
+            ? 'border-yellow-500/70 bg-yellow-950/20'
+            : isExpanded
+                ? 'border-blue-500/60 bg-gray-900/50'
+                : 'border-gray-800 bg-gray-900/50';
 
     // Import button — show when API has a FINISHED score AND teams match AND left isn't manual-override
     const apiHasResult = apiMatch && apiMatch.api_status === 'FINISHED'
@@ -3625,9 +4070,11 @@ function _managerRenderRow(entry, apiIndex, dbCache, stageCounters) {
                         <button onclick="toggleManagerEdit('${safeKey}')" class="px-3 py-1 rounded-lg border ${isExpanded ? 'border-blue-500 text-blue-300' : 'border-gray-700 text-gray-300'} bg-gray-800 text-[10px] font-black uppercase tracking-[0.18em] hover:border-blue-500/60 hover:text-blue-300 transition-colors">${isExpanded ? 'Cancel' : editLabel}</button>
                     </div>
                 </div>
-                <div class="p-4 ${isMismatched ? 'bg-red-950/20' : 'bg-gray-950/40'} space-y-2">
+                <div class="p-4 ${isMismatched ? 'bg-red-950/20' : isWhenMismatched ? 'bg-yellow-950/20' : 'bg-gray-950/40'} space-y-2">
                     ${rightContent}
                     ${isMismatched ? '<div class="text-[9px] font-black uppercase tracking-[0.15em] text-red-300">⚠️ API teams differ from schedule</div>' : ''}
+                    ${!isMismatched && isDateMismatched ? `<div class="text-[9px] font-black uppercase tracking-[0.15em] text-yellow-300">⚠️ API date differs · API ${escapeHtml(apiDatePt)} · Schedule ${escapeHtml(entry.date)}</div>` : ''}
+                    ${!isMismatched && !isDateMismatched && isTimeMismatched ? `<div class="text-[9px] font-black uppercase tracking-[0.15em] text-yellow-300">⚠️ API time differs · API ${escapeHtml(apiTimePt)} PT · Schedule ${escapeHtml(entry.time)} PT</div>` : ''}
                 </div>
             </div>
             ${editForm}
@@ -3641,18 +4088,21 @@ async function managerImportApi(safeKey) {
     if (!entry) return;
     const apiIndex = _managerBuildApiIndex();
     const stageCounters = {};
-    // Walk the schedule in same order as render so the counter ends up right
+    const dbCache = _scheduleBrowserLoggedCache || [];
+    const claimedDbIds = new Set();
+    // Walk the schedule in same order as render so the counter + claim Set
+    // both end up at the right position when we hit the target entry.
     for (const e of allEntries) {
         if ((e.slotKey || `${e.home}|${e.away}|${e.date}`) === safeKey) break;
         _managerFindApiMatch(e, apiIndex, stageCounters);
+        _managerFindDbRow(e, dbCache, claimedDbIds);
     }
     const apiMatch = _managerFindApiMatch(entry, apiIndex, stageCounters);
     if (!apiMatch || apiMatch.api_status !== 'FINISHED' || apiMatch.score_home == null || apiMatch.score_away == null) {
         showToast?.('No FINISHED API result for this match.');
         return;
     }
-    const dbCache = _scheduleBrowserLoggedCache || [];
-    const dbRow = _managerFindDbRow(entry, dbCache);
+    const dbRow = _managerFindDbRow(entry, dbCache, claimedDbIds);
     const stage = entry.stage || (entry.group ? 'Group' : '');
     const payload = {
         team_home: apiMatch.team_home,
@@ -3820,7 +4270,7 @@ function showAdminTab(tabId) {
     if (tabId === 'manager') {
         // First open: refresh both API + DB cache, then render. Subsequent opens just re-render.
         if (!_managerApiPlanned.length) {
-            runManagerSync();
+            runManagerSync(true);
         } else {
             _renderMatchManager();
         }
@@ -10990,13 +11440,16 @@ Object.assign(window, {
     undoSendMessage,
     fetchAdminVerifyTournament,
     setVerifyTournamentFilter,
-    downloadTournamentVerifyCsv
+    downloadTournamentVerifyCsv,
+    toggleManagerArchiveMenu,
+    openArchivedAdminTab
 });
 
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         GROUP_STAGE_SCHEDULE,
         KNOCKOUT_SCHEDULE,
+        TEAM_REPORT_DATA,
         computeGroupStandings,
         _getBestThirdPlaceTeams,
         _getBestThirdSlots,
@@ -11004,6 +11457,8 @@ if (typeof module !== 'undefined' && module.exports) {
         _buildFallbackBestThirdAssignments,
         _resolveKnockoutMatchTeam,
         _buildDerivedTeamStatusRows,
-        buildTournamentAudit
+        buildTournamentAudit,
+        _getFifaRank,
+        _detectTiebreakerWarnings
     };
 }

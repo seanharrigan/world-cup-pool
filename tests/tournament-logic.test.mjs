@@ -398,6 +398,63 @@ test('uniqueness-safe fallback assigns Best 3rd slots without duplicates when of
     }
 });
 
+test('fifaRank decides in-group tie when overall + H2H stats are all equal, and emits a tiebreaker warning', () => {
+    const api = loadTournamentApi();
+    // Mexico (FIFA #15) and South Korea (#25) finish identical on
+    // pts/gd/gf AND draw 1-1 head-to-head — every step before fifaRank ties.
+    // Mexico must rank higher than South Korea, and audit.tiebreakerWarnings
+    // must surface the tie so it can be displayed as a yellow warning.
+    const matches = buildGroupAMatches(api, [
+        { home: 'Mexico',       away: 'South Africa', scoreHome: 2, scoreAway: 0 },
+        { home: 'South Korea',  away: 'Czechia',      scoreHome: 2, scoreAway: 0 },
+        { home: 'Czechia',      away: 'South Africa', scoreHome: 1, scoreAway: 0 },
+        { home: 'Mexico',       away: 'South Korea',  scoreHome: 1, scoreAway: 1 },
+        { home: 'Czechia',      away: 'Mexico',       scoreHome: 0, scoreAway: 0 },
+        { home: 'South Africa', away: 'South Korea',  scoreHome: 0, scoreAway: 0 }
+    ]);
+
+    const standings = api.computeGroupStandings(matches);
+    const teamsA = standings.A.teams;
+    const mex = teamsA.find((t) => t.name === 'Mexico');
+    const kor = teamsA.find((t) => t.name === 'South Korea');
+
+    // Sanity: Mexico and South Korea identical on every on-pitch stat.
+    assert.equal(mex.pts, 5);
+    assert.equal(kor.pts, 5);
+    assert.equal(mex.gd, kor.gd);
+    assert.equal(mex.gf, kor.gf);
+
+    // FIFA ranking should rank Mexico (#15) above South Korea (#25).
+    const mexIdx = teamsA.findIndex((t) => t.name === 'Mexico');
+    const korIdx = teamsA.findIndex((t) => t.name === 'South Korea');
+    assert.ok(mexIdx < korIdx, `Mexico (FIFA #15) should rank above South Korea (FIFA #25); got mex=${mexIdx}, kor=${korIdx}`);
+
+    // The audit should surface this as a tiebreaker warning.
+    const audit = api.buildTournamentAudit(matches);
+    const groupWarnings = audit.tiebreakerWarnings.filter((w) => w.scope === 'group' && w.group === 'A');
+    assert.equal(groupWarnings.length, 1, `expected 1 group-A tiebreaker warning, got ${audit.tiebreakerWarnings.length} total`);
+
+    const warning = groupWarnings[0];
+    const warnedNames = warning.teams.map((t) => t.name).sort();
+    assert.deepEqual(warnedNames, ['Mexico', 'South Korea']);
+    assert.equal(warning.sharedStats.pts, 5);
+    assert.equal(warning.sharedStats.gd, mex.gd);
+    assert.equal(warning.sharedStats.gf, mex.gf);
+
+    // Warnings are advisory only — overall pass shouldn't be downgraded.
+    assert.equal(audit.summary.tiebreakerWarningCount, 1);
+});
+
+test('_getFifaRank returns the official rank for known teams and 999 for unknowns', () => {
+    const api = loadTournamentApi();
+    assert.equal(api._getFifaRank('France'), 1);
+    assert.equal(api._getFifaRank('Spain'), 2);
+    assert.equal(api._getFifaRank('Mexico'), 15);
+    assert.equal(api._getFifaRank('South Korea'), 25);
+    assert.equal(api._getFifaRank('Atlantis'), 999);
+    assert.equal(api._getFifaRank(undefined), 999);
+});
+
 // ── Randomized stress test ──────────────────────────────────────────────────
 // Quick statistical guard against regressions. The full N-run stress lives at
 // `npm run stress` (see tests/stress-sim.mjs). 25 runs here adds ~100ms to
