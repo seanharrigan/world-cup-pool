@@ -339,10 +339,21 @@
         #mobile-menu { transition: max-height 0.3s ease-out; max-height: 0; overflow: hidden; }
         #mobile-menu.open { max-height: 450px; }
 
-        /* Smooth 150ms fade when switching between pages — fast enough to feel instant */
-        @keyframes pageFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .page-content:not(.hidden) { animation: pageFadeIn 0.15s ease; }
+        /* Page transition: subtle slide + fade with a snappy ease-out so the new
+           view feels like it's settling in rather than just popping. ~220ms total. */
+        @keyframes pageEnter {
+            0%   { opacity: 0; transform: translateY(8px) scale(0.995); filter: blur(2px); }
+            60%  { opacity: 1; filter: blur(0); }
+            100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+        .page-content:not(.hidden) {
+            animation: pageEnter 0.22s cubic-bezier(0.22, 0.8, 0.36, 1) both;
+            will-change: opacity, transform;
+        }
         .page-content.hidden { display: none !important; }
+        @media (prefers-reduced-motion: reduce) {
+            .page-content:not(.hidden) { animation: none; }
+        }
         /* Force flex column on results page — tab bar must always sit above the scroll area */
         #page-results:not(.hidden) { display: flex !important; flex-direction: column; }
 
