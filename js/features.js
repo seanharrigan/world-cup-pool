@@ -7831,6 +7831,61 @@ async function resetAllTeamStatus() {
     }
 }
 
+async function clearAllPicks() {
+    const shouldClear = await showConfirmModal({
+        label: 'Are You Sure?',
+        icon: '⚠️',
+        title: "Clear Everyone's Picks?",
+        message: "This will delete every saved squad in the pool.",
+        detail: 'Accounts, profiles, chat history, and payment status will stay intact. Every player will need to re-pick from scratch.',
+        confirmText: 'Yes, Clear All Picks',
+        cancelText: 'Cancel'
+    });
+    if (!shouldClear) return;
+
+    const finalClear = await showConfirmModal({
+        label: 'Final Check',
+        icon: '🗑️',
+        title: 'One Last Time',
+        message: 'Every saved squad will be permanently deleted.',
+        detail: 'Are you absolutely sure?',
+        confirmText: 'Clear All Picks',
+        cancelText: 'Cancel'
+    });
+    if (!finalClear) return;
+
+    const button = document.getElementById('admin-clear-picks-btn');
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'Clearing...';
+    }
+
+    try {
+        const { error } = await supabaseClient
+            .from('picks')
+            .delete()
+            .neq('user_email', '');
+        if (error) throw error;
+
+        if (Array.isArray(myPicks) && myPicks.length) {
+            myPicks = [];
+            updateUI();
+        }
+
+        fetchAdminUsers();
+        fetchLeaderboard();
+        fetchStats();
+        showToast("All picks cleared. Players can now re-pick.", 'success');
+    } catch (error) {
+        showToast(error.message || 'Unable to clear picks.');
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Clear All Picks';
+        }
+    }
+}
+
 async function resetAllMatches() {
     const shouldReset = await showConfirmModal({
         label: 'Are You Sure?',
@@ -11412,6 +11467,7 @@ Object.assign(window, {
     toggleTeamElimination,
     resetAllTeamStatus,
     resetAllMatches,
+    clearAllPicks,
     simulateAllScheduledMatches,
     togglePicksLock,
     toggleAutoLock
