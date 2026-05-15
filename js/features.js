@@ -3568,6 +3568,11 @@ function setupAdminPage() {
     }
 }
 
+function applyPublicVisibilityStyles() {
+    if (typeof document === 'undefined') return;
+    document.body.classList.toggle('hide-upside', Boolean(appSettings.hideTeamSelection));
+}
+
 function syncAdminToggleControls() {
     const lockToggle = document.getElementById('admin-lock-picks-toggle');
     const autoLockToggle = document.getElementById('admin-auto-lock-toggle');
@@ -4597,6 +4602,7 @@ async function toggleHideTeamSelection(checked) {
             hidePlayerChips: appSettings.hidePlayerChips
         });
         syncAdminToggleControls();
+        applyPublicVisibilityStyles();
         setupDashboard();
         fetchLeaderboard();
         updateResultsSelectionVisibility();
@@ -9430,7 +9436,7 @@ async function fetchLeaderboard() {
                         </div>
                     </div>
                 </td>
-                <td class="px-2 py-2.5 text-center">
+                <td class="lb-upside-col px-2 py-2.5 text-center">
                     <div class="text-sm font-black text-gray-900">${upside}</div>
                     <div class="text-[8px] font-black text-gray-400 leading-none">/100</div>
                 </td>
@@ -10870,6 +10876,7 @@ function closeScoreModal() {
 const UPSIDE_BEST_EMAIL = '__best_possible__';
 
 function showMyUpsideCard() {
+    if (appSettings.hideTeamSelection) return;
     const modal = document.getElementById('upside-modal');
     if (!modal) return;
     modal.classList.remove('hidden');

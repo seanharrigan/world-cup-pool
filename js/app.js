@@ -589,6 +589,7 @@ async function fetchAppSettings() {
     }
 
     refreshLockState();
+    if (typeof applyPublicVisibilityStyles === 'function') applyPublicVisibilityStyles();
     return appSettings;
 }
 
