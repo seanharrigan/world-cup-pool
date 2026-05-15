@@ -15,3 +15,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# Local scratch / publish artifacts
+.herenow/
+tier-compare/
