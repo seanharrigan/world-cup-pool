@@ -564,15 +564,7 @@ function renderPool() {
     container.innerHTML = '';
 
     [1, 2, 3].forEach((tierNum) => {
-        const tierTeams = teams
-            .filter((team) => team.tier === tierNum)
-            .sort((a, b) => {
-                if (b.cost !== a.cost) {
-                    return b.cost - a.cost;
-                }
-
-                return a.name.localeCompare(b.name);
-            });
+        const tierTeams = teams.filter((team) => team.tier === tierNum);
 
         const section = document.createElement('div');
         section.innerHTML = `
