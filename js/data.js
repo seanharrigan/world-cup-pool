@@ -9,6 +9,7 @@ let appSettings = {
     picksLocked: false,
     autoLockAtKickoff: true,
     hideTeamSelection: false,
+    hidePlayerChips: false,
     autoTeamStatusSync: false
 };
 let advancedTeams = new Set();

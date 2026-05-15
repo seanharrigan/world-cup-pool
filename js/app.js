@@ -561,7 +561,7 @@ async function fetchAppSettings() {
     try {
         const { data, error } = await supabaseClient
             .from('app_settings')
-            .select('key, picks_locked, auto_lock_at_kickoff, hide_team_selection')
+            .select('key, picks_locked, auto_lock_at_kickoff, hide_team_selection, hide_player_chips')
             .eq('key', 'global')
             .maybeSingle();
 
@@ -573,11 +573,13 @@ async function fetchAppSettings() {
             appSettings.picksLocked = Boolean(data.picks_locked);
             appSettings.autoLockAtKickoff = data.auto_lock_at_kickoff !== false;
             appSettings.hideTeamSelection = Boolean(data.hide_team_selection);
+            appSettings.hidePlayerChips = Boolean(data.hide_player_chips);
         }
     } catch (error) {
         appSettings.picksLocked = false;
         appSettings.autoLockAtKickoff = true;
         appSettings.hideTeamSelection = false;
+        appSettings.hidePlayerChips = false;
     }
 
     try {
@@ -616,7 +618,8 @@ async function saveAppSettings(nextSettings = {}) {
         key: 'global',
         picks_locked: Boolean(nextSettings.picksLocked),
         auto_lock_at_kickoff: nextSettings.autoLockAtKickoff !== false,
-        hide_team_selection: Boolean(nextSettings.hideTeamSelection)
+        hide_team_selection: Boolean(nextSettings.hideTeamSelection),
+        hide_player_chips: Boolean(nextSettings.hidePlayerChips)
     };
 
     const { error } = await supabaseClient
@@ -630,6 +633,7 @@ async function saveAppSettings(nextSettings = {}) {
     appSettings.picksLocked = payload.picks_locked;
     appSettings.autoLockAtKickoff = payload.auto_lock_at_kickoff;
     appSettings.hideTeamSelection = payload.hide_team_selection;
+    appSettings.hidePlayerChips = payload.hide_player_chips;
     refreshLockState();
     return appSettings;
 }

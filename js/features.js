@@ -3572,6 +3572,7 @@ function syncAdminToggleControls() {
     const lockToggle = document.getElementById('admin-lock-picks-toggle');
     const autoLockToggle = document.getElementById('admin-auto-lock-toggle');
     const hideTeamSelectionToggle = document.getElementById('admin-hide-team-selection-toggle');
+    const hidePlayerChipsToggle = document.getElementById('admin-hide-player-chips-toggle');
     const autoTeamStatusToggle = document.getElementById('admin-auto-team-status-toggle');
 
     if (lockToggle) {
@@ -3584,6 +3585,10 @@ function syncAdminToggleControls() {
 
     if (hideTeamSelectionToggle) {
         hideTeamSelectionToggle.checked = Boolean(appSettings.hideTeamSelection);
+    }
+
+    if (hidePlayerChipsToggle) {
+        hidePlayerChipsToggle.checked = Boolean(appSettings.hidePlayerChips);
     }
 
     if (autoTeamStatusToggle) {
@@ -4554,7 +4559,8 @@ async function togglePicksLock(checked) {
         await saveAppSettings({
             picksLocked: checked,
             autoLockAtKickoff: appSettings.autoLockAtKickoff,
-            hideTeamSelection: appSettings.hideTeamSelection
+            hideTeamSelection: appSettings.hideTeamSelection,
+            hidePlayerChips: appSettings.hidePlayerChips
         });
         syncAdminToggleControls();
         renderPool();
@@ -4571,7 +4577,8 @@ async function toggleAutoLock(checked) {
         await saveAppSettings({
             picksLocked: appSettings.picksLocked,
             autoLockAtKickoff: checked,
-            hideTeamSelection: appSettings.hideTeamSelection
+            hideTeamSelection: appSettings.hideTeamSelection,
+            hidePlayerChips: appSettings.hidePlayerChips
         });
         syncAdminToggleControls();
         showToast(checked ? 'Auto-lock enabled.' : 'Auto-lock disabled.', 'success');
@@ -4586,7 +4593,8 @@ async function toggleHideTeamSelection(checked) {
         await saveAppSettings({
             picksLocked: appSettings.picksLocked,
             autoLockAtKickoff: appSettings.autoLockAtKickoff,
-            hideTeamSelection: checked
+            hideTeamSelection: checked,
+            hidePlayerChips: appSettings.hidePlayerChips
         });
         syncAdminToggleControls();
         setupDashboard();
@@ -4599,6 +4607,24 @@ async function toggleHideTeamSelection(checked) {
     } catch (error) {
         syncAdminToggleControls();
         showToast(error.message || 'Unable to update team visibility.');
+    }
+}
+
+async function toggleHidePlayerChips(checked) {
+    try {
+        await saveAppSettings({
+            picksLocked: appSettings.picksLocked,
+            autoLockAtKickoff: appSettings.autoLockAtKickoff,
+            hideTeamSelection: appSettings.hideTeamSelection,
+            hidePlayerChips: checked
+        });
+        syncAdminToggleControls();
+        setupDashboard();
+        fetchLeaderboard();
+        showToast(checked ? 'Player chips hidden.' : 'Player chips visible.', 'success');
+    } catch (error) {
+        syncAdminToggleControls();
+        showToast(error.message || 'Unable to update chip visibility.');
     }
 }
 
@@ -6048,6 +6074,7 @@ function closeDashReportCard() {
 }
 
 function showDashChips() {
+    if (appSettings.hidePlayerChips) return;
     const modal = document.getElementById('dash-chips-modal');
     if (!modal) return;
     modal.classList.remove('hidden');
@@ -6903,7 +6930,11 @@ async function setupDashboard() {
         // Chips preview
         const myLbEntry = leaderboardData.find((e) => e.email === userEmail);
         const chips = myLbEntry?.chips || window._playerChipsByEmail?.[userEmail] || [];
-        if (chipsPreviewEl) {
+        const chipsButton = chipsPreviewEl?.closest('button');
+        if (chipsButton) {
+            chipsButton.classList.toggle('hidden', Boolean(appSettings.hidePlayerChips));
+        }
+        if (chipsPreviewEl && !appSettings.hidePlayerChips) {
             if (chips.length > 0) {
                 const toneClasses = { positive: 'bg-green-100 border-2 border-green-600', negative: 'bg-red-100 border-2 border-red-600', neutral: 'bg-sky-100 border-2 border-sky-600' };
                 const first = chips[0];
@@ -8984,6 +9015,9 @@ function getPlayerChipById(email, chipId) {
 }
 
 function renderPlayerChips(chips = [], email = '', variant = 'row', scopeId = '') {
+    if (appSettings.hidePlayerChips) {
+        return '';
+    }
     if (!chips.length) {
         return '';
     }
@@ -11473,6 +11507,7 @@ Object.assign(window, {
     toggleAutoLock
     ,
     toggleHideTeamSelection,
+    toggleHidePlayerChips,
     toggleAutoTeamStatusSync,
     renderProfileFavoriteBanner,
     applyPicksAccentTheme,
