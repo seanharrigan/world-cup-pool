@@ -5912,6 +5912,26 @@ function showDashReportCard() {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 
+    if (appSettings.hideTeamSelection) {
+        const sidebar = document.getElementById('dash-report-sidebar');
+        const body = document.getElementById('dash-report-modal-body');
+        if (sidebar) sidebar.innerHTML = '';
+        if (body) {
+            body.innerHTML = `
+                <div class="max-w-md mx-auto text-center py-10 space-y-4">
+                    <div class="text-6xl">🎓</div>
+                    <div class="text-lg font-black uppercase tracking-[0.15em] text-white">Report Card</div>
+                    <div class="text-sm text-gray-400 leading-relaxed">
+                        Each squad gets a letter grade based on the quality of its picks — a weighted blend of <span class="text-blue-400 font-black">odds value</span>, <span class="text-purple-400 font-black">FIFA rankings</span>, and <span class="text-emerald-400 font-black">squad balance</span>.
+                    </div>
+                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 pt-2">
+                        Grades will appear here once the World Cup starts.
+                    </div>
+                </div>`;
+        }
+        return;
+    }
+
     const allEntries = window._leaderboardData || [];
     _dashReportRanked = allEntries
         .map((entry) => ({ entry, rc: _computeReportCard(entry.squad) }))
@@ -6928,14 +6948,15 @@ async function setupDashboard() {
             }
         }
         // Report card grade
-        const reportCardButton = reportGradeEl?.closest('button');
-        if (reportCardButton) {
-            reportCardButton.classList.toggle('hidden', Boolean(appSettings.hideTeamSelection));
-        }
-        if (reportGradeEl && !appSettings.hideTeamSelection && liveSquad.length > 0) {
-            const rc = _computeReportCard(liveSquad);
-            reportGradeEl.textContent = rc ? rc.grade : '—';
-            window._dashReportCard = rc;
+        if (reportGradeEl) {
+            if (appSettings.hideTeamSelection) {
+                reportGradeEl.innerHTML = '<span class="text-sm">TBD</span>';
+                window._dashReportCard = null;
+            } else if (liveSquad.length > 0) {
+                const rc = _computeReportCard(liveSquad);
+                reportGradeEl.textContent = rc ? rc.grade : '—';
+                window._dashReportCard = rc;
+            }
         }
         // Chips preview
         const myLbEntry = leaderboardData.find((e) => e.email === userEmail);
