@@ -10684,8 +10684,10 @@ function updateNameFilterOptions(leaderboardData) {
         const label = user.nickname || user.email.split('@')[0];
         const searchText = `${label} ${user.realname || ''}`.toLowerCase();
         const isSelected = user.email === currentValue;
-        const flagEl = user.squad?.[0]?.flag ? `<span>${user.squad[0].flag}</span>` : '<span>👤</span>';
-        return `<button type="button" onclick="selectNameFilter(${JSON.stringify(user.email)},${JSON.stringify(label)})" class="name-filter-option w-full text-left px-4 py-2.5 text-sm font-bold flex items-center gap-2 ${isSelected ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'}" data-search-text="${searchText.replace(/"/g, '&quot;')}">${flagEl}<div class="min-w-0"><div class="truncate">${escapeHtml(label)}</div>${user.realname ? `<div class="text-[10px] text-gray-400">${escapeHtml(user.realname)}</div>` : ''}</div></button>`;
+        const showFlag = !appSettings.hideTeamSelection && user.squad?.[0]?.flag;
+        const flagEl = showFlag ? `<span>${user.squad[0].flag}</span>` : '';
+        const gapClass = showFlag ? ' flex items-center gap-2' : '';
+        return `<button type="button" onclick="selectNameFilter(${JSON.stringify(user.email)},${JSON.stringify(label)})" class="name-filter-option w-full text-left px-4 py-2.5 text-sm font-bold${gapClass} ${isSelected ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'}" data-search-text="${searchText.replace(/"/g, '&quot;')}">${flagEl}<div class="min-w-0"><div class="truncate">${escapeHtml(label)}</div>${user.realname ? `<div class="text-[10px] text-gray-400">${escapeHtml(user.realname)}</div>` : ''}</div></button>`;
     });
 
     list.innerHTML = allOption + playerOptions.join('');
