@@ -10344,7 +10344,7 @@ async function showPlayerProfile(email) {
     // Squad section
     let squadHtml = '';
     let budgetUsed = 0;
-    const squadHidden = Boolean(appSettings.hideTeamSelection);
+    const squadHidden = Boolean(appSettings.hideTeamSelection) && email !== userEmail;
     if (squadHidden) {
         squadHtml = '<div class="col-span-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 py-2">Teams to be displayed when WC starts</div>';
     } else if (playerEntry?.squad?.length > 0) {
@@ -11375,7 +11375,7 @@ async function showOwnerPlayer(email) {
 
     let squadHtml = '';
     let budgetUsed = 0;
-    if (appSettings.hideTeamSelection) {
+    if (appSettings.hideTeamSelection && email !== userEmail) {
         squadHtml = '<div class="col-span-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 py-2">Teams to be displayed when WC starts</div>';
     } else if (squad.length > 0) {
         budgetUsed = squad.reduce((sum, t) => sum + (t.cost || 0), 0);
