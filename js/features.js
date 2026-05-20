@@ -6252,6 +6252,8 @@ function closeDashChips() {
 }
 
 function setDashRightTab(tab) {
+    const oddsHidden = Boolean(appSettings.hideTeamSelection);
+    if (oddsHidden && tab === 'rankings') tab = 'board';
     ['board', 'matches', 'rankings', 'groups', 'map'].forEach((t) => {
         const content = document.getElementById(`dash-tab-content-${t}`);
         const btn = document.getElementById(`dash-tab-btn-${t}`);
@@ -6259,6 +6261,7 @@ function setDashRightTab(tab) {
         if (btn) {
             btn.classList.toggle('theme-primary-button', t === tab);
             btn.classList.toggle('text-gray-500', t !== tab);
+            if (t === 'rankings') btn.classList.toggle('hidden', oddsHidden);
         }
     });
     if (tab === 'matches') renderDashMatchesTab();
