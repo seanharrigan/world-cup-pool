@@ -10298,7 +10298,10 @@ async function showPlayerProfile(email) {
     // Squad section
     let squadHtml = '';
     let budgetUsed = 0;
-    if (playerEntry?.squad?.length > 0) {
+    const squadHidden = Boolean(appSettings.hideTeamSelection);
+    if (squadHidden) {
+        squadHtml = '<div class="col-span-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 py-2">Teams to be displayed when WC starts</div>';
+    } else if (playerEntry?.squad?.length > 0) {
         budgetUsed = playerEntry.squad.reduce((sum, t) => sum + (t.cost || 0), 0);
         const teamBreakdownMap = buildTeamStageBreakdownMap(window._matchesCache || [], teams, advancedTeams);
         squadHtml = playerEntry.squad
@@ -11255,7 +11258,7 @@ async function showTeamOwners(teamName) {
     }
 
     listEl.innerHTML = owners.map((u) => {
-        const squadFlags = [...u.squad]
+        const squadFlags = appSettings.hideTeamSelection ? '' : [...u.squad]
             .sort((a, b) => (b.cost || 0) - (a.cost || 0))
             .map((t) => `<span class="text-base leading-none${t.eliminated ? ' opacity-30' : ''}">${t.flag || ''}</span>`)
             .join('');
@@ -11324,7 +11327,9 @@ async function showOwnerPlayer(email) {
 
     let squadHtml = '';
     let budgetUsed = 0;
-    if (squad.length > 0) {
+    if (appSettings.hideTeamSelection) {
+        squadHtml = '<div class="col-span-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 py-2">Teams to be displayed when WC starts</div>';
+    } else if (squad.length > 0) {
         budgetUsed = squad.reduce((sum, t) => sum + (t.cost || 0), 0);
         squadHtml = [...squad]
             .sort((a, b) => (b.cost || 0) - (a.cost || 0) || a.name.localeCompare(b.name))
