@@ -5068,6 +5068,8 @@ function buildTeamMatchStats(matches) {
 }
 
 function setMapTableSort(sort) {
+    const hideOwnership = Boolean(appSettings.hideTeamSelection);
+    if (hideOwnership && sort === 'picked') sort = 'points';
     _mapTableSort = sort;
     document.querySelectorAll('.map-sort-btn').forEach((btn) => {
         const active = btn.dataset.sort === sort;
@@ -5075,6 +5077,7 @@ function setMapTableSort(sort) {
         btn.classList.toggle('shadow-sm', active);
         btn.classList.toggle('text-gray-900', active);
         btn.classList.toggle('text-gray-500', !active);
+        if (btn.dataset.sort === 'picked') btn.classList.toggle('hidden', hideOwnership);
     });
     renderMapSideTable();
 }
@@ -5343,6 +5346,8 @@ function repaintMapPaths() {
 }
 
 function setMapColorMode(mode) {
+    const hideOwnership = Boolean(appSettings.hideTeamSelection);
+    if (hideOwnership && mode === 'ownership') mode = 'me';
     _mapColorMode = mode;
     ['ownership', 'groups', 'me'].forEach((m) => {
         const btn = document.getElementById(`map-mode-${m}`);
@@ -5352,6 +5357,7 @@ function setMapColorMode(mode) {
         btn.classList.toggle('shadow-sm', active);
         btn.classList.toggle('text-gray-900', active);
         btn.classList.toggle('text-gray-500', !active);
+        if (m === 'ownership') btn.classList.toggle('hidden', hideOwnership);
     });
     updateMapLegend();
     repaintMapPaths();
@@ -5509,6 +5515,8 @@ function renderMapIfNeeded() {
     if (!container || container.querySelector('svg')) return;
     const loading = document.getElementById('selection-map-loading');
     if (loading) loading.classList.add('hidden');
+    if (appSettings.hideTeamSelection && _mapColorMode === 'ownership') _mapColorMode = 'me';
+    if (appSettings.hideTeamSelection && _mapTableSort === 'picked') _mapTableSort = 'points';
     renderChoroplethMap(_mapCachedData.stats, _mapCachedData.worldData);
 }
 
@@ -6476,12 +6484,15 @@ function renderDashGroupsTab() {
 }
 
 function setDashMapMode(mode) {
+    const hidePicks = Boolean(appSettings.hideTeamSelection);
+    if (hidePicks && mode === 'picks') mode = 'groups';
     _dashMapMode = mode;
     ['groups', 'picks'].forEach((m) => {
         const btn = document.getElementById(`dash-map-mode-${m}`);
         if (!btn) return;
         const active = m === mode;
-        btn.style.cssText = `padding:2px 8px; border-radius:6px; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.1em; border:none; cursor:pointer; transition:all 0.15s; ${active ? 'background:#4b5563; color:#fff;' : 'background:transparent; color:#9ca3af;'}`;
+        const hidden = hidePicks && m === 'picks';
+        btn.style.cssText = `padding:2px 8px; border-radius:6px; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.1em; border:none; cursor:pointer; transition:all 0.15s; ${active ? 'background:#4b5563; color:#fff;' : 'background:transparent; color:#9ca3af;'}${hidden ? ' display:none;' : ''}`;
     });
     _renderDashMapSvg(_mapCachedData?.worldData);
 }
@@ -6490,6 +6501,7 @@ async function renderDashMapTab() {
     const body = document.getElementById('dash-map-body');
     if (!body) return;
 
+    if (appSettings.hideTeamSelection && _dashMapMode === 'picks') _dashMapMode = 'groups';
     _dashMapZoom = 1;
     window._dashMapDragTranslate = { x: 0, y: 0 };
     body.innerHTML = `
@@ -9052,6 +9064,9 @@ function getPlayerChipById(email, chipId) {
 }
 
 function renderPlayerChips(chips = [], email = '', variant = 'row', scopeId = '') {
+    if (appSettings.hideTeamSelection && email && email !== userEmail) {
+        return '';
+    }
     if (appSettings.hidePlayerChips) {
         return '';
     }
@@ -9384,7 +9399,7 @@ async function fetchLeaderboard() {
             `;
         };
 
-        const bestRowMarkup = bestAvailableTeam ? `
+        const bestRowMarkup = (bestAvailableTeam && !appSettings.hideTeamSelection) ? `
             <tr class="border-b border-gray-100 bg-gray-50 text-left text-gray-700">
                 <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center text-lg font-black text-gray-400">-</td>
                 <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center text-lg font-black text-gray-500">${bestAvailableTeam.totalPoints}</td>
@@ -10766,7 +10781,7 @@ function _renderScoreSidebar() {
     const sidebar = document.getElementById('score-sidebar');
     if (!sidebar) return;
     const best = window._dashBestAvailableTeam;
-    const bestRow = best && Array.isArray(best.squad) && best.squad.length === 8
+    const bestRow = best && Array.isArray(best.squad) && best.squad.length === 8 && !appSettings.hideTeamSelection
         ? (() => {
             const isSelected = _scoreSelectedEmail === SCORE_BEST_EMAIL;
             return `<button data-email="${SCORE_BEST_EMAIL}" onclick="selectScorePlayer('${SCORE_BEST_EMAIL}')"
@@ -10840,6 +10855,7 @@ function _renderScoreDetail(email) {
     };
 
     if (email === SCORE_BEST_EMAIL) {
+        if (appSettings.hideTeamSelection) { _renderScoreDetail(userEmail); return; }
         const best = window._dashBestAvailableTeam;
         if (!best) return;
         const rows = [...(best.squad || [])]
@@ -11203,6 +11219,7 @@ async function showDashTeamStats(teamName) {
 }
 
 async function showTeamOwners(teamName) {
+    if (appSettings.hideTeamSelection) return;
     const modal = document.getElementById('team-owners-modal');
     const headerEl = document.getElementById('team-owners-header');
     const listEl = document.getElementById('team-owners-list');
