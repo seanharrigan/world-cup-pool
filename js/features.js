@@ -7088,7 +7088,7 @@ async function setupDashboard() {
 
         // Leaderboard with prize badges for P1/P2/P3
         const playerCount = leaderboardData.length;
-        const pot = playerCount * 40;
+        const pot = playerCount * 50;
         if (prizePotEl) prizePotEl.textContent = `$${pot.toLocaleString()}`;
         if (playerCountEl) playerCountEl.textContent = `${playerCount} ${playerCount === 1 ? 'entry' : 'entries'}`;
         const prizes = [Math.floor(pot * 0.65), Math.floor(pot * 0.25), Math.floor(pot * 0.10)];
@@ -9326,7 +9326,7 @@ async function fetchLeaderboard() {
             ));
         }
 
-        const totalPot = playerCount * 40;
+        const totalPot = playerCount * 50;
 
         document.getElementById('total-players-count').innerText = playerCount;
         document.getElementById('total-prize-pot').innerText = `$${totalPot.toLocaleString()}`;
