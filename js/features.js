@@ -6703,7 +6703,10 @@ function _renderDashMapSvg(worldDataArg) {
 function renderDashOddsTab() {
     const body = document.getElementById('dash-odds-body');
     if (!body) return;
-    const ordered = [1, 2, 3].flatMap((tierNum) => teams.filter((t) => t.tier === tierNum));
+    const withOdds = teams.filter((t) => TEAM_REPORT_DATA[t.name])
+        .sort((a, b) => (TEAM_REPORT_DATA[b.name].winProb || 0) - (TEAM_REPORT_DATA[a.name].winProb || 0));
+    const withoutOdds = teams.filter((t) => !TEAM_REPORT_DATA[t.name]);
+    const ordered = [...withOdds, ...withoutOdds];
     const tierColor = { 1: 'bg-amber-100 text-amber-700', 2: 'bg-blue-100 text-blue-600', 3: 'bg-gray-100 text-gray-500' };
     const tierLabel = { 1: 'T1', 2: 'T2', 3: 'T3' };
     body.innerHTML = `
