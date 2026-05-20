@@ -6683,9 +6683,7 @@ function _renderDashMapSvg(worldDataArg) {
 function renderDashOddsTab() {
     const body = document.getElementById('dash-odds-body');
     if (!body) return;
-    const sorted = [...teams]
-        .filter((t) => TEAM_REPORT_DATA[t.name])
-        .sort((a, b) => (TEAM_REPORT_DATA[b.name].winProb || 0) - (TEAM_REPORT_DATA[a.name].winProb || 0));
+    const ordered = [1, 2, 3].flatMap((tierNum) => teams.filter((t) => t.tier === tierNum));
     const tierColor = { 1: 'bg-amber-100 text-amber-700', 2: 'bg-blue-100 text-blue-600', 3: 'bg-gray-100 text-gray-500' };
     const tierLabel = { 1: 'T1', 2: 'T2', 3: 'T3' };
     body.innerHTML = `
@@ -6693,18 +6691,20 @@ function renderDashOddsTab() {
             <div>Team</div><div class="text-right">Win%</div><div class="text-right">Cost</div><div class="text-right">FIFA</div>
         </div>
         <div class="space-y-0.5">
-            ${sorted.map((t) => {
+            ${ordered.map((t) => {
                 const d = TEAM_REPORT_DATA[t.name];
                 const tCls = tierColor[t.tier] || tierColor[3];
+                const winPct = d ? `${d.winProb.toFixed(1)}%` : '—';
+                const fifa = d ? `#${d.fifaRank}` : '—';
                 return `<div class="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-2 py-1 border-b border-gray-50">
                     <div class="flex items-center gap-1.5 min-w-0">
                         <span class="text-sm shrink-0">${t.flag}</span>
                         <div class="text-[10px] font-black text-gray-800 truncate">${escapeHtml(t.name)}</div>
                         <span class="text-[8px] font-black px-1 py-0.5 rounded-full ${tCls} shrink-0">${tierLabel[t.tier]}</span>
                     </div>
-                    <div class="text-[10px] font-black text-gray-600 text-right">${d.winProb.toFixed(1)}%</div>
+                    <div class="text-[10px] font-black text-gray-600 text-right">${winPct}</div>
                     <div class="text-[10px] font-black text-gray-600 text-right">$${t.cost}</div>
-                    <div class="text-[10px] font-black text-gray-500 text-right">#${d.fifaRank}</div>
+                    <div class="text-[10px] font-black text-gray-500 text-right">${fifa}</div>
                 </div>`;
             }).join('')}
         </div>
@@ -6928,7 +6928,11 @@ async function setupDashboard() {
             }
         }
         // Report card grade
-        if (reportGradeEl && liveSquad.length > 0) {
+        const reportCardButton = reportGradeEl?.closest('button');
+        if (reportCardButton) {
+            reportCardButton.classList.toggle('hidden', Boolean(appSettings.hideTeamSelection));
+        }
+        if (reportGradeEl && !appSettings.hideTeamSelection && liveSquad.length > 0) {
             const rc = _computeReportCard(liveSquad);
             reportGradeEl.textContent = rc ? rc.grade : '—';
             window._dashReportCard = rc;
