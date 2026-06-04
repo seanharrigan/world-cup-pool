@@ -837,7 +837,7 @@ async function renderGroups() {
 }
 
 const TOURNAMENT_PHASES = [
-    { label: 'Kick Off',       date: new Date('2026-06-11T16:00:00') },
+    { label: 'Kick Off',       date: LOCK_DATE },
     { label: 'Round of 32',    date: new Date('2026-07-04T12:00:00') },
     { label: 'Round of 16',    date: new Date('2026-07-11T12:00:00') },
     { label: 'Quarter Finals', date: new Date('2026-07-17T12:00:00') },
