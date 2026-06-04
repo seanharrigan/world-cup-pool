@@ -11598,6 +11598,123 @@ Object.assign(window, {
     openArchivedAdminTab
 });
 
+async function generatePlayerReport() {
+    if (typeof isProtectedAdminEmail !== 'function' || !isProtectedAdminEmail(userEmail)) {
+        if (typeof showToast === 'function') showToast('Admin access required.');
+        return;
+    }
+
+    const [profilesRes, picksRes] = await Promise.all([
+        supabaseClient.from('profiles').select('email, nickname, realname, favorite_team, home_country, has_paid, picks_save_count'),
+        supabaseClient.from('picks').select('user_email, team_name, cost, tier')
+    ]);
+
+    if (profilesRes.error || picksRes.error) {
+        if (typeof showToast === 'function') showToast('Could not load player data for the report.');
+        return;
+    }
+
+    const userMap = new Map();
+    (profilesRes.data || []).forEach((p) => {
+        userMap.set(p.email, {
+            email: p.email,
+            realname: p.realname || '',
+            nickname: p.nickname || '',
+            country: p.home_country || '',
+            favoriteTeam: p.favorite_team || '',
+            hasPaid: Boolean(p.has_paid),
+            saveCount: Number(p.picks_save_count || 0),
+            picks: []
+        });
+    });
+    (picksRes.data || []).forEach((row) => {
+        const user = userMap.get(row.user_email);
+        if (user) user.picks.push({ name: row.team_name, cost: Number(row.cost || 0) });
+    });
+
+    const rows = Array.from(userMap.values())
+        .sort((a, b) => (a.realname || a.nickname || a.email).localeCompare(b.realname || b.nickname || b.email));
+
+    const reportWin = window.open('', '_blank');
+    if (!reportWin) {
+        if (typeof showToast === 'function') showToast('Allow pop-ups to generate the report.');
+        return;
+    }
+    reportWin.document.open();
+    reportWin.document.write(buildPlayerReportHtml(rows));
+    reportWin.document.close();
+    reportWin.onload = () => {
+        try { reportWin.focus(); reportWin.print(); } catch (e) { /* user can print manually */ }
+    };
+}
+
+function buildPlayerReportHtml(rows) {
+    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const totalPlayers = rows.length;
+    const totalPaid = rows.filter((r) => r.hasPaid).length;
+    const totalComplete = rows.filter((r) => r.picks.length === 8).length;
+    const esc = _escapeReportHtml;
+
+    const rowHtml = rows.map((r) => {
+        const squad = r.picks.map((p) => p.name).join(', ') || '—';
+        const spent = r.picks.reduce((s, p) => s + p.cost, 0);
+        const remaining = 150 - spent;
+        const missing = r.picks.length < 8;
+        return `
+            <tr>
+                <td>${esc(r.realname || r.nickname || r.email)}</td>
+                <td>${esc(r.nickname)}</td>
+                <td>${esc(r.country)}</td>
+                <td>${esc(r.favoriteTeam)}</td>
+                <td class="squad">${esc(squad)}</td>
+                <td class="num">${r.picks.length}</td>
+                <td class="num">$${remaining}</td>
+                <td class="num">${r.saveCount}</td>
+                <td class="${missing ? 'flag-bad' : 'flag-good'}">${missing ? `Missing ${8 - r.picks.length}` : 'Complete'}</td>
+                <td class="${r.hasPaid ? 'flag-good' : 'flag-bad'}">${r.hasPaid ? 'Paid' : 'Unpaid'}</td>
+            </tr>`;
+    }).join('');
+
+    return `<!doctype html>
+<html><head><meta charset="utf-8"><title>WC2026 Pool — Player Report</title>
+<style>
+    @page { size: landscape; margin: 0.5in; }
+    body { font-family: -apple-system, system-ui, sans-serif; color: #111; margin: 0; padding: 24px; }
+    h1 { margin: 0 0 4px; font-size: 22px; }
+    .meta { color: #555; font-size: 11px; margin-bottom: 16px; }
+    .summary { display: flex; gap: 24px; margin-bottom: 16px; font-size: 12px; }
+    .summary span strong { font-size: 18px; display: block; }
+    table { width: 100%; border-collapse: collapse; font-size: 10px; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; vertical-align: top; }
+    th { background: #f3f4f6; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; font-size: 9px; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    td.squad { max-width: 260px; }
+    .flag-good { color: #15803d; font-weight: 600; }
+    .flag-bad { color: #b91c1c; font-weight: 600; }
+</style></head><body>
+<h1>World Cup 2026 Pool — Player Report</h1>
+<div class="meta">Generated ${today}</div>
+<div class="summary">
+    <span><strong>${totalPlayers}</strong>Players</span>
+    <span><strong>${totalPaid}</strong>Paid</span>
+    <span><strong>${totalComplete}</strong>Complete squads</span>
+</div>
+<table>
+    <thead><tr>
+        <th>Name</th><th>Nickname</th><th>Country</th><th>Fav Team</th>
+        <th>Squad</th><th>#</th><th>$ Left</th><th>Saves</th><th>Squad Status</th><th>Paid</th>
+    </tr></thead>
+    <tbody>${rowHtml}</tbody>
+</table>
+</body></html>`;
+}
+
+function _escapeReportHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+Object.assign(window, { generatePlayerReport });
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         GROUP_STAGE_SCHEDULE,
