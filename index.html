@@ -325,20 +325,28 @@
         .animate-bounce-in { animation: bounce-in 0.5s ease-out forwards; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        #roster-panel { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); bottom: 80px; }
-        .roster-minimized { transform: translateY(calc(100% - 110px)); }
+        #roster-panel {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            bottom: 0;
+            padding-bottom: max(env(safe-area-inset-bottom, 0px), 90px);
+            max-height: 85svh;
+        }
+        .roster-minimized { transform: translateY(calc(100% - 150px)); }
         @keyframes roster-nudge {
-            0%   { transform: translateY(calc(100% - 110px)); }
-            18%  { transform: translateY(calc(100% - 119px)); }
-            36%  { transform: translateY(calc(100% - 110px)); }
-            50%  { transform: translateY(calc(100% - 115px)); }
-            64%  { transform: translateY(calc(100% - 110px)); }
-            76%  { transform: translateY(calc(100% - 112px)); }
-            88%  { transform: translateY(calc(100% - 110px)); }
-            100% { transform: translateY(calc(100% - 110px)); }
+            0%   { transform: translateY(calc(100% - 150px)); }
+            18%  { transform: translateY(calc(100% - 159px)); }
+            36%  { transform: translateY(calc(100% - 150px)); }
+            50%  { transform: translateY(calc(100% - 155px)); }
+            64%  { transform: translateY(calc(100% - 150px)); }
+            76%  { transform: translateY(calc(100% - 152px)); }
+            88%  { transform: translateY(calc(100% - 150px)); }
+            100% { transform: translateY(calc(100% - 150px)); }
         }
         #roster-panel.roster-nudge { animation: roster-nudge 1.6s ease-in-out; }
-        @media (min-width: 768px) { .roster-minimized { transform: none !important; } #roster-panel { bottom: 0; } }
+        @media (min-width: 768px) {
+            .roster-minimized { transform: none !important; }
+            #roster-panel { padding-bottom: 1.5rem; max-height: none; }
+        }
 
         #mobile-menu { transition: max-height 0.3s ease-out; max-height: 0; overflow: hidden; }
         #mobile-menu.open { max-height: 450px; }
