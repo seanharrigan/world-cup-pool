@@ -325,20 +325,20 @@
         .animate-bounce-in { animation: bounce-in 0.5s ease-out forwards; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        #roster-panel { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-        .roster-minimized { transform: translateY(calc(100% - 70px)); }
+        #roster-panel { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); bottom: 80px; }
+        .roster-minimized { transform: translateY(calc(100% - 110px)); }
         @keyframes roster-nudge {
-            0%   { transform: translateY(calc(100% - 70px)); }
-            18%  { transform: translateY(calc(100% - 79px)); }
-            36%  { transform: translateY(calc(100% - 70px)); }
-            50%  { transform: translateY(calc(100% - 75px)); }
-            64%  { transform: translateY(calc(100% - 70px)); }
-            76%  { transform: translateY(calc(100% - 72px)); }
-            88%  { transform: translateY(calc(100% - 70px)); }
-            100% { transform: translateY(calc(100% - 70px)); }
+            0%   { transform: translateY(calc(100% - 110px)); }
+            18%  { transform: translateY(calc(100% - 119px)); }
+            36%  { transform: translateY(calc(100% - 110px)); }
+            50%  { transform: translateY(calc(100% - 115px)); }
+            64%  { transform: translateY(calc(100% - 110px)); }
+            76%  { transform: translateY(calc(100% - 112px)); }
+            88%  { transform: translateY(calc(100% - 110px)); }
+            100% { transform: translateY(calc(100% - 110px)); }
         }
         #roster-panel.roster-nudge { animation: roster-nudge 1.6s ease-in-out; }
-        @media (min-width: 768px) { .roster-minimized { transform: none !important; } }
+        @media (min-width: 768px) { .roster-minimized { transform: none !important; } #roster-panel { bottom: 0; } }
 
         #mobile-menu { transition: max-height 0.3s ease-out; max-height: 0; overflow: hidden; }
         #mobile-menu.open { max-height: 450px; }
