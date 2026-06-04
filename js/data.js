@@ -1,7 +1,10 @@
 const SUPABASE_URL = 'https://ttqvchhzuyzhzeumysks.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_3cT0wz86jjMqaEciDUwseg_Y59smIY3';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const LOCK_DATE = new Date('2026-06-11T12:00:00');
+// Kickoff: Mexico vs South Africa, 12:00 PM Mexico City (UTC−6, no DST) = 18:00 UTC.
+// The trailing 'Z' fixes this as an absolute UTC instant so every viewer's
+// countdown ends at the same real-world second regardless of their timezone.
+const LOCK_DATE = new Date('2026-06-11T18:00:00Z');
 
 let userEmail = '';
 let myPicks = [];
