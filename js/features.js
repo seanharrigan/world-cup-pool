@@ -11718,6 +11718,9 @@ function openGroupsModal() {
     const body = document.getElementById('picks-groups-modal-body');
     if (!modal || !body) return;
 
+    const picks = (typeof myPicks !== 'undefined' && Array.isArray(myPicks)) ? myPicks : [];
+    const pickedNames = new Set(picks.map((p) => p.name));
+
     const groupLetters = Array.from(new Set(teams.map((t) => t.group).filter((g) => g))).sort();
     body.innerHTML = `
         <div class="grid grid-cols-1 min-[420px]:grid-cols-2 md:grid-cols-4 gap-2.5">
@@ -11725,19 +11728,30 @@ function openGroupsModal() {
                 const groupTeams = teams
                     .filter((t) => t.group === letter)
                     .sort((a, b) => b.cost - a.cost);
+                const pickedCount = picks.filter((p) => p.group === letter).length;
+                const headerBadge = pickedCount > 0
+                    ? `<span class="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black text-white tabular-nums" style="background-color: var(--theme-accent-primary);" aria-label="${pickedCount} of your picks in this group">${pickedCount}</span>`
+                    : '';
                 return `
                     <div class="rounded-xl border border-gray-700 bg-gray-800 p-3">
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Group ${letter}</div>
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Group ${letter}</div>
+                            ${headerBadge}
+                        </div>
                         <div class="space-y-1.5">
-                            ${groupTeams.map((t) => `
-                                <div class="flex items-center justify-between gap-2 text-[11px] font-bold text-white">
+                            ${groupTeams.map((t) => {
+                                const isPicked = pickedNames.has(t.name);
+                                const nameClass = isPicked ? 'theme-accent-text font-black' : 'text-white';
+                                return `
+                                <div class="flex items-center justify-between gap-2 text-[11px] font-bold">
                                     <div class="flex items-center gap-1.5 min-w-0">
                                         <span class="shrink-0 text-base leading-none">${t.flag}</span>
-                                        <span class="truncate">${escapeHtml(t.name)}</span>
+                                        <span class="truncate ${nameClass}">${escapeHtml(t.name)}</span>
                                     </div>
                                     <span class="shrink-0 text-[10px] font-black text-green-400 tabular-nums">$${t.cost}</span>
                                 </div>
-                            `).join('')}
+                                `;
+                            }).join('')}
                         </div>
                     </div>
                 `;
@@ -11766,7 +11780,8 @@ function _updateFloatingGroupsBtnVisibility() {
         return;
     }
     const rect = card.getBoundingClientRect();
-    if (rect.bottom < 80) {
+    // Show button as soon as the top of the rules card scrolls behind the nav bar
+    if (rect.top < 80) {
         btn.classList.remove('hidden');
     } else {
         btn.classList.add('hidden');

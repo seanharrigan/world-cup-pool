@@ -886,7 +886,6 @@
         </div>
 
         <div id="page-picks" class="page-content hidden h-full w-full flex flex-col md:flex-row text-left">
-            <button id="picks-floating-groups-btn" onclick="openGroupsModal()" class="hidden fixed top-20 right-4 md:right-6 z-30 rounded-full border border-gray-300 bg-white shadow-lg px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-900 hover:bg-gray-50 transition-all">Groups</button>
             <div id="picks-main-scroll" class="flex-grow h-full overflow-y-auto p-4 md:p-10 bg-white text-gray-900 pb-[350px] md:pb-10 text-left">
                 <header class="mb-3 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-200 pb-6 gap-4 text-left">
                     <div class="border-l-[3px] pl-3" style="border-color: var(--theme-accent-primary);">
@@ -1930,6 +1929,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Floating Groups button — viewport-fixed; visibility toggled by scroll -->
+    <button id="picks-floating-groups-btn" onclick="openGroupsModal()" class="hidden fixed top-20 right-4 md:right-6 z-30 rounded-full border border-gray-300 bg-white shadow-lg px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-900 hover:bg-gray-50 transition-all">Groups</button>
 
     <!-- Picks Groups modal — quick view of all 12 World Cup groups -->
     <div id="picks-groups-modal" class="hidden picks-modal-out fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4" onclick="if(event.target===this)closeGroupsModal()">
