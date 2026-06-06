@@ -316,7 +316,7 @@ function applyPicksAccentTheme(currentProfile = null) {
     root.style.setProperty('--theme-accent-primary', tokens.primary);
     root.style.setProperty('--theme-accent-primary-rgb', `${tokens.primaryRgb.r}, ${tokens.primaryRgb.g}, ${tokens.primaryRgb.b}`);
     root.style.setProperty('--theme-accent-text', tokens.text);
-    root.style.setProperty('--theme-accent-on-dark', tokens.onDark || mixHexWithWhite(tokens.primary, 0.68));
+    root.style.setProperty('--theme-accent-on-dark', mixHexWithWhite(tokens.primary, 0.45));
     root.style.setProperty('--theme-accent-soft', tokens.soft);
     root.style.setProperty('--theme-accent-soft-strong', tokens.softStrong);
     root.style.setProperty('--theme-accent-button-hover', darkenHex(tokens.primary, 0.10));
@@ -11744,8 +11744,12 @@ function openGroupsModal() {
                                 const isPicked = pickedNames.has(t.name);
                                 const nameClass = isPicked ? '' : 'text-white';
                                 const nameStyle = isPicked ? 'color: var(--theme-accent-on-dark); font-weight: 900;' : '';
+                                const pickedStar = isPicked
+                                    ? `<span class="absolute -left-3 top-1/2 -translate-y-1/2 text-[9px] leading-none" style="color: var(--theme-accent-on-dark);">★</span>`
+                                    : '';
                                 return `
-                                <div class="flex items-center justify-between gap-2 text-[11px] font-bold">
+                                <div class="relative flex items-center justify-between gap-2 text-[11px] font-bold">
+                                    ${pickedStar}
                                     <div class="flex items-center gap-1.5 min-w-0">
                                         <span class="shrink-0 text-base leading-none">${t.flag}</span>
                                         <span class="truncate ${nameClass}" style="${nameStyle}">${escapeHtml(t.name)}</span>
