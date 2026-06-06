@@ -11744,13 +11744,13 @@ function openGroupsModal() {
                                 const isPicked = pickedNames.has(t.name);
                                 const nameClass = isPicked ? '' : 'text-white';
                                 const nameStyle = isPicked ? 'color: var(--theme-accent-on-dark); font-weight: 900;' : '';
-                                const pickedStar = isPicked
-                                    ? `<span class="absolute -left-3 top-1/2 -translate-y-1/2 text-[9px] leading-none" style="color: var(--theme-accent-on-dark);">★</span>`
-                                    : '';
+                                const starSlot = isPicked
+                                    ? `<span class="inline-block w-2.5 shrink-0 text-[10px] leading-none" style="color: var(--theme-accent-on-dark);">★</span>`
+                                    : `<span class="inline-block w-2.5 shrink-0"></span>`;
                                 return `
-                                <div class="relative flex items-center justify-between gap-2 text-[11px] font-bold">
-                                    ${pickedStar}
+                                <div class="flex items-center justify-between gap-2 text-[11px] font-bold">
                                     <div class="flex items-center gap-1.5 min-w-0">
+                                        ${starSlot}
                                         <span class="shrink-0 text-base leading-none">${t.flag}</span>
                                         <span class="truncate ${nameClass}" style="${nameStyle}">${escapeHtml(t.name)}</span>
                                     </div>
