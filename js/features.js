@@ -316,6 +316,7 @@ function applyPicksAccentTheme(currentProfile = null) {
     root.style.setProperty('--theme-accent-primary', tokens.primary);
     root.style.setProperty('--theme-accent-primary-rgb', `${tokens.primaryRgb.r}, ${tokens.primaryRgb.g}, ${tokens.primaryRgb.b}`);
     root.style.setProperty('--theme-accent-text', tokens.text);
+    root.style.setProperty('--theme-accent-on-dark', tokens.onDark || mixHexWithWhite(tokens.primary, 0.68));
     root.style.setProperty('--theme-accent-soft', tokens.soft);
     root.style.setProperty('--theme-accent-soft-strong', tokens.softStrong);
     root.style.setProperty('--theme-accent-button-hover', darkenHex(tokens.primary, 0.10));
@@ -11741,14 +11742,18 @@ function openGroupsModal() {
                         <div class="space-y-1.5">
                             ${groupTeams.map((t) => {
                                 const isPicked = pickedNames.has(t.name);
-                                const nameClass = isPicked ? 'theme-accent-text font-black' : 'text-white';
+                                const nameClass = isPicked ? '' : 'text-white';
+                                const nameStyle = isPicked ? 'color: var(--theme-accent-on-dark); font-weight: 900;' : '';
                                 return `
                                 <div class="flex items-center justify-between gap-2 text-[11px] font-bold">
                                     <div class="flex items-center gap-1.5 min-w-0">
                                         <span class="shrink-0 text-base leading-none">${t.flag}</span>
-                                        <span class="truncate ${nameClass}">${escapeHtml(t.name)}</span>
+                                        <span class="truncate ${nameClass}" style="${nameStyle}">${escapeHtml(t.name)}</span>
                                     </div>
-                                    <span class="shrink-0 text-[10px] font-black text-green-400 tabular-nums">$${t.cost}</span>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <span class="text-[9px] font-black text-gray-500 tracking-[0.1em]">T${t.tier}</span>
+                                        <span class="text-[10px] font-black text-gray-300 tabular-nums">$${t.cost}</span>
+                                    </div>
                                 </div>
                                 `;
                             }).join('')}

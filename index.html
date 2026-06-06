@@ -29,6 +29,7 @@
             --theme-accent-primary: #3b82f6;
             --theme-accent-primary-rgb: 59, 130, 246;
             --theme-accent-text: #2563eb;
+            --theme-accent-on-dark: #93c5fd;
             --theme-accent-soft: #eff6ff;
             --theme-accent-soft-strong: #dbeafe;
             --theme-accent-button-hover: #2563eb;
@@ -1931,7 +1932,7 @@
     </div>
 
     <!-- Floating Groups button — viewport-fixed; visibility toggled by scroll -->
-    <button id="picks-floating-groups-btn" onclick="openGroupsModal()" class="hidden fixed top-20 right-4 md:right-6 z-30 rounded-full border border-gray-300 bg-white shadow-lg px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-900 hover:bg-gray-50 transition-all">Groups</button>
+    <button id="picks-floating-groups-btn" onclick="openGroupsModal()" class="hidden fixed top-20 right-4 md:right-[calc(350px+1rem)] z-30 rounded-full border border-gray-300 bg-white shadow-lg px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-900 hover:bg-gray-50 transition-all">Groups</button>
 
     <!-- Picks Groups modal — quick view of all 12 World Cup groups -->
     <div id="picks-groups-modal" class="hidden picks-modal-out fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4" onclick="if(event.target===this)closeGroupsModal()">
