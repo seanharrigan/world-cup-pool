@@ -11651,16 +11651,71 @@ async function generatePlayerReport() {
 
 function buildPlayerReportHtml(rows) {
     const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    const totalPlayers = rows.length;
+    const totalAccounts = rows.length;
     const totalPaid = rows.filter((r) => r.hasPaid).length;
-    const totalComplete = rows.filter((r) => r.picks.length === 8).length;
+    const teamsSaved = rows.filter((r) => r.picks.length > 0).length;
+    const noTeamsSaved = rows.filter((r) => r.picks.length === 0).length;
     const esc = _escapeReportHtml;
+    const teamOwners = new Map();
+    const rosterDensity = new Map();
+
+    rows.forEach((r) => {
+        rosterDensity.set(r.picks.length, (rosterDensity.get(r.picks.length) || 0) + 1);
+        new Set(r.picks.map((p) => p.name).filter(Boolean)).forEach((teamName) => {
+            if (!teamOwners.has(teamName)) teamOwners.set(teamName, new Set());
+            teamOwners.get(teamName).add(r.email);
+        });
+    });
+
+    const topPickedTeams = Array.from(teamOwners.entries())
+        .map(([teamName, owners]) => ({
+            teamName,
+            pickedCount: owners.size,
+            percentage: totalAccounts > 0 ? Math.round((owners.size / totalAccounts) * 100) : 0,
+            teamData: typeof teams !== 'undefined' ? teams.find((team) => team.name === teamName) : null
+        }))
+        .sort((a, b) => b.pickedCount - a.pickedCount || a.teamName.localeCompare(b.teamName));
+    const mostPickedTeam = topPickedTeams[0] || null;
+    const topPickedMax = Math.max(1, ...topPickedTeams.slice(0, 5).map((entry) => entry.pickedCount));
+    const rosterDensityEntries = Array.from(rosterDensity.entries())
+        .map(([pickCount, playerCount]) => ({ pickCount, playerCount }))
+        .sort((a, b) => b.pickCount - a.pickCount);
+    const rosterDensityMax = Math.max(1, ...rosterDensityEntries.map((entry) => entry.playerCount));
+
+    const statCards = [
+        { label: 'Total accounts', value: totalAccounts, tone: 'dark' },
+        { label: 'Paid', value: totalPaid, tone: 'green' },
+        { label: 'Teams saved', value: teamsSaved, tone: 'blue' },
+        { label: 'No teams saved', value: noTeamsSaved, tone: 'red' }
+    ].map((card) => `
+        <div class="stat-card ${card.tone}">
+            <div class="stat-value">${card.value}</div>
+            <div class="stat-label">${card.label}</div>
+        </div>
+    `).join('');
+
+    const topPickedHtml = topPickedTeams.slice(0, 5).map((entry, index) => `
+        <div class="bar-row">
+            <div class="bar-label"><span class="rank">${index + 1}</span><span>${esc(entry.teamData?.flag || '')}</span><span>${esc(entry.teamName)}</span></div>
+            <div class="bar-track"><span style="width:${Math.max(4, Math.round(entry.pickedCount / topPickedMax * 100))}%"></span></div>
+            <div class="bar-value">${entry.pickedCount} · ${entry.percentage}%</div>
+        </div>
+    `).join('') || '<div class="empty-card">No saved teams yet.</div>';
+
+    const rosterDensityHtml = rosterDensityEntries.map((entry) => `
+        <div class="density-pill">
+            <strong>${entry.pickCount}</strong>
+            <span>${entry.pickCount === 1 ? 'team' : 'teams'}</span>
+            <em>${entry.playerCount} ${entry.playerCount === 1 ? 'player' : 'players'}</em>
+            <i style="width:${Math.max(5, Math.round(entry.playerCount / rosterDensityMax * 100))}%"></i>
+        </div>
+    `).join('') || '<div class="empty-card">No accounts found.</div>';
 
     const rowHtml = rows.map((r) => {
         const squad = r.picks.map((p) => p.name).join(', ') || '—';
         const spent = r.picks.reduce((s, p) => s + p.cost, 0);
         const remaining = 150 - spent;
-        const missing = r.picks.length < 8;
+        const hasTeamSaved = r.picks.length > 0;
         return `
             <tr>
                 <td>${esc(r.realname || r.nickname || r.email)}</td>
@@ -11671,7 +11726,7 @@ function buildPlayerReportHtml(rows) {
                 <td class="num">${r.picks.length}</td>
                 <td class="num">$${remaining}</td>
                 <td class="num">${r.saveCount}</td>
-                <td class="${missing ? 'flag-bad' : 'flag-good'}">${missing ? `Missing ${8 - r.picks.length}` : 'Complete'}</td>
+                <td class="${hasTeamSaved ? 'flag-good' : 'flag-bad'}">${hasTeamSaved ? 'Saved' : 'No team saved'}</td>
                 <td class="${r.hasPaid ? 'flag-good' : 'flag-bad'}">${r.hasPaid ? 'Paid' : 'Unpaid'}</td>
             </tr>`;
     }).join('');
@@ -11680,26 +11735,70 @@ function buildPlayerReportHtml(rows) {
 <html><head><meta charset="utf-8"><title>WC2026 Pool — Player Report</title>
 <style>
     @page { size: landscape; margin: 0.5in; }
-    body { font-family: -apple-system, system-ui, sans-serif; color: #111; margin: 0; padding: 24px; }
-    h1 { margin: 0 0 4px; font-size: 22px; }
-    .meta { color: #555; font-size: 11px; margin-bottom: 16px; }
-    .summary { display: flex; gap: 24px; margin-bottom: 16px; font-size: 12px; }
-    .summary span strong { font-size: 18px; display: block; }
-    table { width: 100%; border-collapse: collapse; font-size: 10px; }
-    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; vertical-align: top; }
-    th { background: #f3f4f6; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; font-size: 9px; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; color: #111827; margin: 0; padding: 22px; background: #f8fafc; }
+    h1 { margin: 0; font-size: 24px; letter-spacing: -0.03em; }
+    .hero { border-radius: 22px; background: #111827; color: #fff; padding: 20px; margin-bottom: 14px; }
+    .hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 16px; }
+    .meta { color: #9ca3af; font-size: 11px; margin-top: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+    .hero-badge { border: 1px solid #374151; border-radius: 999px; padding: 7px 10px; color: #d1d5db; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; white-space: nowrap; }
+    .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .stat-card { border-radius: 16px; padding: 14px; border: 1px solid #263244; background: #172033; }
+    .stat-card.green { background: #052e1a; border-color: #14532d; }
+    .stat-card.blue { background: #082f49; border-color: #075985; }
+    .stat-card.red { background: #3f1212; border-color: #7f1d1d; }
+    .stat-value { font-size: 28px; line-height: 1; font-weight: 900; letter-spacing: -0.04em; }
+    .stat-label { margin-top: 6px; color: #cbd5e1; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.16em; }
+    .dashboard { display: grid; grid-template-columns: 1.1fr 1.4fr 1fr; gap: 12px; margin-bottom: 14px; }
+    .panel { border: 1px solid #d1d5db; border-radius: 18px; background: #fff; padding: 14px; box-shadow: 0 10px 24px rgba(15,23,42,0.06); min-height: 120px; }
+    .panel-title { font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.18em; color: #64748b; margin-bottom: 9px; }
+    .featured-team { font-size: 24px; font-weight: 900; letter-spacing: -0.04em; }
+    .featured-sub { color: #64748b; font-size: 11px; font-weight: 700; margin-top: 5px; }
+    .bar-row { display: grid; grid-template-columns: 130px 1fr 54px; align-items: center; gap: 8px; margin-top: 8px; font-size: 10px; }
+    .bar-label { display: flex; align-items: center; gap: 5px; min-width: 0; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rank { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 999px; background: #e5e7eb; color: #374151; font-size: 8px; }
+    .bar-track { height: 8px; background: #e5e7eb; border-radius: 999px; overflow: hidden; }
+    .bar-track span { display: block; height: 100%; background: #15803d; border-radius: inherit; }
+    .bar-value { text-align: right; color: #475569; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .density-pill { position: relative; overflow: hidden; border: 1px solid #e5e7eb; border-radius: 12px; padding: 8px 9px; margin-top: 7px; font-size: 10px; }
+    .density-pill strong { font-size: 17px; margin-right: 4px; }
+    .density-pill span { font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; }
+    .density-pill em { float: right; color: #64748b; font-style: normal; font-weight: 800; }
+    .density-pill i { position: absolute; left: 0; bottom: 0; height: 3px; background: #16a34a; display: block; }
+    .empty-card { color: #94a3b8; font-size: 11px; font-weight: 800; padding: 12px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 9.5px; background: #fff; border: 1px solid #d1d5db; }
+    th, td { border: 1px solid #d7dce3; padding: 6px 8px; text-align: left; vertical-align: top; }
+    th { background: #eef2f7; font-weight: 900; text-transform: uppercase; letter-spacing: 0.07em; font-size: 8px; color: #111827; }
+    tbody tr:nth-child(even) { background: #f8fafc; }
     td.num { text-align: right; font-variant-numeric: tabular-nums; }
     td.squad { max-width: 260px; }
     .flag-good { color: #15803d; font-weight: 600; }
     .flag-bad { color: #b91c1c; font-weight: 600; }
 </style></head><body>
-<h1>World Cup 2026 Pool — Player Report</h1>
-<div class="meta">Generated ${today}</div>
-<div class="summary">
-    <span><strong>${totalPlayers}</strong>Players</span>
-    <span><strong>${totalPaid}</strong>Paid</span>
-    <span><strong>${totalComplete}</strong>Complete squads</span>
-</div>
+<section class="hero">
+    <div class="hero-top">
+        <div>
+            <h1>World Cup 2026 Pool — Player Report</h1>
+            <div class="meta">Generated ${today}</div>
+        </div>
+        <div class="hero-badge">Admin export</div>
+    </div>
+    <div class="summary">${statCards}</div>
+</section>
+<section class="dashboard">
+    <div class="panel">
+        <div class="panel-title">Most Picked Team</div>
+        ${mostPickedTeam ? `<div class="featured-team">${esc(mostPickedTeam.teamData?.flag || '')} ${esc(mostPickedTeam.teamName)}</div><div class="featured-sub">${mostPickedTeam.pickedCount} players · ${mostPickedTeam.percentage}% of accounts</div>` : '<div class="empty-card">No saved teams yet.</div>'}
+    </div>
+    <div class="panel">
+        <div class="panel-title">Top Picked Teams</div>
+        ${topPickedHtml}
+    </div>
+    <div class="panel">
+        <div class="panel-title">Roster Size</div>
+        ${rosterDensityHtml}
+    </div>
+</section>
 <table>
     <thead><tr>
         <th>Name</th><th>Nickname</th><th>Country</th><th>Fav Team</th>
