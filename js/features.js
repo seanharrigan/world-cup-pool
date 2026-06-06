@@ -11713,7 +11713,74 @@ function _escapeReportHtml(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-Object.assign(window, { generatePlayerReport });
+function openGroupsModal() {
+    const modal = document.getElementById('picks-groups-modal');
+    const body = document.getElementById('picks-groups-modal-body');
+    if (!modal || !body) return;
+
+    const groupLetters = Array.from(new Set(teams.map((t) => t.group).filter((g) => g))).sort();
+    body.innerHTML = `
+        <div class="grid grid-cols-1 min-[420px]:grid-cols-2 md:grid-cols-4 gap-2.5">
+            ${groupLetters.map((letter) => {
+                const groupTeams = teams
+                    .filter((t) => t.group === letter)
+                    .sort((a, b) => b.cost - a.cost);
+                return `
+                    <div class="rounded-xl border border-gray-700 bg-gray-800 p-3">
+                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Group ${letter}</div>
+                        <div class="space-y-1.5">
+                            ${groupTeams.map((t) => `
+                                <div class="flex items-center justify-between gap-2 text-[11px] font-bold text-white">
+                                    <div class="flex items-center gap-1.5 min-w-0">
+                                        <span class="shrink-0 text-base leading-none">${t.flag}</span>
+                                        <span class="truncate">${escapeHtml(t.name)}</span>
+                                    </div>
+                                    <span class="shrink-0 text-[10px] font-black text-green-400 tabular-nums">$${t.cost}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+
+    modal.classList.remove('hidden');
+    requestAnimationFrame(() => requestAnimationFrame(() => modal.classList.remove('picks-modal-out')));
+}
+
+function closeGroupsModal() {
+    const modal = document.getElementById('picks-groups-modal');
+    if (!modal) return;
+    modal.classList.add('picks-modal-out');
+    setTimeout(() => modal.classList.add('hidden'), 250);
+}
+
+function _updateFloatingGroupsBtnVisibility() {
+    const btn = document.getElementById('picks-floating-groups-btn');
+    const card = document.getElementById('picks-rules-card');
+    const picksPage = document.getElementById('page-picks');
+    if (!btn || !card || !picksPage) return;
+    if (picksPage.classList.contains('hidden')) {
+        btn.classList.add('hidden');
+        return;
+    }
+    const rect = card.getBoundingClientRect();
+    if (rect.bottom < 80) {
+        btn.classList.remove('hidden');
+    } else {
+        btn.classList.add('hidden');
+    }
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('picks-groups-modal');
+        if (modal && !modal.classList.contains('hidden')) closeGroupsModal();
+    }
+});
+
+Object.assign(window, { generatePlayerReport, openGroupsModal, closeGroupsModal, _updateFloatingGroupsBtnVisibility });
 
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {

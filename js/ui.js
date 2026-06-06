@@ -949,7 +949,10 @@ window.addEventListener('resize', () => {
 document.addEventListener('DOMContentLoaded', () => {
     const picksScroll = document.getElementById('picks-main-scroll');
     if (picksScroll) {
-        picksScroll.addEventListener('scroll', () => updatePicksRulesHelpAnchor(false), { passive: true });
+        picksScroll.addEventListener('scroll', () => {
+            updatePicksRulesHelpAnchor(false);
+            if (typeof _updateFloatingGroupsBtnVisibility === 'function') _updateFloatingGroupsBtnVisibility();
+        }, { passive: true });
     }
 
     updatePicksRulesHelpAnchor(true);
