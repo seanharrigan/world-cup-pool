@@ -443,6 +443,9 @@ function showPage(pageId) {
     }
     if (pageId !== 'picks') {
         togglePicksRulesBar(false); // close modal if open when leaving picks page
+        if (typeof closeGroupsModal === 'function') closeGroupsModal();
+        const groupsBtn = document.getElementById('picks-floating-groups-btn');
+        if (groupsBtn) groupsBtn.classList.add('hidden');
     }
 
     if (pageId === 'picks') {
