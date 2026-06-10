@@ -4400,9 +4400,12 @@ function downloadCsv(filename, rows) {
     URL.revokeObjectURL(url);
 }
 
-async function exportAllTables() {
+async function exportAllTablesXlsx() {
     const button = document.getElementById('admin-export-all-btn');
-    const tables = ['profiles', 'picks', 'matches', 'messages', 'notifications', 'app_settings', 'team_advancement'];
+    const tables = [
+        'profiles', 'picks', 'matches', 'messages', 'message_reactions',
+        'notifications', 'app_settings', 'team_advancement', 'admins', 'planner_photos'
+    ];
 
     if (button) {
         button.disabled = true;
@@ -4410,30 +4413,48 @@ async function exportAllTables() {
     }
 
     try {
+        if (typeof XLSX === 'undefined') {
+            throw new Error('Spreadsheet library failed to load. Check your connection and retry.');
+        }
+
+        const workbook = XLSX.utils.book_new();
+
         for (const tableName of tables) {
-            const { data, error } = await supabaseClient.from(tableName).select('*');
+            const { data, error } = await supabaseClient.from(tableName).select('*'); // read only
             if (error) {
                 throw error;
             }
 
             const rows = data || [];
             const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
-            const csvRows = [headers];
 
-            rows.forEach((row) => {
-                csvRows.push(headers.map((header) => row[header]));
-            });
+            // Flatten nested objects/arrays (e.g. picked teams) to JSON text so each cell
+            // holds a plain value rather than "[object Object]".
+            const sheetData = rows.map((row) =>
+                headers.reduce((acc, key) => {
+                    const v = row[key];
+                    acc[key] = (v !== null && typeof v === 'object') ? JSON.stringify(v) : v;
+                    return acc;
+                }, {})
+            );
 
-            downloadCsv(`wc-pool-${tableName}.csv`, csvRows);
+            const worksheet = rows.length > 0
+                ? XLSX.utils.json_to_sheet(sheetData, { header: headers })
+                : XLSX.utils.aoa_to_sheet([['(no rows)']]);
+
+            // Sheet names: max 31 chars, no Excel-illegal chars — table names are safe.
+            XLSX.utils.book_append_sheet(workbook, worksheet, tableName.slice(0, 31));
         }
 
-        showToast('CSV exports downloaded.', 'success');
+        const stamp = new Date().toISOString().slice(0, 10);
+        XLSX.writeFile(workbook, `wc-pool-backup-${stamp}.xlsx`);
+        showToast('Backup downloaded.', 'success');
     } catch (error) {
         showToast(error.message || 'Unable to export data.');
     } finally {
         if (button) {
             button.disabled = false;
-            button.textContent = 'Export All Tables';
+            button.textContent = 'Export XLSX Backup';
         }
     }
 }
@@ -11557,7 +11578,7 @@ Object.assign(window, {
     sendChatMessage,
     setupChatKeyboardSubmit,
     syncAdminToggleControls,
-    exportAllTables,
+    exportAllTablesXlsx,
     sendAdminNotification,
     deleteAdminNotification,
     toggleTeamAdvancement,

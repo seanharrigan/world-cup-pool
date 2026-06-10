@@ -17,6 +17,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.3/package/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --picks-accent-primary: #3b82f6;
@@ -1661,10 +1662,10 @@
                             </div>
                             <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-4">
                                 <div>
-                                    <h3 class="text-sm font-black uppercase text-white">Export CSV Backup</h3>
-                                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Download every current table as a backup set</p>
+                                    <h3 class="text-sm font-black uppercase text-white">Export XLSX Backup</h3>
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Download the full database as one .xlsx (one sheet per table)</p>
                                 </div>
-                                <button onclick="exportAllTables()" id="admin-export-all-btn" class="rounded-2xl bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-900 transition-colors hover:bg-gray-100">Export CSV Backup</button>
+                                <button onclick="exportAllTablesXlsx()" id="admin-export-all-btn" class="rounded-2xl bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-900 transition-colors hover:bg-gray-100">Export XLSX Backup</button>
                             </div>
                         </div>
 
