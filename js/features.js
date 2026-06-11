@@ -11624,8 +11624,10 @@ function _buildWrappedDeck(host, picks, profiles) {
 
     // Teams that got ZERO picks (exclude non-qualified placeholders like Italy)
     const allTeams = (typeof teams !== 'undefined' ? teams : []);
-    const zeroPickTeams = allTeams
-        .filter((t) => t.qualified !== false && (Number(t.cost) || 0) > 0)
+    const qualifiedTeams = allTeams.filter((t) => t.qualified !== false && (Number(t.cost) || 0) > 0);
+    const totalTeams = qualifiedTeams.length; // 48 in the tournament
+    const allPicked = distinctCountries >= totalTeams;
+    const zeroPickTeams = qualifiedTeams
         .filter((t) => !teamCount[t.name])
         .map((t) => t.name);
 
@@ -11714,12 +11716,6 @@ function _buildWrappedDeck(host, picks, profiles) {
         .sort((a, b) => b.saves - a.saves)
         .slice(0, 3);
 
-    // Unpaid: has a saved squad but has_paid !== true
-    const unpaid = players
-        .filter((e) => (profByEmail[e] || {}).has_paid !== true)
-        .map(nameOf);
-    const owed = unpaid.length * WRAPPED_ENTRY_FEE;
-
     // Favourite-team loyalty
     const loyalists = [], traitors = [];
     players.forEach((e) => {
@@ -11776,14 +11772,6 @@ function _buildWrappedDeck(host, picks, profiles) {
         + '<div class="wr-payrow"><span class="wr-place">🥈 2nd</span><span class="wr-amt" style="color:#9ca3af">' + _wrappedMoney(pot * WRAPPED_SPLIT.second) + '</span></div>'
         + '<div class="wr-payrow"><span class="wr-place">🥉 3rd</span><span class="wr-amt" style="color:#f59e0b">' + _wrappedMoney(pot * WRAPPED_SPLIT.third) + '</span></div>'
         + '</div>'));
-    // Still Owing (unpaid) — right after the pot
-    slides.push(slideHTML('',
-        '<div class="wr-kicker">💸 Still Owing</div>'
-        + (unpaid.length
-            ? '<div class="wr-bignum" style="font-size:clamp(56px,16vw,120px)">' + unpaid.length + '</div>'
-              + '<p class="wr-caption">' + (unpaid.length === 1 ? 'player hasn\'t paid yet' : 'players haven\'t paid yet') + ' — ' + _wrappedMoney(owed) + ' outstanding. Time to chase them up.</p>'
-              + '<div class="wr-namelist">' + unpaid.slice(0, 24).map((n) => '<span class="wr-chip">' + _wrappedEsc(n) + ' · owes $50</span>').join('') + '</div>'
-            : '<h1 class="wr-headline">All paid up 🎉</h1><p class="wr-caption" style="margin-top:12px">Everyone has paid in. The pot is full.</p>')));
     // Most Picked Team
     if (mostTeam) slides.push(statSlide('Most Picked Team', '<span class="wr-flag-lead">' + flagOf(mostTeam[0]) + '</span>' + _wrappedEsc(mostTeam[0]),
         'On ' + mostTeam[1] + ' of ' + playerCount + ' squads (' + Math.round(mostTeam[1] / playerCount * 100) + '%). The crowd favourite.', true));
@@ -11813,8 +11801,12 @@ function _buildWrappedDeck(host, picks, profiles) {
     // Group blind spots
     if (zeroGroups.length) slides.push(statSlide('Blind Spots',
         zeroGroups.map((g) => 'Group ' + g).join(' · '),
-        (zeroGroups.length === 1 ? 'A whole group' : zeroGroups.length + ' whole groups') + ' nobody touched. ' + distinctCountries + ' different countries got picked in total.'));
-    else slides.push(statSlide('Spread the Love', String(distinctCountries), distinctCountries + ' different countries were picked across the pool.'));
+        (zeroGroups.length === 1 ? 'A whole group' : zeroGroups.length + ' whole groups') + ' nobody touched. '
+        + (allPicked ? 'Still, all ' + totalTeams + ' teams got picked at least once.' : distinctCountries + ' of the ' + totalTeams + ' teams got picked in total.')));
+    else if (allPicked) slides.push(statSlide('Spread the Love', 'All ' + totalTeams,
+        'Every single team in the tournament got picked. All ' + totalTeams + ' of them — nobody was left out.'));
+    else slides.push(statSlide('Spread the Love', String(distinctCountries),
+        distinctCountries + ' of the ' + totalTeams + ' teams got picked across the pool.'));
     // Average squad
     if (costRows.length) slides.push(slideHTML('',
         '<div class="wr-kicker">Picks by Price</div><h1 class="wr-headline" style="font-size:clamp(24px,6vw,40px);margin-bottom:6px">Where the Money Went</h1>'
@@ -11867,7 +11859,7 @@ function _buildWrappedDeck(host, picks, profiles) {
         + '<p class="wr-caption">' + (traitors.length ? 'left their favourite team off the squad. Business is business.' : 'Everyone stayed loyal. Wholesome.') + '</p>'
         + (traitors.length ? chipList(traitors) : '')));
     // Closer
-    slides.push(slideHTML('wr-blue', '<h1 class="wr-headline">Good luck 🍀</h1><p class="wr-caption" style="margin-top:14px">The tournament starts now. The full Wrapped drops when the Cup is won.</p><div class="wr-sub" style="margin-top:26px">WC2026 Pool · Picks Are In</div>'));
+    slides.push(slideHTML('wr-blue', '<h1 class="wr-headline">Good luck 🍀</h1><p class="wr-caption" style="margin-top:14px">The tournament starts now. Let\'s see whose squad holds up.</p><div class="wr-sub" style="margin-top:26px">WC2026 Pool · Picks Are In</div>'));
 
     const count = slides.length;
     host.innerHTML =
