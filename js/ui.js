@@ -471,6 +471,7 @@ function showPage(pageId) {
         }
     }
     if (pageId === 'leaderboard') fetchLeaderboard();
+    if (pageId === 'updates' && typeof renderUpdatesTable === 'function') renderUpdatesTable();
     if (pageId === 'admin') setupAdminPage();
     if (pageId === 'chat') setupChat();
     if (pageId === 'profile') setupProfile();

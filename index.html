@@ -614,6 +614,7 @@
 
             <div class="hidden md:flex gap-6 font-black uppercase text-[10px] tracking-widest text-white items-center">
                 <span onclick="showPage('instructions')" id="nav-instructions" class="nav-link active">Dashboard</span>
+                <span onclick="showPage('updates')" id="nav-updates" class="nav-link">Updates</span>
                 <span onclick="showPage('rules')" id="nav-rules" class="nav-link">Rules</span>
                 <span onclick="showPage('picks')" id="nav-picks" class="nav-link">My Picks</span>
                 <span onclick="showPage('results')" id="nav-results" class="nav-link">Results</span>
@@ -631,6 +632,7 @@
 
         <div id="mobile-menu" class="md:hidden flex flex-col font-black uppercase text-xs tracking-widest text-white bg-gray-950 text-center">
             <span onclick="showPage('instructions')" class="mobile-menu-link py-4 border-b border-gray-900 text-center text-white">Dashboard</span>
+            <span onclick="showPage('updates')" class="mobile-menu-link py-4 border-b border-gray-900 text-center text-white">Updates</span>
             <span onclick="showPage('rules')" class="mobile-menu-link py-4 border-b border-gray-900 text-center text-white">Rules</span>
             <span onclick="showPage('picks')" class="mobile-menu-link py-4 border-b border-gray-900 text-center text-white">My Picks</span>
             <span onclick="showPage('results')" class="mobile-menu-link py-4 border-b border-gray-900 text-center text-white">Results</span>
@@ -643,7 +645,28 @@
     </nav>
 
     <div id="main-app" class="hidden h-[calc(100vh-60px)] w-full opacity-0 transition-opacity duration-700 text-gray-900">
-        
+
+        <div id="page-updates" class="page-content hidden h-full w-full overflow-y-auto p-4 md:p-12 bg-gray-50 text-gray-900 text-left">
+            <div class="max-w-4xl mx-auto">
+                <div class="border-l-[3px] pl-3 mb-6" style="border-color: var(--theme-accent-primary);">
+                    <h1 class="text-2xl md:text-3xl font-black uppercase italic tracking-tight">Updates</h1>
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Pool recaps &amp; announcements · tap one to open</p>
+                </div>
+                <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 text-gray-400 border-b border-gray-200">
+                            <tr class="text-[9px] font-black uppercase tracking-[0.2em]">
+                                <th class="px-5 py-3">Update</th>
+                                <th class="px-5 py-3 hidden sm:table-cell">Date</th>
+                                <th class="px-5 py-3 text-right">Open</th>
+                            </tr>
+                        </thead>
+                        <tbody id="updates-table" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <div id="page-instructions" class="page-content h-full w-full overflow-y-auto pt-4 px-3 pb-3 md:p-12 bg-white text-gray-900 text-left flex flex-col md:block">
             <div class="flex-1 flex flex-col md:block md:max-w-6xl md:mx-auto md:space-y-6">
                 <!-- Title + countdown -->
@@ -2461,10 +2484,10 @@
 
     <script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous"></script>
     <script src="js/data.js?v=20260409b"></script>
-    <script src="js/ui.js?v=20260424e"></script>
+    <script src="js/ui.js?v=20260611a"></script>
     <script src="js/scoring.js?v=20260424a"></script>
     <script src="js/third-place-mapping.js?v=20260416b"></script>
-    <script src="js/features.js?v=20260611f"></script>
+    <script src="js/features.js?v=20260611g"></script>
     <script src="js/app.js?v=20260424f"></script>
 </body>
 </html>

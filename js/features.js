@@ -11535,6 +11535,12 @@ const WRAPPED_HOSTS = ['USA', 'Mexico', 'Canada'];
 const WRAPPED_EXCLUDE = new Set(['seanigan44@gmail.com']); // test account — excluded from all stats
 let _wrappedKeyHandler = null;
 
+// Registry of published update decks (newest first). Add an entry to publish a new one.
+// `build` selects the builder; only 'picks' (the pool recap) exists for now.
+const WRAPPED_DECKS = [
+    { id: 'picks-are-in', title: 'Picks Are In', date: 'Jun 11, 2026', build: 'picks' }
+];
+
 function _wrappedTeamByName() {
     const map = {};
     (typeof teams !== 'undefined' ? teams : []).forEach((t) => { map[t.name] = t; });
@@ -11547,19 +11553,37 @@ function _wrappedEsc(s) {
 function _wrappedMoney(n) { return '$' + Math.round(n).toLocaleString(); }
 function _wrappedPeople(n) { return n === 1 ? '1 player' : n + ' players'; }
 
-async function showWrappedDeck() {
-    // Admin-only — belt-and-suspenders on top of the admin-view gating.
-    if (!(typeof isProtectedAdminEmail === 'function' && isProtectedAdminEmail(userEmail))) {
-        if (typeof showToast === 'function') showToast('Admin access required.');
-        return;
-    }
+// Public table on the Updates page — one row per published deck.
+function renderUpdatesTable() {
+    const body = document.getElementById('updates-table');
+    if (!body) return;
+    body.innerHTML = WRAPPED_DECKS.map((d) =>
+        '<tr class="text-gray-900">'
+        + '<td class="px-5 py-4"><div class="text-sm font-black uppercase">' + _wrappedEsc(d.title) + '</div>'
+        + '<div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Pool recap</div></td>'
+        + '<td class="px-5 py-4 hidden sm:table-cell text-[11px] font-bold uppercase tracking-[0.15em] text-gray-500">' + _wrappedEsc(d.date) + '</td>'
+        + '<td class="px-5 py-4 text-right"><button onclick="openWrappedDeck(\'' + _wrappedEsc(d.id) + '\')" class="rounded-xl bg-gray-900 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-colors hover:bg-gray-700">Open ▶</button></td>'
+        + '</tr>'
+    ).join('');
+}
+
+// Admin Slides button — opens the first/primary deck. (Admin tab is already gated.)
+function showWrappedDeck() {
+    openWrappedDeck('picks-are-in');
+}
+
+// Shared opener — used by both the admin Slides button and the public Updates table.
+// No admin gate: the same picks/profiles data is already shown to all logged-in users
+// on the leaderboard, and reads are RLS-protected.
+async function openWrappedDeck(deckId) {
+    const deck = WRAPPED_DECKS.find((d) => d.id === deckId) || WRAPPED_DECKS[0];
     const modal = document.getElementById('wrapped-deck-modal');
     const host = document.getElementById('wrapped-deck-host');
     if (!modal || !host) return;
 
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
-    host.innerHTML = '<div class="wr-state"><div class="wr-spinner"></div><div class="wr-sub">Wrapping the pool…</div></div>';
+    host.innerHTML = '<div class="wr-state"><div class="wr-spinner"></div><div class="wr-sub">Loading…</div></div>';
 
     try {
         const [picksRes, profRes] = await Promise.all([
@@ -11568,6 +11592,7 @@ async function showWrappedDeck() {
         ]);
         if (picksRes.error) throw picksRes.error;
         if (profRes.error) throw profRes.error;
+        // Only the 'picks' builder exists for now; future decks can branch on deck.build.
         _buildWrappedDeck(host, picksRes.data || [], profRes.data || []);
     } catch (e) {
         host.innerHTML = '<div class="wr-state"><div class="wr-headline" style="font-size:30px">Couldn\'t load</div>'
@@ -11936,6 +11961,8 @@ Object.assign(window, {
     showAdminTab,
     showResultsTab,
     showWrappedDeck,
+    openWrappedDeck,
+    renderUpdatesTable,
     closeWrappedDeck,
     setupDashboard,
     setDashRightTab,
