@@ -11525,10 +11525,247 @@ function setupLeaderboardRealtime() {
         .subscribe();
 }
 
+// ============================================================================
+// Pool "Wrapped" — admin-only swipeable summary deck (full-screen popup).
+// Read-only: only .select() against picks/profiles in the logged-in session.
+// ============================================================================
+const WRAPPED_ENTRY_FEE = 50;            // $50 CAD per player (Rules page)
+const WRAPPED_SPLIT = { first: 0.65, second: 0.25, third: 0.10 };
+const WRAPPED_HOSTS = ['USA', 'Mexico', 'Canada'];
+let _wrappedKeyHandler = null;
+
+function _wrappedTeamByName() {
+    const map = {};
+    (typeof teams !== 'undefined' ? teams : []).forEach((t) => { map[t.name] = t; });
+    return map;
+}
+function _wrappedEsc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function _wrappedMoney(n) { return '$' + Math.round(n).toLocaleString(); }
+function _wrappedPeople(n) { return n === 1 ? '1 player' : n + ' players'; }
+
+async function showWrappedDeck() {
+    // Admin-only — belt-and-suspenders on top of the admin-view gating.
+    if (!(typeof isProtectedAdminEmail === 'function' && isProtectedAdminEmail(userEmail))) {
+        if (typeof showToast === 'function') showToast('Admin access required.');
+        return;
+    }
+    const modal = document.getElementById('wrapped-deck-modal');
+    const host = document.getElementById('wrapped-deck-host');
+    if (!modal || !host) return;
+
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    host.innerHTML = '<div class="wr-state"><div class="wr-spinner"></div><div class="wr-sub">Wrapping the pool…</div></div>';
+
+    try {
+        const [picksRes, profRes] = await Promise.all([
+            supabaseClient.from('picks').select('user_email, team_name, tier, cost'),
+            supabaseClient.from('profiles').select('email, nickname, realname, favorite_team, blocked')
+        ]);
+        if (picksRes.error) throw picksRes.error;
+        if (profRes.error) throw profRes.error;
+        _buildWrappedDeck(host, picksRes.data || [], profRes.data || []);
+    } catch (e) {
+        host.innerHTML = '<div class="wr-state"><div class="wr-headline" style="font-size:30px">Couldn\'t load</div>'
+            + '<p class="wr-caption" style="margin-top:12px">' + _wrappedEsc((e && e.message) || 'Could not reach the pool data.') + '</p></div>';
+    }
+}
+
+function closeWrappedDeck() {
+    const modal = document.getElementById('wrapped-deck-modal');
+    const host = document.getElementById('wrapped-deck-host');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+    if (_wrappedKeyHandler) { document.removeEventListener('keydown', _wrappedKeyHandler); _wrappedKeyHandler = null; }
+    if (host) host.innerHTML = '';
+}
+
+function _buildWrappedDeck(host, picks, profiles) {
+    const TEAM_BY_NAME = _wrappedTeamByName();
+    const flagOf = (name) => (TEAM_BY_NAME[name] && TEAM_BY_NAME[name].flag) || '';
+
+    const profByEmail = {};
+    profiles.forEach((p) => { if (p && p.email) profByEmail[p.email.toLowerCase()] = p; });
+    const isBlocked = (email) => { const p = profByEmail[(email || '').toLowerCase()]; return !!(p && p.blocked); };
+    const nameOf = (email) => {
+        const p = profByEmail[(email || '').toLowerCase()];
+        return (p && (p.nickname || p.realname)) || (email || '').split('@')[0] || 'Someone';
+    };
+
+    // Group picks into squads by user_email (skip blocked)
+    const squads = {};
+    picks.forEach((row) => {
+        if (!row || !row.user_email || isBlocked(row.user_email)) return;
+        const key = row.user_email.toLowerCase();
+        (squads[key] = squads[key] || []).push(row);
+    });
+    const players = Object.keys(squads);
+    const playerCount = players.length;
+    const pot = WRAPPED_ENTRY_FEE * playerCount;
+
+    // Team popularity (distinct squads containing each team)
+    const teamCount = {};
+    Object.values(squads).forEach((sq) => {
+        const seen = new Set();
+        sq.forEach((r) => { if (seen.has(r.team_name)) return; seen.add(r.team_name); teamCount[r.team_name] = (teamCount[r.team_name] || 0) + 1; });
+    });
+    const pickedTeams = Object.entries(teamCount).sort((a, b) => b[1] - a[1]);
+    const mostTeam = pickedTeams[0] || null;
+    const leastTeam = pickedTeams.length ? pickedTeams[pickedTeams.length - 1] : null;
+    const tier1 = pickedTeams.filter(([name]) => (TEAM_BY_NAME[name] || {}).tier === 1);
+    const topTier1 = tier1[0] || null;
+
+    // Group popularity
+    const groupCount = {};
+    Object.values(squads).forEach((sq) => sq.forEach((r) => {
+        const g = (TEAM_BY_NAME[r.team_name] || {}).group;
+        if (g) groupCount[g] = (groupCount[g] || 0) + 1;
+    }));
+    const groups = Object.entries(groupCount).sort((a, b) => b[1] - a[1]);
+    const mostGroup = groups[0] || null;
+    const leastGroup = groups.length ? groups[groups.length - 1] : null;
+
+    // Spend per player
+    const spend = players.map((e) => ({ name: nameOf(e), total: squads[e].reduce((s, r) => s + (Number(r.cost) || 0), 0) }));
+    spend.sort((a, b) => b.total - a.total);
+    const biggest = spend[0] || null;
+    const smallest = spend.length ? spend[spend.length - 1] : null;
+
+    // Host sweep
+    const hostHeroes = players.filter((e) => {
+        const names = new Set(squads[e].map((r) => r.team_name));
+        return WRAPPED_HOSTS.every((h) => names.has(h));
+    }).map(nameOf);
+
+    // Favourite-team loyalty
+    const loyalists = [], traitors = [];
+    players.forEach((e) => {
+        const p = profByEmail[e];
+        const fav = p && p.favorite_team;
+        if (!fav) return;
+        const names = new Set(squads[e].map((r) => r.team_name));
+        (names.has(fav) ? loyalists : traitors).push({ name: nameOf(e), fav });
+    });
+
+    const slideHTML = (extra, inner) => '<section class="wr-slide ' + extra + '"><div class="wr-inner">' + inner + '</div></section>';
+    const statSlide = (kicker, big, caption, isFlag) => slideHTML(isFlag ? 'wr-blue' : '',
+        '<div class="wr-kicker">' + _wrappedEsc(kicker) + '</div><div class="wr-bignum">' + big + '</div><p class="wr-caption">' + caption + '</p>');
+
+    if (!playerCount) {
+        host.innerHTML = '<div class="wr-state"><div class="wr-headline" style="font-size:30px">No picks yet</div>'
+            + '<p class="wr-caption" style="margin-top:12px">Once players save squads, their Wrapped will appear here.</p></div>';
+        return;
+    }
+
+    const slides = [];
+    slides.push(slideHTML('wr-blue', '<div class="wr-brand">WC2026 POOL</div><h1 class="wr-headline" style="margin-top:10px">Wrapped 🏆</h1><p class="wr-caption" style="margin-top:14px">The 2026 World Cup pool, by the numbers. Here\'s how it all shook out.</p>'));
+    slides.push(statSlide('The Squad', String(playerCount), _wrappedPeople(playerCount) + ' joined the pool. May the best squad win.'));
+    slides.push(slideHTML('wr-gold',
+        '<div class="wr-kicker">The Pot</div><div class="wr-bignum">' + _wrappedMoney(pot) + '</div>'
+        + '<p class="wr-caption">' + _wrappedPeople(playerCount) + ' × ' + _wrappedMoney(WRAPPED_ENTRY_FEE) + ' CAD. Split across the top three.</p>'
+        + '<div class="wr-payouts">'
+        + '<div class="wr-payrow"><span class="wr-place">🥇 1st</span><span class="wr-amt" style="color:#34d399">' + _wrappedMoney(pot * WRAPPED_SPLIT.first) + '</span></div>'
+        + '<div class="wr-payrow"><span class="wr-place">🥈 2nd</span><span class="wr-amt" style="color:#9ca3af">' + _wrappedMoney(pot * WRAPPED_SPLIT.second) + '</span></div>'
+        + '<div class="wr-payrow"><span class="wr-place">🥉 3rd</span><span class="wr-amt" style="color:#f59e0b">' + _wrappedMoney(pot * WRAPPED_SPLIT.third) + '</span></div>'
+        + '</div>'));
+    if (mostTeam) slides.push(statSlide('Most Picked Team', '<span class="wr-flag-lead">' + flagOf(mostTeam[0]) + '</span>' + _wrappedEsc(mostTeam[0]),
+        'On ' + mostTeam[1] + ' of ' + playerCount + ' squads (' + Math.round(mostTeam[1] / playerCount * 100) + '%). The crowd favourite.', true));
+    if (leastTeam) slides.push(statSlide('Least Picked Team', '<span class="wr-flag-lead">' + flagOf(leastTeam[0]) + '</span>' + _wrappedEsc(leastTeam[0]),
+        'Only ' + _wrappedPeople(leastTeam[1]) + ' believed. The lonely longshot.', true));
+    if (topTier1) slides.push(statSlide('Top Tier-1 Pick', '<span class="wr-flag-lead">' + flagOf(topTier1[0]) + '</span>' + _wrappedEsc(topTier1[0]),
+        'The most-backed heavyweight — chosen by ' + _wrappedPeople(topTier1[1]) + '.', true));
+    if (mostGroup) slides.push(statSlide('Most Loved Group', 'Group ' + _wrappedEsc(mostGroup[0]), mostGroup[1] + ' picks came from this group alone.'));
+    if (leastGroup) slides.push(statSlide('Most Ignored Group', 'Group ' + _wrappedEsc(leastGroup[0]), 'Just ' + leastGroup[1] + ' picks. Nobody\'s buying it.'));
+    if (biggest) slides.push(statSlide('Biggest Spender', _wrappedEsc(biggest.name), 'Splurged ' + _wrappedMoney(biggest.total) + ' of the $150 budget. Went big.'));
+    if (smallest) slides.push(statSlide('Bargain Hunter', _wrappedEsc(smallest.name), 'Built a squad for just ' + _wrappedMoney(smallest.total) + '. Moneyball.'));
+    slides.push(slideHTML('',
+        '<div class="wr-kicker">The Host Sweep</div><h1 class="wr-headline">' + WRAPPED_HOSTS.map(flagOf).join('') + '</h1>'
+        + '<p class="wr-caption" style="margin-top:12px">' + (hostHeroes.length ? 'Backed all three hosts (USA, Mexico, Canada):' : 'Nobody took all three hosts (USA, Mexico, Canada). Bold.') + '</p>'
+        + (hostHeroes.length ? '<div class="wr-namelist">' + hostHeroes.map((n) => '<span class="wr-chip">' + _wrappedEsc(n) + '</span>').join('') + '</div>' : '')));
+    slides.push(slideHTML('',
+        '<div class="wr-kicker">The Loyalists ❤️</div><div class="wr-bignum" style="font-size:clamp(56px,16vw,120px)">' + loyalists.length + '</div>'
+        + '<p class="wr-caption">' + (loyalists.length ? 'put their money on their favourite team.' : 'No one backed their own favourite team. Cold-blooded.') + '</p>'
+        + (loyalists.length ? '<div class="wr-namelist">' + loyalists.slice(0, 18).map((p) => '<span class="wr-chip">' + _wrappedEsc(p.name) + ' ' + flagOf(p.fav) + '</span>').join('') + '</div>' : '')));
+    slides.push(slideHTML('',
+        '<div class="wr-kicker">The Traitors 🙈</div><div class="wr-bignum" style="font-size:clamp(56px,16vw,120px)">' + traitors.length + '</div>'
+        + '<p class="wr-caption">' + (traitors.length ? 'left their favourite team off the squad. Business is business.' : 'Everyone stayed loyal. Wholesome.') + '</p>'
+        + (traitors.length ? '<div class="wr-namelist">' + traitors.slice(0, 18).map((p) => '<span class="wr-chip">' + _wrappedEsc(p.name) + '</span>').join('') + '</div>' : '')));
+    slides.push(slideHTML('wr-blue', '<h1 class="wr-headline">Good luck 🍀</h1><p class="wr-caption" style="margin-top:14px">The tournament starts now. Let\'s see whose squad holds up.</p><div class="wr-sub" style="margin-top:26px">WC2026 Pool · Wrapped</div>'));
+
+    const count = slides.length;
+    host.innerHTML =
+        '<div class="wr-deck" id="wr-deck">' + slides.join('') + '</div>'
+        + '<div class="wr-progress" id="wr-progress"></div>'
+        + '<div class="wr-hint" id="wr-hint">Swipe up ↑ or tap Next</div>'
+        + '<button class="wr-next" id="wr-next">Next ↓</button>';
+
+    _setupWrappedNav(count);
+    if (typeof twemoji !== 'undefined') _wrappedRenderFlags(host);
+}
+
+function _wrappedRenderFlags(root) {
+    const BASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/';
+    const isFlag = (str) => {
+        const cps = Array.from(str).map((c) => c.codePointAt(0));
+        const reg = cps.length === 2 && cps.every((c) => c >= 0x1F1E6 && c <= 0x1F1FF);
+        const tag = cps[0] === 0x1F3F4 && cps.some((c) => c >= 0xE0060 && c <= 0xE007F);
+        return reg || tag;
+    };
+    try {
+        twemoji.parse(root, {
+            className: 'wr-flag', folder: 'svg', ext: '.svg', base: BASE,
+            callback: function (icon, options) {
+                const str = icon.split('-').map((h) => String.fromCodePoint(parseInt(h, 16))).join('');
+                if (!isFlag(str)) return false;
+                return BASE + 'svg/' + icon + options.ext;   // v14: hardcode svg/ folder
+            }
+        });
+    } catch (e) { /* never break the deck */ }
+}
+
+function _setupWrappedNav(count) {
+    const deck = document.getElementById('wr-deck');
+    const progress = document.getElementById('wr-progress');
+    const nextBtn = document.getElementById('wr-next');
+    const hint = document.getElementById('wr-hint');
+    if (!deck) return;
+    progress.innerHTML = Array.from({ length: count }, (_, i) => '<span class="wr-dot' + (i === 0 ? ' active' : '') + '"></span>').join('');
+    const dots = Array.from(progress.children);
+    const slides = Array.from(deck.children);
+    const slideH = () => deck.clientHeight || window.innerHeight;
+    const current = () => Math.round(deck.scrollTop / slideH());
+    const go = (i) => { i = Math.max(0, Math.min(count - 1, i)); slides[i].scrollIntoView({ behavior: 'smooth' }); };
+    const updateUI = () => {
+        const i = current();
+        dots.forEach((d, k) => d.classList.toggle('active', k === i));
+        nextBtn.textContent = (i >= count - 1) ? 'Restart ↺' : 'Next ↓';
+        if (hint) hint.style.display = (i === 0) ? '' : 'none';
+    };
+    deck.addEventListener('scroll', () => window.requestAnimationFrame(updateUI), { passive: true });
+    nextBtn.addEventListener('click', () => { const i = current(); if (i >= count - 1) go(0); else go(i + 1); });
+    if (_wrappedKeyHandler) document.removeEventListener('keydown', _wrappedKeyHandler);
+    _wrappedKeyHandler = (e) => {
+        if (document.getElementById('wrapped-deck-modal').classList.contains('hidden')) return;
+        if (e.key === 'Escape') { closeWrappedDeck(); }
+        else if (e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); go(current() + 1); }
+        else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); go(current() - 1); }
+        else if (e.key === 'Home') go(0);
+        else if (e.key === 'End') go(count - 1);
+    };
+    document.addEventListener('keydown', _wrappedKeyHandler);
+    updateUI();
+}
+
 Object.assign(window, {
     setupAdminPage,
     showAdminTab,
     showResultsTab,
+    showWrappedDeck,
+    closeWrappedDeck,
     setupDashboard,
     setDashRightTab,
     setDashRankingsSort,

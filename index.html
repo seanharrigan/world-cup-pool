@@ -19,6 +19,46 @@
     <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <style>
+        /* ===== Wrapped deck (admin popup) — all scoped under #wrapped-deck-modal ===== */
+        #wrapped-deck-modal img.wr-flag { height: 1em; width: 1.33em; margin: 0 .06em; vertical-align: -0.15em; display: inline-block; object-fit: contain; }
+        #wrapped-deck-host { display: flex; flex-direction: column; }
+        #wrapped-deck-host .wr-deck {
+            height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory; scroll-behavior: smooth; scrollbar-width: none;
+        }
+        #wrapped-deck-host .wr-deck::-webkit-scrollbar { display: none; }
+        #wrapped-deck-host .wr-slide {
+            height: 100%; min-height: 100%; scroll-snap-align: start; scroll-snap-stop: always;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; padding: 64px 26px 120px; position: relative; color: #e5e7eb;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        #wrapped-deck-host .wr-inner { width: 100%; max-width: 640px; animation: wrRise .6s cubic-bezier(.2,.7,.2,1) both; }
+        @keyframes wrRise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+        #wrapped-deck-host .wr-kicker { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .34em; color: #60a5fa; margin-bottom: 20px; }
+        #wrapped-deck-host .wr-headline { font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -.02em; line-height: .98; color: #fff; font-size: clamp(30px, 7vw, 56px); margin: 0 0 8px; }
+        #wrapped-deck-host .wr-bignum { font-weight: 900; font-style: italic; letter-spacing: -.03em; color: #fff; font-size: clamp(60px, 18vw, 150px); line-height: .9; margin: 6px 0 12px; }
+        #wrapped-deck-host .wr-bignum .wr-flag-lead { display: block; font-size: .62em; margin-bottom: 6px; }
+        #wrapped-deck-host .wr-caption { font-size: clamp(14px, 3.6vw, 19px); color: #cbd5e1; font-weight: 600; line-height: 1.5; max-width: 32ch; margin: 0 auto; }
+        #wrapped-deck-host .wr-sub { color: #6b7280; font-size: 13px; margin-top: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: .12em; }
+        #wrapped-deck-host .wr-blue { background: radial-gradient(120% 80% at 50% 0%, rgba(59,130,246,.20), transparent 60%); }
+        #wrapped-deck-host .wr-gold { background: radial-gradient(120% 80% at 50% 0%, rgba(52,211,153,.16), transparent 60%); }
+        #wrapped-deck-host .wr-payouts { margin: 22px auto 0; max-width: 360px; display: flex; flex-direction: column; gap: 12px; }
+        #wrapped-deck-host .wr-payrow { display: flex; align-items: center; justify-content: space-between; background: #111827; border: 1px solid rgba(148,163,184,.14); border-radius: 16px; padding: 14px 20px; }
+        #wrapped-deck-host .wr-payrow .wr-place { font-weight: 900; font-size: 17px; }
+        #wrapped-deck-host .wr-payrow .wr-amt { font-weight: 900; font-size: 19px; font-style: italic; }
+        #wrapped-deck-host .wr-namelist { margin: 18px auto 0; max-width: 460px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+        #wrapped-deck-host .wr-chip { background: #1f2937; border: 1px solid rgba(148,163,184,.14); border-radius: 999px; padding: 7px 14px; font-size: 13px; font-weight: 700; color: #e5e7eb; }
+        #wrapped-deck-host .wr-brand { font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -.01em; font-size: 20px; color: #fff; }
+        #wrapped-deck-host .wr-next { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 6; border: none; cursor: pointer; background: #fff; color: #0b1220; font-weight: 900; text-transform: uppercase; letter-spacing: .18em; font-size: 12px; padding: 14px 30px; border-radius: 999px; box-shadow: 0 10px 30px rgba(0,0,0,.45); transition: transform .12s ease; }
+        #wrapped-deck-host .wr-next:active { transform: translateX(-50%) scale(.96); }
+        #wrapped-deck-host .wr-progress { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; gap: 6px; align-items: center; }
+        #wrapped-deck-host .wr-dot { width: 7px; height: 7px; border-radius: 99px; background: rgba(255,255,255,.22); transition: all .25s; }
+        #wrapped-deck-host .wr-dot.active { background: #60a5fa; width: 20px; }
+        #wrapped-deck-host .wr-hint { position: absolute; bottom: 84px; left: 0; right: 0; z-index: 5; color: #6b7280; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; font-weight: 700; animation: wrBob 1.8s ease-in-out infinite; pointer-events: none; }
+        @keyframes wrBob { 0%,100% { transform: translateY(0);} 50% { transform: translateY(7px);} }
+        #wrapped-deck-host .wr-state { display: flex; height: 100%; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 24px; color: #e5e7eb; font-family: system-ui, sans-serif; }
+        #wrapped-deck-host .wr-spinner { width: 38px; height: 38px; border: 3px solid rgba(255,255,255,.2); border-top-color: #60a5fa; border-radius: 50%; animation: wrSpin 1s linear infinite; margin-bottom: 18px; }
+        @keyframes wrSpin { to { transform: rotate(360deg); } }
         :root {
             --picks-accent-primary: #3b82f6;
             --picks-accent-primary-rgb: 59, 130, 246;
@@ -1362,6 +1402,7 @@
                         <button onclick="showAdminTab('notifications')" id="admin-tab-notifications" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Notifications</button>
                         <button onclick="showAdminTab('stats')" id="admin-tab-stats" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Statistics</button>
                         <button onclick="showAdminTab('toggle')" id="admin-tab-toggle" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Pool Settings</button>
+                        <button onclick="showAdminTab('wrapped')" id="admin-tab-wrapped" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Wrapped</button>
                     </div>
                 </div>
             </div>
@@ -1768,6 +1809,16 @@
                     <div id="manager-filter-strip"></div>
                     <div id="manager-rows" class="space-y-3">
                         <div class="px-4 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Loading…</div>
+                    </div>
+                </div>
+
+                <div id="admin-panel-wrapped" class="admin-panel hidden space-y-8">
+                    <div class="rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-6 flex flex-col gap-4 items-start">
+                        <div>
+                            <h3 class="text-sm font-black uppercase text-white">Pool Wrapped</h3>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">A swipeable summary of the whole pool</p>
+                        </div>
+                        <button onclick="showWrappedDeck()" class="rounded-2xl bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-900 transition-colors hover:bg-gray-100">Open Wrapped ▶</button>
                     </div>
                 </div>
 
@@ -2339,11 +2390,18 @@
         </div>
     </div>
 
+    <!-- Wrapped deck: admin-only full-screen popup overlay -->
+    <div id="wrapped-deck-modal" class="hidden fixed inset-0 z-[120] bg-gray-950">
+        <button onclick="closeWrappedDeck()" aria-label="Close" class="absolute top-4 right-4 z-[10] text-gray-400 hover:text-white text-3xl leading-none">×</button>
+        <div id="wrapped-deck-host" class="w-full h-full"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous"></script>
     <script src="js/data.js?v=20260409b"></script>
     <script src="js/ui.js?v=20260424e"></script>
     <script src="js/scoring.js?v=20260424a"></script>
     <script src="js/third-place-mapping.js?v=20260416b"></script>
-    <script src="js/features.js?v=20260427o"></script>
+    <script src="js/features.js?v=20260611a"></script>
     <script src="js/app.js?v=20260424f"></script>
 </body>
 </html>
