@@ -11652,17 +11652,27 @@ function _buildWrappedDeck(host, picks, profiles) {
     const avgSquad = spend.length ? spend.reduce((s, x) => s + x.total, 0) / spend.length : 0;
 
     // Priciest team that anyone actually rostered
-    let priciest = null;
-    Object.keys(teamCount).forEach((name) => {
-        const t = TEAM_BY_NAME[name];
-        if (t && (priciest === null || (Number(t.cost) || 0) > (Number(priciest.cost) || 0))) priciest = t;
-    });
-
-    // Tier-3 gamblers: most Tier-3 teams stacked in one squad
+    // Tier-3 gamblers: most Tier-3 teams stacked in one squad (capture their full squad)
     let gambler = null;
     players.forEach((e) => {
         const t3 = squads[e].filter((r) => (TEAM_BY_NAME[r.team_name] || {}).tier === 3).length;
-        if (gambler === null || t3 > gambler.count) gambler = { name: nameOf(e), count: t3 };
+        if (gambler === null || t3 > gambler.count) {
+            const squadFlags = squads[e]
+                .slice()
+                .sort((a, b) => (Number(b.cost) || 0) - (Number(a.cost) || 0))
+                .map((r) => flagOf(r.team_name))
+                .join(' ');
+            gambler = { name: nameOf(e), count: t3, squadFlags };
+        }
+    });
+
+    // Longest nickname — "didn't get the memo"
+    let longestName = null;
+    players.forEach((e) => {
+        const nick = (profByEmail[e] || {}).nickname || '';
+        if (nick && (longestName === null || nick.length > longestName.length)) {
+            longestName = { name: nick, length: nick.length };
+        }
     });
 
     // Twins & originals: identical 8-team squads (sorted signature)
@@ -11803,12 +11813,15 @@ function _buildWrappedDeck(host, picks, profiles) {
         (maxedCount === 1 ? '1 player' : maxedCount + ' players') + ' spent every last dollar — the full $150 budget.'));
     // Bargain hunter (lowest spender)
     if (smallest) slides.push(statSlide('Bargain Hunter', _wrappedEsc(smallest.name), 'Built a squad for just ' + _wrappedMoney(smallest.total) + '. Moneyball.'));
-    // Priciest team owned
-    if (priciest) slides.push(statSlide('Priciest Pick', '<span class="wr-flag-lead">' + (priciest.flag || '') + '</span>' + _wrappedEsc(priciest.name),
-        'The most expensive team anyone rostered — ' + _wrappedMoney(Number(priciest.cost) || 0) + '.', true));
-    // Tier-3 gamblers
-    if (gambler && gambler.count > 0) slides.push(statSlide('Longshot King', _wrappedEsc(gambler.name),
-        'Stacked ' + gambler.count + ' Tier-3 longshots in one squad. Living dangerously.'));
+    // Tier-3 gamblers — show their ridiculous squad
+    if (gambler && gambler.count > 0) slides.push(slideHTML('',
+        '<div class="wr-kicker">Longshot King</div>'
+        + '<h1 class="wr-headline" style="font-size:clamp(26px,7vw,46px)">' + _wrappedEsc(gambler.name) + '</h1>'
+        + '<p class="wr-caption" style="margin-top:10px">Stacked ' + gambler.count + ' Tier-3 longshots in one squad. Living dangerously — behold:</p>'
+        + '<div class="wr-bignum" style="font-size:clamp(30px,9vw,64px);margin-top:14px;line-height:1.25">' + gambler.squadFlags + '</div>'));
+    // Longest nickname — didn't get the memo
+    if (longestName) slides.push(statSlide('Didn\'t Get the Memo', _wrappedEsc(longestName.name),
+        longestName.length + ' characters. Ever heard of a short name?'));
     // Twins & originals
     slides.push(slideHTML('',
         '<div class="wr-kicker">Twins & Originals</div>'
@@ -11848,8 +11861,11 @@ function _buildWrappedDeck(host, picks, profiles) {
     host.innerHTML =
         '<div class="wr-deck" id="wr-deck">' + slides.join('') + '</div>'
         + '<div class="wr-progress" id="wr-progress"></div>'
-        + '<div class="wr-hint" id="wr-hint">Swipe up ↑ or tap Next</div>'
-        + '<button class="wr-next" id="wr-next">Next ↓</button>';
+        + '<div class="wr-hint" id="wr-hint">Swipe or tap Next · ↑ back</div>'
+        + '<div class="wr-controls">'
+        + '<button class="wr-prev" id="wr-prev" aria-label="Previous">↑</button>'
+        + '<button class="wr-next" id="wr-next">Next ↓</button>'
+        + '</div>';
 
     _setupWrappedNav(count);
     if (typeof twemoji !== 'undefined') _wrappedRenderFlags(host);
@@ -11879,6 +11895,7 @@ function _setupWrappedNav(count) {
     const deck = document.getElementById('wr-deck');
     const progress = document.getElementById('wr-progress');
     const nextBtn = document.getElementById('wr-next');
+    const prevBtn = document.getElementById('wr-prev');
     const hint = document.getElementById('wr-hint');
     if (!deck) return;
     progress.innerHTML = Array.from({ length: count }, (_, i) => '<span class="wr-dot' + (i === 0 ? ' active' : '') + '"></span>').join('');
@@ -11891,10 +11908,12 @@ function _setupWrappedNav(count) {
         const i = current();
         dots.forEach((d, k) => d.classList.toggle('active', k === i));
         nextBtn.textContent = (i >= count - 1) ? 'Restart ↺' : 'Next ↓';
+        if (prevBtn) prevBtn.classList.toggle('wr-disabled', i <= 0);
         if (hint) hint.style.display = (i === 0) ? '' : 'none';
     };
     deck.addEventListener('scroll', () => window.requestAnimationFrame(updateUI), { passive: true });
     nextBtn.addEventListener('click', () => { const i = current(); if (i >= count - 1) go(0); else go(i + 1); });
+    if (prevBtn) prevBtn.addEventListener('click', () => go(current() - 1));
     if (_wrappedKeyHandler) document.removeEventListener('keydown', _wrappedKeyHandler);
     _wrappedKeyHandler = (e) => {
         if (document.getElementById('wrapped-deck-modal').classList.contains('hidden')) return;

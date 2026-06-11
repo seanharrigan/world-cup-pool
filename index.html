@@ -49,8 +49,12 @@
         #wrapped-deck-host .wr-namelist { margin: 18px auto 0; max-width: 460px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
         #wrapped-deck-host .wr-chip { background: #1f2937; border: 1px solid rgba(148,163,184,.14); border-radius: 999px; padding: 7px 14px; font-size: 13px; font-weight: 700; color: #e5e7eb; }
         #wrapped-deck-host .wr-brand { font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -.01em; font-size: 20px; color: #fff; }
-        #wrapped-deck-host .wr-next { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 6; border: none; cursor: pointer; background: #fff; color: #0b1220; font-weight: 900; text-transform: uppercase; letter-spacing: .18em; font-size: 12px; padding: 14px 30px; border-radius: 999px; box-shadow: 0 10px 30px rgba(0,0,0,.45); transition: transform .12s ease; }
-        #wrapped-deck-host .wr-next:active { transform: translateX(-50%) scale(.96); }
+        #wrapped-deck-host .wr-controls { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 10px; }
+        #wrapped-deck-host .wr-next { border: none; cursor: pointer; background: #fff; color: #0b1220; font-weight: 900; text-transform: uppercase; letter-spacing: .18em; font-size: 12px; padding: 14px 30px; border-radius: 999px; box-shadow: 0 10px 30px rgba(0,0,0,.45); transition: transform .12s ease; }
+        #wrapped-deck-host .wr-next:active { transform: scale(.96); }
+        #wrapped-deck-host .wr-prev { border: 1px solid rgba(255,255,255,.25); cursor: pointer; background: rgba(255,255,255,.06); color: #e5e7eb; font-weight: 900; font-size: 16px; line-height: 1; width: 46px; height: 46px; border-radius: 999px; box-shadow: 0 10px 30px rgba(0,0,0,.35); transition: transform .12s ease, opacity .2s; }
+        #wrapped-deck-host .wr-prev:active { transform: scale(.94); }
+        #wrapped-deck-host .wr-prev.wr-disabled { opacity: 0; pointer-events: none; }
         #wrapped-deck-host .wr-progress { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; gap: 6px; align-items: center; }
         #wrapped-deck-host .wr-dot { width: 7px; height: 7px; border-radius: 99px; background: rgba(255,255,255,.22); transition: all .25s; }
         #wrapped-deck-host .wr-dot.active { background: #60a5fa; width: 20px; }
@@ -2407,7 +2411,7 @@
     <script src="js/ui.js?v=20260424e"></script>
     <script src="js/scoring.js?v=20260424a"></script>
     <script src="js/third-place-mapping.js?v=20260416b"></script>
-    <script src="js/features.js?v=20260611b"></script>
+    <script src="js/features.js?v=20260611d"></script>
     <script src="js/app.js?v=20260424f"></script>
 </body>
 </html>
