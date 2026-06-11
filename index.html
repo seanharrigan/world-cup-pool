@@ -56,6 +56,12 @@
         #wrapped-deck-host .wr-dot.active { background: #60a5fa; width: 20px; }
         #wrapped-deck-host .wr-hint { position: absolute; bottom: 84px; left: 0; right: 0; z-index: 5; text-align: center; color: #6b7280; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; font-weight: 700; animation: wrBob 1.8s ease-in-out infinite; pointer-events: none; }
         @keyframes wrBob { 0%,100% { transform: translateY(0);} 50% { transform: translateY(7px);} }
+        #wrapped-deck-host .wr-bars { width: 100%; max-width: 460px; margin: 18px auto 0; display: flex; flex-direction: column; gap: 9px; max-height: 56vh; overflow-y: auto; scrollbar-width: thin; }
+        #wrapped-deck-host .wr-bar-row { display: flex; align-items: center; gap: 10px; }
+        #wrapped-deck-host .wr-bar-label { flex: 0 0 38%; text-align: left; font-size: 13px; font-weight: 700; color: #e5e7eb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #wrapped-deck-host .wr-bar-track { flex: 1; height: 12px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
+        #wrapped-deck-host .wr-bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #3b82f6, #60a5fa); min-width: 2px; transition: width .5s ease; }
+        #wrapped-deck-host .wr-bar-val { flex: 0 0 auto; font-size: 12px; font-weight: 900; color: #cbd5e1; min-width: 18px; text-align: right; }
         #wrapped-deck-host .wr-state { display: flex; height: 100%; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 24px; color: #e5e7eb; font-family: system-ui, sans-serif; }
         #wrapped-deck-host .wr-spinner { width: 38px; height: 38px; border: 3px solid rgba(255,255,255,.2); border-top-color: #60a5fa; border-radius: 50%; animation: wrSpin 1s linear infinite; margin-bottom: 18px; }
         @keyframes wrSpin { to { transform: rotate(360deg); } }
@@ -2401,7 +2407,7 @@
     <script src="js/ui.js?v=20260424e"></script>
     <script src="js/scoring.js?v=20260424a"></script>
     <script src="js/third-place-mapping.js?v=20260416b"></script>
-    <script src="js/features.js?v=20260611a"></script>
+    <script src="js/features.js?v=20260611b"></script>
     <script src="js/app.js?v=20260424f"></script>
 </body>
 </html>
