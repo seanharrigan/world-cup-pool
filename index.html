@@ -1412,7 +1412,7 @@
                         <button onclick="showAdminTab('notifications')" id="admin-tab-notifications" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Notifications</button>
                         <button onclick="showAdminTab('stats')" id="admin-tab-stats" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Statistics</button>
                         <button onclick="showAdminTab('toggle')" id="admin-tab-toggle" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Pool Settings</button>
-                        <button onclick="showAdminTab('wrapped')" id="admin-tab-wrapped" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Wrapped</button>
+                        <button onclick="showAdminTab('wrapped')" id="admin-tab-wrapped" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Slides</button>
                     </div>
                 </div>
             </div>
@@ -1822,13 +1822,33 @@
                     </div>
                 </div>
 
-                <div id="admin-panel-wrapped" class="admin-panel hidden space-y-8">
-                    <div class="rounded-2xl border border-gray-700 bg-gray-900/70 px-5 py-6 flex flex-col gap-4 items-start">
-                        <div>
-                            <h3 class="text-sm font-black uppercase text-white">Pool Wrapped</h3>
-                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">A swipeable summary of the whole pool</p>
-                        </div>
-                        <button onclick="showWrappedDeck()" class="rounded-2xl bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-gray-900 transition-colors hover:bg-gray-100">Open Wrapped ▶</button>
+                <div id="admin-panel-wrapped" class="admin-panel hidden space-y-6">
+                    <div class="border-l-[3px] pl-3 border-blue-500">
+                        <h2 class="text-lg font-black uppercase italic tracking-tight text-white">Slides</h2>
+                        <p class="text-blue-400 font-black uppercase tracking-[0.18em] text-[9px]">Swipeable recap decks · more will appear here over the tournament</p>
+                    </div>
+                    <div class="overflow-hidden rounded-2xl border border-gray-700 bg-gray-900/70">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-950/60 text-gray-500">
+                                <tr class="text-[9px] font-black uppercase tracking-[0.2em]">
+                                    <th class="px-5 py-3">Deck</th>
+                                    <th class="px-5 py-3 hidden sm:table-cell">Date</th>
+                                    <th class="px-5 py-3 text-right">Open</th>
+                                </tr>
+                            </thead>
+                            <tbody id="slides-deck-table" class="divide-y divide-gray-800">
+                                <tr class="text-white">
+                                    <td class="px-5 py-4">
+                                        <div class="text-sm font-black uppercase">Picks Are In</div>
+                                        <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Pre-tournament pool recap</div>
+                                    </td>
+                                    <td class="px-5 py-4 hidden sm:table-cell text-[11px] font-bold uppercase tracking-[0.15em] text-gray-400">Jun 11, 2026</td>
+                                    <td class="px-5 py-4 text-right">
+                                        <button onclick="showWrappedDeck()" class="rounded-xl bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-900 transition-colors hover:bg-gray-100">Open ▶</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -2411,7 +2431,7 @@
     <script src="js/ui.js?v=20260424e"></script>
     <script src="js/scoring.js?v=20260424a"></script>
     <script src="js/third-place-mapping.js?v=20260416b"></script>
-    <script src="js/features.js?v=20260611d"></script>
+    <script src="js/features.js?v=20260611e"></script>
     <script src="js/app.js?v=20260424f"></script>
 </body>
 </html>

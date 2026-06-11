@@ -11649,7 +11649,16 @@ function _buildWrappedDeck(host, picks, profiles) {
     spend.sort((a, b) => b.total - a.total);
     const smallest = spend.length ? spend[spend.length - 1] : null;
     const maxedCount = spend.filter((s) => s.total >= 150).length;
-    const avgSquad = spend.length ? spend.reduce((s, x) => s + x.total, 0) / spend.length : 0;
+
+    // Picks per price point — how many total team-picks landed at each cost ($50, $45 … $2)
+    const costCount = {};
+    Object.values(squads).forEach((sq) => sq.forEach((r) => {
+        const c = Number(r.cost) || 0;
+        if (c > 0) costCount[c] = (costCount[c] || 0) + 1;
+    }));
+    const costRows = Object.entries(costCount)
+        .map(([cost, count]) => ({ label: '$' + cost, value: count, _cost: Number(cost) }))
+        .sort((a, b) => b._cost - a._cost);
 
     // Priciest team that anyone actually rostered
     // Tier-3 gamblers: most Tier-3 teams stacked in one squad (capture their full squad)
@@ -11755,7 +11764,7 @@ function _buildWrappedDeck(host, picks, profiles) {
 
     const slides = [];
     // Cover
-    slides.push(slideHTML('wr-blue', '<div class="wr-brand">WC2026 POOL</div><h1 class="wr-headline" style="margin-top:10px">Wrapped 🏆</h1><p class="wr-caption" style="margin-top:14px">The 2026 World Cup pool, by the numbers. Here\'s how it all shook out.</p>'));
+    slides.push(slideHTML('wr-blue', '<div class="wr-brand">WC2026 POOL</div><h1 class="wr-headline" style="margin-top:10px">Picks Are In ⚽</h1><p class="wr-caption" style="margin-top:14px">Every squad is locked. Here\'s the pool by the numbers before a ball is kicked.</p>'));
     // The Squad
     slides.push(statSlide('The Squad', String(playerCount), _wrappedPeople(playerCount) + ' joined the pool. May the best squad win.'));
     // The Pot
@@ -11807,7 +11816,10 @@ function _buildWrappedDeck(host, picks, profiles) {
         (zeroGroups.length === 1 ? 'A whole group' : zeroGroups.length + ' whole groups') + ' nobody touched. ' + distinctCountries + ' different countries got picked in total.'));
     else slides.push(statSlide('Spread the Love', String(distinctCountries), distinctCountries + ' different countries were picked across the pool.'));
     // Average squad
-    slides.push(statSlide('The Typical Squad', _wrappedMoney(avgSquad), 'The average squad cost ' + _wrappedMoney(avgSquad) + ' of the $150 budget.'));
+    if (costRows.length) slides.push(slideHTML('',
+        '<div class="wr-kicker">Picks by Price</div><h1 class="wr-headline" style="font-size:clamp(24px,6vw,40px);margin-bottom:6px">Where the Money Went</h1>'
+        + '<p class="wr-caption" style="margin-bottom:6px">How many picks landed at each price point.</p>'
+        + barRows(costRows)));
     // Maxed out ($150)
     slides.push(statSlide('Maxed Out', String(maxedCount),
         (maxedCount === 1 ? '1 player' : maxedCount + ' players') + ' spent every last dollar — the full $150 budget.'));
@@ -11855,7 +11867,7 @@ function _buildWrappedDeck(host, picks, profiles) {
         + '<p class="wr-caption">' + (traitors.length ? 'left their favourite team off the squad. Business is business.' : 'Everyone stayed loyal. Wholesome.') + '</p>'
         + (traitors.length ? chipList(traitors) : '')));
     // Closer
-    slides.push(slideHTML('wr-blue', '<h1 class="wr-headline">Good luck 🍀</h1><p class="wr-caption" style="margin-top:14px">The tournament starts now. Let\'s see whose squad holds up.</p><div class="wr-sub" style="margin-top:26px">WC2026 Pool · Wrapped</div>'));
+    slides.push(slideHTML('wr-blue', '<h1 class="wr-headline">Good luck 🍀</h1><p class="wr-caption" style="margin-top:14px">The tournament starts now. The full Wrapped drops when the Cup is won.</p><div class="wr-sub" style="margin-top:26px">WC2026 Pool · Picks Are In</div>'));
 
     const count = slides.length;
     host.innerHTML =
