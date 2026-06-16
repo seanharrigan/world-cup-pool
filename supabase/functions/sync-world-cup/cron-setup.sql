@@ -28,6 +28,13 @@
 --      SELECT cron.unschedule('sync-wc-jul');
 -- ─────────────────────────────────────────────────────────────────────────────
 
+-- Re-running this file replaces the existing jobs with the latest command.
+SELECT cron.unschedule('sync-wc-jun')
+WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'sync-wc-jun');
+
+SELECT cron.unschedule('sync-wc-jul')
+WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'sync-wc-jul');
+
 
 -- June 11 – 30
 SELECT cron.schedule(
@@ -36,7 +43,8 @@ SELECT cron.schedule(
     $$
     SELECT net.http_post(
         url := 'https://ttqvchhzuyzhzeumysks.supabase.co/functions/v1/sync-world-cup?execute=true',
-        headers := '{"Content-Type":"application/json"}'::jsonb
+        headers := '{"Content-Type":"application/json"}'::jsonb,
+        timeout_milliseconds := 30000
     );
     $$
 );
@@ -48,7 +56,8 @@ SELECT cron.schedule(
     $$
     SELECT net.http_post(
         url := 'https://ttqvchhzuyzhzeumysks.supabase.co/functions/v1/sync-world-cup?execute=true',
-        headers := '{"Content-Type":"application/json"}'::jsonb
+        headers := '{"Content-Type":"application/json"}'::jsonb,
+        timeout_milliseconds := 30000
     );
     $$
 );

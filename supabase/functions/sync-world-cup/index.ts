@@ -12,9 +12,20 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { mapTeam, mapStage } from "./team-map.ts";
-import { toPoolDateKey } from "./date-utils.mjs";
+import { POOL_TIME_ZONE, toPoolDateKey } from "./date-utils.mjs";
 
 const FOOTBALL_DATA_URL = "https://api.football-data.org/v4/competitions/WC/matches";
+const BUILD_ID = "vancouver-date-fix-b921e1e";
+const DATE_PROBE_UTC = "2026-06-16T01:00:00Z";
+const FETCH_MAX_ATTEMPTS = 3;
+const FETCH_TIMEOUT_MS = 8000;
+const FETCH_RETRY_DELAY_MS = 750;
+
+const RESPONSE_META = {
+    build: BUILD_ID,
+    poolTimeZone: POOL_TIME_ZONE,
+    dateProbe: toPoolDateKey(DATE_PROBE_UTC),
+};
 
 const CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -38,6 +49,22 @@ interface ApiMatch {
         penalties?: { home: number | null; away: number | null };
     };
     lastUpdated: string;
+}
+
+interface FetchAttemptDiagnostic {
+    attempt: number;
+    ok: boolean;
+    status: number | null;
+    elapsedMs: number;
+    error: string | null;
+    body?: string;
+}
+
+interface FetchDiagnostics {
+    upstreamUrl: string;
+    maxAttempts: number;
+    timeoutMs: number;
+    attempts: FetchAttemptDiagnostic[];
 }
 
 interface PlannedChange {
@@ -88,29 +115,27 @@ serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
-    if (!apiKey) return jsonResponse({ ok: false, error: "FOOTBALL_DATA_API_KEY not configured" }, 500);
-    if (!supabaseUrl || !supabaseServiceKey) return jsonResponse({ ok: false, error: "Supabase env not available" }, 500);
+    if (!apiKey) return jsonResponse({ ok: false, ...RESPONSE_META, error: "FOOTBALL_DATA_API_KEY not configured" }, 500);
+    if (!supabaseUrl || !supabaseServiceKey) return jsonResponse({ ok: false, ...RESPONSE_META, error: "Supabase env not available" }, 500);
 
     // 1. Fetch live data from football-data.org
-    let apiMatches: ApiMatch[] = [];
-    try {
-        const res = await fetch(FOOTBALL_DATA_URL, { headers: { "X-Auth-Token": apiKey } });
-        if (!res.ok) {
-            const body = await res.text();
-            return jsonResponse({ ok: false, error: `football-data.org returned ${res.status}`, body }, 502);
-        }
-        const data = await res.json();
-        apiMatches = data.matches || [];
-    } catch (err) {
-        return jsonResponse({ ok: false, error: `Fetch failed: ${(err as Error).message}` }, 502);
+    const apiFetch = await fetchWorldCupMatches(apiKey);
+    if (!apiFetch.ok) {
+        return jsonResponse({
+            ok: false,
+            ...RESPONSE_META,
+            error: apiFetch.error,
+            fetchDiagnostics: apiFetch.diagnostics,
+        }, 502);
     }
+    const apiMatches = apiFetch.matches;
 
     // 2. Pre-fetch our existing matches for lookup
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { data: existing, error: existingErr } = await supabase
         .from("matches")
         .select("id, team_home, team_away, match_date_manual, score_home, score_away, was_extra_time, manual_override, auto_synced_at");
-    if (existingErr) return jsonResponse({ ok: false, error: `Failed to load existing matches: ${existingErr.message}` }, 500);
+    if (existingErr) return jsonResponse({ ok: false, ...RESPONSE_META, error: `Failed to load existing matches: ${existingErr.message}` }, 500);
 
     const fixtureKey = (stage: string | null, home: string, away: string) =>
         `${stage || ""}|${[home, away].sort().join("|")}`;
@@ -295,8 +320,83 @@ serve(async (req: Request) => {
         }
     }
 
-    return jsonResponse({ ok: true, summary, planned }, 200);
+    return jsonResponse({
+        ok: true,
+        ...RESPONSE_META,
+        summary,
+        fetchDiagnostics: apiFetch.diagnostics,
+        planned,
+    }, 200);
 });
+
+async function fetchWorldCupMatches(apiKey: string): Promise<
+    | { ok: true; matches: ApiMatch[]; diagnostics: FetchDiagnostics }
+    | { ok: false; error: string; diagnostics: FetchDiagnostics }
+> {
+    const diagnostics: FetchDiagnostics = {
+        upstreamUrl: FOOTBALL_DATA_URL,
+        maxAttempts: FETCH_MAX_ATTEMPTS,
+        timeoutMs: FETCH_TIMEOUT_MS,
+        attempts: [],
+    };
+
+    for (let attempt = 1; attempt <= FETCH_MAX_ATTEMPTS; attempt++) {
+        const started = Date.now();
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+        try {
+            const res = await fetch(FOOTBALL_DATA_URL, {
+                headers: { "X-Auth-Token": apiKey },
+                signal: controller.signal,
+            });
+            const elapsedMs = Date.now() - started;
+
+            if (!res.ok) {
+                const body = (await res.text()).slice(0, 1000);
+                diagnostics.attempts.push({
+                    attempt,
+                    ok: false,
+                    status: res.status,
+                    elapsedMs,
+                    error: `football-data.org returned ${res.status}`,
+                    body,
+                });
+            } else {
+                const data = await res.json();
+                diagnostics.attempts.push({
+                    attempt,
+                    ok: true,
+                    status: res.status,
+                    elapsedMs,
+                    error: null,
+                });
+                return { ok: true, matches: data.matches || [], diagnostics };
+            }
+        } catch (err) {
+            diagnostics.attempts.push({
+                attempt,
+                ok: false,
+                status: null,
+                elapsedMs: Date.now() - started,
+                error: (err as Error).message || String(err),
+            });
+        } finally {
+            clearTimeout(timeoutId);
+        }
+
+        if (attempt < FETCH_MAX_ATTEMPTS) {
+            await delay(FETCH_RETRY_DELAY_MS * attempt);
+        }
+    }
+
+    const lastError = diagnostics.attempts[diagnostics.attempts.length - 1]?.error || "unknown fetch error";
+    return { ok: false, error: `Fetch failed after ${FETCH_MAX_ATTEMPTS} attempts: ${lastError}`, diagnostics };
+}
+
+function delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function jsonResponse(body: unknown, status: number): Response {
     return new Response(JSON.stringify(body, null, 2), {
