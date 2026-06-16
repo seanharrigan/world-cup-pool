@@ -141,6 +141,38 @@ test('official FIFA third-place mapping table covers all 495 valid combinations 
     });
 });
 
+test('match manager import reuses off-date same-fixture row before inserting', () => {
+    const api = loadTournamentApi();
+    const entry = api.GROUP_STAGE_SCHEDULE.find((match) =>
+        match.home === 'Haiti' && match.away === 'Scotland'
+    );
+
+    const offDateAutoRow = {
+        id: 1001,
+        stage: 'Group',
+        match_date_manual: '2026-06-14',
+        team_home: 'Haiti',
+        team_away: 'Scotland',
+        score_home: 0,
+        score_away: 1,
+        manual_override: false
+    };
+    const exactRow = {
+        ...offDateAutoRow,
+        id: 1002,
+        match_date_manual: '2026-06-13'
+    };
+    const manualOffDateRow = {
+        ...offDateAutoRow,
+        id: 1003,
+        manual_override: true
+    };
+
+    assert.equal(api._managerFindImportTargetDbRow(entry, [offDateAutoRow])?.id, 1001);
+    assert.equal(api._managerFindImportTargetDbRow(entry, [offDateAutoRow, exactRow])?.id, 1002);
+    assert.equal(api._managerFindImportTargetDbRow(entry, [manualOffDateRow]), null);
+});
+
 test('derived team status advances top two in every group and only the best eight third-place teams', () => {
     const api = loadTournamentApi();
     const { matches, rankingByGroup } = buildCompletedGroupStage(api.GROUP_STAGE_SCHEDULE);

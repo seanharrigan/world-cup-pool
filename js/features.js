@@ -3861,6 +3861,42 @@ function _managerFindDbRow(scheduleEntry, dbCache, claimedIds) {
     return picked;
 }
 
+function _managerTeamPairMatches(row, home, away) {
+    return (
+        (row.team_home === home && row.team_away === away) ||
+        (row.team_home === away && row.team_away === home)
+    );
+}
+
+function _managerDateDistanceDays(dateA, dateB) {
+    if (!dateA || !dateB) return Number.POSITIVE_INFINITY;
+    const aMs = Date.parse(`${dateA}T12:00:00Z`);
+    const bMs = Date.parse(`${dateB}T12:00:00Z`);
+    if (!Number.isFinite(aMs) || !Number.isFinite(bMs)) return Number.POSITIVE_INFINITY;
+    return Math.abs(aMs - bMs) / 86400000;
+}
+
+function _managerFindImportTargetDbRow(scheduleEntry, dbCache, claimedIds) {
+    const exact = _managerFindDbRow(scheduleEntry, dbCache, claimedIds);
+    if (exact) return exact;
+
+    const stage = scheduleEntry.stage || (scheduleEntry.group ? 'Group' : '');
+    const candidates = (dbCache || [])
+        .filter((row) =>
+            row.stage === stage &&
+            row.manual_override !== true &&
+            row.match_date_manual !== scheduleEntry.date &&
+            _managerDateDistanceDays(row.match_date_manual, scheduleEntry.date) <= 1 &&
+            _managerTeamPairMatches(row, scheduleEntry.home, scheduleEntry.away)
+        )
+        .sort((a, b) =>
+            _managerDateDistanceDays(a.match_date_manual, scheduleEntry.date) -
+            _managerDateDistanceDays(b.match_date_manual, scheduleEntry.date)
+        );
+
+    return candidates[0] || null;
+}
+
 function _managerStatusBadge(status) {
     const map = {
         FINISHED: ['🟢', 'Finished', 'text-green-400'],
@@ -4113,7 +4149,7 @@ async function managerImportApi(safeKey) {
         showToast?.('No FINISHED API result for this match.');
         return;
     }
-    const dbRow = _managerFindDbRow(entry, dbCache, claimedDbIds);
+    const dbRow = _managerFindImportTargetDbRow(entry, dbCache, claimedDbIds);
     const stage = entry.stage || (entry.group ? 'Group' : '');
     const payload = {
         team_home: apiMatch.team_home,
@@ -12372,6 +12408,7 @@ if (typeof module !== 'undefined' && module.exports) {
         _buildBestThirdAssignments,
         _buildFallbackBestThirdAssignments,
         _resolveKnockoutMatchTeam,
+        _managerFindImportTargetDbRow,
         _buildDerivedTeamStatusRows,
         buildTournamentAudit,
         _getFifaRank,

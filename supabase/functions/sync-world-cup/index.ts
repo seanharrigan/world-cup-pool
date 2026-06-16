@@ -12,6 +12,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { mapTeam, mapStage } from "./team-map.ts";
+import { toPoolDateKey } from "./date-utils.mjs";
 
 const FOOTBALL_DATA_URL = "https://api.football-data.org/v4/competitions/WC/matches";
 
@@ -51,6 +52,8 @@ interface PlannedChange {
     utc_date: string;
     was_extra_time: boolean;
     api_id: number;
+    db_id: number | null;
+    db_match_date_manual: string | null;
     db_manual_override: boolean | null;
     db_auto_synced_at: string | null;
     reason?: string;
@@ -109,14 +112,38 @@ serve(async (req: Request) => {
         .select("id, team_home, team_away, match_date_manual, score_home, score_away, was_extra_time, manual_override, auto_synced_at");
     if (existingErr) return jsonResponse({ ok: false, error: `Failed to load existing matches: ${existingErr.message}` }, 500);
 
-    // Index existing rows by both (home|away|date) and (away|home|date) so a swapped
-    // home/away in the API still matches an admin-entered row.
-    const existingMap = new Map<string, typeof existing[number]>();
+    const fixtureKey = (stage: string | null, home: string, away: string) =>
+        `${stage || ""}|${[home, away].sort().join("|")}`;
+    const dateDistanceDays = (a: string | null, b: string | null) => {
+        if (!a || !b) return Number.POSITIVE_INFINITY;
+        const aMs = Date.parse(`${a}T12:00:00Z`);
+        const bMs = Date.parse(`${b}T12:00:00Z`);
+        if (!Number.isFinite(aMs) || !Number.isFinite(bMs)) return Number.POSITIVE_INFINITY;
+        return Math.abs(aMs - bMs) / 86400000;
+    };
+
+    // Index existing rows by exact pool date, plus a stage+team-pair fallback so
+    // pre-fix UTC-date rows are reused instead of creating duplicate fixtures.
+    type ExistingRow = NonNullable<typeof existing>[number];
+    const existingMap = new Map<string, ExistingRow>();
+    const existingByFixture = new Map<string, ExistingRow[]>();
     for (const row of existing || []) {
         const date = row.match_date_manual;
-        existingMap.set(`${row.team_home}|${row.team_away}|${date}`, row);
-        existingMap.set(`${row.team_away}|${row.team_home}|${date}`, row);
+        existingMap.set(`${row.stage}|${row.team_home}|${row.team_away}|${date}`, row);
+        existingMap.set(`${row.stage}|${row.team_away}|${row.team_home}|${date}`, row);
+        const key = fixtureKey(row.stage, row.team_home, row.team_away);
+        if (!existingByFixture.has(key)) existingByFixture.set(key, []);
+        existingByFixture.get(key)!.push(row);
     }
+    const findExistingRow = (stage: string | null, team_home: string, team_away: string, match_date: string) => {
+        const exact = existingMap.get(`${stage}|${team_home}|${team_away}|${match_date}`);
+        if (exact) return exact;
+
+        return (existingByFixture.get(fixtureKey(stage, team_home, team_away)) || [])
+            .filter((row) => !row.manual_override && dateDistanceDays(row.match_date_manual, match_date) <= 1)
+            .sort((a, b) => dateDistanceDays(a.match_date_manual, match_date) - dateDistanceDays(b.match_date_manual, match_date))
+            [0] || null;
+    };
 
     // 3. Plan changes (every match gets an entry, including upcoming/in-play)
     const planned: PlannedChange[] = [];
@@ -136,9 +163,9 @@ serve(async (req: Request) => {
         const team_home = mapTeam(m.homeTeam.name);
         const team_away = mapTeam(m.awayTeam.name);
         const stage = mapStage(m.stage);
-        const match_date = m.utcDate.slice(0, 10);
+        const match_date = toPoolDateKey(m.utcDate);
         const utc_date = m.utcDate;
-        const existingRow = existingMap.get(`${team_home}|${team_away}|${match_date}`);
+        const existingRow = findExistingRow(stage, team_home, team_away, match_date);
         const baseRow = {
             api_status: m.status,
             team_home, team_away,
@@ -146,6 +173,8 @@ serve(async (req: Request) => {
             match_date,
             utc_date,
             api_id: m.id,
+            db_id: existingRow?.id ?? null,
+            db_match_date_manual: existingRow?.match_date_manual ?? null,
             db_manual_override: existingRow?.manual_override ?? null,
             db_auto_synced_at: existingRow?.auto_synced_at ?? null,
         };
@@ -192,7 +221,8 @@ serve(async (req: Request) => {
             const unchanged =
                 existingRow.score_home === score_home &&
                 existingRow.score_away === score_away &&
-                existingRow.was_extra_time === was_extra_time;
+                existingRow.was_extra_time === was_extra_time &&
+                existingRow.match_date_manual === match_date;
             planned.push({
                 ...baseRow,
                 action: unchanged ? "no-change" : "update",
@@ -244,7 +274,9 @@ serve(async (req: Request) => {
                 if (error) summary.errors.push(`Insert ${p.team_home}-${p.team_away}: ${error.message}`);
                 else summary.executedInserts++;
             } else if (p.action === "update") {
-                const existingRow = existingMap.get(`${p.team_home}|${p.team_away}|${p.match_date}`);
+                const existingRow = p.db_id
+                    ? (existing || []).find((row) => row.id === p.db_id)
+                    : findExistingRow(p.stage, p.team_home, p.team_away, p.match_date);
                 if (!existingRow) continue;
                 const { error } = await supabase
                     .from("matches")
@@ -253,6 +285,7 @@ serve(async (req: Request) => {
                         score_away: p.score_away,
                         was_extra_time: p.was_extra_time,
                         is_finished: true,
+                        match_date_manual: p.match_date,
                         auto_synced_at: now,
                     })
                     .eq("id", existingRow.id);
