@@ -134,7 +134,7 @@ serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { data: existing, error: existingErr } = await supabase
         .from("matches")
-        .select("id, team_home, team_away, match_date_manual, score_home, score_away, was_extra_time, manual_override, auto_synced_at");
+        .select("id, stage, team_home, team_away, match_date_manual, score_home, score_away, was_extra_time, manual_override, auto_synced_at");
     if (existingErr) return jsonResponse({ ok: false, ...RESPONSE_META, error: `Failed to load existing matches: ${existingErr.message}` }, 500);
 
     const fixtureKey = (stage: string | null, home: string, away: string) =>
