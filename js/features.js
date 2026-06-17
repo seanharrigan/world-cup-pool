@@ -9361,13 +9361,13 @@ function renderLeaderboardSelfCard(leaderboardData = [], profilesMap = new Map()
                 <div class="flex min-w-0 items-center gap-4">
                     ${_renderPlayerAvatar(avatarUrl, favoriteTeam, 52, nickname)}
                     <div class="min-w-0">
-                        <div class="text-[9px] font-black uppercase tracking-[0.24em] text-blue-700">Your Standing</div>
+                        <div class="theme-accent-text text-[9px] font-black uppercase tracking-[0.24em]">Your Standing</div>
                         <div class="mt-1 truncate text-xl font-black uppercase italic tracking-tight text-gray-900">${escapeHtml(nickname)}</div>
-                        ${realname ? `<div class="mt-0.5 truncate text-[10px] font-black uppercase tracking-[0.16em] text-gray-400">${escapeHtml(realname)}</div>` : ''}
+                        ${realname ? `<div class="mt-0.5 truncate text-[10px] font-black uppercase tracking-[0.16em] text-gray-600">${escapeHtml(realname)}</div>` : ''}
                     </div>
                 </div>
-                <div class="rounded-xl bg-white/80 px-4 py-3 text-left md:text-right">
-                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Rank</div>
+                <div class="text-left md:text-right">
+                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600">Rank</div>
                     <div class="mt-1 text-lg font-black text-gray-900">No rank yet</div>
                 </div>
             </div>
@@ -9388,7 +9388,7 @@ function renderLeaderboardSelfCard(leaderboardData = [], profilesMap = new Map()
     const moneyLabel = rank && rank <= 3
         ? `${rankOrdinalText} prize spot`
         : thirdEntry
-            ? `${pointsToMoney} pts / ${rankDistanceLabel}`
+            ? `${pointsToMoney} pts to 3rd / ${rankDistanceLabel}`
             : 'Prize picture forming';
     const behindLabel = pointsBehindFirst === 0 ? 'Tied for 1st' : `${pointsBehindFirst} behind 1st`;
     const squadFlags = !appSettings.hideTeamSelection
@@ -9403,27 +9403,27 @@ function renderLeaderboardSelfCard(leaderboardData = [], profilesMap = new Map()
             <div class="flex min-w-0 items-center gap-4">
                 ${_renderPlayerAvatar(myEntry.avatarUrl, myEntry.favoriteTeam, 56, myEntry.nickname)}
                 <div class="min-w-0">
-                    <div class="text-[9px] font-black uppercase tracking-[0.24em] text-blue-700">Your Standing</div>
+                    <div class="theme-accent-text text-[9px] font-black uppercase tracking-[0.24em]">Your Standing</div>
                     <div class="mt-1 truncate text-2xl font-black uppercase italic tracking-tight text-gray-900">${escapeHtml(myEntry.nickname)}</div>
-                    ${myEntry.realname ? `<div class="mt-0.5 truncate text-[10px] font-black uppercase tracking-[0.16em] text-gray-400">${escapeHtml(myEntry.realname)}</div>` : ''}
+                    ${myEntry.realname ? `<div class="mt-0.5 truncate text-[10px] font-black uppercase tracking-[0.16em] text-gray-600">${escapeHtml(myEntry.realname)}</div>` : ''}
                     ${squadFlags ? `<div class="mt-2 flex flex-wrap items-center gap-1.5">${squadFlags}</div>` : ''}
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[520px]">
-                <div class="rounded-xl bg-white/80 px-3 py-3">
-                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Rank</div>
+            <div class="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4 lg:min-w-[560px]">
+                <div class="min-w-0">
+                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-600">Rank</div>
                     <div class="mt-1 text-xl font-black text-gray-900">#${rankNumberText}</div>
                 </div>
-                <div class="rounded-xl bg-white/80 px-3 py-3">
-                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Points</div>
+                <div class="min-w-0">
+                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-600">Points</div>
                     <div class="mt-1 text-xl font-black text-gray-900">${Number(myEntry.totalPoints || 0)}</div>
                 </div>
-                <div class="rounded-xl bg-white/80 px-3 py-3">
-                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Behind 1st</div>
+                <div class="min-w-0">
+                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-600">Behind 1st</div>
                     <div class="mt-1 text-sm font-black text-gray-900">${escapeHtml(behindLabel)}</div>
                 </div>
-                <div class="rounded-xl bg-white/80 px-3 py-3">
-                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Money</div>
+                <div class="min-w-0">
+                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-600">To Money</div>
                     <div class="mt-1 text-sm font-black text-gray-900">${escapeHtml(moneyLabel)}</div>
                 </div>
             </div>
