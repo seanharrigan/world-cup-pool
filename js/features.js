@@ -9504,6 +9504,7 @@ async function fetchLeaderboard() {
 
             const rowTone = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50';
             const safeEmail = user.email.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            const rowEmail = escapeHtml(user.email);
             const separator = idx === 2 ? glowDividerRow : '';
             const ptsDelta = lbPointsDeltaMap.get(user.email) ?? 0;
             const ptsDeltaHtml = ptsDelta > 0
@@ -9512,7 +9513,7 @@ async function fetchLeaderboard() {
             const upside = lbUpsideMap.get(user.email) ?? 0;
 
             return separator + `
-            <tr class="theme-hover-row ${rowTone} border-b border-gray-100 transition-colors text-left text-gray-900 cursor-pointer" onclick="showPlayerProfile('${safeEmail}')">
+            <tr data-leaderboard-email="${rowEmail}" class="theme-hover-row ${rowTone} border-b border-gray-100 transition-colors text-left text-gray-900 cursor-pointer" onclick="showPlayerProfile('${safeEmail}')">
                 <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center">
                     <div class="flex items-center justify-center gap-1.5">
                         <div class="w-4 text-right">${rankIndicator}</div>
@@ -9565,6 +9566,7 @@ async function fetchLeaderboard() {
         window._matchesCache = allMatches || [];
         window._picksCache = allPicks || [];
         window._profilesTotalCount = new Set((allProfiles || []).map((p) => p.email).filter(Boolean)).size;
+        resolvePendingLeaderboardSelfScroll();
     } catch (error) {
         body.innerHTML = '<tr><td colspan="11" class="p-8 text-center text-red-500 text-gray-900">Error calculating scores</td></tr>';
     }
@@ -10715,6 +10717,8 @@ async function showProfileTeam(teamName) {
     `;
 }
 
+let _pendingLeaderboardSelfScroll = false;
+
 function toggleNameFilter() {
     const panel = document.getElementById('name-filter-panel');
     const btn = document.getElementById('name-filter-btn');
@@ -10750,11 +10754,11 @@ function closeNameFilter() {
     if (chevron) chevron.style.transform = '';
 }
 
-function selectNameFilter(email, label) {
+function setNameFilterState(email = '', label = '') {
     const wrap = document.getElementById('leaderboard-name-filter');
     const input = document.getElementById('leaderboard-name-filter-input');
     const labelEl = document.getElementById('name-filter-label');
-    if (!wrap || !input || !labelEl) return;
+    if (!wrap || !input || !labelEl) return false;
     wrap.dataset.value = email || '';
     input.value = email || '';
     labelEl.textContent = label || 'All Players';
@@ -10765,6 +10769,11 @@ function selectNameFilter(email, label) {
         labelEl.classList.add('text-gray-400');
         labelEl.classList.remove('text-gray-900', 'font-black');
     }
+    return true;
+}
+
+function selectNameFilter(email, label) {
+    if (!setNameFilterState(email, label)) return;
     const searchEl = document.getElementById('name-filter-search');
     if (searchEl) searchEl.value = '';
     closeNameFilter();
@@ -10779,27 +10788,128 @@ function filterNameDropdownOptions() {
     });
 }
 
+function bindNameFilterList() {
+    const list = document.getElementById('name-filter-list');
+    if (!list || list.dataset.nameFilterBound === 'true') return;
+
+    list.addEventListener('click', (event) => {
+        if (!(event.target instanceof Element)) {
+            return;
+        }
+
+        const optionButton = event.target.closest('[data-name-filter-email]');
+        if (!optionButton || !list.contains(optionButton)) {
+            return;
+        }
+
+        selectNameFilter(
+            optionButton.dataset.nameFilterEmail || '',
+            optionButton.dataset.nameFilterLabel || ''
+        );
+    });
+
+    list.dataset.nameFilterBound = 'true';
+}
+
 function updateNameFilterOptions(leaderboardData) {
     const list = document.getElementById('name-filter-list');
     if (!list) return;
+    bindNameFilterList();
     const currentValue = document.getElementById('leaderboard-name-filter')?.dataset?.value || '';
     const players = [...leaderboardData].sort((a, b) => (a.nickname || '').localeCompare(b.nickname || ''));
 
-    const allOption = `<button type="button" onclick="selectNameFilter('','')" class="name-filter-option w-full text-left px-4 py-2.5 text-sm font-bold flex items-center gap-2 ${!currentValue ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'}" data-search-text="all players"><span>👥</span><span>All Players</span></button>`;
+    const allIcon = '<span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>';
+    const allOption = `<button type="button" data-name-filter-email="" data-name-filter-label="" class="name-filter-option w-full text-left px-4 py-2.5 text-sm font-bold flex items-center gap-2 ${!currentValue ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'}" data-search-text="all players">${allIcon}<span>All Players</span></button>`;
 
     const playerOptions = players.map((user) => {
         const label = user.nickname || user.email.split('@')[0];
-        const searchText = `${label} ${user.realname || ''}`.toLowerCase();
+        const searchText = `${label} ${user.realname || ''} ${user.email || ''}`.toLowerCase();
         const isSelected = user.email === currentValue;
         const showFlag = !appSettings.hideTeamSelection && user.squad?.[0]?.flag;
         const flagEl = showFlag ? `<span>${user.squad[0].flag}</span>` : '';
         const gapClass = showFlag ? ' flex items-center gap-2' : '';
-        return `<button type="button" onclick="selectNameFilter(${JSON.stringify(user.email)},${JSON.stringify(label)})" class="name-filter-option w-full text-left px-4 py-2.5 text-sm font-bold${gapClass} ${isSelected ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'}" data-search-text="${searchText.replace(/"/g, '&quot;')}">${flagEl}<div class="min-w-0"><div class="truncate">${escapeHtml(label)}</div>${user.realname ? `<div class="text-[10px] text-gray-400">${escapeHtml(user.realname)}</div>` : ''}</div></button>`;
+        return `<button type="button" data-name-filter-email="${escapeHtml(user.email)}" data-name-filter-label="${escapeHtml(label)}" class="name-filter-option w-full text-left px-4 py-2.5 text-sm font-bold${gapClass} ${isSelected ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'}" data-search-text="${escapeHtml(searchText)}">${flagEl}<div class="min-w-0"><div class="truncate">${escapeHtml(label)}</div>${user.realname ? `<div class="text-[10px] text-gray-400">${escapeHtml(user.realname)}</div>` : ''}</div></button>`;
     });
 
     list.innerHTML = allOption + playerOptions.join('');
     const search = document.getElementById('name-filter-search')?.value;
     if (search) filterNameDropdownOptions();
+}
+
+function findCurrentLeaderboardRow() {
+    if (!userEmail) return null;
+    return Array.from(document.querySelectorAll('#leaderboard-body [data-leaderboard-email]'))
+        .find((row) => row.dataset.leaderboardEmail === userEmail) || null;
+}
+
+function flashLeaderboardRow(row) {
+    if (!row) return;
+    row.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    row.classList.remove('leaderboard-self-highlight');
+    void row.offsetWidth;
+    row.classList.add('leaderboard-self-highlight');
+    row.addEventListener('animationend', () => row.classList.remove('leaderboard-self-highlight'), { once: true });
+}
+
+function clearLeaderboardFiltersForSelfJump() {
+    setNameFilterState('', '');
+    const searchEl = document.getElementById('name-filter-search');
+    if (searchEl) searchEl.value = '';
+    closeNameFilter();
+
+    if (typeof setTeamDropdownValue === 'function') {
+        setTeamDropdownValue('leaderboard-country-filter', '', { silent: true });
+    } else {
+        const countryWrap = document.getElementById('leaderboard-country-filter');
+        const countryInput = document.getElementById('leaderboard-country-filter-input');
+        const countryLabel = document.getElementById('country-filter-label');
+        if (countryWrap) countryWrap.dataset.value = '';
+        if (countryInput) countryInput.value = '';
+        if (countryLabel) {
+            countryLabel.textContent = 'All Countries';
+            countryLabel.classList.add('text-gray-400');
+            countryLabel.classList.remove('text-gray-900');
+        }
+    }
+
+    if (typeof closeCountryFilter === 'function') closeCountryFilter();
+}
+
+function resolvePendingLeaderboardSelfScroll() {
+    if (!_pendingLeaderboardSelfScroll) return;
+    _pendingLeaderboardSelfScroll = false;
+    requestAnimationFrame(() => {
+        const row = findCurrentLeaderboardRow();
+        if (row) {
+            flashLeaderboardRow(row);
+        } else if (typeof showToast === 'function') {
+            showToast('Could not find your leaderboard row.');
+        }
+    });
+}
+
+function scrollLeaderboardToSelf() {
+    if (!userEmail) {
+        if (typeof showToast === 'function') showToast('Sign in to jump to your leaderboard row.');
+        return;
+    }
+
+    const row = findCurrentLeaderboardRow();
+    if (row) {
+        flashLeaderboardRow(row);
+        return;
+    }
+
+    const nameFilter = document.getElementById('leaderboard-name-filter')?.dataset?.value || '';
+    const countryFilter = document.getElementById('leaderboard-country-filter')?.dataset?.value || '';
+    if (nameFilter || countryFilter) {
+        _pendingLeaderboardSelfScroll = true;
+        clearLeaderboardFiltersForSelfJump();
+        fetchLeaderboard();
+        return;
+    }
+
+    if (typeof showToast === 'function') showToast('Could not find your leaderboard row.');
 }
 
 function showR32SeatingInfo() {
@@ -12034,6 +12144,7 @@ Object.assign(window, {
     fetchAdminAdvancement,
     fetchAdminTeamResults,
     fetchPublicTeamResults,
+    scrollLeaderboardToSelf,
     clearChatMessages,
     deleteUserPicks,
     toggleUserPaidStatus,

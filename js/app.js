@@ -730,12 +730,6 @@ function renderTeamDropdownOptions(rootId) {
             <span>${escapeDropdownHtml(option.label)}</span>
         </button>
     `).join('');
-
-    instance.list.querySelectorAll('[data-team-dropdown-value]').forEach((button) => {
-        button.addEventListener('click', () => {
-            setTeamDropdownValue(rootId, button.dataset.teamDropdownValue || '');
-        });
-    });
 }
 
 function openTeamDropdown(rootId, initialQuery = '') {
@@ -928,6 +922,22 @@ function initializeTeamDropdown({
     if (search && search.dataset.teamDropdownBound !== 'true') {
         search.addEventListener('input', () => renderTeamDropdownOptions(rootId));
         search.dataset.teamDropdownBound = 'true';
+    }
+
+    if (list.dataset.teamDropdownListBound !== 'true') {
+        list.addEventListener('click', (event) => {
+            if (!(event.target instanceof Element)) {
+                return;
+            }
+
+            const optionButton = event.target.closest('[data-team-dropdown-value]');
+            if (!optionButton || !list.contains(optionButton)) {
+                return;
+            }
+
+            setTeamDropdownValue(rootId, optionButton.dataset.teamDropdownValue || '');
+        });
+        list.dataset.teamDropdownListBound = 'true';
     }
 
     renderTeamDropdownOptions(rootId);
