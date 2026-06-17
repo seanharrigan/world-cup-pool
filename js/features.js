@@ -9377,7 +9377,8 @@ function renderLeaderboardSelfCard(leaderboardData = [], profilesMap = new Map()
     }
 
     const rank = myEntry.displayRank || null;
-    const rankText = rank ? `${rank}${_ordinalSuffix(rank)}` : '-';
+    const rankNumberText = rank ? String(rank) : '-';
+    const rankOrdinalText = rank ? `${rank}${_ordinalSuffix(rank)}` : '-';
     const topEntry = leaderboardData[0] || myEntry;
     const pointsBehindFirst = Math.max(0, Number(topEntry.totalPoints || 0) - Number(myEntry.totalPoints || 0));
     const thirdEntry = leaderboardData[2] || null;
@@ -9385,7 +9386,7 @@ function renderLeaderboardSelfCard(leaderboardData = [], profilesMap = new Map()
     const pointsToMoney = thirdEntry ? Math.max(0, Number(thirdEntry.totalPoints || 0) - Number(myEntry.totalPoints || 0)) : 0;
     const rankDistanceLabel = `${rankDistanceToMoney} rank${rankDistanceToMoney === 1 ? '' : 's'}`;
     const moneyLabel = rank && rank <= 3
-        ? `${rankText} prize spot`
+        ? `${rankOrdinalText} prize spot`
         : thirdEntry
             ? `${pointsToMoney} pts / ${rankDistanceLabel}`
             : 'Prize picture forming';
@@ -9411,7 +9412,7 @@ function renderLeaderboardSelfCard(leaderboardData = [], profilesMap = new Map()
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[520px]">
                 <div class="rounded-xl bg-white/80 px-3 py-3">
                     <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Rank</div>
-                    <div class="mt-1 text-xl font-black text-gray-900">#${rankText}</div>
+                    <div class="mt-1 text-xl font-black text-gray-900">#${rankNumberText}</div>
                 </div>
                 <div class="rounded-xl bg-white/80 px-3 py-3">
                     <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Points</div>
