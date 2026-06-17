@@ -9331,8 +9331,109 @@ function toggleLbLegend() {
     el.classList.toggle('lb-legend-open');
 }
 
+function hideLeaderboardSelfCard() {
+    const card = document.getElementById('leaderboard-self-card');
+    if (!card) return;
+    card.classList.add('hidden');
+    card.innerHTML = '';
+}
+
+function renderLeaderboardSelfCard(leaderboardData = [], profilesMap = new Map()) {
+    const card = document.getElementById('leaderboard-self-card');
+    if (!card) return;
+
+    if (!userEmail) {
+        hideLeaderboardSelfCard();
+        return;
+    }
+
+    const myEntry = leaderboardData.find((entry) => entry.email === userEmail);
+    const fallbackProfile = getDisplayProfile(userEmail, profilesMap);
+    const profile = myEntry || fallbackProfile;
+    const nickname = profile.nickname || userEmail.split('@')[0];
+    const realname = profile.realname || '';
+    const avatarUrl = profile.avatarUrl || null;
+    const favoriteTeam = profile.favoriteTeam || '';
+
+    if (!myEntry) {
+        card.innerHTML = `
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div class="flex min-w-0 items-center gap-4">
+                    ${_renderPlayerAvatar(avatarUrl, favoriteTeam, 52, nickname)}
+                    <div class="min-w-0">
+                        <div class="text-[9px] font-black uppercase tracking-[0.24em] text-blue-700">Your Standing</div>
+                        <div class="mt-1 truncate text-xl font-black uppercase italic tracking-tight text-gray-900">${escapeHtml(nickname)}</div>
+                        ${realname ? `<div class="mt-0.5 truncate text-[10px] font-black uppercase tracking-[0.16em] text-gray-400">${escapeHtml(realname)}</div>` : ''}
+                    </div>
+                </div>
+                <div class="rounded-xl bg-white/80 px-4 py-3 text-left md:text-right">
+                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Rank</div>
+                    <div class="mt-1 text-lg font-black text-gray-900">No rank yet</div>
+                </div>
+            </div>
+        `;
+        card.classList.remove('hidden');
+        return;
+    }
+
+    const rank = myEntry.displayRank || null;
+    const rankText = rank ? `${rank}${_ordinalSuffix(rank)}` : '-';
+    const topEntry = leaderboardData[0] || myEntry;
+    const pointsBehindFirst = Math.max(0, Number(topEntry.totalPoints || 0) - Number(myEntry.totalPoints || 0));
+    const thirdEntry = leaderboardData[2] || null;
+    const rankDistanceToMoney = rank ? Math.max(0, rank - 3) : 0;
+    const pointsToMoney = thirdEntry ? Math.max(0, Number(thirdEntry.totalPoints || 0) - Number(myEntry.totalPoints || 0)) : 0;
+    const rankDistanceLabel = `${rankDistanceToMoney} rank${rankDistanceToMoney === 1 ? '' : 's'}`;
+    const moneyLabel = rank && rank <= 3
+        ? `${rankText} prize spot`
+        : thirdEntry
+            ? `${pointsToMoney} pts / ${rankDistanceLabel}`
+            : 'Prize picture forming';
+    const behindLabel = pointsBehindFirst === 0 ? 'Tied for 1st' : `${pointsBehindFirst} behind 1st`;
+    const squadFlags = !appSettings.hideTeamSelection
+        ? [...(myEntry.squad || [])]
+            .sort((a, b) => (b.cost || 0) - (a.cost || 0) || a.name.localeCompare(b.name))
+            .map((team) => `<span title="${escapeHtml(team.name)}" class="text-xl leading-none ${team.eliminated ? 'opacity-35 grayscale' : ''}">${team.flag || ''}</span>`)
+            .join('')
+        : '';
+
+    card.innerHTML = `
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex min-w-0 items-center gap-4">
+                ${_renderPlayerAvatar(myEntry.avatarUrl, myEntry.favoriteTeam, 56, myEntry.nickname)}
+                <div class="min-w-0">
+                    <div class="text-[9px] font-black uppercase tracking-[0.24em] text-blue-700">Your Standing</div>
+                    <div class="mt-1 truncate text-2xl font-black uppercase italic tracking-tight text-gray-900">${escapeHtml(myEntry.nickname)}</div>
+                    ${myEntry.realname ? `<div class="mt-0.5 truncate text-[10px] font-black uppercase tracking-[0.16em] text-gray-400">${escapeHtml(myEntry.realname)}</div>` : ''}
+                    ${squadFlags ? `<div class="mt-2 flex flex-wrap items-center gap-1.5">${squadFlags}</div>` : ''}
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[520px]">
+                <div class="rounded-xl bg-white/80 px-3 py-3">
+                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Rank</div>
+                    <div class="mt-1 text-xl font-black text-gray-900">#${rankText}</div>
+                </div>
+                <div class="rounded-xl bg-white/80 px-3 py-3">
+                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Points</div>
+                    <div class="mt-1 text-xl font-black text-gray-900">${Number(myEntry.totalPoints || 0)}</div>
+                </div>
+                <div class="rounded-xl bg-white/80 px-3 py-3">
+                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Behind 1st</div>
+                    <div class="mt-1 text-sm font-black text-gray-900">${escapeHtml(behindLabel)}</div>
+                </div>
+                <div class="rounded-xl bg-white/80 px-3 py-3">
+                    <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">Money</div>
+                    <div class="mt-1 text-sm font-black text-gray-900">${escapeHtml(moneyLabel)}</div>
+                </div>
+            </div>
+        </div>
+    `;
+    card.classList.remove('hidden');
+}
+
 async function fetchLeaderboard() {
     const body = document.getElementById('leaderboard-body');
+    hideLeaderboardSelfCard();
     // Show animated placeholder rows while scores are calculated.
     // Columns: rank, points, player+squad, upside, then 7 stage-points cols (G, Bonus, R32, R16, QF, SM, F)
     const skeletonCell = '<td class="px-2 py-2.5 text-center"><div class="h-4 w-6 bg-gray-200 rounded animate-pulse mx-auto"></div></td>';
@@ -9437,6 +9538,7 @@ async function fetchLeaderboard() {
         document.getElementById('prize-1st').innerText = `$${Math.floor(totalPot * 0.65).toLocaleString()}`;
         document.getElementById('prize-2nd').innerText = `$${Math.floor(totalPot * 0.25).toLocaleString()}`;
         document.getElementById('prize-3rd').innerText = `$${Math.floor(totalPot * 0.10).toLocaleString()}`;
+        renderLeaderboardSelfCard(enrichedLeaderboardData, profilesMap);
 
         const renderSquadSummary = (user, muted = false) => {
             if (appSettings.hideTeamSelection) {
