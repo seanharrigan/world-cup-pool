@@ -307,6 +307,13 @@
             100% { background-color: inherit; box-shadow: inset 0 0 0 0 rgba(37, 99, 235, 0); }
         }
         .leaderboard-self-highlight { animation: leaderboard-self-highlight 1.1s ease-out both; }
+        .leaderboard-own-row {
+            background-color: rgba(37, 99, 235, 0.07) !important;
+            box-shadow: inset 4px 0 0 var(--theme-accent-primary, #2563eb);
+        }
+        .leaderboard-own-row:hover {
+            background-color: rgba(37, 99, 235, 0.12) !important;
+        }
         #leaderboard-jump-self-btn { box-shadow: 0 18px 45px rgba(15, 23, 42, 0.28); }
 
         @keyframes chip-popover-in {

@@ -9503,6 +9503,7 @@ async function fetchLeaderboard() {
             }
 
             const rowTone = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+            const ownRowClass = user.email === userEmail ? 'leaderboard-own-row' : '';
             const safeEmail = user.email.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
             const rowEmail = escapeHtml(user.email);
             const separator = idx === 2 ? glowDividerRow : '';
@@ -9513,7 +9514,7 @@ async function fetchLeaderboard() {
             const upside = lbUpsideMap.get(user.email) ?? 0;
 
             return separator + `
-            <tr data-leaderboard-email="${rowEmail}" class="theme-hover-row ${rowTone} border-b border-gray-100 transition-colors text-left text-gray-900 cursor-pointer" onclick="showPlayerProfile('${safeEmail}')">
+            <tr data-leaderboard-email="${rowEmail}" class="theme-hover-row ${rowTone} ${ownRowClass} border-b border-gray-100 transition-colors text-left text-gray-900 cursor-pointer" onclick="showPlayerProfile('${safeEmail}')">
                 <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center">
                     <div class="flex items-center justify-center gap-1.5">
                         <div class="w-4 text-right">${rankIndicator}</div>
