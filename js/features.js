@@ -9358,11 +9358,11 @@ function renderLeaderboardSelfCard(leaderboardData = [], profilesMap = new Map()
     if (!myEntry) {
         card.innerHTML = `
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div class="flex min-w-0 items-center gap-4">
+                <div class="flex min-w-0 flex-1 items-center gap-4">
                     ${_renderPlayerAvatar(avatarUrl, favoriteTeam, 52, nickname)}
-                    <div class="min-w-0">
+                    <div class="min-w-0 flex-1">
                         <div class="theme-accent-text text-[9px] font-black uppercase tracking-[0.24em]">Your Standing</div>
-                        <div class="mt-1 truncate text-xl font-black uppercase italic tracking-tight text-gray-900">${escapeHtml(nickname)}</div>
+                        <div class="mt-1 break-words text-xl font-black uppercase italic leading-tight tracking-tight text-gray-900">${escapeHtml(nickname)}</div>
                         ${realname ? `<div class="mt-0.5 truncate text-[10px] font-black uppercase tracking-[0.16em] text-gray-600">${escapeHtml(realname)}</div>` : ''}
                     </div>
                 </div>
@@ -9399,17 +9399,17 @@ function renderLeaderboardSelfCard(leaderboardData = [], profilesMap = new Map()
         : '';
 
     card.innerHTML = `
-        <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+        <div class="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(500px,0.95fr)] lg:items-center xl:grid-cols-[minmax(0,1.45fr)_minmax(560px,0.95fr)]">
             <div class="flex min-w-0 items-center gap-4">
                 ${_renderPlayerAvatar(myEntry.avatarUrl, myEntry.favoriteTeam, 56, myEntry.nickname)}
-                <div class="min-w-0">
+                <div class="min-w-0 flex-1">
                     <div class="theme-accent-text text-[9px] font-black uppercase tracking-[0.24em]">Your Standing</div>
-                    <div class="mt-1 truncate text-2xl font-black uppercase italic tracking-tight text-gray-900">${escapeHtml(myEntry.nickname)}</div>
+                    <div class="mt-1 break-words text-2xl font-black uppercase italic leading-tight tracking-tight text-gray-900">${escapeHtml(myEntry.nickname)}</div>
                     ${myEntry.realname ? `<div class="mt-0.5 truncate text-[10px] font-black uppercase tracking-[0.16em] text-gray-600">${escapeHtml(myEntry.realname)}</div>` : ''}
                     ${squadFlags ? `<div class="mt-2 flex flex-wrap items-center gap-1.5">${squadFlags}</div>` : ''}
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4 lg:min-w-[560px]">
+            <div class="grid w-full grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
                 <div class="min-w-0">
                     <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-600">Rank</div>
                     <div class="mt-1 text-xl font-black text-gray-900">#${rankNumberText}</div>
