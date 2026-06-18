@@ -9605,11 +9605,16 @@ async function fetchLeaderboard() {
                 else rankIndicator = '';
             }
 
-            const rowTone = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+            const podiumRankClass = [1, 2, 3].includes(Number(user.displayRank))
+                ? `leaderboard-podium-row leaderboard-rank-${user.displayRank}`
+                : '';
+            const rowTone = podiumRankClass || (idx % 2 === 0 ? 'bg-white' : 'bg-gray-50');
             const ownRowClass = user.email === userEmail ? 'leaderboard-own-row' : '';
             const safeEmail = user.email.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
             const rowEmail = escapeHtml(user.email);
-            const separator = idx === 2 ? glowDividerRow : '';
+            const previousVisibleRank = Number(filteredLeaderboardData[idx - 1]?.displayRank || 0);
+            const currentVisibleRank = Number(user.displayRank || 0);
+            const separator = previousVisibleRank > 0 && previousVisibleRank <= 3 && currentVisibleRank > 3 ? glowDividerRow : '';
             const ptsDelta = lbPointsDeltaMap.get(user.email) ?? 0;
             const ptsDeltaHtml = ptsDelta > 0
                 ? `<span class="text-green-500 text-xs font-black">↑${ptsDelta}</span>`
@@ -9619,8 +9624,8 @@ async function fetchLeaderboard() {
             return separator + `
             <tr data-leaderboard-email="${rowEmail}" class="theme-hover-row ${rowTone} ${ownRowClass} border-b border-gray-100 transition-colors text-left text-gray-900 cursor-pointer" onclick="showPlayerProfile('${safeEmail}')">
                 <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center">
-                    <div class="flex items-center justify-center gap-1.5">
-                        <div class="w-4 text-right">${rankIndicator}</div>
+                    <div class="flex items-center justify-center gap-2">
+                        <div class="w-7 shrink-0 text-right">${rankIndicator}</div>
                         <div class="text-lg font-black text-gray-900">#${user.displayRank}</div>
                     </div>
                 </td>

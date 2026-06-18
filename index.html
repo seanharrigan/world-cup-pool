@@ -308,11 +308,19 @@
             100% { background-color: inherit; box-shadow: inset 0 0 0 0 rgba(37, 99, 235, 0); }
         }
         .leaderboard-self-highlight { animation: leaderboard-self-highlight 1.1s ease-out both; }
+        .leaderboard-podium-row.leaderboard-rank-1 { background-color: #fffbeb; }
+        .leaderboard-podium-row.leaderboard-rank-2 { background-color: #f8fafc; }
+        .leaderboard-podium-row.leaderboard-rank-3 { background-color: #fff7f0; }
+        .leaderboard-podium-row.leaderboard-rank-1.theme-hover-row:hover { background-color: #fef3c7; }
+        .leaderboard-podium-row.leaderboard-rank-2.theme-hover-row:hover { background-color: #f1f5f9; }
+        .leaderboard-podium-row.leaderboard-rank-3.theme-hover-row:hover { background-color: #ffedd5; }
         .leaderboard-own-row {
-            background-color: rgba(37, 99, 235, 0.07) !important;
             box-shadow: inset 4px 0 0 var(--theme-accent-primary, #2563eb);
         }
-        .leaderboard-own-row:hover {
+        .leaderboard-own-row:not(.leaderboard-podium-row) {
+            background-color: rgba(37, 99, 235, 0.07) !important;
+        }
+        .leaderboard-own-row:not(.leaderboard-podium-row):hover {
             background-color: rgba(37, 99, 235, 0.12) !important;
         }
         #leaderboard-jump-self-btn { box-shadow: 0 18px 45px rgba(15, 23, 42, 0.28); }
