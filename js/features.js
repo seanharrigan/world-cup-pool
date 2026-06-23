@@ -4755,31 +4755,40 @@ async function syncDerivedTeamStatus(options = {}) {
 }
 
 async function toggleAutoTeamStatusSync(checked) {
-    appSettings.autoTeamStatusSync = Boolean(checked);
+    const previousValue = Boolean(appSettings.autoTeamStatusSync);
     try {
-        localStorage.setItem('wc_pool_auto_team_status_sync', checked ? 'true' : 'false');
-    } catch (error) {
-        // Ignore localStorage failures and keep the in-memory toggle for this session.
-    }
+        await saveAppSettings({
+            picksLocked: appSettings.picksLocked,
+            autoLockAtKickoff: appSettings.autoLockAtKickoff,
+            hideTeamSelection: appSettings.hideTeamSelection,
+            hidePlayerChips: appSettings.hidePlayerChips,
+            autoTeamStatusSync: checked
+        });
+        syncAdminToggleControls();
 
-    if (checked) {
-        try {
+        if (checked) {
             await syncDerivedTeamStatus({ silent: true });
             showToast('Auto team sync enabled.', 'success');
-        } catch (error) {
-            appSettings.autoTeamStatusSync = false;
-            try {
-                localStorage.setItem('wc_pool_auto_team_status_sync', 'false');
-            } catch (_storageError) {
-                // Ignore storage cleanup failures.
-            }
-            const toggle = document.getElementById('admin-auto-team-status-toggle');
-            if (toggle) toggle.checked = false;
-            showToast(error.message || 'Unable to enable auto team sync.');
-            return;
+        } else {
+            showToast('Auto team sync disabled.', 'success');
         }
-    } else {
-        showToast('Auto team sync disabled.', 'success');
+    } catch (error) {
+        appSettings.autoTeamStatusSync = previousValue;
+        if (checked && previousValue !== checked) {
+            try {
+                await saveAppSettings({
+                    picksLocked: appSettings.picksLocked,
+                    autoLockAtKickoff: appSettings.autoLockAtKickoff,
+                    hideTeamSelection: appSettings.hideTeamSelection,
+                    hidePlayerChips: appSettings.hidePlayerChips,
+                    autoTeamStatusSync: previousValue
+                });
+            } catch (_rollbackError) {
+                appSettings.autoTeamStatusSync = previousValue;
+            }
+        }
+        syncAdminToggleControls();
+        showToast(error.message || 'Unable to update auto team sync.');
     }
 }
 

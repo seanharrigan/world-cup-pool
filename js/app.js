@@ -561,7 +561,7 @@ async function fetchAppSettings() {
     try {
         const { data, error } = await supabaseClient
             .from('app_settings')
-            .select('key, picks_locked, auto_lock_at_kickoff, hide_team_selection, hide_player_chips')
+            .select('key, picks_locked, auto_lock_at_kickoff, hide_team_selection, hide_player_chips, auto_team_status_sync')
             .eq('key', 'global')
             .maybeSingle();
 
@@ -574,17 +574,13 @@ async function fetchAppSettings() {
             appSettings.autoLockAtKickoff = data.auto_lock_at_kickoff !== false;
             appSettings.hideTeamSelection = Boolean(data.hide_team_selection);
             appSettings.hidePlayerChips = Boolean(data.hide_player_chips);
+            appSettings.autoTeamStatusSync = Boolean(data.auto_team_status_sync);
         }
     } catch (error) {
         appSettings.picksLocked = false;
         appSettings.autoLockAtKickoff = true;
         appSettings.hideTeamSelection = false;
         appSettings.hidePlayerChips = false;
-    }
-
-    try {
-        appSettings.autoTeamStatusSync = localStorage.getItem('wc_pool_auto_team_status_sync') === 'true';
-    } catch (error) {
         appSettings.autoTeamStatusSync = false;
     }
 
@@ -620,7 +616,8 @@ async function saveAppSettings(nextSettings = {}) {
         picks_locked: Boolean(nextSettings.picksLocked),
         auto_lock_at_kickoff: nextSettings.autoLockAtKickoff !== false,
         hide_team_selection: Boolean(nextSettings.hideTeamSelection),
-        hide_player_chips: Boolean(nextSettings.hidePlayerChips)
+        hide_player_chips: Boolean(nextSettings.hidePlayerChips),
+        auto_team_status_sync: Boolean(nextSettings.autoTeamStatusSync ?? appSettings.autoTeamStatusSync)
     };
 
     const { error } = await supabaseClient
@@ -635,6 +632,7 @@ async function saveAppSettings(nextSettings = {}) {
     appSettings.autoLockAtKickoff = payload.auto_lock_at_kickoff;
     appSettings.hideTeamSelection = payload.hide_team_selection;
     appSettings.hidePlayerChips = payload.hide_player_chips;
+    appSettings.autoTeamStatusSync = payload.auto_team_status_sync;
     refreshLockState();
     return appSettings;
 }
