@@ -217,28 +217,8 @@
         });
     }
 
-    function compareBestCandidates(nextCandidate, currentCandidate) {
-        if (!currentCandidate) {
-            return true;
-        }
-
-        if (nextCandidate.totalPoints !== currentCandidate.totalPoints) {
-            return nextCandidate.totalPoints > currentCandidate.totalPoints;
-        }
-
-        if (nextCandidate.totalCost !== currentCandidate.totalCost) {
-            return nextCandidate.totalCost < currentCandidate.totalCost;
-        }
-
-        const nextNames = nextCandidate.squad.map((team) => team.name).sort().join('|');
-        const currentNames = currentCandidate.squad.map((team) => team.name).sort().join('|');
-        return nextNames < currentNames;
-    }
-
-    function buildBestAvailableTeamData(allMatches = [], teamsList = [], advancedTeamsSet = new Set(), eliminatedTeamsSet = new Set()) {
-        const teamPointsMap = buildTeamPointsMap(allMatches, teamsList, advancedTeamsSet);
-        const teamBreakdownMap = buildTeamStageBreakdownMap(allMatches, teamsList, advancedTeamsSet);
-        const emptyStagePoints = () => ({
+    function emptyStagePoints() {
+        return {
             G1: 0,
             G2: 0,
             G3: 0,
@@ -248,31 +228,116 @@
             QF: 0,
             SM: 0,
             F: 0
+        };
+    }
+
+    function addStagePoints(current = emptyStagePoints(), next = emptyStagePoints()) {
+        return {
+            G1: current.G1 + next.G1,
+            G2: current.G2 + next.G2,
+            G3: current.G3 + next.G3,
+            Bonus: current.Bonus + next.Bonus,
+            R32: current.R32 + next.R32,
+            R16: current.R16 + next.R16,
+            QF: current.QF + next.QF,
+            SM: current.SM + next.SM,
+            F: current.F + next.F
+        };
+    }
+
+    function getSquadSignature(squad = []) {
+        return (squad || [])
+            .map((team) => String(team?.name || '').trim())
+            .filter(Boolean)
+            .sort()
+            .join('|');
+    }
+
+    function compareBestCandidateRank(a, b) {
+        if (!b) return -1;
+        if (!a) return 1;
+
+        if (a.totalPoints !== b.totalPoints) {
+            return b.totalPoints - a.totalPoints;
+        }
+
+        if (a.totalCost !== b.totalCost) {
+            return a.totalCost - b.totalCost;
+        }
+
+        const aSignature = a.signature || getSquadSignature(a.squad);
+        const bSignature = b.signature || getSquadSignature(b.squad);
+        if (aSignature < bSignature) return -1;
+        if (aSignature > bSignature) return 1;
+        return 0;
+    }
+
+    function compareBestCandidates(nextCandidate, currentCandidate) {
+        return compareBestCandidateRank(nextCandidate, currentCandidate) < 0;
+    }
+
+    function normalizeBestAvailableLimit(limit) {
+        const parsed = Number(limit);
+        if (!Number.isFinite(parsed) || parsed <= 0) return 50;
+        return Math.max(1, Math.min(100, Math.floor(parsed)));
+    }
+
+    function mergeBestCandidateList(existingCandidates = [], nextCandidates = [], limit = 50) {
+        const candidatesBySignature = new Map();
+
+        [...(existingCandidates || []), ...(nextCandidates || [])].forEach((candidate) => {
+            if (!candidate) return;
+            const signature = candidate.signature || getSquadSignature(candidate.squad);
+            const normalizedCandidate = candidate.signature === signature ? candidate : { ...candidate, signature };
+            const existing = candidatesBySignature.get(signature);
+
+            if (compareBestCandidates(normalizedCandidate, existing)) {
+                candidatesBySignature.set(signature, normalizedCandidate);
+            }
         });
 
+        return Array.from(candidatesBySignature.values())
+            .sort(compareBestCandidateRank)
+            .slice(0, limit);
+    }
+
+    function addCandidatesToStateMap(stateMap, key, candidates, limit) {
+        const additions = Array.isArray(candidates) ? candidates : [candidates];
+        stateMap.set(key, mergeBestCandidateList(stateMap.get(key) || [], additions, limit));
+    }
+
+    function buildBestAvailableSquadsData(allMatches = [], teamsList = [], advancedTeamsSet = new Set(), eliminatedTeamsSet = new Set(), options = {}) {
+        const limit = normalizeBestAvailableLimit(options.limit || 50);
+        const eligibleTeams = (teamsList || []).filter((team) => team && team.name && team.qualified !== false);
+        const teamPointsMap = buildTeamPointsMap(allMatches, eligibleTeams, advancedTeamsSet);
+        const teamBreakdownMap = buildTeamStageBreakdownMap(allMatches, eligibleTeams, advancedTeamsSet);
+
         let states = new Map([
-            ['0|0|0|0', {
+            ['0|0|0|0', [{
                 totalPoints: 0,
                 totalCost: 0,
                 squad: [],
-                stagePoints: emptyStagePoints()
-            }]
+                stagePoints: emptyStagePoints(),
+                signature: ''
+            }]]
         ]);
 
-        teamsList.forEach((team) => {
+        eligibleTeams.forEach((team) => {
             const nextStates = new Map(states);
             const teamPoints = teamPointsMap[team.name] || 0;
             const teamBreakdown = teamBreakdownMap[team.name] || emptyStagePoints();
-            const teamTierOneIncrement = team.tier === 1 ? 1 : 0;
-            const teamTierThreeIncrement = team.tier === 3 ? 1 : 0;
+            const teamCost = Number(team.cost || 0);
+            const teamTier = Number(team.tier || 0);
+            const teamTierOneIncrement = teamTier === 1 ? 1 : 0;
+            const teamTierThreeIncrement = teamTier === 3 ? 1 : 0;
 
-            states.forEach((state, key) => {
+            states.forEach((candidates, key) => {
                 const [count, cost, tierOneCount, tierThreeBucket] = key.split('|').map(Number);
                 if (count >= 8) {
                     return;
                 }
 
-                const nextCost = cost + team.cost;
+                const nextCost = cost + teamCost;
                 if (nextCost > 150) {
                     return;
                 }
@@ -285,49 +350,56 @@
                 const nextCount = count + 1;
                 const nextTierThreeBucket = Math.min(3, tierThreeBucket + teamTierThreeIncrement);
                 const nextKey = `${nextCount}|${nextCost}|${nextTierOneCount}|${nextTierThreeBucket}`;
-                const nextCandidate = {
-                    totalPoints: state.totalPoints + teamPoints,
-                    totalCost: nextCost,
-                    squad: [...state.squad, {
+                const nextCandidates = candidates.map((candidate) => {
+                    const squad = [...candidate.squad, {
                         name: team.name,
                         flag: team.flag,
-                        cost: team.cost,
-                        tier: team.tier,
+                        cost: teamCost,
+                        tier: teamTier,
                         eliminated: eliminatedTeamsSet.has(team.name)
-                    }],
-                    stagePoints: {
-                        G1: state.stagePoints.G1 + teamBreakdown.G1,
-                        G2: state.stagePoints.G2 + teamBreakdown.G2,
-                        G3: state.stagePoints.G3 + teamBreakdown.G3,
-                        Bonus: state.stagePoints.Bonus + teamBreakdown.Bonus,
-                        R32: state.stagePoints.R32 + teamBreakdown.R32,
-                        R16: state.stagePoints.R16 + teamBreakdown.R16,
-                        QF: state.stagePoints.QF + teamBreakdown.QF,
-                        SM: state.stagePoints.SM + teamBreakdown.SM,
-                        F: state.stagePoints.F + teamBreakdown.F
-                    }
-                };
+                    }];
 
-                const existingCandidate = nextStates.get(nextKey);
-                if (compareBestCandidates(nextCandidate, existingCandidate)) {
-                    nextStates.set(nextKey, nextCandidate);
-                }
+                    return {
+                        totalPoints: candidate.totalPoints + teamPoints,
+                        totalCost: nextCost,
+                        squad,
+                        stagePoints: addStagePoints(candidate.stagePoints, teamBreakdown),
+                        signature: getSquadSignature(squad)
+                    };
+                });
+
+                addCandidatesToStateMap(nextStates, nextKey, nextCandidates, limit);
             });
 
             states = nextStates;
         });
 
-        let bestCandidate = null;
-        states.forEach((candidate, key) => {
+        const finalCandidates = [];
+        states.forEach((candidates, key) => {
             const [count, , tierOneCount, tierThreeBucket] = key.split('|').map(Number);
             if (count !== 8 || tierOneCount > 1 || tierThreeBucket < 3) {
                 return;
             }
 
-            if (compareBestCandidates(candidate, bestCandidate)) {
-                bestCandidate = candidate;
-            }
+            finalCandidates.push(...candidates);
         });
+
+        return mergeBestCandidateList([], finalCandidates, limit)
+            .map((candidate, index) => ({
+                rank: index + 1,
+                email: `best-available-team-${index + 1}`,
+                nickname: `Best Available #${index + 1}`,
+                realname: 'Top legal squad to date',
+                totalPoints: candidate.totalPoints,
+                totalCost: candidate.totalCost,
+                stagePoints: candidate.stagePoints,
+                squad: candidate.squad,
+                signature: candidate.signature || getSquadSignature(candidate.squad)
+            }));
+    }
+
+    function buildBestAvailableTeamData(allMatches = [], teamsList = [], advancedTeamsSet = new Set(), eliminatedTeamsSet = new Set()) {
+        const bestCandidate = buildBestAvailableSquadsData(allMatches, teamsList, advancedTeamsSet, eliminatedTeamsSet, { limit: 1 })[0] || null;
 
         if (!bestCandidate) {
             return null;
@@ -338,8 +410,10 @@
             nickname: 'Best Available Team to Date',
             realname: 'Highest-scoring legal squad so far',
             totalPoints: bestCandidate.totalPoints,
+            totalCost: bestCandidate.totalCost,
             stagePoints: bestCandidate.stagePoints,
-            squad: bestCandidate.squad
+            squad: bestCandidate.squad,
+            signature: bestCandidate.signature
         };
     }
 
@@ -353,6 +427,8 @@
         buildProfilesMap,
         getDisplayProfile,
         buildLeaderboardData,
+        getSquadSignature,
+        buildBestAvailableSquadsData,
         buildBestAvailableTeamData
     };
 

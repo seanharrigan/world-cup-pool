@@ -11,6 +11,8 @@ const {
     buildTeamStageBreakdownMap,
     buildProfilesMap,
     buildLeaderboardData,
+    getSquadSignature,
+    buildBestAvailableSquadsData,
     buildBestAvailableTeamData
 } = require('../js/scoring.js');
 
@@ -278,10 +280,12 @@ test('best available team respects budget and tier rules', () => {
         { name: 'Iraq', flag: '🇮🇶', cost: 4, tier: 3 },
         { name: 'Jordan', flag: '🇯🇴', cost: 2, tier: 3 },
         { name: 'Haiti', flag: '🇭🇹', cost: 2, tier: 3 },
-        { name: 'Qatar', flag: '🇶🇦', cost: 4, tier: 3 }
+        { name: 'Qatar', flag: '🇶🇦', cost: 4, tier: 3 },
+        { name: 'Italy', flag: '🇮🇹', cost: 0, tier: 3, qualified: false }
     ];
 
     const matches = [
+        { stage: 'Finals', team_home: 'Italy', team_away: 'Spain', score_home: 5, score_away: 0 },
         { stage: 'Finals', team_home: 'Spain', team_away: 'France', score_home: 1, score_away: 0 },
         { stage: 'R16', team_home: 'Morocco', team_away: 'Canada', score_home: 1, score_away: 0 },
         { stage: 'Group', team_home: 'Mexico', team_away: 'Iraq', score_home: 1, score_away: 0 },
@@ -296,4 +300,61 @@ test('best available team respects budget and tier rules', () => {
     assert.ok(bestTeam.squad.filter((team) => team.tier === 1).length <= 1);
     assert.ok(bestTeam.squad.filter((team) => team.tier === 3).length >= 3);
     assert.ok(bestTeam.squad.reduce((sum, team) => sum + team.cost, 0) <= 150);
+});
+
+test('best available squads returns ranked legal candidates', () => {
+    const expandedTeams = [
+        { name: 'Spain', flag: '🇪🇸', cost: 50, tier: 1 },
+        { name: 'France', flag: '🇫🇷', cost: 45, tier: 1 },
+        { name: 'Morocco', flag: '🇲🇦', cost: 25, tier: 2 },
+        { name: 'Canada', flag: '🇨🇦', cost: 10, tier: 2 },
+        { name: 'Mexico', flag: '🇲🇽', cost: 25, tier: 2 },
+        { name: 'Iraq', flag: '🇮🇶', cost: 4, tier: 3 },
+        { name: 'Jordan', flag: '🇯🇴', cost: 2, tier: 3 },
+        { name: 'Haiti', flag: '🇭🇹', cost: 2, tier: 3 },
+        { name: 'Qatar', flag: '🇶🇦', cost: 4, tier: 3 }
+    ];
+
+    const matches = [
+        { stage: 'Finals', team_home: 'Spain', team_away: 'France', score_home: 1, score_away: 0 },
+        { stage: 'R16', team_home: 'Morocco', team_away: 'Canada', score_home: 1, score_away: 0 },
+        { stage: 'Group', team_home: 'Mexico', team_away: 'Iraq', score_home: 1, score_away: 0 },
+        { stage: 'Group', team_home: 'Jordan', team_away: 'Haiti', score_home: 1, score_away: 1 },
+        { stage: 'Group', team_home: 'Qatar', team_away: 'Canada', score_home: 0, score_away: 0 }
+    ];
+
+    const candidates = buildBestAvailableSquadsData(matches, expandedTeams, new Set(['Canada']), new Set(['France']), { limit: 5 });
+    const bestTeam = buildBestAvailableTeamData(matches, expandedTeams, new Set(['Canada']), new Set(['France']));
+    const signatures = new Set();
+
+    assert.ok(candidates.length > 0);
+    assert.ok(candidates.length <= 5);
+    assert.equal(candidates[0].totalPoints, bestTeam.totalPoints);
+    assert.equal(candidates[0].signature, getSquadSignature(bestTeam.squad));
+
+    candidates.forEach((candidate) => {
+        assert.equal(candidate.squad.length, 8);
+        assert.ok(candidate.totalCost <= 150);
+        assert.ok(candidate.squad.filter((team) => team.tier === 1).length <= 1);
+        assert.ok(candidate.squad.filter((team) => team.tier === 3).length >= 3);
+        assert.equal(candidate.squad.some((team) => team.name === 'Italy'), false);
+        assert.equal(candidate.signature, getSquadSignature(candidate.squad));
+        assert.equal(signatures.has(candidate.signature), false);
+        signatures.add(candidate.signature);
+    });
+
+    for (let index = 1; index < candidates.length; index += 1) {
+        const previous = candidates[index - 1];
+        const current = candidates[index];
+        assert.ok(
+            previous.totalPoints > current.totalPoints
+                || (
+                    previous.totalPoints === current.totalPoints
+                    && (
+                        previous.totalCost < current.totalCost
+                        || (previous.totalCost === current.totalCost && previous.signature <= current.signature)
+                    )
+                )
+        );
+    }
 });

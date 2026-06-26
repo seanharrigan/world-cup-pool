@@ -2310,6 +2310,28 @@
         </div>
     </div>
 
+    <!-- Leaderboard: Best Available explorer modal -->
+    <div id="best-available-modal" class="hidden fixed inset-0 z-[118] bg-black/80 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closeBestAvailableExplorer()">
+        <div class="w-full max-w-6xl rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col" style="height:min(760px,92vh)">
+            <div class="shrink-0 flex items-center justify-between gap-4 px-6 py-4 border-b border-gray-800">
+                <div class="min-w-0">
+                    <div class="text-[11px] font-black uppercase tracking-[0.25em] text-gray-300">Best Available Explorer</div>
+                    <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500 mt-0.5">Top 50 legal squads and exact player matches</div>
+                </div>
+                <button onclick="closeBestAvailableExplorer()" class="shrink-0 text-gray-500 hover:text-white transition-colors text-xl leading-none">&times;</button>
+            </div>
+            <div class="flex flex-1 min-h-0 flex-col overflow-hidden lg:flex-row">
+                <div class="shrink-0 border-b border-gray-800 bg-gray-900 p-2 lg:w-72 lg:border-b-0 lg:border-r">
+                    <div class="px-2 pb-2 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Top squads</div>
+                    <div id="best-available-list" class="max-h-60 space-y-2 overflow-y-auto pr-1 lg:max-h-none"></div>
+                </div>
+                <div class="min-w-0 flex-1 overflow-y-auto">
+                    <div id="best-available-detail" class="p-6"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Dashboard: Upside modal -->
     <div id="upside-modal" class="hidden fixed inset-0 z-[118] bg-black/80 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closeUpsideModal()">
         <div class="w-full max-w-4xl rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col" style="height:min(700px,90vh)">

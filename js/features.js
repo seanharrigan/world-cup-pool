@@ -5,12 +5,16 @@ const {
     buildProfilesMap,
     getDisplayProfile,
     buildLeaderboardData,
+    getSquadSignature,
+    buildBestAvailableSquadsData,
     buildBestAvailableTeamData
 } = window.WorldCupScoring;
 
 const {
     THIRD_PLACE_MAPPING
 } = window.WorldCupThirdPlaceMapping || { THIRD_PLACE_MAPPING: {} };
+
+const BEST_AVAILABLE_EXPLORER_LIMIT = 50;
 
 function getTeamStatus(teamName) {
     return {
@@ -9482,7 +9486,15 @@ async function fetchLeaderboard() {
         await fetchAdvancedTeams();
         const profilesMap = buildProfilesMap(allProfiles);
         const leaderboardData = buildLeaderboardData(allPicks || [], allMatches || [], profilesMap, teams, advancedTeams, eliminatedTeams);
-        const bestAvailableTeam = buildBestAvailableTeamData(allMatches || [], teams, advancedTeams, eliminatedTeams);
+        const leaderboardTeamPointsMap = buildTeamPointsMap(allMatches || [], teams, advancedTeams);
+        const leaderboardTeamBreakdownMap = buildTeamStageBreakdownMap(allMatches || [], teams, advancedTeams);
+        const bestAvailableSquads = buildBestAvailableSquadsData(allMatches || [], teams, advancedTeams, eliminatedTeams, { limit: BEST_AVAILABLE_EXPLORER_LIMIT });
+        const bestAvailableTeam = bestAvailableSquads[0] ? {
+            ...bestAvailableSquads[0],
+            email: 'best-available-team',
+            nickname: 'Best Available Team to Date',
+            realname: 'Highest-scoring legal squad so far'
+        } : null;
         const playerCount = leaderboardData.length;
         const nameFilterWrap = document.getElementById('leaderboard-name-filter');
         const nameFilter = nameFilterWrap?.dataset?.value || '';
@@ -9496,6 +9508,28 @@ async function fetchLeaderboard() {
             ...user,
             displayRank: currentRanks[user.email] || null,
             chips: playerChips.get(user.email) || []
+        }));
+        const bestAvailableOwnersBySignature = new Map();
+        enrichedLeaderboardData.forEach((user) => {
+            if (!Array.isArray(user.squad) || user.squad.length !== 8) return;
+            const signature = getSquadSignature(user.squad);
+            if (!signature) return;
+            const owners = bestAvailableOwnersBySignature.get(signature) || [];
+            owners.push({
+                email: user.email,
+                nickname: user.nickname,
+                realname: user.realname,
+                avatarUrl: user.avatarUrl,
+                favoriteTeam: user.favoriteTeam,
+                displayRank: user.displayRank,
+                totalPoints: user.totalPoints
+            });
+            bestAvailableOwnersBySignature.set(signature, owners);
+        });
+        const annotatedBestAvailableSquads = bestAvailableSquads.map((candidate, index) => ({
+            ...candidate,
+            rank: index + 1,
+            owners: bestAvailableOwnersBySignature.get(candidate.signature) || []
         }));
 
         const lbUpsideMap = _buildUpsideMap(leaderboardData);
@@ -9576,7 +9610,7 @@ async function fetchLeaderboard() {
         };
 
         const bestRowMarkup = (bestAvailableTeam && !appSettings.hideTeamSelection) ? `
-            <tr class="border-b border-gray-100 bg-gray-50 text-left text-gray-700">
+            <tr class="border-b border-gray-100 bg-gray-50 text-left text-gray-700 cursor-pointer transition-colors hover:bg-emerald-50/70 focus-within:bg-emerald-50/70" role="button" tabindex="0" aria-label="Open best available explorer" onclick="showBestAvailableExplorer()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showBestAvailableExplorer();}">
                 <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center text-lg font-black text-gray-400">-</td>
                 <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center text-lg font-black text-gray-500">${bestAvailableTeam.totalPoints}</td>
                 <td class="px-4 py-2.5 text-left">
@@ -9584,6 +9618,7 @@ async function fetchLeaderboard() {
                         <div class="relative rounded-full shrink-0 bg-gray-300 flex items-center justify-center overflow-hidden" style="width:36px;height:36px;font-size:18px">🤖</div>
                         <div class="flex-1 min-w-0">
                             <div class="text-sm font-black text-gray-500 text-left">${bestAvailableTeam.nickname}</div>
+                            <div class="text-[8px] font-black uppercase tracking-[0.16em] text-emerald-600 text-left">Explore top ${BEST_AVAILABLE_EXPLORER_LIMIT}</div>
                             <div class="mt-1 text-left">
                                 ${renderSquadSummary(bestAvailableTeam, true)}
                             </div>
@@ -9686,6 +9721,9 @@ async function fetchLeaderboard() {
         // Persist ranks for next page load comparison, cache data for player profile modal
         localStorage.setItem('wc_pool_lb_ranks', JSON.stringify(newRanks));
         window._leaderboardData = enrichedLeaderboardData;
+        window._bestAvailableSquads = annotatedBestAvailableSquads;
+        window._leaderboardTeamPointsMap = leaderboardTeamPointsMap;
+        window._leaderboardTeamBreakdownMap = leaderboardTeamBreakdownMap;
         window._playerChipsByEmail = Object.fromEntries(playerChips);
         window._matchesCache = allMatches || [];
         window._picksCache = allPicks || [];
@@ -9773,6 +9811,14 @@ function escapeHtml(str) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+}
+
+function escapeJsSingleQuoted(str) {
+    return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/\r/g, '\\r')
+        .replace(/\n/g, '\\n');
 }
 
 const LEADERBOARD_NICKNAME_SOFT_BREAK_CHARS = 44;
@@ -11104,6 +11150,214 @@ let _upsideSelectedEmail = '';
 let _scoreRanked = [];
 let _scoreSelectedEmail = '';
 const SCORE_BEST_EMAIL = '__best_available__';
+let _bestAvailableExplorerSelectedSignature = '';
+
+function showBestAvailableExplorer() {
+    if (appSettings.hideTeamSelection) {
+        if (typeof showToast === 'function') showToast('Team selections are currently hidden.');
+        return;
+    }
+
+    const modal = document.getElementById('best-available-modal');
+    const squads = window._bestAvailableSquads || [];
+    if (!modal || squads.length === 0) {
+        if (typeof showToast === 'function') showToast('Best available squads are still loading.');
+        return;
+    }
+
+    if (!_bestAvailableExplorerSelectedSignature || !squads.some((squad) => squad.signature === _bestAvailableExplorerSelectedSignature)) {
+        _bestAvailableExplorerSelectedSignature = squads[0].signature;
+    }
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    _renderBestAvailableExplorerList();
+    _renderBestAvailableExplorerDetail();
+
+    if (window._bestAvailableEscapeHandler) {
+        document.removeEventListener('keydown', window._bestAvailableEscapeHandler);
+    }
+
+    window._bestAvailableEscapeHandler = (event) => {
+        if (event.key === 'Escape') {
+            closeBestAvailableExplorer();
+        }
+    };
+    document.addEventListener('keydown', window._bestAvailableEscapeHandler);
+}
+
+function _getSelectedBestAvailableSquad() {
+    const squads = window._bestAvailableSquads || [];
+    return squads.find((squad) => squad.signature === _bestAvailableExplorerSelectedSignature) || squads[0] || null;
+}
+
+function _renderBestAvailableExplorerList() {
+    const list = document.getElementById('best-available-list');
+    if (!list) return;
+
+    const squads = window._bestAvailableSquads || [];
+    if (squads.length === 0) {
+        list.innerHTML = '<div class="p-4 text-xs font-black uppercase tracking-[0.14em] text-gray-500">No legal squads found.</div>';
+        return;
+    }
+
+    list.innerHTML = squads.map((squad, index) => {
+        const isSelected = squad.signature === _bestAvailableExplorerSelectedSignature;
+        const flags = (squad.squad || [])
+            .map((team) => `<span class="text-sm leading-none">${team.flag || ''}</span>`)
+            .join('');
+        const owners = squad.owners || [];
+        const ownerLabel = owners.length === 1
+            ? `Picked by ${escapeHtml(owners[0].nickname || owners[0].realname || 'player')}`
+            : owners.length > 1 ? `Picked by ${owners.length} players` : 'No exact pick';
+        const ownerTone = owners.length > 0 ? 'text-emerald-300' : 'text-gray-500';
+
+        return `<button type="button" onclick="selectBestAvailableSquad(${index})"
+            class="w-full rounded-xl border px-3 py-2.5 text-left transition-colors ${isSelected ? 'border-emerald-500/70 bg-emerald-900/35' : 'border-gray-800 bg-gray-950/50 hover:border-gray-700 hover:bg-gray-800/70'}">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <div class="text-[11px] font-black uppercase tracking-[0.16em] ${isSelected ? 'text-emerald-200' : 'text-white'}">#${squad.rank}</div>
+                    <div class="mt-1 flex max-w-full flex-wrap gap-1">${flags}</div>
+                </div>
+                <div class="shrink-0 text-right">
+                    <div class="text-sm font-black ${isSelected ? 'text-emerald-200' : 'text-white'}">${Number(squad.totalPoints || 0)}</div>
+                    <div class="text-[9px] font-black uppercase text-gray-500">pts</div>
+                </div>
+            </div>
+            <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-black uppercase tracking-[0.12em]">
+                <span class="text-gray-400">${Number(squad.totalCost || 0)} / 150</span>
+                <span class="${ownerTone}">${ownerLabel}</span>
+            </div>
+        </button>`;
+    }).join('');
+}
+
+function _renderBestAvailableStageBuckets(breakdown = {}) {
+    const groupPoints = (breakdown.G1 || 0) + (breakdown.G2 || 0) + (breakdown.G3 || 0);
+    const buckets = [
+        ['G', groupPoints],
+        ['B', breakdown.Bonus || 0],
+        ['R32', breakdown.R32 || 0],
+        ['R16', breakdown.R16 || 0],
+        ['QF', breakdown.QF || 0],
+        ['SM', breakdown.SM || 0],
+        ['F', breakdown.F || 0]
+    ];
+
+    return buckets
+        .filter(([, points]) => points > 0)
+        .map(([label, points]) => `<span class="rounded-full bg-gray-800 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.08em] text-gray-300">${label} ${points}</span>`)
+        .join('') || '<span class="rounded-full bg-gray-800 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.08em] text-gray-500">No points yet</span>';
+}
+
+function _renderBestAvailableExplorerDetail() {
+    const body = document.getElementById('best-available-detail');
+    if (!body) return;
+
+    const selected = _getSelectedBestAvailableSquad();
+    if (!selected) {
+        body.innerHTML = '<div class="p-6 text-xs font-black uppercase tracking-[0.14em] text-gray-500">Select a squad.</div>';
+        return;
+    }
+
+    const teamPointsMap = window._leaderboardTeamPointsMap || window._dashTeamPointsMap || buildTeamPointsMap(window._matchesCache || window._dashMatches || [], teams, advancedTeams);
+    const teamBreakdownMap = window._leaderboardTeamBreakdownMap || buildTeamStageBreakdownMap(window._matchesCache || window._dashMatches || [], teams, advancedTeams);
+    const rows = [...(selected.squad || [])]
+        .map((team) => ({
+            ...team,
+            points: teamPointsMap[team.name] || 0,
+            breakdown: teamBreakdownMap[team.name] || {}
+        }))
+        .sort((a, b) => b.points - a.points || b.cost - a.cost || a.name.localeCompare(b.name));
+    const maxPoints = Math.max(...rows.map((team) => team.points), 1);
+    const totalCost = Number(selected.totalCost || rows.reduce((sum, team) => sum + (team.cost || 0), 0));
+    const tierSummary = [1, 2, 3]
+        .map((tier) => `T${tier}: ${rows.filter((team) => Number(team.tier) === tier).length}`)
+        .join(' | ');
+    const owners = selected.owners || [];
+    const ownerMarkup = owners.length > 0
+        ? owners.map((owner) => {
+            const safeEmail = escapeJsSingleQuoted(owner.email);
+            const rankLabel = owner.displayRank ? `Rank #${owner.displayRank}` : 'Unranked';
+            return `<button type="button" onclick="closeBestAvailableExplorer();showPlayerProfile('${safeEmail}')"
+                class="flex min-w-[170px] flex-1 items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-900/20 px-3 py-2 text-left transition-colors hover:bg-emerald-900/35">
+                ${_renderPlayerAvatar(owner.avatarUrl, owner.favoriteTeam, 30, owner.nickname)}
+                <span class="min-w-0">
+                    <span class="block truncate text-xs font-black text-emerald-100">${escapeHtml(owner.nickname || owner.realname || 'Player')}</span>
+                    <span class="block text-[9px] font-black uppercase tracking-[0.12em] text-emerald-300/80">${rankLabel} &middot; ${Number(owner.totalPoints || 0)} pts</span>
+                </span>
+            </button>`;
+        }).join('')
+        : '<div class="rounded-xl border border-dashed border-gray-700 bg-gray-950/40 px-3 py-3 text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">No player has this exact squad.</div>';
+
+    const teamRows = rows.map((team) => {
+        const isEliminated = Boolean(team.eliminated || eliminatedTeams.has(team.name));
+        const barPct = Math.min(100, Math.round((team.points / maxPoints) * 100));
+        return `<div class="rounded-xl border border-gray-800 bg-gray-950/45 p-3 ${isEliminated ? 'opacity-60' : ''}">
+            <div class="flex items-center gap-3">
+                <span class="shrink-0 text-lg leading-none">${team.flag || ''}</span>
+                <div class="min-w-0 flex-1">
+                    <div class="truncate text-xs font-black uppercase text-white ${isEliminated ? 'line-through' : ''}">${escapeHtml(team.name)}</div>
+                    <div class="text-[9px] font-black uppercase tracking-[0.12em] text-gray-500">Tier ${Number(team.tier || 0)} &middot; ${Number(team.cost || 0)} cost${isEliminated ? ' &middot; eliminated' : ''}</div>
+                </div>
+                <div class="shrink-0 text-right">
+                    <div class="text-sm font-black text-white">${team.points}</div>
+                    <div class="text-[9px] font-black uppercase text-gray-500">pts</div>
+                </div>
+            </div>
+            <div class="mt-2 h-1 overflow-hidden rounded-full bg-gray-800">
+                <div class="h-full rounded-full bg-emerald-400" style="width:${barPct}%"></div>
+            </div>
+            <div class="mt-2 flex flex-wrap gap-1.5">${_renderBestAvailableStageBuckets(team.breakdown)}</div>
+        </div>`;
+    }).join('');
+
+    body.innerHTML = `
+        <div class="space-y-5">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div class="min-w-0">
+                    <div class="text-lg font-black uppercase italic text-emerald-300">Best Available #${selected.rank}</div>
+                    <div class="mt-1 text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">${totalCost} / 150 cost &middot; ${tierSummary}</div>
+                </div>
+                <div class="shrink-0 text-right">
+                    <div class="text-4xl font-black text-white">${Number(selected.totalPoints || 0)}</div>
+                    <div class="text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">points</div>
+                </div>
+            </div>
+            <div>
+                <div class="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Exact Player Match</div>
+                <div class="flex flex-wrap gap-2">${ownerMarkup}</div>
+            </div>
+            <div>
+                <div class="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Team Breakdown</div>
+                <div class="space-y-2.5">${teamRows}</div>
+            </div>
+        </div>`;
+}
+
+function selectBestAvailableSquad(indexOrSignature) {
+    const squads = window._bestAvailableSquads || [];
+    const selected = typeof indexOrSignature === 'number'
+        ? squads[indexOrSignature]
+        : squads.find((squad) => squad.signature === indexOrSignature);
+    if (!selected) return;
+
+    _bestAvailableExplorerSelectedSignature = selected.signature;
+    _renderBestAvailableExplorerList();
+    _renderBestAvailableExplorerDetail();
+}
+
+function closeBestAvailableExplorer() {
+    const modal = document.getElementById('best-available-modal');
+    if (!modal) return;
+
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    if (window._bestAvailableEscapeHandler) {
+        document.removeEventListener('keydown', window._bestAvailableEscapeHandler);
+        window._bestAvailableEscapeHandler = null;
+    }
+}
 
 function showMyScoreCard() {
     const modal = document.getElementById('score-modal');
@@ -12354,6 +12608,9 @@ Object.assign(window, {
     handleEmojiReaction,
     toggleReaction,
     setupLeaderboardRealtime,
+    showBestAvailableExplorer,
+    selectBestAvailableSquad,
+    closeBestAvailableExplorer,
     showPlayerProfile,
     togglePlayerChipInline,
     showPlayerChipInfo,
