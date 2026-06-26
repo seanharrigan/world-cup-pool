@@ -842,11 +842,11 @@ async function renderGroups() {
 
 const TOURNAMENT_PHASES = [
     { label: 'Kick Off',       date: LOCK_DATE },
-    { label: 'Round of 32',    date: new Date('2026-07-04T12:00:00') },
-    { label: 'Round of 16',    date: new Date('2026-07-11T12:00:00') },
-    { label: 'Quarter Finals', date: new Date('2026-07-17T12:00:00') },
-    { label: 'Semi Finals',    date: new Date('2026-07-22T12:00:00') },
-    { label: 'The Final',      date: new Date('2026-07-26T15:00:00') },
+    { label: 'Round of 32',    date: new Date('2026-06-28T12:00:00-07:00') },
+    { label: 'Round of 16',    date: new Date('2026-07-04T10:00:00-07:00') },
+    { label: 'Quarter Finals', date: new Date('2026-07-09T13:00:00-07:00') },
+    { label: 'Semi Finals',    date: new Date('2026-07-14T12:00:00-07:00') },
+    { label: 'The Final',      date: new Date('2026-07-19T12:00:00-07:00') },
 ];
 
 function _getActivePhase() {
