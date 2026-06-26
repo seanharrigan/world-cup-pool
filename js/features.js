@@ -11197,6 +11197,12 @@ function _bestAvailableRankPosition(rank, totalRanks) {
     return Math.max(0, Math.min(100, ((Number(rank || 1) - 1) / denominator) * 100));
 }
 
+function _bestAvailableRankAlignClass(positionPct) {
+    if (positionPct <= 2) return 'translate-x-0';
+    if (positionPct >= 98) return '-translate-x-full';
+    return '-translate-x-1/2';
+}
+
 function _renderBestAvailableRankStrip() {
     const strip = document.getElementById('best-available-rank-strip');
     if (!strip) return;
@@ -11217,15 +11223,18 @@ function _renderBestAvailableRankStrip() {
     const anchorMarkup = anchorRanks.map((rank) => {
         const squad = squads[rank - 1];
         const pct = _bestAvailableRankPosition(rank, totalRanks);
-        return `<div class="absolute top-7 -translate-x-1/2 text-center" style="left:${pct}%">
+        const alignClass = _bestAvailableRankAlignClass(pct);
+        const textAlignClass = pct <= 2 ? 'text-left' : pct >= 98 ? 'text-right' : 'text-center';
+        return `<div class="absolute top-7 ${alignClass} ${textAlignClass}" style="left:${pct}%">
             <div class="mx-auto h-3 w-px rounded-full bg-gray-600"></div>
             <div class="mt-2 whitespace-nowrap text-[9px] font-black uppercase tracking-[0.12em] text-gray-400">#${rank}</div>
             <div class="whitespace-nowrap text-[9px] font-black uppercase tracking-[0.08em] text-gray-600">${Number(squad?.totalPoints || 0)} pts</div>
         </div>`;
     }).join('');
 
+    const selectedAlignClass = _bestAvailableRankAlignClass(selectedPct);
     const selectedMarkup = selected ? `<button type="button" onclick="selectBestAvailableSquad('${escapeJsSingleQuoted(selected.signature)}', { scrollList: true })"
-        class="absolute top-[27px] z-10 h-4 w-4 -translate-x-1/2 rounded-full border-2 border-emerald-200 bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.55)]"
+        class="absolute top-[27px] z-10 h-4 w-4 ${selectedAlignClass} rounded-full border-2 border-emerald-200 bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.55)]"
         style="left:${selectedPct}%"
         title="Selected rank #${selected.rank}, ${Number(selected.totalPoints || 0)} points">
         <span class="sr-only">Selected rank #${selected.rank}</span>
@@ -11237,8 +11246,9 @@ function _renderBestAvailableRankStrip() {
         const ownerNames = owners.map((owner) => owner.nickname || owner.realname || 'Player').join(', ');
         const safeSignature = escapeJsSingleQuoted(squad.signature);
         const title = escapeHtml(`#${squad.rank} · ${Number(squad.totalPoints || 0)} pts · ${ownerNames}`);
+        const alignClass = _bestAvailableRankAlignClass(pct);
         return `<button type="button" onclick="selectBestAvailableSquad('${safeSignature}', { scrollList: true })"
-            class="absolute top-0 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-emerald-400/40 bg-gray-950/95 px-1.5 py-1 shadow-lg transition-colors hover:border-emerald-200 hover:bg-emerald-950"
+            class="absolute top-0 z-20 flex ${alignClass} items-center gap-1 rounded-full border border-emerald-400/40 bg-gray-950/95 px-1.5 py-1 shadow-lg transition-colors hover:border-emerald-200 hover:bg-emerald-950"
             style="left:${pct}%"
             title="${title}">
             <span class="flex -space-x-1">
@@ -11256,8 +11266,8 @@ function _renderBestAvailableRankStrip() {
                 ${exactOwnerCount > 0 ? `${exactOwnerCount} exact player ${exactOwnerCount === 1 ? 'match' : 'matches'}` : `No exact player matches in top ${BEST_AVAILABLE_EXPLORER_LIMIT}`}
             </div>
         </div>
-        <div class="mt-2 overflow-x-auto pb-1">
-            <div class="relative h-20 min-w-[760px] lg:min-w-0">
+        <div class="mt-2 px-2 pb-1 sm:px-3">
+            <div class="relative h-20 w-full">
                 <div class="absolute left-0 right-0 top-9 h-1 rounded-full bg-gray-800"></div>
                 <div class="absolute left-0 top-9 h-1 rounded-full bg-emerald-400/60" style="width:${selectedPct}%"></div>
                 ${anchorMarkup}
