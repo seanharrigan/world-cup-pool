@@ -11207,10 +11207,17 @@ function _renderBestAvailableExplorerList() {
             .map((team) => `<span class="text-sm leading-none">${team.flag || ''}</span>`)
             .join('');
         const owners = squad.owners || [];
-        const ownerLabel = owners.length === 1
-            ? `Picked by ${escapeHtml(owners[0].nickname || owners[0].realname || 'player')}`
-            : owners.length > 1 ? `Picked by ${owners.length} players` : 'No exact pick';
-        const ownerTone = owners.length > 0 ? 'text-emerald-300' : 'text-gray-500';
+        const ownerMarkup = owners.length > 0
+            ? `<div class="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
+                ${owners.slice(0, 2).map((owner) => `
+                    <span class="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full bg-emerald-900/35 px-1.5 py-1 text-emerald-200">
+                        ${_renderPlayerAvatar(owner.avatarUrl, owner.favoriteTeam, 20, owner.nickname)}
+                        <span class="min-w-0 truncate text-[9px] font-black uppercase tracking-[0.1em]">${escapeHtml(owner.nickname || owner.realname || 'Player')}</span>
+                    </span>
+                `).join('')}
+                ${owners.length > 2 ? `<span class="text-[9px] font-black uppercase tracking-[0.1em] text-emerald-300">+${owners.length - 2}</span>` : ''}
+            </div>`
+            : '<span class="text-gray-500">No exact pick</span>';
 
         return `<button type="button" onclick="selectBestAvailableSquad(${index})"
             class="w-full rounded-xl border px-3 py-2.5 text-left transition-colors ${isSelected ? 'border-emerald-500/70 bg-emerald-900/35' : 'border-gray-800 bg-gray-950/50 hover:border-gray-700 hover:bg-gray-800/70'}">
@@ -11226,7 +11233,7 @@ function _renderBestAvailableExplorerList() {
             </div>
             <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-black uppercase tracking-[0.12em]">
                 <span class="text-gray-400">${Number(squad.totalCost || 0)} / 150</span>
-                <span class="${ownerTone}">${ownerLabel}</span>
+                ${ownerMarkup}
             </div>
         </button>`;
     }).join('');
