@@ -296,10 +296,11 @@ test('best available team respects budget and tier rules', () => {
     const bestTeam = buildBestAvailableTeamData(matches, expandedTeams, new Set(['Canada']), new Set(['France']));
 
     assert.equal(bestTeam.nickname, 'Best Available Team to Date');
-    assert.equal(bestTeam.squad.length, 8);
+    assert.ok(bestTeam.squad.length >= 3);
     assert.ok(bestTeam.squad.filter((team) => team.tier === 1).length <= 1);
     assert.ok(bestTeam.squad.filter((team) => team.tier === 3).length >= 3);
     assert.ok(bestTeam.squad.reduce((sum, team) => sum + team.cost, 0) <= 150);
+    assert.equal(bestTeam.squad.some((team) => team.name === 'Italy'), false);
 });
 
 test('best available squads returns ranked legal candidates', () => {
@@ -333,7 +334,7 @@ test('best available squads returns ranked legal candidates', () => {
     assert.equal(candidates[0].signature, getSquadSignature(bestTeam.squad));
 
     candidates.forEach((candidate) => {
-        assert.equal(candidate.squad.length, 8);
+        assert.ok(candidate.squad.length >= 3);
         assert.ok(candidate.totalCost <= 150);
         assert.ok(candidate.squad.filter((team) => team.tier === 1).length <= 1);
         assert.ok(candidate.squad.filter((team) => team.tier === 3).length >= 3);
@@ -357,4 +358,46 @@ test('best available squads returns ranked legal candidates', () => {
                 )
         );
     }
+});
+
+test('best available squads can include more than eight teams when extra teams add points', () => {
+    const variableTeams = [
+        { name: 'Spain', flag: '🇪🇸', cost: 40, tier: 1 },
+        { name: 'Morocco', flag: '🇲🇦', cost: 30, tier: 2 },
+        { name: 'Canada', flag: '🇨🇦', cost: 25, tier: 2 },
+        { name: 'Mexico', flag: '🇲🇽', cost: 20, tier: 2 },
+        { name: 'USA', flag: '🇺🇸', cost: 15, tier: 2 },
+        { name: 'Iraq', flag: '🇮🇶', cost: 6, tier: 3 },
+        { name: 'Jordan', flag: '🇯🇴', cost: 4, tier: 3 },
+        { name: 'Haiti', flag: '🇭🇹', cost: 4, tier: 3 },
+        { name: 'Qatar', flag: '🇶🇦', cost: 6, tier: 3 }
+    ];
+    const advanced = new Set(variableTeams.map((team) => team.name));
+
+    const bestTeam = buildBestAvailableTeamData([], variableTeams, advanced, new Set());
+
+    assert.equal(bestTeam.squad.length, 9);
+    assert.equal(bestTeam.totalCost, 150);
+    assert.equal(bestTeam.totalPoints, 9);
+});
+
+test('best available squads can return fewer than eight teams when extras do not add points', () => {
+    const variableTeams = [
+        { name: 'Iraq', flag: '🇮🇶', cost: 2, tier: 3 },
+        { name: 'Jordan', flag: '🇯🇴', cost: 2, tier: 3 },
+        { name: 'Haiti', flag: '🇭🇹', cost: 2, tier: 3 },
+        { name: 'Spain', flag: '🇪🇸', cost: 50, tier: 1 },
+        { name: 'Morocco', flag: '🇲🇦', cost: 25, tier: 2 },
+        { name: 'Canada', flag: '🇨🇦', cost: 10, tier: 2 },
+        { name: 'Qatar', flag: '🇶🇦', cost: 4, tier: 3 },
+        { name: 'Italy', flag: '🇮🇹', cost: 0, tier: 3, qualified: false }
+    ];
+    const advanced = new Set(['Iraq', 'Jordan', 'Haiti']);
+
+    const bestTeam = buildBestAvailableTeamData([], variableTeams, advanced, new Set());
+
+    assert.equal(bestTeam.squad.length, 3);
+    assert.equal(bestTeam.totalCost, 6);
+    assert.equal(bestTeam.totalPoints, 3);
+    assert.deepEqual(bestTeam.squad.map((team) => team.name).sort(), ['Haiti', 'Iraq', 'Jordan']);
 });

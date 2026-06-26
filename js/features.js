@@ -548,7 +548,7 @@ function _buildAdjustedWinProbMap() {
     return map;
 }
 
-// Solves the pool's constrained knapsack: pick 8 non-eliminated teams,
+// Solves the pool's constrained knapsack:
 // cost ≤ 150, ≤ 1 Tier 1, ≥ 3 Tier 3, maximising Σ winProb.
 // Returns { squad: [...], rawTotal } or { squad: [], rawTotal: 0 } if infeasible.
 function _computeMaxPossibleSquad() {
@@ -566,15 +566,13 @@ function _computeMaxPossibleSquad() {
     const memo = new Map();
     const decision = new Map();
 
-    function bestFrom(i, count, cost, t1, t3) {
-        if (count === 8) return (cost <= 150 && t1 <= 1 && t3 >= 3) ? 0 : -Infinity;
-        if (i >= candidates.length) return -Infinity;
-        if (count + (candidates.length - i) < 8) return -Infinity;
+    function bestFrom(i, cost, t1, t3) {
+        if (i >= candidates.length) return (cost <= 150 && t1 <= 1 && t3 >= 3) ? 0 : -Infinity;
 
-        const key = `${i}|${count}|${cost}|${t1}|${Math.min(t3, 3)}`;
+        const key = `${i}|${cost}|${t1}|${Math.min(t3, 3)}`;
         if (memo.has(key)) return memo.get(key);
 
-        const skip = bestFrom(i + 1, count, cost, t1, t3);
+        const skip = bestFrom(i + 1, cost, t1, t3);
 
         let take = -Infinity;
         const c = candidates[i];
@@ -582,7 +580,7 @@ function _computeMaxPossibleSquad() {
         const newCost = cost + c.cost;
         if (newT1 <= 1 && newCost <= 150) {
             const newT3 = t3 + (c.tier === 3 ? 1 : 0);
-            const sub = bestFrom(i + 1, count + 1, newCost, newT1, newT3);
+            const sub = bestFrom(i + 1, newCost, newT1, newT3);
             if (sub > -Infinity) take = sub + c.winProb;
         }
 
@@ -592,20 +590,19 @@ function _computeMaxPossibleSquad() {
         return best;
     }
 
-    const total = bestFrom(0, 0, 0, 0, 0);
+    const total = bestFrom(0, 0, 0, 0);
     if (!isFinite(total) || total <= 0) return { squad: [], rawTotal: 0 };
 
     const picks = [];
-    let i = 0, count = 0, cost = 0, t1 = 0, t3 = 0;
-    while (i < candidates.length && picks.length < 8) {
-        const key = `${i}|${count}|${cost}|${t1}|${Math.min(t3, 3)}`;
+    let i = 0, cost = 0, t1 = 0, t3 = 0;
+    while (i < candidates.length) {
+        const key = `${i}|${cost}|${t1}|${Math.min(t3, 3)}`;
         if (decision.get(key) === 'take') {
             const c = candidates[i];
             picks.push(c);
             cost += c.cost;
             t1 += (c.tier === 1 ? 1 : 0);
             t3 += (c.tier === 3 ? 1 : 0);
-            count++;
         }
         i++;
     }
@@ -9511,7 +9508,7 @@ async function fetchLeaderboard() {
         }));
         const bestAvailableOwnersBySignature = new Map();
         enrichedLeaderboardData.forEach((user) => {
-            if (!Array.isArray(user.squad) || user.squad.length !== 8) return;
+            if (!Array.isArray(user.squad) || user.squad.length === 0) return;
             const signature = getSquadSignature(user.squad);
             if (!signature) return;
             const owners = bestAvailableOwnersBySignature.get(signature) || [];
@@ -11320,7 +11317,7 @@ function _renderBestAvailableExplorerList() {
                 </div>
             </div>
             <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-black uppercase tracking-[0.12em]">
-                <span class="text-gray-400">${Number(squad.totalCost || 0)} / 150</span>
+                <span class="text-gray-400">Cost $${Number(squad.totalCost || 0)} / $150</span>
                 ${ownerMarkup}
             </div>
         </button>`;
@@ -11412,7 +11409,7 @@ function _renderBestAvailableExplorerDetail() {
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div class="min-w-0">
                     <div class="text-lg font-black uppercase italic text-emerald-300">Best Available #${selected.rank}</div>
-                    <div class="mt-1 text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">${totalCost} / 150 cost &middot; ${tierSummary}</div>
+                    <div class="mt-1 text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">$${totalCost} / $150 cost &middot; ${rows.length} ${rows.length === 1 ? 'team' : 'teams'} &middot; ${tierSummary}</div>
                 </div>
                 <div class="shrink-0 text-right">
                     <div class="text-4xl font-black text-white">${Number(selected.totalPoints || 0)}</div>
@@ -11484,7 +11481,7 @@ function _renderScoreSidebar() {
     const sidebar = document.getElementById('score-sidebar');
     if (!sidebar) return;
     const best = window._dashBestAvailableTeam;
-    const bestRow = best && Array.isArray(best.squad) && best.squad.length === 8 && !appSettings.hideTeamSelection
+    const bestRow = best && Array.isArray(best.squad) && best.squad.length > 0 && !appSettings.hideTeamSelection
         ? (() => {
             const isSelected = _scoreSelectedEmail === SCORE_BEST_EMAIL;
             return `<button data-email="${SCORE_BEST_EMAIL}" onclick="selectScorePlayer('${SCORE_BEST_EMAIL}')"
@@ -11575,7 +11572,7 @@ function _renderScoreDetail(email) {
                             Highest-scoring legal squad to date — the ceiling everyone is chasing.
                         </div>
                         <div class="text-[10px] font-black uppercase tracking-[0.12em] text-gray-500 mt-1">
-                            ${totalCost} / 150 pts · 8 teams
+                            $${totalCost} / $150 cost · ${rows.length} ${rows.length === 1 ? 'team' : 'teams'}
                         </div>
                     </div>
                     <div class="text-right shrink-0">
@@ -11652,7 +11649,7 @@ function _renderUpsideSidebar() {
     const sidebar = document.getElementById('upside-sidebar');
     if (!sidebar) return;
     const bestSquad = window._poolBestUpsideSquad || [];
-    const bestRow = bestSquad.length === 8
+    const bestRow = bestSquad.length > 0
         ? (() => {
             const isSelected = _upsideSelectedEmail === UPSIDE_BEST_EMAIL;
             return `<button data-email="${UPSIDE_BEST_EMAIL}" onclick="selectUpsidePlayer('${UPSIDE_BEST_EMAIL}')"
@@ -11741,7 +11738,7 @@ function _renderUpsideDetail(email) {
                             The highest-upside legal squad under pool rules — the benchmark everyone is scored against.
                         </div>
                         <div class="text-[10px] font-black uppercase tracking-[0.12em] text-gray-500 mt-1">
-                            ${totalCost} / 150 pts · 8 teams
+                            $${totalCost} / $150 cost · ${sorted.length} ${sorted.length === 1 ? 'team' : 'teams'}
                         </div>
                     </div>
                     <div class="text-right shrink-0">

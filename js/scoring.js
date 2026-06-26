@@ -313,7 +313,7 @@
         const teamBreakdownMap = buildTeamStageBreakdownMap(allMatches, eligibleTeams, advancedTeamsSet);
 
         let states = new Map([
-            ['0|0|0|0', [{
+            ['0|0|0', [{
                 totalPoints: 0,
                 totalCost: 0,
                 squad: [],
@@ -333,10 +333,7 @@
             const teamTierThreeIncrement = teamTier === 3 ? 1 : 0;
 
             states.forEach((candidates, key) => {
-                const [count, cost, tierOneCount, tierThreeBucket] = key.split('|').map(Number);
-                if (count >= 8) {
-                    return;
-                }
+                const [cost, tierOneCount, tierThreeBucket] = key.split('|').map(Number);
 
                 const nextCost = cost + teamCost;
                 if (nextCost > 150) {
@@ -348,9 +345,8 @@
                     return;
                 }
 
-                const nextCount = count + 1;
                 const nextTierThreeBucket = Math.min(3, tierThreeBucket + teamTierThreeIncrement);
-                const nextKey = `${nextCount}|${nextCost}|${nextTierOneCount}|${nextTierThreeBucket}`;
+                const nextKey = `${nextCost}|${nextTierOneCount}|${nextTierThreeBucket}`;
                 const nextCandidates = candidates.map((candidate) => {
                     const squad = [...candidate.squad, {
                         name: team.name,
@@ -384,8 +380,8 @@
 
         const finalCandidates = [];
         states.forEach((candidates, key) => {
-            const [count, , tierOneCount, tierThreeBucket] = key.split('|').map(Number);
-            if (count !== 8 || tierOneCount > 1 || tierThreeBucket < 3) {
+            const [, tierOneCount, tierThreeBucket] = key.split('|').map(Number);
+            if (tierOneCount > 1 || tierThreeBucket < 3) {
                 return;
             }
 

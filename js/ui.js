@@ -731,7 +731,7 @@ function updateUI() {
     // Update ? button state immediately — no guards, interrupts any in-progress animation
     const helperToggle = document.getElementById('picks-rules-toggle');
     if (helperToggle) {
-        const allMet = myPicks.length === 8 && remaining >= 0 && remaining < 2 && tier1Count <= 1 && tier3Count >= 3;
+        const allMet = remaining >= 0 && tier1Count <= 1 && tier3Count >= 3;
         const hasAny = myPicks.length > 0;
         const newState = allMet ? 'success' : hasAny ? 'warn' : 'neutral';
 
