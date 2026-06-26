@@ -11171,6 +11171,7 @@ function showBestAvailableExplorer() {
 
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    _renderBestAvailableRankStrip();
     _renderBestAvailableExplorerList();
     _renderBestAvailableExplorerDetail();
 
@@ -11189,6 +11190,82 @@ function showBestAvailableExplorer() {
 function _getSelectedBestAvailableSquad() {
     const squads = window._bestAvailableSquads || [];
     return squads.find((squad) => squad.signature === _bestAvailableExplorerSelectedSignature) || squads[0] || null;
+}
+
+function _bestAvailableRankPosition(rank, totalRanks) {
+    const denominator = Math.max(1, totalRanks - 1);
+    return Math.max(0, Math.min(100, ((Number(rank || 1) - 1) / denominator) * 100));
+}
+
+function _renderBestAvailableRankStrip() {
+    const strip = document.getElementById('best-available-rank-strip');
+    if (!strip) return;
+
+    const squads = window._bestAvailableSquads || [];
+    if (squads.length === 0) {
+        strip.innerHTML = '';
+        return;
+    }
+
+    const selected = _getSelectedBestAvailableSquad();
+    const totalRanks = Math.max(BEST_AVAILABLE_EXPLORER_LIMIT, squads.length);
+    const anchorRanks = [1, 25, 50, 75, 100].filter((rank) => rank <= squads.length);
+    const matchedSquads = squads.filter((squad) => (squad.owners || []).length > 0);
+    const exactOwnerCount = matchedSquads.reduce((sum, squad) => sum + (squad.owners || []).length, 0);
+    const selectedPct = selected ? _bestAvailableRankPosition(selected.rank, totalRanks) : 0;
+
+    const anchorMarkup = anchorRanks.map((rank) => {
+        const squad = squads[rank - 1];
+        const pct = _bestAvailableRankPosition(rank, totalRanks);
+        return `<div class="absolute top-7 -translate-x-1/2 text-center" style="left:${pct}%">
+            <div class="mx-auto h-3 w-px rounded-full bg-gray-600"></div>
+            <div class="mt-2 whitespace-nowrap text-[9px] font-black uppercase tracking-[0.12em] text-gray-400">#${rank}</div>
+            <div class="whitespace-nowrap text-[9px] font-black uppercase tracking-[0.08em] text-gray-600">${Number(squad?.totalPoints || 0)} pts</div>
+        </div>`;
+    }).join('');
+
+    const selectedMarkup = selected ? `<button type="button" onclick="selectBestAvailableSquad('${escapeJsSingleQuoted(selected.signature)}', { scrollList: true })"
+        class="absolute top-[27px] z-10 h-4 w-4 -translate-x-1/2 rounded-full border-2 border-emerald-200 bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.55)]"
+        style="left:${selectedPct}%"
+        title="Selected rank #${selected.rank}, ${Number(selected.totalPoints || 0)} points">
+        <span class="sr-only">Selected rank #${selected.rank}</span>
+    </button>` : '';
+
+    const markerMarkup = matchedSquads.map((squad) => {
+        const owners = squad.owners || [];
+        const pct = _bestAvailableRankPosition(squad.rank, totalRanks);
+        const ownerNames = owners.map((owner) => owner.nickname || owner.realname || 'Player').join(', ');
+        const safeSignature = escapeJsSingleQuoted(squad.signature);
+        const title = escapeHtml(`#${squad.rank} · ${Number(squad.totalPoints || 0)} pts · ${ownerNames}`);
+        return `<button type="button" onclick="selectBestAvailableSquad('${safeSignature}', { scrollList: true })"
+            class="absolute top-0 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-emerald-400/40 bg-gray-950/95 px-1.5 py-1 shadow-lg transition-colors hover:border-emerald-200 hover:bg-emerald-950"
+            style="left:${pct}%"
+            title="${title}">
+            <span class="flex -space-x-1">
+                ${owners.slice(0, 3).map((owner) => _renderPlayerAvatar(owner.avatarUrl, owner.favoriteTeam, 22, owner.nickname)).join('')}
+            </span>
+            <span class="whitespace-nowrap text-[9px] font-black uppercase tracking-[0.08em] text-emerald-200">${Number(squad.totalPoints || 0)}</span>
+            ${owners.length > 3 ? `<span class="text-[9px] font-black text-emerald-300">+${owners.length - 3}</span>` : ''}
+        </button>`;
+    }).join('');
+
+    strip.innerHTML = `
+        <div class="flex items-center justify-between gap-4">
+            <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Rank map</div>
+            <div class="text-right text-[9px] font-black uppercase tracking-[0.14em] ${exactOwnerCount > 0 ? 'text-emerald-300' : 'text-gray-600'}">
+                ${exactOwnerCount > 0 ? `${exactOwnerCount} exact player ${exactOwnerCount === 1 ? 'match' : 'matches'}` : `No exact player matches in top ${BEST_AVAILABLE_EXPLORER_LIMIT}`}
+            </div>
+        </div>
+        <div class="mt-2 overflow-x-auto pb-1">
+            <div class="relative h-20 min-w-[760px] lg:min-w-0">
+                <div class="absolute left-0 right-0 top-9 h-1 rounded-full bg-gray-800"></div>
+                <div class="absolute left-0 top-9 h-1 rounded-full bg-emerald-400/60" style="width:${selectedPct}%"></div>
+                ${anchorMarkup}
+                ${selectedMarkup}
+                ${markerMarkup}
+            </div>
+        </div>
+    `;
 }
 
 function _renderBestAvailableExplorerList() {
@@ -11219,7 +11296,7 @@ function _renderBestAvailableExplorerList() {
             </div>`
             : '<span class="text-gray-500">No exact pick</span>';
 
-        return `<button type="button" onclick="selectBestAvailableSquad(${index})"
+        return `<button type="button" data-best-signature="${escapeHtml(squad.signature || '')}" onclick="selectBestAvailableSquad(${index})"
             class="w-full rounded-xl border px-3 py-2.5 text-left transition-colors ${isSelected ? 'border-emerald-500/70 bg-emerald-900/35' : 'border-gray-800 bg-gray-950/50 hover:border-gray-700 hover:bg-gray-800/70'}">
             <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
@@ -11342,7 +11419,16 @@ function _renderBestAvailableExplorerDetail() {
         </div>`;
 }
 
-function selectBestAvailableSquad(indexOrSignature) {
+function _scrollBestAvailableListToSignature(signature) {
+    const list = document.getElementById('best-available-list');
+    if (!list || !signature) return;
+    const target = Array.from(list.querySelectorAll('[data-best-signature]'))
+        .find((element) => element.dataset.bestSignature === signature);
+    if (!target) return;
+    target.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+}
+
+function selectBestAvailableSquad(indexOrSignature, options = {}) {
     const squads = window._bestAvailableSquads || [];
     const selected = typeof indexOrSignature === 'number'
         ? squads[indexOrSignature]
@@ -11350,8 +11436,12 @@ function selectBestAvailableSquad(indexOrSignature) {
     if (!selected) return;
 
     _bestAvailableExplorerSelectedSignature = selected.signature;
+    _renderBestAvailableRankStrip();
     _renderBestAvailableExplorerList();
     _renderBestAvailableExplorerDetail();
+    if (options?.scrollList) {
+        window.requestAnimationFrame(() => _scrollBestAvailableListToSignature(selected.signature));
+    }
 }
 
 function closeBestAvailableExplorer() {
