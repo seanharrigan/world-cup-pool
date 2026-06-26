@@ -11337,7 +11337,7 @@ function _renderBestAvailableExplorerDetail() {
             </div>
             <div>
                 <div class="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Team Breakdown</div>
-                <div class="space-y-2.5">${teamRows}</div>
+                <div class="grid grid-cols-1 gap-2.5 lg:grid-cols-2">${teamRows}</div>
             </div>
         </div>`;
 }
