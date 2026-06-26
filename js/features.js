@@ -11390,7 +11390,7 @@ function _renderBestAvailableExplorerDetail() {
                 <span class="shrink-0 text-lg leading-none">${team.flag || ''}</span>
                 <div class="min-w-0 flex-1">
                     <div class="truncate text-xs font-black uppercase text-white ${isEliminated ? 'line-through' : ''}">${escapeHtml(team.name)}</div>
-                    <div class="text-[9px] font-black uppercase tracking-[0.12em] text-gray-500">Tier ${Number(team.tier || 0)} &middot; ${Number(team.cost || 0)} cost${isEliminated ? ' &middot; eliminated' : ''}</div>
+                    <div class="text-[9px] font-black uppercase tracking-[0.12em] text-gray-500">Tier ${Number(team.tier || 0)} &middot; $${Number(team.cost || 0)} cost${isEliminated ? ' &middot; eliminated' : ''}</div>
                 </div>
                 <div class="shrink-0 text-right">
                     <div class="text-sm font-black text-white">${team.points}</div>
