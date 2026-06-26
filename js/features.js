@@ -9610,7 +9610,7 @@ async function fetchLeaderboard() {
         };
 
         const bestRowMarkup = (bestAvailableTeam && !appSettings.hideTeamSelection) ? `
-            <tr class="border-b border-gray-100 bg-gray-50 text-left text-gray-700 cursor-pointer transition-colors hover:bg-emerald-50/70 focus-within:bg-emerald-50/70" role="button" tabindex="0" aria-label="Open best available explorer" onclick="showBestAvailableExplorer()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showBestAvailableExplorer();}">
+            <tr class="leaderboard-best-available-pulse border-b border-gray-100 bg-gray-50 text-left text-gray-700 cursor-pointer transition-colors hover:bg-emerald-50/70 focus-within:bg-emerald-50/70" role="button" tabindex="0" aria-label="Open best available explorer" onclick="showBestAvailableExplorer()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showBestAvailableExplorer();}">
                 <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center text-lg font-black text-gray-400">-</td>
                 <td class="w-[52px] md:w-[72px] px-1 md:px-2 py-2.5 text-center text-lg font-black text-gray-500">${bestAvailableTeam.totalPoints}</td>
                 <td class="px-4 py-2.5 text-left">
@@ -9618,7 +9618,7 @@ async function fetchLeaderboard() {
                         <div class="relative rounded-full shrink-0 bg-gray-300 flex items-center justify-center overflow-hidden" style="width:36px;height:36px;font-size:18px">🤖</div>
                         <div class="flex-1 min-w-0">
                             <div class="text-sm font-black text-gray-500 text-left">${bestAvailableTeam.nickname}</div>
-                            <div class="text-[8px] font-black uppercase tracking-[0.16em] text-emerald-600 text-left">Explore top ${BEST_AVAILABLE_EXPLORER_LIMIT}</div>
+                            <div class="leaderboard-best-available-cta text-[8px] font-black uppercase tracking-[0.16em] text-emerald-600 text-left">Explore top ${BEST_AVAILABLE_EXPLORER_LIMIT}</div>
                             <div class="mt-1 text-left">
                                 ${renderSquadSummary(bestAvailableTeam, true)}
                             </div>
@@ -11225,7 +11225,8 @@ function _renderBestAvailableRankStrip() {
         const pct = _bestAvailableRankPosition(rank, totalRanks);
         const alignClass = _bestAvailableRankAlignClass(pct);
         const textAlignClass = pct <= 2 ? 'text-left' : pct >= 98 ? 'text-right' : 'text-center';
-        return `<div class="absolute top-7 ${alignClass} ${textAlignClass}" style="left:${pct}%">
+        const mobileHideClass = rank === 25 || rank === 75 ? 'hidden sm:block' : '';
+        return `<div class="absolute top-7 ${alignClass} ${textAlignClass} ${mobileHideClass}" style="left:${pct}%">
             <div class="mx-auto h-3 w-px rounded-full bg-gray-600"></div>
             <div class="mt-2 whitespace-nowrap text-[9px] font-black uppercase tracking-[0.12em] text-gray-400">#${rank}</div>
             <div class="whitespace-nowrap text-[9px] font-black uppercase tracking-[0.08em] text-gray-600">${Number(squad?.totalPoints || 0)} pts</div>
@@ -11267,7 +11268,7 @@ function _renderBestAvailableRankStrip() {
             </div>
         </div>
         <div class="mt-2 px-2 pb-1 sm:px-3">
-            <div class="relative h-20 w-full">
+            <div class="relative h-16 w-full sm:h-20">
                 <div class="absolute left-0 right-0 top-9 h-1 rounded-full bg-gray-800"></div>
                 <div class="absolute left-0 top-9 h-1 rounded-full bg-emerald-400/60" style="width:${selectedPct}%"></div>
                 ${anchorMarkup}

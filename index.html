@@ -308,6 +308,16 @@
             100% { background-color: inherit; box-shadow: inset 0 0 0 0 rgba(37, 99, 235, 0); }
         }
         .leaderboard-self-highlight { animation: leaderboard-self-highlight 1.1s ease-out both; }
+        @keyframes leaderboard-best-available-cell-pulse {
+            0%, 100% { background-color: rgba(249, 250, 251, 0); box-shadow: inset 0 0 0 0 rgba(16, 185, 129, 0); }
+            50% { background-color: rgba(16, 185, 129, 0.13); box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.32); }
+        }
+        @keyframes leaderboard-best-available-cta-pulse {
+            0%, 100% { color: #059669; text-shadow: none; }
+            50% { color: #10b981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.55); }
+        }
+        .leaderboard-best-available-pulse > td { animation: leaderboard-best-available-cell-pulse 0.82s ease-in-out 2; }
+        .leaderboard-best-available-pulse .leaderboard-best-available-cta { animation: leaderboard-best-available-cta-pulse 0.82s ease-in-out 2; }
         .leaderboard-podium-row.leaderboard-rank-1 { background-color: #fffbeb; }
         .leaderboard-podium-row.leaderboard-rank-2 { background-color: #f8fafc; }
         .leaderboard-podium-row.leaderboard-rank-3 { background-color: #fff7f0; }
@@ -2311,23 +2321,23 @@
     </div>
 
     <!-- Leaderboard: Best Available explorer modal -->
-    <div id="best-available-modal" class="hidden fixed inset-0 z-[118] bg-black/80 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this)closeBestAvailableExplorer()">
-        <div class="w-full max-w-6xl rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col" style="height:min(760px,92vh)">
-            <div class="shrink-0 flex items-center justify-between gap-4 px-6 py-4 border-b border-gray-800">
+    <div id="best-available-modal" class="hidden fixed inset-0 z-[118] bg-black/80 backdrop-blur-sm items-center justify-center p-2 sm:p-4" onclick="if(event.target===this)closeBestAvailableExplorer()">
+        <div class="w-full max-w-6xl rounded-2xl sm:rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden flex flex-col" style="height:min(760px,calc(100vh - 1rem));height:min(760px,calc(100dvh - 1rem))">
+            <div class="shrink-0 flex items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-800">
                 <div class="min-w-0">
                     <div class="text-[11px] font-black uppercase tracking-[0.25em] text-gray-300">Best Available Explorer</div>
                     <div class="text-[9px] font-black uppercase tracking-[0.15em] text-gray-500 mt-0.5">Top 100 legal squads and exact player matches</div>
                 </div>
                 <button onclick="closeBestAvailableExplorer()" class="shrink-0 text-gray-500 hover:text-white transition-colors text-xl leading-none">&times;</button>
             </div>
-            <div id="best-available-rank-strip" class="shrink-0 border-b border-gray-800 bg-gray-950/45 px-4 py-3"></div>
+            <div id="best-available-rank-strip" class="shrink-0 border-b border-gray-800 bg-gray-950/45 px-3 py-2 sm:px-4 sm:py-3"></div>
             <div class="flex flex-1 min-h-0 flex-col overflow-hidden lg:flex-row">
                 <div class="min-h-0 shrink-0 border-b border-gray-800 bg-gray-900 p-2 lg:flex lg:w-72 lg:flex-col lg:border-b-0 lg:border-r">
                     <div class="px-2 pb-2 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Top squads</div>
-                    <div id="best-available-list" class="max-h-60 space-y-2 overflow-y-auto pr-1 lg:min-h-0 lg:max-h-none lg:flex-1"></div>
+                    <div id="best-available-list" class="max-h-40 space-y-2 overflow-y-auto pr-1 sm:max-h-60 lg:min-h-0 lg:max-h-none lg:flex-1"></div>
                 </div>
                 <div class="min-w-0 flex-1 overflow-y-auto">
-                    <div id="best-available-detail" class="p-6"></div>
+                    <div id="best-available-detail" class="p-4 sm:p-6"></div>
                 </div>
             </div>
         </div>
