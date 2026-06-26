@@ -9563,8 +9563,14 @@ async function fetchLeaderboard() {
 
             return `
                 <div class="lb-squad-cell text-left">
-                    <div class="leading-none text-[8px] font-black tracking-[0.18em] ${remainingTone}">Rem: <span class="ml-0.5 inline-flex gap-0.5 align-middle" style="font-size:12px">${remainingFlags || '<span class="text-gray-300" style="font-size:8px">-</span>'}</span></div>
-                    <div class="leading-none text-[8px] font-black tracking-[0.18em] mt-px ${eliminatedTone}">Elim: <span class="ml-0.5 inline-flex gap-0.5 align-middle" style="font-size:12px">${eliminatedFlags || '<span class="text-gray-300" style="font-size:8px">-</span>'}</span></div>
+                    <div class="flex items-start gap-1 leading-tight text-[8px] font-black tracking-[0.18em] ${remainingTone}">
+                        <span class="shrink-0">Rem:</span>
+                        <span class="inline-flex min-w-0 max-w-full flex-wrap gap-0.5 align-middle" style="font-size:12px">${remainingFlags || '<span class="text-gray-300" style="font-size:8px">-</span>'}</span>
+                    </div>
+                    <div class="mt-px flex items-start gap-1 leading-tight text-[8px] font-black tracking-[0.18em] ${eliminatedTone}">
+                        <span class="shrink-0">Elim:</span>
+                        <span class="inline-flex min-w-0 max-w-full flex-wrap gap-0.5 align-middle" style="font-size:12px">${eliminatedFlags || '<span class="text-gray-300" style="font-size:8px">-</span>'}</span>
+                    </div>
                 </div>
             `;
         };
@@ -9649,7 +9655,7 @@ async function fetchLeaderboard() {
                         ${_renderPlayerAvatar(user.avatarUrl, user.favoriteTeam, 36, user.nickname)}
                         <div class="flex-1 min-w-0">
                             <div class="flex flex-wrap items-center gap-1.5 text-left">
-                                <div class="text-sm font-black text-left text-gray-900">${user.nickname}</div>
+                                <div class="max-w-[42rem] whitespace-normal break-words text-left text-sm font-black leading-tight text-gray-900">${formatLeaderboardNickname(user.nickname)}</div>
                                 <span class="lb-badge-cell">${renderPlayerChips(user.chips, user.email, 'row')}</span>
                             </div>
                             <div class="mt-0.5 text-[9px] font-bold tracking-[0.08em] text-gray-400 text-left">${user.realname}</div>
@@ -9767,6 +9773,55 @@ function escapeHtml(str) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+}
+
+const LEADERBOARD_NICKNAME_SOFT_BREAK_CHARS = 44;
+const LEADERBOARD_NICKNAME_SOFT_BREAK_WINDOW = 4;
+
+function _findLeaderboardNicknameBreakIndex(segment, targetIndex) {
+    const min = Math.max(1, targetIndex - LEADERBOARD_NICKNAME_SOFT_BREAK_WINDOW);
+    const max = Math.min(segment.length - 1, targetIndex + LEADERBOARD_NICKNAME_SOFT_BREAK_WINDOW);
+    let bestIndex = null;
+    let bestDistance = Infinity;
+
+    for (let index = min; index <= max; index++) {
+        const isCamelBoundary = /[a-z0-9]/.test(segment[index - 1] || '') && /[A-Z]/.test(segment[index] || '');
+        if (!isCamelBoundary) continue;
+
+        const distance = Math.abs(targetIndex - index);
+        if (distance < bestDistance || (distance === bestDistance && index < targetIndex)) {
+            bestIndex = index;
+            bestDistance = distance;
+        }
+    }
+
+    return bestIndex || targetIndex;
+}
+
+function _splitLeaderboardNicknameSegment(segment) {
+    const parts = [];
+    let remaining = String(segment);
+
+    while (remaining.length > LEADERBOARD_NICKNAME_SOFT_BREAK_CHARS) {
+        const breakIndex = _findLeaderboardNicknameBreakIndex(remaining, LEADERBOARD_NICKNAME_SOFT_BREAK_CHARS);
+        parts.push(remaining.slice(0, breakIndex));
+        remaining = remaining.slice(breakIndex);
+    }
+
+    if (remaining) parts.push(remaining);
+    return parts;
+}
+
+function formatLeaderboardNickname(nickname) {
+    return String(nickname || '')
+        .split(/(\s+)/)
+        .map((segment) => {
+            if (!segment || /\s+/.test(segment)) return escapeHtml(segment);
+            return _splitLeaderboardNicknameSegment(segment)
+                .map((part) => escapeHtml(part))
+                .join('&shy;');
+        })
+        .join('');
 }
 
 // Replace @[Nickname] tokens with a clickable highlighted span that opens the player profile.
