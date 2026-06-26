@@ -324,6 +324,7 @@
 
         eligibleTeams.forEach((team) => {
             const nextStates = new Map(states);
+            const pendingCandidatesByKey = new Map();
             const teamPoints = teamPointsMap[team.name] || 0;
             const teamBreakdown = teamBreakdownMap[team.name] || emptyStagePoints();
             const teamCost = Number(team.cost || 0);
@@ -368,7 +369,14 @@
                     };
                 });
 
-                addCandidatesToStateMap(nextStates, nextKey, nextCandidates, limit);
+                pendingCandidatesByKey.set(nextKey, [
+                    ...(pendingCandidatesByKey.get(nextKey) || []),
+                    ...nextCandidates
+                ]);
+            });
+
+            pendingCandidatesByKey.forEach((pendingCandidates, nextKey) => {
+                addCandidatesToStateMap(nextStates, nextKey, pendingCandidates, limit);
             });
 
             states = nextStates;

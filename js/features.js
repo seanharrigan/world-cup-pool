@@ -14,7 +14,7 @@ const {
     THIRD_PLACE_MAPPING
 } = window.WorldCupThirdPlaceMapping || { THIRD_PLACE_MAPPING: {} };
 
-const BEST_AVAILABLE_EXPLORER_LIMIT = 50;
+const BEST_AVAILABLE_EXPLORER_LIMIT = 100;
 
 function getTeamStatus(teamName) {
     return {
