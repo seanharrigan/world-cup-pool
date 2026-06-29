@@ -70,6 +70,73 @@ test('knockout win applies the correct multiplier', () => {
     assert.equal(getMatchPointsForTeam(finalMatch, 'Spain'), 36);
 });
 
+test('unfinished or null-score matches award zero points', () => {
+    const teamsWithSouthAfrica = [
+        ...teams,
+        { name: 'South Africa', flag: '🇿🇦', cost: 8, tier: 3 }
+    ];
+    const unfinishedR32 = {
+        stage: 'R32',
+        team_home: 'South Africa',
+        team_away: 'Canada',
+        score_home: null,
+        score_away: null,
+        is_finished: false
+    };
+
+    assert.equal(getMatchPointsForTeam(unfinishedR32, 'South Africa'), 0);
+    assert.equal(getMatchPointsForTeam(unfinishedR32, 'Canada'), 0);
+    assert.deepEqual(buildTeamPointsMap([unfinishedR32], teamsWithSouthAfrica), {
+        Spain: 0,
+        Morocco: 0,
+        Canada: 0,
+        'South Africa': 0,
+        Iraq: 0
+    });
+});
+
+test('future real-team knockout rows do not change leaderboard totals until finished', () => {
+    const teamsWithSouthAfrica = [
+        ...teams,
+        { name: 'South Africa', flag: '🇿🇦', cost: 8, tier: 3 }
+    ];
+    const matches = [
+        {
+            stage: 'R32',
+            team_home: 'South Africa',
+            team_away: 'Canada',
+            score_home: null,
+            score_away: null,
+            is_finished: false
+        }
+    ];
+    const picks = [
+        { user_email: 'amy@example.com', team_name: 'Canada' }
+    ];
+    const profilesMap = buildProfilesMap([
+        { email: 'amy@example.com', nickname: 'Amy', realname: 'Amy A' }
+    ]);
+
+    const leaderboard = buildLeaderboardData(picks, matches, profilesMap, teamsWithSouthAfrica);
+
+    assert.equal(leaderboard[0].totalPoints, 0);
+    assert.equal(leaderboard[0].stagePoints.R32, 0);
+});
+
+test('finished R32 South Africa 0-1 Canada awards Canada R32 points', () => {
+    const match = {
+        stage: 'R32',
+        team_home: 'South Africa',
+        team_away: 'Canada',
+        score_home: 0,
+        score_away: 1,
+        is_finished: true
+    };
+
+    assert.equal(getMatchPointsForTeam(match, 'Canada'), 6);
+    assert.equal(getMatchPointsForTeam(match, 'South Africa'), 0);
+});
+
 test('every knockout stage uses the expected multiplier in scoring', () => {
     const stageExpectations = [
         ['R32', 6],

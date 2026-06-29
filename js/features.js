@@ -1012,7 +1012,7 @@ function _syncScheduleFilterTop() {
 // assignment is consistent: the i-th card on a date maps to the i-th result.
 function _getKnockoutDayResults(stage, date, matchesCache = _scheduleBrowserLoggedCache) {
     return (matchesCache || [])
-        .filter((r) => r.stage === stage && r.match_date_manual === date)
+        .filter((r) => r.stage === stage && r.match_date_manual === date && _hasFinalScore(r))
         .sort((a, b) => {
             const dateCompare = String(a.match_date || '').localeCompare(String(b.match_date || ''));
             if (dateCompare !== 0) return dateCompare;
@@ -1132,7 +1132,7 @@ function computeGroupStandings(matchesCache) {
                 ((r.team_home === m.home && r.team_away === m.away) ||
                  (r.team_home === m.away && r.team_away === m.home))
             );
-            if (!r) return;
+            if (!r || !_hasFinalScore(r)) return;
             logged++;
             groupMatches.push(r);
             const h = stats[r.team_home];
@@ -1280,7 +1280,7 @@ function _detectTiebreakerWarnings(standings, allThirdsRanked, dbRows) {
         const sched = groupSched.filter((m) => m.group === groupLetter);
         const groupNames = new Set(sched.flatMap((m) => [m.home, m.away]));
         const groupMatches = (dbRows || []).filter((r) =>
-            r.stage === 'Group' && groupNames.has(r.team_home) && groupNames.has(r.team_away)
+            r.stage === 'Group' && _hasFinalScore(r) && groupNames.has(r.team_home) && groupNames.has(r.team_away)
         );
 
         // Walk each adjacent pair in the sorted order; if two teams share
@@ -3322,7 +3322,7 @@ function renderKnockoutBracket(matchesCache) {
 
     const columnMarkup = stageLayouts.map(({ stage, label, units, width, left }) => {
         const schedMatches = KNOCKOUT_SCHEDULE.filter((m) => m.stage === stage);
-        const loggedStage = matchesCache.filter((r) => r.stage === stage).sort((a, b) => a.id - b.id);
+        const loggedStage = matchesCache.filter((r) => r.stage === stage && _hasFinalScore(r)).sort((a, b) => a.id - b.id);
         const blockH = SLOT_H * units;
         const sceneMidY = HEADER_H + (TOTAL_H / 2);
 
@@ -3793,10 +3793,22 @@ function openArchivedAdminTab(tabId) {
     showAdminTab(tabId);
 }
 
-function _managerBuildApiIndex() {
+function _hasFinalScore(match) {
+    if (!match || match.is_finished === false || match.score_home == null || match.score_away == null) {
+        return false;
+    }
+
+    return Number.isFinite(Number(match.score_home)) && Number.isFinite(Number(match.score_away));
+}
+
+function _managerSortByUtc(matches = []) {
+    return [...matches].sort((a, b) => (a.utc_date || '').localeCompare(b.utc_date || ''));
+}
+
+function _managerBuildApiIndex(plannedRows = _managerApiPlanned) {
     const byPair = new Map();
-    const byStage = { R32: [], R16: [], QF: [], SM: [], F: [], NULL: [] };
-    for (const p of _managerApiPlanned) {
+    const byStage = { R32: [], R16: [], Quarters: [], Semis: [], Finals: [], QF: [], SM: [], F: [], NULL: [] };
+    for (const p of plannedRows || []) {
         if (p.team_home && p.team_away) {
             byPair.set(`${p.team_home}|${p.team_away}`, p);
             byPair.set(`${p.team_away}|${p.team_home}`, p);
@@ -3809,7 +3821,17 @@ function _managerBuildApiIndex() {
     const nulls = byStage.NULL;
     const r32FromNull = nulls.filter(p => p.utc_date < '2026-07-15');
     const thirdPlace = nulls.filter(p => p.utc_date >= '2026-07-15');
-    return { byPair, byStage, r32FromNull, thirdPlace };
+    return {
+        byPair,
+        byStage,
+        r32FromNull,
+        r32Matches: _managerSortByUtc([...byStage.R32, ...r32FromNull]),
+        r16Matches: _managerSortByUtc(byStage.R16),
+        quarterMatches: _managerSortByUtc([...byStage.Quarters, ...byStage.QF]),
+        semiMatches: _managerSortByUtc([...byStage.Semis, ...byStage.SM]),
+        finalMatches: _managerSortByUtc([...byStage.Finals, ...byStage.F]),
+        thirdPlace
+    };
 }
 
 function _managerFindApiMatch(scheduleEntry, apiIndex, stageOrderCounters) {
@@ -3819,11 +3841,11 @@ function _managerFindApiMatch(scheduleEntry, apiIndex, stageOrderCounters) {
     }
     // Fall back to stage + chronological position (knockout pre-resolution)
     const stageMap = {
-        R32: apiIndex.r32FromNull,
-        R16: apiIndex.byStage.R16,
-        Quarters: apiIndex.byStage.QF,
-        Semis: apiIndex.byStage.SM,
-        Finals: scheduleEntry.slotKey === 'finals-01' ? apiIndex.thirdPlace : apiIndex.byStage.F,
+        R32: apiIndex.r32Matches,
+        R16: apiIndex.r16Matches,
+        Quarters: apiIndex.quarterMatches,
+        Semis: apiIndex.semiMatches,
+        Finals: scheduleEntry.slotKey === 'finals-01' ? apiIndex.thirdPlace : apiIndex.finalMatches,
     };
     const list = stageMap[scheduleEntry.stage];
     if (!list) return null;
@@ -3831,6 +3853,27 @@ function _managerFindApiMatch(scheduleEntry, apiIndex, stageOrderCounters) {
     const idx = stageOrderCounters[counterKey] || 0;
     stageOrderCounters[counterKey] = idx + 1;
     return list[idx] || null;
+}
+
+function _managerGetEntriesForFilter(filter = _managerFilter) {
+    const allGroups = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+    if (filter === 'all') return [...GROUP_STAGE_SCHEDULE, ...KNOCKOUT_SCHEDULE];
+    if (filter === 'groups') return [...GROUP_STAGE_SCHEDULE];
+    if (filter === 'knockout') return [...KNOCKOUT_SCHEDULE];
+    if (allGroups.includes(filter)) return GROUP_STAGE_SCHEDULE.filter(e => e.group === filter);
+    return KNOCKOUT_SCHEDULE.filter(e => e.stage === filter);
+}
+
+function _managerGetEntriesInRenderOrder(entries = []) {
+    const byDate = {};
+    for (const entry of entries || []) {
+        if (!byDate[entry.date]) byDate[entry.date] = [];
+        byDate[entry.date].push(entry);
+    }
+
+    return Object.entries(byDate)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .flatMap(([, matches]) => matches);
 }
 
 function _managerFindDbRow(scheduleEntry, dbCache, claimedIds) {
@@ -3879,6 +3922,7 @@ function _managerDateDistanceDays(dateA, dateB) {
 
 function _managerFindImportTargetDbRow(scheduleEntry, dbCache, claimedIds) {
     const exact = _managerFindDbRow(scheduleEntry, dbCache, claimedIds);
+    if (exact?.manual_override) return null;
     if (exact) return exact;
 
     const stage = scheduleEntry.stage || (scheduleEntry.group ? 'Group' : '');
@@ -3947,12 +3991,7 @@ function _renderMatchManager() {
     `;
 
     // Filter the schedule
-    let allEntries;
-    if (f === 'all') allEntries = [...GROUP_STAGE_SCHEDULE, ...KNOCKOUT_SCHEDULE];
-    else if (f === 'groups') allEntries = [...GROUP_STAGE_SCHEDULE];
-    else if (f === 'knockout') allEntries = [...KNOCKOUT_SCHEDULE];
-    else if (allGroups.includes(f)) allEntries = GROUP_STAGE_SCHEDULE.filter(e => e.group === f);
-    else allEntries = KNOCKOUT_SCHEDULE.filter(e => e.stage === f);
+    const allEntries = _managerGetEntriesForFilter(f);
 
     if (!allEntries.length) {
         rowsEl.innerHTML = '<div class="px-4 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">No matches</div>';
@@ -3999,7 +4038,8 @@ function _managerRenderRow(entry, apiIndex, dbCache, stageCounters, claimedDbIds
     const awayFlag = (typeof teams !== 'undefined' ? teams : []).find(t => t.name === awayLabel)?.flag || '';
 
     // LEFT column — your pool
-    const leftScore = dbRow
+    const leftHasScore = _hasFinalScore(dbRow);
+    const leftScore = leftHasScore
         ? `<div class="flex items-center gap-2"><span class="text-2xl font-black font-mono text-white">${dbRow.score_home}–${dbRow.score_away}</span>${dbRow.was_extra_time ? '<span class="text-[9px] font-black text-yellow-300">ET</span>' : ''}</div>`
         : `<div class="text-2xl font-black font-mono text-gray-700">— : —</div>`;
     const leftBadge = dbRow?.manual_override
@@ -4131,7 +4171,11 @@ function _managerRenderRow(entry, apiIndex, dbCache, stageCounters, claimedDbIds
 
 async function managerImportApi(safeKey) {
     // Find the entry + apiMatch from current state
-    const allEntries = [...GROUP_STAGE_SCHEDULE, ...KNOCKOUT_SCHEDULE];
+    const currentEntries = _managerGetEntriesInRenderOrder(_managerGetEntriesForFilter(_managerFilter));
+    const fallbackEntries = _managerGetEntriesInRenderOrder([...GROUP_STAGE_SCHEDULE, ...KNOCKOUT_SCHEDULE]);
+    const allEntries = currentEntries.some(e => (e.slotKey || `${e.home}|${e.away}|${e.date}`) === safeKey)
+        ? currentEntries
+        : fallbackEntries;
     const entry = allEntries.find(e => (e.slotKey || `${e.home}|${e.away}|${e.date}`) === safeKey);
     if (!entry) return;
     const apiIndex = _managerBuildApiIndex();
@@ -4150,8 +4194,16 @@ async function managerImportApi(safeKey) {
         showToast?.('No FINISHED API result for this match.');
         return;
     }
-    const dbRow = _managerFindImportTargetDbRow(entry, dbCache, claimedDbIds);
-    const stage = entry.stage || (entry.group ? 'Group' : '');
+    const stage = apiMatch.stage || entry.stage || (entry.group ? 'Group' : '');
+    const matchDate = apiMatch.match_date || entry.date;
+    const importEntry = {
+        ...entry,
+        home: apiMatch.team_home,
+        away: apiMatch.team_away,
+        stage,
+        date: matchDate
+    };
+    const dbRow = _managerFindImportTargetDbRow(importEntry, dbCache, new Set());
     const payload = {
         team_home: apiMatch.team_home,
         team_away: apiMatch.team_away,
@@ -4159,7 +4211,7 @@ async function managerImportApi(safeKey) {
         score_away: apiMatch.score_away,
         stage,
         is_finished: true,
-        match_date_manual: entry.date,
+        match_date_manual: matchDate,
         was_extra_time: !!apiMatch.was_extra_time,
         manual_override: false,
         auto_synced_at: new Date().toISOString(),
@@ -4720,7 +4772,7 @@ function _buildDerivedTeamStatusRows(matches) {
     });
 
     matches
-        .filter((match) => match.stage !== 'Group' && match.score_home !== match.score_away)
+        .filter((match) => match.stage !== 'Group' && _hasFinalScore(match) && match.score_home !== match.score_away)
         .forEach((match) => {
             const loser = match.score_home > match.score_away ? match.team_away : match.team_home;
             if (statusByTeam.has(loser)) statusByTeam.get(loser).eliminated = true;
@@ -5151,7 +5203,7 @@ function setMapTableSort(sort) {
 }
 
 function _matchResult(m, teamName) {
-    if (m.score_home == null || m.score_away == null) return null;
+    if (!_hasFinalScore(m)) return null;
     const mult = _STAGE_MULT[m.stage] || 1;
     const isHome = m.team_home === teamName;
     const scored = isHome ? +m.score_home : +m.score_away;
@@ -5162,7 +5214,7 @@ function _matchResult(m, teamName) {
 }
 
 function _matchRowHtml(m, teamNames) {
-    const played = m.score_home != null && m.score_away != null;
+    const played = _hasFinalScore(m);
     const homeT = teams.find((t) => t.name === m.team_home);
     const awayT = teams.find((t) => t.name === m.team_away);
     const hHighlight = teamNames.has(m.team_home);
@@ -7648,12 +7700,13 @@ function formatTeamResultsCell(match, teamName, theme = 'dark') {
     const points = getMatchPointsForTeam(match, teamName);
     const pointsClass = theme === 'dark' ? 'text-white' : 'text-gray-900';
     const detailClass = theme === 'dark' ? 'text-gray-400' : 'text-gray-500';
+    const hasScore = _hasFinalScore(match);
 
     return `
         <div class="min-w-[92px] py-1 text-center">
             <div class="text-[15px] font-black ${pointsClass} leading-none">${points}</div>
             <div class="mt-2 text-[10px] font-bold ${detailClass} whitespace-nowrap">
-                ${homeTeam?.flag || ''} ${match.score_home}-${match.score_away} ${awayTeam?.flag || ''}
+                ${homeTeam?.flag || ''} ${hasScore ? `${match.score_home}-${match.score_away}` : 'TBD'} ${awayTeam?.flag || ''}
             </div>
         </div>
     `;
@@ -8388,6 +8441,10 @@ async function fetchAdminHistory(highlightLatest = false) {
     };
 
     const buildPointsLabel = (match) => {
+        if (!_hasFinalScore(match)) {
+            return 'Upcoming';
+        }
+
         if (match.score_home === match.score_away) {
             const pts = getMatchPointsForTeam(match, match.team_home);
             return `${pts} pt${pts === 1 ? '' : 's'} each`;
@@ -8415,6 +8472,7 @@ async function fetchAdminHistory(highlightLatest = false) {
                     const homeTeam = teams.find((t) => t.name === match.team_home);
                     const awayTeam = teams.find((t) => t.name === match.team_away);
                     const stageLabel = _getMatchStageDisplayLabel(match);
+                    const hasScore = _hasFinalScore(match);
                     return `
                         <div class="bg-gray-800 rounded-2xl border border-gray-700 px-4 py-3 ${highlightLatest && index === 0 ? 'result-flash' : ''}">
                             <div class="grid grid-cols-[minmax(0,1fr)_96px_minmax(0,1fr)_24px] md:grid-cols-[minmax(0,1fr)_128px_minmax(0,1fr)_24px] items-center gap-3">
@@ -8424,7 +8482,7 @@ async function fetchAdminHistory(highlightLatest = false) {
                                 </div>
                                 <div class="text-center">
                                     <div class="text-[8px] font-black uppercase tracking-[0.15em] text-gray-500 mb-1">${stageLabel}</div>
-                                    <div class="bg-gray-950 text-white font-mono font-black text-sm md:text-base tabular-nums px-2.5 py-1 rounded-lg text-center">${match.score_home} – ${match.score_away}</div>
+                                    <div class="bg-gray-950 text-white font-mono font-black text-sm md:text-base tabular-nums px-2.5 py-1 rounded-lg text-center">${hasScore ? `${match.score_home} – ${match.score_away}` : 'TBD'}</div>
                                     <div class="mt-1 text-[8px] font-black uppercase tracking-[0.12em] text-gray-500">${buildPointsLabel(match)}</div>
                                     ${match.was_extra_time ? '<div class="mt-0.5 text-[8px] font-black uppercase text-red-400">E/P</div>' : ''}
                                     ${_matchSourceBadge(match)}
@@ -8503,6 +8561,10 @@ async function fetchPublicResults() {
         `;
     };
     const buildPointsAwardedLabel = (match) => {
+        if (!_hasFinalScore(match)) {
+            return 'Upcoming';
+        }
+
         if (match.score_home === match.score_away) {
             const drawPoints = getMatchPointsForTeam(match, match.team_home);
             return `${drawPoints} pt${drawPoints === 1 ? '' : 's'} each`;
@@ -8538,6 +8600,7 @@ async function fetchPublicResults() {
                     const homeTeam = teams.find((team) => team.name === match.team_home);
                     const awayTeam = teams.find((team) => team.name === match.team_away);
                     const stageLabel = _getMatchStageDisplayLabel(match);
+                    const hasScore = _hasFinalScore(match);
 
                     return `
                         <div class="rounded-[24px] border border-gray-200 bg-white px-3 py-2.5 md:px-4 md:py-3 text-left">
@@ -8551,7 +8614,7 @@ async function fetchPublicResults() {
                                         ${stageLabel}
                                     </div>
                                     <div class="rounded-lg bg-gray-900 px-2 py-1 text-center font-mono text-sm md:text-lg font-black tabular-nums text-white">
-                                        ${match.score_home} - ${match.score_away}
+                                        ${hasScore ? `${match.score_home} - ${match.score_away}` : 'TBD'}
                                     </div>
                                     <div class="mt-1 text-[8px] font-black uppercase tracking-[0.12em] text-gray-400">
                                         ${buildPointsAwardedLabel(match)}
@@ -10851,12 +10914,14 @@ async function showProfileTeam(teamName) {
             const opp = teams.find((t) => t.name === oppName);
             const stageLabel = match.stage === 'Group' ? 'Group' : (knockoutStageMap[match.stage] || match.stage);
             const pts = getMatchPointsForTeam(match, teamName);
-            const myScore = isHome ? match.score_home : match.score_away;
-            const oppScore = isHome ? match.score_away : match.score_home;
-            const won = myScore > oppScore;
-            const drew = myScore === oppScore;
+            const hasScore = _hasFinalScore(match);
+            const myScore = hasScore ? (isHome ? match.score_home : match.score_away) : null;
+            const oppScore = hasScore ? (isHome ? match.score_away : match.score_home) : null;
+            const won = hasScore && myScore > oppScore;
+            const drew = hasScore && myScore === oppScore;
             const resultColor = won ? 'text-green-400' : drew ? 'text-yellow-400' : 'text-gray-500';
-            const resultLabel = won ? 'W' : drew ? 'D' : 'L';
+            const resultLabel = hasScore ? (won ? 'W' : drew ? 'D' : 'L') : 'TBD';
+            const scoreLabel = hasScore ? `${myScore}–${oppScore}` : 'TBD';
             return `
                 <div class="rounded-xl border border-gray-700 bg-gray-800/50 px-3 py-2.5">
                     <div class="flex items-center justify-between mb-1">
@@ -10868,7 +10933,7 @@ async function showProfileTeam(teamName) {
                     </div>
                     <div class="flex items-center gap-2 text-xs font-bold text-gray-200">
                         <span class="text-base">${team.flag}</span>
-                        <span class="font-black">${myScore}–${oppScore}</span>
+                        <span class="font-black">${scoreLabel}</span>
                         <span class="text-base">${opp?.flag || ''}</span>
                         <span class="truncate text-gray-400">${escapeHtml(oppName)}</span>
                     </div>
@@ -11841,12 +11906,14 @@ async function showDashTeamStats(teamName) {
             const opp = teams.find((t) => t.name === oppName);
             const stageLabel = match.stage === 'Group' ? 'Group' : (knockoutStageMap[match.stage] || match.stage);
             const pts = getMatchPointsForTeam(match, teamName);
-            const myScore = isHome ? match.score_home : match.score_away;
-            const oppScore = isHome ? match.score_away : match.score_home;
-            const won = myScore > oppScore;
-            const drew = myScore === oppScore;
+            const hasScore = _hasFinalScore(match);
+            const myScore = hasScore ? (isHome ? match.score_home : match.score_away) : null;
+            const oppScore = hasScore ? (isHome ? match.score_away : match.score_home) : null;
+            const won = hasScore && myScore > oppScore;
+            const drew = hasScore && myScore === oppScore;
             const resultColor = won ? 'text-green-400' : drew ? 'text-yellow-400' : 'text-gray-500';
-            const resultLabel = won ? 'W' : drew ? 'D' : 'L';
+            const resultLabel = hasScore ? (won ? 'W' : drew ? 'D' : 'L') : 'TBD';
+            const scoreLabel = hasScore ? `${myScore}–${oppScore}` : 'TBD';
             return `
                 <div class="rounded-xl border border-gray-700 bg-gray-800/50 px-3 py-2.5">
                     <div class="flex items-center justify-between mb-1">
@@ -11858,7 +11925,7 @@ async function showDashTeamStats(teamName) {
                     </div>
                     <div class="flex items-center gap-2 text-xs font-bold text-gray-200">
                         <span class="text-base">${team.flag}</span>
-                        <span class="font-black">${myScore}–${oppScore}</span>
+                        <span class="font-black">${scoreLabel}</span>
                         <span class="text-base">${opp?.flag || ''}</span>
                         <span class="truncate text-gray-400">${escapeHtml(oppName)}</span>
                     </div>
@@ -13054,6 +13121,11 @@ if (typeof module !== 'undefined' && module.exports) {
         _buildBestThirdAssignments,
         _buildFallbackBestThirdAssignments,
         _resolveKnockoutMatchTeam,
+        _hasFinalScore,
+        _managerBuildApiIndex,
+        _managerFindApiMatch,
+        _managerGetEntriesForFilter,
+        _managerGetEntriesInRenderOrder,
         _managerFindImportTargetDbRow,
         _buildDerivedTeamStatusRows,
         buildTournamentAudit,

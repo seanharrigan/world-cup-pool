@@ -167,10 +167,81 @@ test('match manager import reuses off-date same-fixture row before inserting', (
         id: 1003,
         manual_override: true
     };
+    const exactManualRow = {
+        ...offDateAutoRow,
+        id: 1004,
+        match_date_manual: '2026-06-13',
+        manual_override: true
+    };
 
     assert.equal(api._managerFindImportTargetDbRow(entry, [offDateAutoRow])?.id, 1001);
     assert.equal(api._managerFindImportTargetDbRow(entry, [offDateAutoRow, exactRow])?.id, 1002);
     assert.equal(api._managerFindImportTargetDbRow(entry, [manualOffDateRow]), null);
+    assert.equal(api._managerFindImportTargetDbRow(entry, [exactManualRow]), null);
+});
+
+test('match manager render and import pairing resolve G73 to the same API row', () => {
+    const api = loadTournamentApi();
+    const plannedApiRows = [
+        {
+            api_id: 73,
+            api_status: 'FINISHED',
+            stage: 'R32',
+            team_home: 'South Africa',
+            team_away: 'Canada',
+            score_home: 0,
+            score_away: 1,
+            match_date: '2026-06-28',
+            utc_date: '2026-06-28T19:00:00Z',
+            was_extra_time: false,
+            is_finished: true
+        },
+        {
+            api_id: 74,
+            api_status: 'TIMED',
+            stage: 'R32',
+            team_home: 'Brazil',
+            team_away: 'Japan',
+            score_home: null,
+            score_away: null,
+            match_date: '2026-06-29',
+            utc_date: '2026-06-29T17:00:00Z',
+            was_extra_time: false,
+            is_finished: false
+        }
+    ];
+    const apiIndex = api._managerBuildApiIndex(plannedApiRows);
+    const entries = api._managerGetEntriesInRenderOrder([
+        ...api.GROUP_STAGE_SCHEDULE,
+        ...api.KNOCKOUT_SCHEDULE
+    ]);
+    const target = entries.find((entry) => entry.match === 73);
+    const entryKey = (entry) => entry.slotKey || `${entry.home}|${entry.away}|${entry.date}`;
+    assert.ok(target, 'G73 schedule entry should exist');
+
+    const renderCounters = {};
+    let renderedMatch = null;
+    for (const entry of entries) {
+        const match = api._managerFindApiMatch(entry, apiIndex, renderCounters);
+        if (entryKey(entry) === entryKey(target)) {
+            renderedMatch = match;
+            break;
+        }
+    }
+
+    const importCounters = {};
+    for (const entry of entries) {
+        if (entryKey(entry) === entryKey(target)) break;
+        api._managerFindApiMatch(entry, apiIndex, importCounters);
+    }
+    const importedMatch = api._managerFindApiMatch(target, apiIndex, importCounters);
+
+    assert.ok(importedMatch, 'G73 should resolve to an API row');
+    assert.equal(renderedMatch, importedMatch);
+    assert.equal(importedMatch.team_home, 'South Africa');
+    assert.equal(importedMatch.team_away, 'Canada');
+    assert.equal(importedMatch.score_home, 0);
+    assert.equal(importedMatch.score_away, 1);
 });
 
 test('derived team status advances top two in every group and only the best eight third-place teams', () => {

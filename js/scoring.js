@@ -9,13 +9,23 @@
     };
 
     function getMatchPointsForTeam(match, teamName) {
+        if (!match || match.is_finished === false || match.score_home == null || match.score_away == null) {
+            return 0;
+        }
+
+        const homeScore = Number(match.score_home);
+        const awayScore = Number(match.score_away);
+        if (!Number.isFinite(homeScore) || !Number.isFinite(awayScore)) {
+            return 0;
+        }
+
         const multiplier = STAGE_MULTIPLIERS[match.stage] || 1;
 
-        if (match.score_home === match.score_away) {
+        if (homeScore === awayScore) {
             return match.team_home === teamName || match.team_away === teamName ? multiplier : 0;
         }
 
-        const winningTeam = match.score_home > match.score_away ? match.team_home : match.team_away;
+        const winningTeam = homeScore > awayScore ? match.team_home : match.team_away;
         return winningTeam === teamName ? 3 * multiplier : 0;
     }
 

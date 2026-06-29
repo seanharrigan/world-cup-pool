@@ -32,15 +32,17 @@ export const TEAM_NAME_MAP: Record<string, string> = {
 // `THIRD_PLACE_PLAYOFF` deliberately omitted — pool doesn't track it.
 export const STAGE_MAP: Record<string, string> = {
     GROUP_STAGE: "Group",
+    LAST_32: "R32",
     LAST_16: "R16",
     ROUND_OF_32: "R32",
     ROUND_OF_16: "R16",
-    QUARTER_FINALS: "QF",
-    SEMI_FINALS: "SM",
-    FINAL: "F",
+    QUARTER_FINALS: "Quarters",
+    SEMI_FINALS: "Semis",
+    FINAL: "Finals",
 };
 
-export function mapTeam(apiName: string): string {
+export function mapTeam(apiName: string | null | undefined): string | null {
+    if (!apiName) return null;
     return TEAM_NAME_MAP[apiName] || apiName;
 }
 

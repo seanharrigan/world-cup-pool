@@ -12,10 +12,10 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { mapTeam, mapStage } from "./team-map.ts";
-import { POOL_TIME_ZONE, toPoolDateKey } from "./date-utils.mjs";
+import { buildUtcDateWindow, POOL_TIME_ZONE, toPoolDateKey } from "./date-utils.mjs";
 
 const FOOTBALL_DATA_URL = "https://api.football-data.org/v4/competitions/WC/matches";
-const BUILD_ID = "vancouver-date-fix-b921e1e";
+const BUILD_ID = "recent-window-sync-2026-06-16";
 const DATE_PROBE_UTC = "2026-06-16T01:00:00Z";
 const FETCH_MAX_ATTEMPTS = 3;
 const FETCH_TIMEOUT_MS = 8000;
@@ -53,6 +53,8 @@ interface ApiMatch {
 
 interface FetchAttemptDiagnostic {
     attempt: number;
+    mode: FetchMode;
+    url: string;
     ok: boolean;
     status: number | null;
     elapsedMs: number;
@@ -62,26 +64,32 @@ interface FetchAttemptDiagnostic {
 
 interface FetchDiagnostics {
     upstreamUrl: string;
+    mode: FetchMode;
+    dateWindow: { dateFrom: string; dateTo: string } | null;
     maxAttempts: number;
     timeoutMs: number;
     attempts: FetchAttemptDiagnostic[];
 }
 
+type FetchMode = "full" | "recent";
+
 interface PlannedChange {
     action: "insert" | "update" | "skip-manual" | "skip-unmapped" | "no-change" | "upcoming" | "in-play";
     api_status: string;
-    team_home: string;
-    team_away: string;
+    team_home: string | null;
+    team_away: string | null;
     score_home: number | null;
     score_away: number | null;
     stage: string | null;
     match_date: string;
     utc_date: string;
     was_extra_time: boolean;
+    is_finished: boolean;
     api_id: number;
     db_id: number | null;
     db_match_date_manual: string | null;
     db_manual_override: boolean | null;
+    db_is_finished: boolean | null;
     db_auto_synced_at: string | null;
     reason?: string;
 }
@@ -93,6 +101,7 @@ serve(async (req: Request) => {
 
     const url = new URL(req.url);
     const execute = url.searchParams.get("execute") === "true";
+    const fetchMode: FetchMode = url.searchParams.get("mode") === "recent" ? "recent" : "full";
 
     // Test mode: ?test_finish=<api_id>:<home>-<away>
     // When set, treats that one API match as if it had status FINISHED with the
@@ -119,7 +128,7 @@ serve(async (req: Request) => {
     if (!supabaseUrl || !supabaseServiceKey) return jsonResponse({ ok: false, ...RESPONSE_META, error: "Supabase env not available" }, 500);
 
     // 1. Fetch live data from football-data.org
-    const apiFetch = await fetchWorldCupMatches(apiKey);
+    const apiFetch = await fetchWorldCupMatches(apiKey, fetchMode);
     if (!apiFetch.ok) {
         return jsonResponse({
             ok: false,
@@ -134,7 +143,7 @@ serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { data: existing, error: existingErr } = await supabase
         .from("matches")
-        .select("id, stage, team_home, team_away, match_date_manual, score_home, score_away, was_extra_time, manual_override, auto_synced_at");
+        .select("id, stage, team_home, team_away, match_date_manual, score_home, score_away, was_extra_time, is_finished, manual_override, auto_synced_at");
     if (existingErr) return jsonResponse({ ok: false, ...RESPONSE_META, error: `Failed to load existing matches: ${existingErr.message}` }, 500);
 
     const fixtureKey = (stage: string | null, home: string, away: string) =>
@@ -160,7 +169,9 @@ serve(async (req: Request) => {
         if (!existingByFixture.has(key)) existingByFixture.set(key, []);
         existingByFixture.get(key)!.push(row);
     }
-    const findExistingRow = (stage: string | null, team_home: string, team_away: string, match_date: string) => {
+    const findExistingRow = (stage: string | null, team_home: string | null, team_away: string | null, match_date: string) => {
+        if (!stage || !team_home || !team_away) return null;
+
         const exact = existingMap.get(`${stage}|${team_home}|${team_away}|${match_date}`);
         if (exact) return exact;
 
@@ -185,11 +196,15 @@ serve(async (req: Request) => {
             };
         }
 
-        const team_home = mapTeam(m.homeTeam.name);
-        const team_away = mapTeam(m.awayTeam.name);
+        const team_home = mapTeam(m.homeTeam?.name);
+        const team_away = mapTeam(m.awayTeam?.name);
         const stage = mapStage(m.stage);
         const match_date = toPoolDateKey(m.utcDate);
         const utc_date = m.utcDate;
+        const is_finished = m.status === "FINISHED";
+        const score_home = is_finished ? m.score.fullTime.home : null;
+        const score_away = is_finished ? m.score.fullTime.away : null;
+        const was_extra_time = is_finished && (m.score.duration === "EXTRA_TIME" || m.score.duration === "PENALTY_SHOOTOUT");
         const existingRow = findExistingRow(stage, team_home, team_away, match_date);
         const baseRow = {
             api_status: m.status,
@@ -197,37 +212,51 @@ serve(async (req: Request) => {
             stage,
             match_date,
             utc_date,
+            is_finished,
             api_id: m.id,
             db_id: existingRow?.id ?? null,
             db_match_date_manual: existingRow?.match_date_manual ?? null,
             db_manual_override: existingRow?.manual_override ?? null,
+            db_is_finished: existingRow?.is_finished ?? null,
             db_auto_synced_at: existingRow?.auto_synced_at ?? null,
         };
 
-        // Non-finished matches: just record their schedule status
-        if (m.status !== "FINISHED") {
+        if (!is_finished) {
             skippedUnfinished++;
-            const action = m.status === "IN_PLAY" || m.status === "PAUSED" ? "in-play" : "upcoming";
+        }
+
+        if (!stage || !team_home || !team_away) {
             planned.push({
                 ...baseRow,
-                action,
-                score_home: m.score.fullTime.home,
-                score_away: m.score.fullTime.away,
-                was_extra_time: false,
+                action: "skip-unmapped",
+                score_home,
+                score_away,
+                was_extra_time,
+                reason: `Missing mapped ${!stage ? `stage ${m.stage}` : ""}${!stage && (!team_home || !team_away) ? " and " : ""}${!team_home || !team_away ? `team ${m.homeTeam?.name || "?"} v ${m.awayTeam?.name || "?"}` : ""}`,
             });
             continue;
         }
 
-        const score_home = m.score.fullTime.home;
-        const score_away = m.score.fullTime.away;
-        const was_extra_time = m.score.duration === "EXTRA_TIME" || m.score.duration === "PENALTY_SHOOTOUT";
-
-        if (!stage) {
+        if (is_finished && (score_home === null || score_away === null)) {
             planned.push({
                 ...baseRow,
                 action: "skip-unmapped",
-                score_home, score_away, was_extra_time,
-                reason: `Unmapped stage ${m.stage}`,
+                score_home,
+                score_away,
+                was_extra_time,
+                reason: `Finished API match ${m.id} is missing a full-time score`,
+            });
+            continue;
+        }
+
+        if (!is_finished && stage === "Group") {
+            planned.push({
+                ...baseRow,
+                action: m.status === "IN_PLAY" || m.status === "PAUSED" ? "in-play" : "upcoming",
+                score_home,
+                score_away,
+                was_extra_time,
+                reason: "Unfinished group-stage fixture preview only",
             });
             continue;
         }
@@ -244,6 +273,10 @@ serve(async (req: Request) => {
 
         if (existingRow) {
             const unchanged =
+                existingRow.stage === stage &&
+                existingRow.team_home === team_home &&
+                existingRow.team_away === team_away &&
+                existingRow.is_finished === is_finished &&
                 existingRow.score_home === score_home &&
                 existingRow.score_away === score_away &&
                 existingRow.was_extra_time === was_extra_time &&
@@ -272,8 +305,8 @@ serve(async (req: Request) => {
         plannedNoChange: planned.filter((p) => p.action === "no-change").length,
         plannedSkipManual: planned.filter((p) => p.action === "skip-manual").length,
         plannedSkipUnmapped: planned.filter((p) => p.action === "skip-unmapped").length,
-        upcoming: planned.filter((p) => p.action === "upcoming").length,
-        inPlay: planned.filter((p) => p.action === "in-play").length,
+        upcoming: planned.filter((p) => p.api_status === "TIMED" || p.api_status === "SCHEDULED").length,
+        inPlay: planned.filter((p) => p.api_status === "IN_PLAY" || p.api_status === "PAUSED").length,
         executedInserts: 0,
         executedUpdates: 0,
         errors: [] as string[],
@@ -282,6 +315,11 @@ serve(async (req: Request) => {
     if (execute) {
         const now = new Date().toISOString();
         for (const p of planned) {
+            if ((p.action === "insert" || p.action === "update") && (!p.stage || !p.team_home || !p.team_away)) {
+                summary.errors.push(`Skipped API ${p.api_id}: missing mapped stage/team during execute`);
+                continue;
+            }
+
             if (p.action === "insert") {
                 const { error } = await supabase.from("matches").insert([{
                     team_home: p.team_home,
@@ -289,7 +327,7 @@ serve(async (req: Request) => {
                     score_home: p.score_home,
                     score_away: p.score_away,
                     stage: p.stage,
-                    is_finished: true,
+                    is_finished: p.is_finished,
                     match_date: now,
                     match_date_manual: p.match_date,
                     was_extra_time: p.was_extra_time,
@@ -306,10 +344,13 @@ serve(async (req: Request) => {
                 const { error } = await supabase
                     .from("matches")
                     .update({
+                        team_home: p.team_home,
+                        team_away: p.team_away,
+                        stage: p.stage,
                         score_home: p.score_home,
                         score_away: p.score_away,
                         was_extra_time: p.was_extra_time,
-                        is_finished: true,
+                        is_finished: p.is_finished,
                         match_date_manual: p.match_date,
                         auto_synced_at: now,
                     })
@@ -329,12 +370,16 @@ serve(async (req: Request) => {
     }, 200);
 });
 
-async function fetchWorldCupMatches(apiKey: string): Promise<
+async function fetchWorldCupMatches(apiKey: string, mode: FetchMode): Promise<
     | { ok: true; matches: ApiMatch[]; diagnostics: FetchDiagnostics }
     | { ok: false; error: string; diagnostics: FetchDiagnostics }
 > {
+    const dateWindow = mode === "recent" ? buildUtcDateWindow(new Date(), 1, 1) : null;
+    const upstreamUrl = buildFootballDataUrl(dateWindow);
     const diagnostics: FetchDiagnostics = {
-        upstreamUrl: FOOTBALL_DATA_URL,
+        upstreamUrl,
+        mode,
+        dateWindow,
         maxAttempts: FETCH_MAX_ATTEMPTS,
         timeoutMs: FETCH_TIMEOUT_MS,
         attempts: [],
@@ -346,7 +391,7 @@ async function fetchWorldCupMatches(apiKey: string): Promise<
         const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
         try {
-            const res = await fetch(FOOTBALL_DATA_URL, {
+            const res = await fetch(upstreamUrl, {
                 headers: { "X-Auth-Token": apiKey },
                 signal: controller.signal,
             });
@@ -356,6 +401,8 @@ async function fetchWorldCupMatches(apiKey: string): Promise<
                 const body = (await res.text()).slice(0, 1000);
                 diagnostics.attempts.push({
                     attempt,
+                    mode,
+                    url: upstreamUrl,
                     ok: false,
                     status: res.status,
                     elapsedMs,
@@ -366,6 +413,8 @@ async function fetchWorldCupMatches(apiKey: string): Promise<
                 const data = await res.json();
                 diagnostics.attempts.push({
                     attempt,
+                    mode,
+                    url: upstreamUrl,
                     ok: true,
                     status: res.status,
                     elapsedMs,
@@ -376,6 +425,8 @@ async function fetchWorldCupMatches(apiKey: string): Promise<
         } catch (err) {
             diagnostics.attempts.push({
                 attempt,
+                mode,
+                url: upstreamUrl,
                 ok: false,
                 status: null,
                 elapsedMs: Date.now() - started,
@@ -392,6 +443,15 @@ async function fetchWorldCupMatches(apiKey: string): Promise<
 
     const lastError = diagnostics.attempts[diagnostics.attempts.length - 1]?.error || "unknown fetch error";
     return { ok: false, error: `Fetch failed after ${FETCH_MAX_ATTEMPTS} attempts: ${lastError}`, diagnostics };
+}
+
+function buildFootballDataUrl(dateWindow: { dateFrom: string; dateTo: string } | null): string {
+    if (!dateWindow) return FOOTBALL_DATA_URL;
+
+    const url = new URL(FOOTBALL_DATA_URL);
+    url.searchParams.set("dateFrom", dateWindow.dateFrom);
+    url.searchParams.set("dateTo", dateWindow.dateTo);
+    return url.toString();
 }
 
 function delay(ms: number): Promise<void> {
