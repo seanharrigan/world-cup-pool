@@ -116,6 +116,51 @@ function groupSeedName(rankingByGroup, label) {
     return rankingByGroup[group][pos];
 }
 
+function standingTeam(name, group, pts, index) {
+    return {
+        name,
+        group,
+        played: 3,
+        pts,
+        gd: pts - index,
+        gf: pts + 1,
+        ga: Math.max(0, 3 - index)
+    };
+}
+
+function makeGroupStandings(group, names) {
+    return {
+        status: 'complete',
+        teams: names.map((name, index) => standingTeam(name, group, 9 - (index * 3), index))
+    };
+}
+
+function buildFocusedKnockoutContext() {
+    const standings = {
+        A: makeGroupStandings('A', ['Mexico', 'South Africa', 'South Korea', 'Czechia']),
+        B: makeGroupStandings('B', ['Switzerland', 'Canada', 'Bosnia', 'Qatar']),
+        C: makeGroupStandings('C', ['Brazil', 'Morocco', 'Haiti', 'Scotland']),
+        D: makeGroupStandings('D', ['USA', 'Australia', 'Paraguay', 'Turkiye']),
+        E: makeGroupStandings('E', ['Germany', 'Curacao', 'Ivory Coast', 'Ecuador']),
+        F: makeGroupStandings('F', ['Netherlands', 'Japan', 'Sweden', 'Tunisia']),
+        G: makeGroupStandings('G', ['Belgium', 'Egypt', 'Iran', 'New Zealand']),
+        H: makeGroupStandings('H', ['Spain', 'Cape Verde', 'Saudi Arabia', 'Uruguay']),
+        I: makeGroupStandings('I', ['France', 'Senegal', 'Iraq', 'Norway']),
+        J: makeGroupStandings('J', ['Argentina', 'Algeria', 'Austria', 'Jordan']),
+        K: makeGroupStandings('K', ['Portugal', 'DR Congo', 'Uzbekistan', 'Colombia']),
+        L: makeGroupStandings('L', ['England', 'Croatia', 'Ghana', 'Panama'])
+    };
+
+    return {
+        standings,
+        bestThirdAssignments: new Map([
+            ['r32-01:away', standings.D.teams[2]]
+        ]),
+        matchesCache: [],
+        memo: {}
+    };
+}
+
 test('official FIFA third-place mapping table covers all 495 valid combinations cleanly', () => {
     assert.equal(Object.keys(THIRD_PLACE_MAPPING).length, 495);
 
@@ -182,6 +227,7 @@ test('match manager import reuses off-date same-fixture row before inserting', (
 
 test('match manager render and import pairing resolve G73 to the same API row', () => {
     const api = loadTournamentApi();
+    const knockoutContext = buildFocusedKnockoutContext();
     const plannedApiRows = [
         {
             api_id: 73,
@@ -222,7 +268,7 @@ test('match manager render and import pairing resolve G73 to the same API row', 
     const renderCounters = {};
     let renderedMatch = null;
     for (const entry of entries) {
-        const match = api._managerFindApiMatch(entry, apiIndex, renderCounters);
+        const match = api._managerFindApiMatch(entry, apiIndex, renderCounters, knockoutContext);
         if (entryKey(entry) === entryKey(target)) {
             renderedMatch = match;
             break;
@@ -232,9 +278,9 @@ test('match manager render and import pairing resolve G73 to the same API row', 
     const importCounters = {};
     for (const entry of entries) {
         if (entryKey(entry) === entryKey(target)) break;
-        api._managerFindApiMatch(entry, apiIndex, importCounters);
+        api._managerFindApiMatch(entry, apiIndex, importCounters, knockoutContext);
     }
-    const importedMatch = api._managerFindApiMatch(target, apiIndex, importCounters);
+    const importedMatch = api._managerFindApiMatch(target, apiIndex, importCounters, knockoutContext);
 
     assert.ok(importedMatch, 'G73 should resolve to an API row');
     assert.equal(renderedMatch, importedMatch);
@@ -242,6 +288,164 @@ test('match manager render and import pairing resolve G73 to the same API row', 
     assert.equal(importedMatch.team_away, 'Canada');
     assert.equal(importedMatch.score_home, 0);
     assert.equal(importedMatch.score_away, 1);
+});
+
+test('match manager maps out-of-order June 29 R32 API rows by resolved slot', () => {
+    const api = loadTournamentApi();
+    const knockoutContext = buildFocusedKnockoutContext();
+    const plannedApiRows = [
+        {
+            api_id: 537423,
+            api_status: 'FINISHED',
+            stage: 'R32',
+            team_home: 'Brazil',
+            team_away: 'Japan',
+            score_home: 2,
+            score_away: 1,
+            match_date: '2026-06-29',
+            utc_date: '2026-06-29T17:00:00Z'
+        },
+        {
+            api_id: 537415,
+            api_status: 'IN_PLAY',
+            stage: 'R32',
+            team_home: 'Germany',
+            team_away: 'Paraguay',
+            score_home: null,
+            score_away: null,
+            match_date: '2026-06-29',
+            utc_date: '2026-06-29T20:30:00Z'
+        },
+        {
+            api_id: 537418,
+            api_status: 'TIMED',
+            stage: 'R32',
+            team_home: 'Netherlands',
+            team_away: 'Morocco',
+            score_home: null,
+            score_away: null,
+            match_date: '2026-06-29',
+            utc_date: '2026-06-30T01:00:00Z'
+        }
+    ];
+    const apiIndex = api._managerBuildApiIndex(plannedApiRows);
+    const entries = api._managerGetEntriesInRenderOrder(api.KNOCKOUT_SCHEDULE)
+        .filter((entry) => entry.stage === 'R32' && entry.date === '2026-06-29');
+
+    const mapped = new Map(entries.map((entry) => [
+        entry.match,
+        api._managerFindApiMatch(entry, apiIndex, {}, knockoutContext)
+    ]));
+
+    assert.equal(mapped.get(74)?.team_home, 'Germany');
+    assert.equal(mapped.get(74)?.team_away, 'Paraguay');
+    assert.equal(mapped.get(75)?.team_home, 'Netherlands');
+    assert.equal(mapped.get(75)?.team_away, 'Morocco');
+    assert.equal(mapped.get(76)?.team_home, 'Brazil');
+    assert.equal(mapped.get(76)?.team_away, 'Japan');
+});
+
+test('knockout slot matching does not steal finished rows from other R32 slots', () => {
+    const api = loadTournamentApi();
+    const knockoutContext = buildFocusedKnockoutContext();
+    const rows = [
+        {
+            id: 1755,
+            stage: 'R32',
+            match_date_manual: '2026-06-28',
+            team_home: 'South Africa',
+            team_away: 'Canada',
+            score_home: 0,
+            score_away: 1
+        },
+        {
+            id: 1756,
+            stage: 'R32',
+            match_date_manual: '2026-06-29',
+            team_home: 'Brazil',
+            team_away: 'Japan',
+            score_home: 2,
+            score_away: 1
+        }
+    ];
+    const byMatch = new Map(api.KNOCKOUT_SCHEDULE.map((entry) => [entry.match, entry]));
+    const find = (matchNum) => api._findKnockoutSlotRow(
+        byMatch.get(matchNum),
+        rows,
+        knockoutContext.standings,
+        knockoutContext.bestThirdAssignments,
+        { matchesCache: rows, memo: {}, requireFinal: true }
+    );
+
+    assert.equal(find(73)?.id, 1755);
+    assert.equal(find(76)?.id, 1756);
+    assert.equal(find(74), null);
+
+    const r32FirstWinner = api._getKnockoutResultForSlot(
+        'r32-01',
+        knockoutContext.standings,
+        knockoutContext.bestThirdAssignments,
+        { matchesCache: rows, memo: {} }
+    );
+    assert.equal(r32FirstWinner, null, 'G74 should stay unresolved instead of stealing Brazil/Japan or Canada/South Africa');
+});
+
+test('match manager DB lookup reuses correct real-team rows without duplicate-prone fallback', () => {
+    const api = loadTournamentApi();
+    const knockoutContext = buildFocusedKnockoutContext();
+    const byMatch = new Map(api.KNOCKOUT_SCHEDULE.map((entry) => [entry.match, entry]));
+    const wrongRowsOnly = [
+        {
+            id: 1755,
+            stage: 'R32',
+            match_date_manual: '2026-06-28',
+            team_home: 'South Africa',
+            team_away: 'Canada',
+            score_home: 0,
+            score_away: 1
+        },
+        {
+            id: 1756,
+            stage: 'R32',
+            match_date_manual: '2026-06-29',
+            team_home: 'Brazil',
+            team_away: 'Japan',
+            score_home: 2,
+            score_away: 1
+        }
+    ];
+    const fullRows = [
+        ...wrongRowsOnly,
+        {
+            id: 1757,
+            stage: 'R32',
+            match_date_manual: '2026-06-29',
+            team_home: 'Germany',
+            team_away: 'Paraguay',
+            score_home: null,
+            score_away: null,
+            is_finished: false
+        },
+        {
+            id: 1758,
+            stage: 'R32',
+            match_date_manual: '2026-06-29',
+            team_home: 'Netherlands',
+            team_away: 'Morocco',
+            score_home: null,
+            score_away: null,
+            is_finished: false
+        }
+    ];
+
+    assert.equal(
+        api._managerFindDbRow(byMatch.get(74), wrongRowsOnly, new Set(), knockoutContext),
+        null,
+        'G74 must not claim Brazil/Japan just because it is the first June 29 row'
+    );
+    assert.equal(api._managerFindDbRow(byMatch.get(74), fullRows, new Set(), knockoutContext)?.id, 1757);
+    assert.equal(api._managerFindDbRow(byMatch.get(75), fullRows, new Set(), knockoutContext)?.id, 1758);
+    assert.equal(api._managerFindDbRow(byMatch.get(76), fullRows, new Set(), knockoutContext)?.id, 1756);
 });
 
 test('derived team status advances top two in every group and only the best eight third-place teams', () => {

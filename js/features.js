@@ -1008,8 +1008,8 @@ function _syncScheduleFilterTop() {
     if (header && filters) filters.style.top = header.offsetHeight + 'px';
 }
 
-// Returns logged results for a knockout stage+date, sorted by id so slot
-// assignment is consistent: the i-th card on a date maps to the i-th result.
+// Returns logged results for a knockout stage+date, sorted for display only.
+// Knockout slot assignment must use real team pairs, not date/order position.
 function _getKnockoutDayResults(stage, date, matchesCache = _scheduleBrowserLoggedCache) {
     return (matchesCache || [])
         .filter((r) => r.stage === stage && r.match_date_manual === date && _hasFinalScore(r))
@@ -1022,6 +1022,76 @@ function _getKnockoutDayResults(stage, date, matchesCache = _scheduleBrowserLogg
 
 function _getKnockoutScheduleMatchBySlot(slotKey) {
     return KNOCKOUT_SCHEDULE.find((match) => match.slotKey === slotKey) || null;
+}
+
+function _buildKnockoutResolutionContext(matchesCache = _scheduleBrowserLoggedCache) {
+    const standings = computeGroupStandings(matchesCache || []);
+    return {
+        standings,
+        bestThirdAssignments: _buildBestThirdAssignments(standings),
+        matchesCache,
+        memo: {}
+    };
+}
+
+function _isSafeResolvedKnockoutTeam(res) {
+    return !!(res && res.name && res.name !== 'TBD' && res.status !== 'none' && !res.fallback);
+}
+
+function _resolveKnockoutSlotTeams(scheduleMatch, standings, bestThirdAssignments, options = {}) {
+    const {
+        matchesCache = _scheduleBrowserLoggedCache,
+        memo = {}
+    } = options;
+    const homeRes = _resolveKnockoutMatchTeam(scheduleMatch, 'home', standings, bestThirdAssignments, { matchesCache, memo });
+    const awayRes = _resolveKnockoutMatchTeam(scheduleMatch, 'away', standings, bestThirdAssignments, { matchesCache, memo });
+    const isSafe = _isSafeResolvedKnockoutTeam(homeRes) && _isSafeResolvedKnockoutTeam(awayRes);
+    return {
+        homeRes,
+        awayRes,
+        homeName: isSafe ? homeRes.name : '',
+        awayName: isSafe ? awayRes.name : '',
+        isSafe
+    };
+}
+
+function _knockoutRowDate(row) {
+    return row?.match_date_manual || row?.match_date || '';
+}
+
+function _knockoutTeamPairMatches(row, homeName, awayName) {
+    return (
+        (row.team_home === homeName && row.team_away === awayName) ||
+        (row.team_home === awayName && row.team_away === homeName)
+    );
+}
+
+function _findKnockoutSlotRow(scheduleMatch, rows, standings, bestThirdAssignments, options = {}) {
+    if (!scheduleMatch || scheduleMatch.group || !scheduleMatch.stage) return null;
+    const {
+        matchesCache = _scheduleBrowserLoggedCache,
+        memo = {},
+        requireFinal = false,
+        claimedIds = null
+    } = options;
+    const slotTeams = _resolveKnockoutSlotTeams(scheduleMatch, standings, bestThirdAssignments, { matchesCache, memo });
+    if (!slotTeams.isSafe) return null;
+
+    const candidates = (rows || []).filter((row) => {
+        if (!row || row.stage !== scheduleMatch.stage) return false;
+        if (claimedIds && row.id != null && claimedIds.has(row.id)) return false;
+        if (requireFinal && !_hasFinalScore(row)) return false;
+        return _knockoutTeamPairMatches(row, slotTeams.homeName, slotTeams.awayName);
+    });
+
+    if (!candidates.length) return null;
+    const exactDate = candidates.filter((row) => _knockoutRowDate(row) === scheduleMatch.date);
+    const safePool = exactDate.length ? exactDate : candidates;
+    if (safePool.length !== 1) return null;
+
+    const matched = safePool[0];
+    if (claimedIds && matched.id != null) claimedIds.add(matched.id);
+    return matched;
 }
 
 function _getKnockoutResultForSlot(slotKey, standings, bestThirdAssignments, options = {}) {
@@ -1040,58 +1110,22 @@ function _getKnockoutResultForSlot(slotKey, standings, bestThirdAssignments, opt
         return null;
     }
 
-    const dayResults = _getKnockoutDayResults(scheduleMatch.stage, scheduleMatch.date, matchesCache);
-    const homeRes = _resolveKnockoutMatchTeam(scheduleMatch, 'home', standings, bestThirdAssignments, { matchesCache, memo });
-    const awayRes = _resolveKnockoutMatchTeam(scheduleMatch, 'away', standings, bestThirdAssignments, { matchesCache, memo });
-    const expectedHome = homeRes?.status !== 'none' ? homeRes.name : '';
-    const expectedAway = awayRes?.status !== 'none' ? awayRes.name : '';
-
-    let matched = null;
-    if (expectedHome && expectedAway) {
-        matched = dayResults.find((result) =>
-            (result.team_home === expectedHome && result.team_away === expectedAway) ||
-            (result.team_home === expectedAway && result.team_away === expectedHome)
-        ) || null;
-    }
-
-    if (!matched) {
-        const daySchedule = KNOCKOUT_SCHEDULE.filter((match) => match.stage === scheduleMatch.stage && match.date === scheduleMatch.date);
-        const slotIndex = daySchedule.findIndex((match) => match.slotKey === slotKey);
-        matched = slotIndex >= 0 ? (dayResults[slotIndex] || null) : null;
-    }
-
+    const matched = _findKnockoutSlotRow(scheduleMatch, matchesCache, standings, bestThirdAssignments, {
+        matchesCache,
+        memo,
+        requireFinal: true
+    });
     memo[memoKey] = matched;
     return matched;
 }
 
-function _findKnockoutResultForMatch(scheduleMatch, standings, bestThirdAssignments, usedResultIds) {
-    const dayResults = _getKnockoutDayResults(scheduleMatch.stage, scheduleMatch.date);
-    const resolvedHome = _resolveKnockoutMatchTeam(scheduleMatch, 'home', standings, bestThirdAssignments);
-    const resolvedAway = _resolveKnockoutMatchTeam(scheduleMatch, 'away', standings, bestThirdAssignments);
-    const expectedHome = resolvedHome?.name;
-    const expectedAway = resolvedAway?.name;
-
-    if (expectedHome && expectedAway && expectedHome !== scheduleMatch.home && expectedAway !== scheduleMatch.away) {
-        const matched = dayResults.find((result) => {
-            if (usedResultIds.has(result.id)) return false;
-            return (
-                (result.team_home === expectedHome && result.team_away === expectedAway) ||
-                (result.team_home === expectedAway && result.team_away === expectedHome)
-            );
-        });
-        if (matched) {
-            usedResultIds.add(matched.id);
-            return matched;
-        }
-    }
-
-    const nextByOrder = dayResults.find((result) => !usedResultIds.has(result.id));
-    if (nextByOrder) {
-        usedResultIds.add(nextByOrder.id);
-        return nextByOrder;
-    }
-
-    return null;
+function _findKnockoutResultForMatch(scheduleMatch, standings, bestThirdAssignments, usedResultIds, options = {}) {
+    return _findKnockoutSlotRow(scheduleMatch, options.matchesCache || _scheduleBrowserLoggedCache, standings, bestThirdAssignments, {
+        matchesCache: options.matchesCache || _scheduleBrowserLoggedCache,
+        memo: options.memo || {},
+        requireFinal: true,
+        claimedIds: usedResultIds
+    });
 }
 
 // ── Group standings + knockout seeding resolution ─────────────────────────────
@@ -2942,6 +2976,7 @@ function renderScheduleBrowser() {
     // Pre-compute standings so knockout cards can show resolved team names
     const _standings  = computeGroupStandings();
     const _best3rdAssignments = _buildBestThirdAssignments(_standings);
+    const _knockoutMemo = {};
     const useSeedStatusColours = !_isKnockoutFieldLocked(_standings);
 
     cardsEl.innerHTML = Object.entries(byDate).map(([date, matches]) => {
@@ -2951,7 +2986,7 @@ function renderScheduleBrowser() {
             const usedResultIds = new Set();
 
             cards = matches.map((m) => {
-                const result = _findKnockoutResultForMatch(m, _standings, _best3rdAssignments, usedResultIds);
+                const result = _findKnockoutResultForMatch(m, _standings, _best3rdAssignments, usedResultIds, { memo: _knockoutMemo });
                 const isLogged = !!result;
 
                 if (isLogged) {
@@ -3164,6 +3199,7 @@ function renderKnockoutBracket(matchesCache) {
 
     const standings = computeGroupStandings(matchesCache);
     const best3rdAssignments = _buildBestThirdAssignments(standings);
+    const knockoutMemo = {};
     const useSeedStatusColours = !_isKnockoutFieldLocked(standings);
     if (guide) guide.classList.toggle('hidden', !useSeedStatusColours);
 
@@ -3322,17 +3358,20 @@ function renderKnockoutBracket(matchesCache) {
 
     const columnMarkup = stageLayouts.map(({ stage, label, units, width, left }) => {
         const schedMatches = KNOCKOUT_SCHEDULE.filter((m) => m.stage === stage);
-        const loggedStage = matchesCache.filter((r) => r.stage === stage && _hasFinalScore(r)).sort((a, b) => a.id - b.id);
         const blockH = SLOT_H * units;
         const sceneMidY = HEADER_H + (TOTAL_H / 2);
 
         const cards = schedMatches.map((m, slotIdx) => {
-            const logged = loggedStage[slotIdx] || null;
+            const logged = _findKnockoutSlotRow(m, matchesCache, standings, best3rdAssignments, {
+                matchesCache,
+                memo: knockoutMemo,
+                requireFinal: true
+            });
             let homeRes, awayRes;
 
             if (!logged) {
-                homeRes = _resolveKnockoutMatchTeam(m, 'home', standings, best3rdAssignments, { matchesCache });
-                awayRes = _resolveKnockoutMatchTeam(m, 'away', standings, best3rdAssignments, { matchesCache });
+                homeRes = _resolveKnockoutMatchTeam(m, 'home', standings, best3rdAssignments, { matchesCache, memo: knockoutMemo });
+                awayRes = _resolveKnockoutMatchTeam(m, 'away', standings, best3rdAssignments, { matchesCache, memo: knockoutMemo });
             }
 
             const meta = {
@@ -3822,6 +3861,7 @@ function _managerBuildApiIndex(plannedRows = _managerApiPlanned) {
     const r32FromNull = nulls.filter(p => p.utc_date < '2026-07-15');
     const thirdPlace = nulls.filter(p => p.utc_date >= '2026-07-15');
     return {
+        allRows: plannedRows || [],
         byPair,
         byStage,
         r32FromNull,
@@ -3834,25 +3874,25 @@ function _managerBuildApiIndex(plannedRows = _managerApiPlanned) {
     };
 }
 
-function _managerFindApiMatch(scheduleEntry, apiIndex, stageOrderCounters) {
+function _managerFindApiMatch(scheduleEntry, apiIndex, stageOrderCounters, knockoutContext = null) {
     // Try team-pair match first (works for groups + post-bracket KO)
     if (apiIndex.byPair.has(`${scheduleEntry.home}|${scheduleEntry.away}`)) {
         return apiIndex.byPair.get(`${scheduleEntry.home}|${scheduleEntry.away}`);
     }
-    // Fall back to stage + chronological position (knockout pre-resolution)
-    const stageMap = {
-        R32: apiIndex.r32Matches,
-        R16: apiIndex.r16Matches,
-        Quarters: apiIndex.quarterMatches,
-        Semis: apiIndex.semiMatches,
-        Finals: scheduleEntry.slotKey === 'finals-01' ? apiIndex.thirdPlace : apiIndex.finalMatches,
-    };
-    const list = stageMap[scheduleEntry.stage];
-    if (!list) return null;
-    const counterKey = scheduleEntry.stage + (scheduleEntry.slotKey === 'finals-01' ? '-3rd' : '');
-    const idx = stageOrderCounters[counterKey] || 0;
-    stageOrderCounters[counterKey] = idx + 1;
-    return list[idx] || null;
+    if (!scheduleEntry.group && scheduleEntry.stage) {
+        const context = knockoutContext || _buildKnockoutResolutionContext();
+        return _findKnockoutSlotRow(
+            scheduleEntry,
+            apiIndex.allRows || [],
+            context.standings,
+            context.bestThirdAssignments,
+            {
+                matchesCache: context.matchesCache || _scheduleBrowserLoggedCache,
+                memo: context.memo || {}
+            }
+        );
+    }
+    return null;
 }
 
 function _managerGetEntriesForFilter(filter = _managerFilter) {
@@ -3876,7 +3916,7 @@ function _managerGetEntriesInRenderOrder(entries = []) {
         .flatMap(([, matches]) => matches);
 }
 
-function _managerFindDbRow(scheduleEntry, dbCache, claimedIds) {
+function _managerFindDbRow(scheduleEntry, dbCache, claimedIds, knockoutContext = null) {
     // Group: match by team-pair (any direction) + date
     if (scheduleEntry.group) {
         return dbCache.find(r =>
@@ -3885,24 +3925,14 @@ function _managerFindDbRow(scheduleEntry, dbCache, claimedIds) {
              (r.team_home === scheduleEntry.away && r.team_away === scheduleEntry.home))
         ) || null;
     }
-    // Knockout: multiple KO matches can share a date (e.g. 3 R32 on 2026-06-29).
-    // Stage + date alone is ambiguous — every row would map to the SAME db
-    // record. Match by team-pair when possible; fall back to first unclaimed
-    // stage+date row, walking in sorted order so each schedule entry claims a
-    // distinct row.
-    const claimed = claimedIds || new Set();
-    const candidates = dbCache.filter(r =>
-        r.stage === scheduleEntry.stage && r.match_date_manual === scheduleEntry.date && !claimed.has(r.id)
-    );
-    const teamPair = candidates.find(r =>
-        (r.team_home === scheduleEntry.home && r.team_away === scheduleEntry.away) ||
-        (r.team_home === scheduleEntry.away && r.team_away === scheduleEntry.home)
-    );
-    const picked = teamPair
-        || [...candidates].sort((a, b) => (a.id || 0) - (b.id || 0))[0]
-        || null;
-    if (picked && claimedIds) claimedIds.add(picked.id);
-    return picked;
+    // Knockout rows are keyed by real teams, while the schedule may still use
+    // placeholders like 1C/2F. Resolve the slot first; never claim by order.
+    const context = knockoutContext || _buildKnockoutResolutionContext(dbCache);
+    return _findKnockoutSlotRow(scheduleEntry, dbCache, context.standings, context.bestThirdAssignments, {
+        matchesCache: context.matchesCache || dbCache,
+        memo: context.memo || {},
+        claimedIds
+    });
 }
 
 function _managerTeamPairMatches(row, home, away) {
@@ -3963,6 +3993,7 @@ function _renderMatchManager() {
 
     const apiIndex = _managerBuildApiIndex();
     const dbCache = _scheduleBrowserLoggedCache || [];
+    const knockoutContext = _buildKnockoutResolutionContext(dbCache);
 
     // Filter strip (reuse Schedule tab pattern)
     const allGroups = ['A','B','C','D','E','F','G','H','I','J','K','L'];
@@ -4020,14 +4051,14 @@ function _renderMatchManager() {
                     <div class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">${_formatScheduleDate(date)}</div>
                     <div class="h-px flex-1 bg-gray-800"></div>
                 </div>`;
-            const cards = matches.map(entry => _managerRenderRow(entry, apiIndex, dbCache, stageCounters, claimedDbIds)).join('');
+            const cards = matches.map(entry => _managerRenderRow(entry, apiIndex, dbCache, stageCounters, claimedDbIds, knockoutContext)).join('');
             return dayHeader + cards;
         }).join('');
 }
 
-function _managerRenderRow(entry, apiIndex, dbCache, stageCounters, claimedDbIds) {
-    const apiMatch = _managerFindApiMatch(entry, apiIndex, stageCounters);
-    const dbRow = _managerFindDbRow(entry, dbCache, claimedDbIds);
+function _managerRenderRow(entry, apiIndex, dbCache, stageCounters, claimedDbIds, knockoutContext) {
+    const apiMatch = _managerFindApiMatch(entry, apiIndex, stageCounters, knockoutContext);
+    const dbRow = _managerFindDbRow(entry, dbCache, claimedDbIds, knockoutContext);
     const rowKey = entry.slotKey || `${entry.home}|${entry.away}|${entry.date}`;
     const isExpanded = _managerExpandedKey === rowKey;
     const safeKey = rowKey.replace(/'/g, "\\'");
@@ -4181,15 +4212,16 @@ async function managerImportApi(safeKey) {
     const apiIndex = _managerBuildApiIndex();
     const stageCounters = {};
     const dbCache = _scheduleBrowserLoggedCache || [];
+    const knockoutContext = _buildKnockoutResolutionContext(dbCache);
     const claimedDbIds = new Set();
     // Walk the schedule in same order as render so the counter + claim Set
     // both end up at the right position when we hit the target entry.
     for (const e of allEntries) {
         if ((e.slotKey || `${e.home}|${e.away}|${e.date}`) === safeKey) break;
-        _managerFindApiMatch(e, apiIndex, stageCounters);
-        _managerFindDbRow(e, dbCache, claimedDbIds);
+        _managerFindApiMatch(e, apiIndex, stageCounters, knockoutContext);
+        _managerFindDbRow(e, dbCache, claimedDbIds, knockoutContext);
     }
-    const apiMatch = _managerFindApiMatch(entry, apiIndex, stageCounters);
+    const apiMatch = _managerFindApiMatch(entry, apiIndex, stageCounters, knockoutContext);
     if (!apiMatch || apiMatch.api_status !== 'FINISHED' || apiMatch.score_home == null || apiMatch.score_away == null) {
         showToast?.('No FINISHED API result for this match.');
         return;
@@ -13120,12 +13152,16 @@ if (typeof module !== 'undefined' && module.exports) {
         _getBestThirdSlots,
         _buildBestThirdAssignments,
         _buildFallbackBestThirdAssignments,
+        _buildKnockoutResolutionContext,
         _resolveKnockoutMatchTeam,
+        _findKnockoutSlotRow,
+        _getKnockoutResultForSlot,
         _hasFinalScore,
         _managerBuildApiIndex,
         _managerFindApiMatch,
         _managerGetEntriesForFilter,
         _managerGetEntriesInRenderOrder,
+        _managerFindDbRow,
         _managerFindImportTargetDbRow,
         _buildDerivedTeamStatusRows,
         buildTournamentAudit,
