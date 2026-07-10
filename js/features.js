@@ -9561,6 +9561,70 @@ function hideLeaderboardSelfCard() {
     card.innerHTML = '';
 }
 
+function _getMyPoolLabData(filters = DEFAULT_MY_POOL_LAB_FILTERS) {
+    return _getCachedBestAvailableLabData({ ...filters, realisticOnly: true });
+}
+
+function _getMyPoolLabContext(email = userEmail, filters = DEFAULT_MY_POOL_LAB_FILTERS) {
+    if (!email) return null;
+    return (_getMyPoolLabData(filters).contexts || []).find((context) => context.email === email) || null;
+}
+
+function toggleLeaderboardSelfLabInfo(event) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    const info = document.getElementById('leaderboard-self-lab-info');
+    if (info) info.classList.toggle('hidden');
+}
+
+function _renderLeaderboardSelfLabPreview() {
+    if (appSettings.hideTeamSelection) return '';
+
+    const data = _getMyPoolLabData(DEFAULT_MY_POOL_LAB_FILTERS);
+    const context = _getMyPoolLabContext(userEmail, DEFAULT_MY_POOL_LAB_FILTERS);
+    const allLegal = _formatCompactBestAvailableNumber(_getAllLegalSquadCount());
+    const realisticTotal = _formatCompactBestAvailableNumber(data.totalLegalSquads);
+    const rankLabel = context?.filteredLegal ? _formatBestAvailableRankRangeCompact({ ...context, legal: true }) : 'Outside realistic';
+    const percentileLabel = context?.filteredLegal ? _formatBestAvailablePercentile({ ...context, legal: true }) : '';
+    const reasonText = context && !context.filteredLegal
+        ? [...(context.invalidReasons || []), ...(context.filterReasons || [])].slice(0, 1).join('')
+        : 'Realistic squad universe';
+
+    return `
+        <div class="mt-4 border-t border-gray-200/80 pt-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="theme-accent-text text-[9px] font-black uppercase tracking-[0.22em]">My Pool Lab</span>
+                        <button type="button" onclick="toggleLeaderboardSelfLabInfo(event)"
+                            class="flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white text-[10px] font-black text-gray-500 transition-colors hover:border-emerald-400 hover:text-emerald-700"
+                            aria-label="Explain realistic squad universe">i</button>
+                    </div>
+                    <div class="mt-1 text-[10px] font-bold leading-relaxed text-gray-500">
+                        Ranked against ${realisticTotal} realistic squads, from ${allLegal} all-legal combinations.
+                    </div>
+                </div>
+                <div class="grid min-w-[240px] grid-cols-2 gap-3 text-right">
+                    <div>
+                        <div class="text-[9px] font-black uppercase tracking-[0.16em] text-gray-500">Realistic Rank</div>
+                        <div class="mt-1 text-lg font-black text-gray-900">${rankLabel}</div>
+                    </div>
+                    <div>
+                        <div class="text-[9px] font-black uppercase tracking-[0.16em] text-gray-500">Percentile</div>
+                        <div class="mt-1 text-lg font-black text-gray-900">${percentileLabel || '-'}</div>
+                    </div>
+                </div>
+            </div>
+            <div id="leaderboard-self-lab-info" class="hidden mt-3 rounded-xl border border-emerald-200 bg-white/80 px-3 py-2 text-[10px] font-bold leading-relaxed text-gray-600">
+                Realistic means $140-$150 spent, 3-5 Tier 3 teams, and either one Tier 1 with at least two Tier 2s or no Tier 1 with at least four Tier 2s. It trims out low-spend and throwaway builds that almost nobody would pick.
+            </div>
+            <div class="mt-2 text-[10px] font-bold text-gray-500">${escapeHtml(reasonText)}</div>
+        </div>
+    `;
+}
+
 function renderLeaderboardSelfCard(leaderboardData = [], profilesMap = new Map()) {
     const card = document.getElementById('leaderboard-self-card');
     if (!card) return;
@@ -9650,6 +9714,7 @@ function renderLeaderboardSelfCard(leaderboardData = [], profilesMap = new Map()
                     <div class="mt-1 text-sm font-black text-gray-900">${escapeHtml(moneyLabel)}</div>
                 </div>
             </div>
+            ${_renderLeaderboardSelfLabPreview()}
         </div>
     `;
     card.classList.remove('hidden');
@@ -9818,6 +9883,15 @@ async function fetchLeaderboard() {
         document.getElementById('prize-1st').innerText = `$${Math.floor(totalPot * 0.65).toLocaleString()}`;
         document.getElementById('prize-2nd').innerText = `$${Math.floor(totalPot * 0.25).toLocaleString()}`;
         document.getElementById('prize-3rd').innerText = `$${Math.floor(totalPot * 0.10).toLocaleString()}`;
+        _clearBestAvailableLabDataCache();
+        window._leaderboardData = enrichedLeaderboardData;
+        window._bestAvailableSquads = annotatedBestAvailableSquads;
+        window._bestAvailablePoolContext = bestAvailablePoolContext;
+        window._bestAvailablePoolContexts = bestAvailablePoolContexts;
+        window._leaderboardTeamPointsMap = leaderboardTeamPointsMap;
+        window._leaderboardTeamBreakdownMap = leaderboardTeamBreakdownMap;
+        window._matchesCache = allMatches || [];
+        window._picksCache = allPicks || [];
         renderLeaderboardSelfCard(enrichedLeaderboardData, profilesMap);
 
         const renderSquadSummary = (user, muted = false) => {
@@ -11401,9 +11475,22 @@ const DEFAULT_BEST_AVAILABLE_LAB_FILTERS = {
     maxCost: '',
     requireTierOne: false,
     requireTierTwo: false,
-    realisticOnly: false
+    realisticOnly: true
 };
 let _bestAvailableLabFilters = { ...DEFAULT_BEST_AVAILABLE_LAB_FILTERS };
+const ALL_LEGAL_LAB_FILTERS = {
+    minScore: '',
+    maxScore: '',
+    minCost: '',
+    maxCost: '',
+    requireTierOne: false,
+    requireTierTwo: false,
+    realisticOnly: false
+};
+const DEFAULT_MY_POOL_LAB_FILTERS = { ...DEFAULT_BEST_AVAILABLE_LAB_FILTERS };
+let _myPoolLabFilters = { ...DEFAULT_MY_POOL_LAB_FILTERS };
+let _myPoolLabInfoOpen = false;
+let _bestAvailableLabDataCache = new Map();
 
 function showBestAvailableExplorer() {
     if (appSettings.hideTeamSelection) {
@@ -11474,6 +11561,72 @@ function _formatBestAvailableInteger(value) {
     return Number.isFinite(parsed) ? parsed.toLocaleString() : '-';
 }
 
+function _formatCompactBestAvailableNumber(value) {
+    if (value === null || value === undefined) return '-';
+    const parsed = typeof value === 'bigint' ? Number(value) : Number(value);
+    if (!Number.isFinite(parsed)) return '-';
+    const abs = Math.abs(parsed);
+    const trim = (number) => String(number).replace(/\.0$/, '');
+    if (abs >= 1_000_000_000) return `${trim((parsed / 1_000_000_000).toFixed(abs >= 10_000_000_000 ? 1 : 2))}B`;
+    if (abs >= 1_000_000) return `${trim((parsed / 1_000_000).toFixed(abs >= 10_000_000 ? 1 : 2))}M`;
+    if (abs >= 100_000) return `${Math.round(parsed / 1_000)}K`;
+    if (abs >= 10_000) return `${trim((parsed / 1_000).toFixed(1))}K`;
+    return Math.round(parsed).toLocaleString();
+}
+
+function _formatBestAvailableRankRangeCompact(context) {
+    if (!context?.legal && !context?.filteredLegal) return 'Not legal';
+    if (Number(context.exactTopRank || 0) > 0) return `#${_formatCompactBestAvailableNumber(context.exactTopRank)}`;
+    if (context.rankStart === null || context.rankStart === undefined) return '-';
+
+    const start = _formatCompactBestAvailableNumber(context.rankStart);
+    const end = _formatCompactBestAvailableNumber(context.rankEnd ?? context.rankStart);
+    if (!_isBestAvailableRankRange(context)) return `#${start}`;
+    return start === end ? `~#${end}` : `#${start}-${end}`;
+}
+
+function _bestAvailableLabCacheKey(filters = {}) {
+    const normalized = {
+        minScore: filters.minScore || '',
+        maxScore: filters.maxScore || '',
+        minCost: filters.minCost || '',
+        maxCost: filters.maxCost || '',
+        requireTierOne: Boolean(filters.requireTierOne),
+        requireTierTwo: Boolean(filters.requireTierTwo),
+        realisticOnly: Boolean(filters.realisticOnly)
+    };
+    return JSON.stringify(normalized);
+}
+
+function _clearBestAvailableLabDataCache() {
+    _bestAvailableLabDataCache = new Map();
+}
+
+function _getCachedBestAvailableLabData(filters = DEFAULT_BEST_AVAILABLE_LAB_FILTERS) {
+    const key = _bestAvailableLabCacheKey(filters);
+    if (_bestAvailableLabDataCache.has(key)) {
+        return _bestAvailableLabDataCache.get(key);
+    }
+
+    const data = buildBestAvailableFilteredSquadRankings(
+        window._matchesCache || window._dashMatches || [],
+        teams,
+        advancedTeams,
+        eliminatedTeams,
+        _getBestAvailableLabEntries(),
+        filters
+    );
+    _bestAvailableLabDataCache.set(key, data);
+    return data;
+}
+
+function _getAllLegalSquadCount() {
+    const contextCount = window._bestAvailablePoolContext?.totalLegalSquads
+        || (window._bestAvailablePoolContexts || []).find((context) => context.totalLegalSquads)?.totalLegalSquads;
+    if (contextCount) return contextCount;
+    return _getCachedBestAvailableLabData(ALL_LEGAL_LAB_FILTERS).totalLegalSquads;
+}
+
 function _isBestAvailableRankRange(context) {
     return Boolean(context?.rankStart !== null && context?.rankEnd !== null && context.rankEnd > context.rankStart);
 }
@@ -11482,9 +11635,7 @@ function _formatBestAvailableRankLabel(context) {
     if (!context?.legal) return 'Not legal';
     if (Number(context.exactTopRank || 0) > 0) return `#${Number(context.exactTopRank)}`;
 
-    const start = _formatBestAvailableInteger(context.rankStart);
-    const end = _formatBestAvailableInteger(context.rankEnd);
-    return _isBestAvailableRankRange(context) ? `#${start} to #${end}` : `#${start}`;
+    return _formatBestAvailableRankRangeCompact(context);
 }
 
 function _formatBestAvailablePercentile(context) {
@@ -11512,7 +11663,7 @@ function _renderBestAvailablePoolContextCard() {
     const playerName = context.nickname || context.realname || 'Best pool entry';
     const rankLabel = _formatBestAvailableRankLabel(context);
     const percentileLabel = _formatBestAvailablePercentile(context);
-    const totalLegal = _formatBestAvailableInteger(context.totalLegalSquads);
+    const totalLegal = _formatCompactBestAvailableNumber(context.totalLegalSquads);
     const exactTopRank = Number(context.exactTopRank || 0);
     const locationLabel = exactTopRank > 0
         ? `Shown in the top ${BEST_AVAILABLE_EXPLORER_LIMIT}`
@@ -11552,7 +11703,7 @@ function _renderBestAvailableLabHeader() {
             <div class="min-w-0">
                 <div class="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-300">Best Available Lab</div>
                 <div class="mt-1 text-[10px] font-bold leading-relaxed text-gray-400">
-                    Filter the legal squad universe, then compare the real pool entries against that tighter set.
+                    Showing realistic squads by default, with filters for the useful comparison set.
                 </div>
             </div>
             <button type="button" onclick="showBestAvailableExplorerHome()"
@@ -11585,10 +11736,9 @@ function _renderBestAvailableLabControls() {
     const list = document.getElementById('best-available-list');
     if (!list) return;
 
-    const realisticChecked = _bestAvailableLabFilters.realisticOnly ? 'checked' : '';
     const infoMarkup = _bestAvailableLabInfoOpen ? `
         <div class="rounded-xl border border-emerald-500/25 bg-emerald-950/25 p-3 text-[10px] font-bold leading-relaxed text-emerald-100/80">
-            Realistic means $140-$150 spent, 3-5 Tier 3 teams, and either one Tier 1 with at least two Tier 2s or no Tier 1 with at least four Tier 2s.
+            There are about ${_formatCompactBestAvailableNumber(_getAllLegalSquadCount())} all-legal combinations. This lab uses realistic squads: $140-$150 spent, 3-5 Tier 3s, and either one Tier 1 with at least two Tier 2s or no Tier 1 with at least four Tier 2s.
         </div>
     ` : '';
 
@@ -11614,10 +11764,7 @@ function _renderBestAvailableLabControls() {
             </div>
             <div class="space-y-2 rounded-2xl border border-gray-800 bg-gray-950/35 p-3">
                 <div class="flex items-center justify-between gap-3">
-                    <label class="flex cursor-pointer items-center gap-2">
-                        <input type="checkbox" ${realisticChecked} onchange="updateBestAvailableLabFilter('realisticOnly', this.checked)" class="h-4 w-4 accent-emerald-500">
-                        <span class="text-[10px] font-black uppercase tracking-[0.14em] text-gray-200">Realistic squads only</span>
-                    </label>
+                    <span class="text-[10px] font-black uppercase tracking-[0.14em] text-gray-200">Realistic squads only</span>
                     <button type="button" onclick="toggleBestAvailableLabInfo()"
                         class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-gray-700 text-[11px] font-black text-gray-400 transition-colors hover:border-emerald-400 hover:text-emerald-200"
                         aria-label="Explain realistic squads">
@@ -11648,14 +11795,7 @@ function _getBestAvailableLabEntries() {
 }
 
 function _getBestAvailableLabData() {
-    return buildBestAvailableFilteredSquadRankings(
-        window._matchesCache || window._dashMatches || [],
-        teams,
-        advancedTeams,
-        eliminatedTeams,
-        _getBestAvailableLabEntries(),
-        _bestAvailableLabFilters
-    );
+    return _getCachedBestAvailableLabData(_bestAvailableLabFilters);
 }
 
 function compareBestAvailableLabContexts(a, b) {
@@ -11674,7 +11814,7 @@ function compareBestAvailableLabContexts(a, b) {
 
 function _formatBestAvailableLabRankLabel(context) {
     if (!context?.filteredLegal) return 'Outside filter';
-    return _formatBestAvailableRankLabel({ ...context, legal: true });
+    return _formatBestAvailableRankRangeCompact({ ...context, legal: true });
 }
 
 function _formatBestAvailableLabPercentile(context) {
@@ -11690,7 +11830,7 @@ function _renderBestAvailableLabContextCard(context, label = '') {
     const playerName = context.nickname || context.realname || 'Pool entry';
     const rankLabel = _formatBestAvailableLabRankLabel(context);
     const percentileLabel = _formatBestAvailableLabPercentile(context);
-    const totalLegal = _formatBestAvailableInteger(context.totalLegalSquads);
+    const totalLegal = _formatCompactBestAvailableNumber(context.totalLegalSquads);
     const reasonText = [...(context.invalidReasons || []), ...(context.filterReasons || [])].slice(0, 2).join(' · ');
     const statusClass = context.filteredLegal
         ? 'border-emerald-500/35 bg-emerald-950/25'
@@ -11756,10 +11896,10 @@ function _renderBestAvailableLabDetail() {
     const showPinnedMe = me && !topThree.some((context) => context.email === me.email);
     const showFocused = focused && !topThree.some((context) => context.email === focused.email) && focused.email !== me?.email;
     const bestBucket = data.bestBucket || null;
-    const totalLegalText = _formatBestAvailableInteger(data.totalLegalSquads);
+    const totalLegalText = _formatCompactBestAvailableNumber(data.totalLegalSquads);
     const bestGeneratedValue = bestBucket ? `${Number(bestBucket.score || 0)} pts` : '-';
     const bestGeneratedSubtext = bestBucket
-        ? `$${Number(bestBucket.cost || 0)} cost · ${Number(bestBucket.size || 0)} teams · ${_formatBestAvailableInteger(bestBucket.count)} counted build${bestBucket.count === 1n ? '' : 's'} in this bucket`
+        ? `$${Number(bestBucket.cost || 0)} cost · ${Number(bestBucket.size || 0)} teams · ${_formatCompactBestAvailableNumber(bestBucket.count)} counted build${bestBucket.count === 1n ? '' : 's'} in this bucket`
         : 'No generated squads match the active filters.';
     const bestRealValue = bestReal ? _formatBestAvailableLabRankLabel(bestReal) : '-';
     const bestRealSubtext = bestReal
@@ -11819,6 +11959,7 @@ function showBestAvailableExplorerHome() {
 function updateBestAvailableLabFilter(key, value) {
     if (!(key in _bestAvailableLabFilters)) return;
     _bestAvailableLabFilters[key] = typeof value === 'boolean' ? value : String(value || '');
+    _bestAvailableLabFilters.realisticOnly = true;
     _renderBestAvailableLabDetail();
 }
 
@@ -11831,6 +11972,266 @@ function resetBestAvailableLabFilters() {
 function toggleBestAvailableLabInfo() {
     _bestAvailableLabInfoOpen = !_bestAvailableLabInfoOpen;
     _renderBestAvailableLabControls();
+}
+
+function _myPoolLabNumberInput(label, key, placeholder) {
+    const value = _myPoolLabFilters[key] ?? '';
+    return `<label class="block">
+        <span class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-500">${escapeHtml(label)}</span>
+        <input type="number" inputmode="numeric" value="${escapeHtml(value)}" placeholder="${escapeHtml(placeholder)}"
+            oninput="updateMyPoolLabFilter('${key}', this.value)"
+            class="mt-1 w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-2 text-sm font-black text-white outline-none transition-colors placeholder:text-gray-700 focus:border-emerald-500">
+    </label>`;
+}
+
+function _myPoolLabCheckbox(label, key) {
+    const checked = _myPoolLabFilters[key] ? 'checked' : '';
+    return `<label class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-gray-800 bg-gray-950/55 px-3 py-2.5 transition-colors hover:border-gray-700">
+        <span class="text-[10px] font-black uppercase tracking-[0.14em] text-gray-300">${escapeHtml(label)}</span>
+        <input type="checkbox" ${checked} onchange="updateMyPoolLabFilter('${key}', this.checked)" class="h-4 w-4 accent-emerald-500">
+    </label>`;
+}
+
+function _renderMyPoolLabControls() {
+    const body = document.getElementById('my-pool-lab-filters');
+    if (!body) return;
+
+    const infoMarkup = _myPoolLabInfoOpen ? `
+        <div class="rounded-xl border border-emerald-500/25 bg-emerald-950/25 p-3 text-[10px] font-bold leading-relaxed text-emerald-100/80">
+            ${_formatCompactBestAvailableNumber(_getAllLegalSquadCount())} all-legal combinations shrink to ${_formatCompactBestAvailableNumber(_getMyPoolLabData(DEFAULT_MY_POOL_LAB_FILTERS).totalLegalSquads)} realistic squads by removing low-spend and throwaway builds.
+        </div>
+    ` : '';
+
+    body.innerHTML = `
+        <div class="space-y-4">
+            <div class="space-y-2 rounded-2xl border border-gray-800 bg-gray-950/35 p-3">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-[10px] font-black uppercase tracking-[0.14em] text-gray-200">Realistic baseline</span>
+                    <button type="button" onclick="toggleMyPoolLabInfo()"
+                        class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-gray-700 text-[11px] font-black text-gray-400 transition-colors hover:border-emerald-400 hover:text-emerald-200"
+                        aria-label="Explain realistic squad universe">i</button>
+                </div>
+                <div class="text-[10px] font-bold leading-relaxed text-gray-500">$140-$150 spend · 3-5 Tier 3s · sensible Tier 1/Tier 2 mix.</div>
+                ${infoMarkup}
+            </div>
+            <div>
+                <div class="mb-2 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Points</div>
+                <div class="grid grid-cols-2 gap-2">
+                    ${_myPoolLabNumberInput('Min', 'minScore', 'Any')}
+                    ${_myPoolLabNumberInput('Max', 'maxScore', 'Any')}
+                </div>
+            </div>
+            <div>
+                <div class="mb-2 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Cost</div>
+                <div class="grid grid-cols-2 gap-2">
+                    ${_myPoolLabNumberInput('Min $', 'minCost', 'Any')}
+                    ${_myPoolLabNumberInput('Max $', 'maxCost', '150')}
+                </div>
+            </div>
+            <div class="space-y-2">
+                ${_myPoolLabCheckbox('Require Tier 1', 'requireTierOne')}
+                ${_myPoolLabCheckbox('Require Tier 2', 'requireTierTwo')}
+            </div>
+            <button type="button" onclick="resetMyPoolLabFilters()"
+                class="w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.16em] text-gray-300 transition-colors hover:border-emerald-400 hover:text-emerald-200">
+                Reset realistic filters
+            </button>
+            <button type="button" onclick="jumpToLeaderboardSelfFromLab()"
+                class="w-full rounded-xl border border-emerald-500/40 bg-emerald-950/30 px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-200 transition-colors hover:border-emerald-300 hover:bg-emerald-900/40">
+                Jump to my row
+            </button>
+        </div>
+    `;
+}
+
+function _getMyPoolLabStanding(entry) {
+    const lb = window._leaderboardData || [];
+    const topEntry = lb[0] || entry;
+    const thirdEntry = lb[2] || null;
+    const rank = Number(entry?.displayRank || 0);
+    const pointsBehindFirst = Math.max(0, Number(topEntry?.totalPoints || 0) - Number(entry?.totalPoints || 0));
+    const pointsToMoney = thirdEntry ? Math.max(0, Number(thirdEntry.totalPoints || 0) - Number(entry?.totalPoints || 0)) : 0;
+    const rankDistanceToMoney = rank ? Math.max(0, rank - 3) : 0;
+    const moneyLabel = rank && rank <= 3
+        ? `${rank}${_ordinalSuffix(rank)} prize spot`
+        : thirdEntry
+            ? `${pointsToMoney} pts to 3rd / ${rankDistanceToMoney} rank${rankDistanceToMoney === 1 ? '' : 's'}`
+            : 'Prize picture forming';
+    return {
+        rankLabel: rank ? `#${rank}` : '-',
+        pointsLabel: Number(entry?.totalPoints || 0).toLocaleString(),
+        behindLabel: pointsBehindFirst === 0 ? 'Tied for 1st' : `${pointsBehindFirst} behind 1st`,
+        moneyLabel
+    };
+}
+
+function _getMyPoolLabSquadRows(context) {
+    const teamPointsMap = window._leaderboardTeamPointsMap || window._dashTeamPointsMap || buildTeamPointsMap(window._matchesCache || window._dashMatches || [], teams, advancedTeams);
+    const squad = context?.squad || [];
+    return squad.map((team) => {
+        const points = Number(teamPointsMap[team.name] || 0);
+        const cost = Number(team.cost || 0);
+        return {
+            ...team,
+            points,
+            pointsPerDollar: cost > 0 ? points / cost : 0,
+            eliminated: Boolean(team.eliminated || eliminatedTeams.has(team.name))
+        };
+    });
+}
+
+function _renderMyPoolLabPickList(title, rows, emptyText) {
+    return `<div class="rounded-2xl border border-gray-800 bg-gray-950/45 p-4">
+        <div class="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${escapeHtml(title)}</div>
+        <div class="space-y-2">
+            ${rows.length ? rows.map((team) => `
+                <div class="flex items-center gap-3 rounded-xl border border-gray-800 bg-gray-900/60 px-3 py-2 ${team.eliminated ? 'opacity-65' : ''}">
+                    <span class="shrink-0 text-lg leading-none">${team.flag || ''}</span>
+                    <div class="min-w-0 flex-1">
+                        <div class="truncate text-xs font-black uppercase text-white ${team.eliminated ? 'line-through' : ''}">${escapeHtml(team.name)}</div>
+                        <div class="text-[9px] font-black uppercase tracking-[0.12em] text-gray-500">Tier ${Number(team.tier || 0)} · $${Number(team.cost || 0)} · ${team.eliminated ? 'eliminated' : 'live'}</div>
+                    </div>
+                    <div class="shrink-0 text-right">
+                        <div class="text-xs font-black text-white">${Number(team.points || 0)} pts</div>
+                        <div class="text-[9px] font-black uppercase text-gray-500">${team.pointsPerDollar.toFixed(2)} / $</div>
+                    </div>
+                </div>
+            `).join('') : `<div class="rounded-xl border border-dashed border-gray-800 bg-gray-900/40 px-3 py-3 text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">${escapeHtml(emptyText)}</div>`}
+        </div>
+    </div>`;
+}
+
+function _renderMyPoolLabDetail() {
+    const body = document.getElementById('my-pool-lab-body');
+    if (!body) return;
+
+    const data = _getMyPoolLabData(_myPoolLabFilters);
+    const contexts = data.contexts || [];
+    const myContext = userEmail ? contexts.find((context) => context.email === userEmail) : null;
+    const rankedContexts = contexts
+        .filter((context) => context.filteredLegal)
+        .sort(compareBestAvailableLabContexts);
+    const topThree = rankedContexts.slice(0, 3);
+    const bestReal = topThree[0] || null;
+    const bestBucket = data.bestBucket || null;
+
+    if (!myContext) {
+        body.innerHTML = '<div class="rounded-2xl border border-gray-800 bg-gray-950/45 p-5 text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">Your leaderboard entry is not loaded yet.</div>';
+        return;
+    }
+
+    const standing = _getMyPoolLabStanding(myContext);
+    const squadRows = _getMyPoolLabSquadRows(myContext);
+    const totalCost = squadRows.reduce((sum, team) => sum + Number(team.cost || 0), 0);
+    const liveTeams = squadRows.filter((team) => !team.eliminated);
+    const eliminatedSpend = squadRows.filter((team) => team.eliminated).reduce((sum, team) => sum + Number(team.cost || 0), 0);
+    const tierSummary = [1, 2, 3].map((tier) => `T${tier} ${squadRows.filter((team) => Number(team.tier) === tier).length}`).join(' · ');
+    const reasonText = !myContext.filteredLegal
+        ? [...(myContext.invalidReasons || []), ...(myContext.filterReasons || [])].slice(0, 2).join(' · ')
+        : `${_formatBestAvailablePercentile({ ...myContext, legal: true })} among realistic squads`;
+    const bestByPoints = [...squadRows].sort((a, b) => b.points - a.points || b.cost - a.cost || a.name.localeCompare(b.name)).slice(0, 3);
+    const bestValue = [...squadRows].filter((team) => team.points > 0).sort((a, b) => b.pointsPerDollar - a.pointsPerDollar || b.points - a.points || a.name.localeCompare(b.name)).slice(0, 3);
+    const flops = [...squadRows].sort((a, b) => Number(b.eliminated) - Number(a.eliminated) || a.pointsPerDollar - b.pointsPerDollar || b.cost - a.cost || a.name.localeCompare(b.name)).slice(0, 3);
+    const showPinnedMe = !topThree.some((context) => context.email === myContext.email);
+
+    body.innerHTML = `
+        <div class="space-y-5">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div class="flex min-w-0 items-center gap-3">
+                    ${_renderPlayerAvatar(myContext.avatarUrl, myContext.favoriteTeam, 42, myContext.nickname)}
+                    <div class="min-w-0">
+                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">Your realistic universe rank</div>
+                        <div class="mt-1 text-xl font-black uppercase italic text-white">${escapeHtml(myContext.nickname || myContext.realname || 'Your entry')}</div>
+                        <div class="mt-1 text-[10px] font-black uppercase tracking-[0.12em] text-gray-500">${standing.rankLabel} in pool · ${standing.pointsLabel} pts · $${totalCost} · ${tierSummary}</div>
+                    </div>
+                </div>
+                <button type="button" onclick="jumpToLeaderboardSelfFromLab()"
+                    class="rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-gray-300 transition-colors hover:border-emerald-400 hover:text-emerald-200">
+                    Jump to row
+                </button>
+            </div>
+            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                ${_renderBestAvailableLabMetric('Realistic rank', myContext.filteredLegal ? _formatBestAvailableRankRangeCompact({ ...myContext, legal: true }) : 'Outside realistic', reasonText)}
+                ${_renderBestAvailableLabMetric('Realistic universe', _formatCompactBestAvailableNumber(data.totalLegalSquads), `From ${_formatCompactBestAvailableNumber(_getAllLegalSquadCount())} all-legal combos`)}
+                ${_renderBestAvailableLabMetric('Best generated', bestBucket ? `${Number(bestBucket.score || 0)} pts` : '-', bestBucket ? `$${Number(bestBucket.cost || 0)} cost · ${Number(bestBucket.size || 0)} teams` : 'No generated squads match')}
+                ${_renderBestAvailableLabMetric('Prize picture', standing.moneyLabel, `${standing.behindLabel} · ${liveTeams.length} live teams · $${eliminatedSpend} eliminated`)}
+            </div>
+            <div>
+                <div class="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Top 3 pool entries in this realistic set</div>
+                <div class="grid gap-3 xl:grid-cols-3">
+                    ${topThree.length ? topThree.map((context, index) => _renderBestAvailableLabContextCard(context, `Realistic #${index + 1}`)).join('') : `<div class="xl:col-span-3 rounded-2xl border border-gray-800 bg-gray-950/45 p-5 text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">No pool entries match these filters.</div>`}
+                </div>
+            </div>
+            ${showPinnedMe ? `<div>
+                <div class="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Your entry</div>
+                ${_renderBestAvailableLabContextCard(myContext, 'You')}
+            </div>` : ''}
+            <div class="grid gap-3 xl:grid-cols-3">
+                ${_renderMyPoolLabPickList('Best point picks', bestByPoints, 'No point-scoring picks yet.')}
+                ${_renderMyPoolLabPickList('Best value picks', bestValue, 'No value picks yet.')}
+                ${_renderMyPoolLabPickList('Flops so far', flops, 'No flops to show yet.')}
+            </div>
+            ${bestReal ? `<div class="rounded-2xl border border-emerald-500/25 bg-emerald-950/20 p-4 text-[10px] font-bold leading-relaxed text-emerald-100/80">
+                Best real pool entry in this view: <span class="font-black text-white">${escapeHtml(bestReal.nickname || bestReal.realname || 'Pool entry')}</span>, ${_formatBestAvailableRankRangeCompact({ ...bestReal, legal: true })}.
+            </div>` : ''}
+        </div>
+    `;
+}
+
+function showMyPoolLab() {
+    if (!userEmail) {
+        if (typeof showToast === 'function') showToast('Sign in to open your pool lab.');
+        return;
+    }
+
+    const modal = document.getElementById('my-pool-lab-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    _renderMyPoolLabControls();
+    _renderMyPoolLabDetail();
+
+    if (window._myPoolLabEscapeHandler) {
+        document.removeEventListener('keydown', window._myPoolLabEscapeHandler);
+    }
+    window._myPoolLabEscapeHandler = (event) => {
+        if (event.key === 'Escape') closeMyPoolLab();
+    };
+    document.addEventListener('keydown', window._myPoolLabEscapeHandler);
+}
+
+function closeMyPoolLab() {
+    const modal = document.getElementById('my-pool-lab-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    if (window._myPoolLabEscapeHandler) {
+        document.removeEventListener('keydown', window._myPoolLabEscapeHandler);
+        window._myPoolLabEscapeHandler = null;
+    }
+}
+
+function updateMyPoolLabFilter(key, value) {
+    if (!(key in _myPoolLabFilters)) return;
+    _myPoolLabFilters[key] = typeof value === 'boolean' ? value : String(value || '');
+    _myPoolLabFilters.realisticOnly = true;
+    _renderMyPoolLabDetail();
+}
+
+function resetMyPoolLabFilters() {
+    _myPoolLabFilters = { ...DEFAULT_MY_POOL_LAB_FILTERS };
+    _renderMyPoolLabControls();
+    _renderMyPoolLabDetail();
+}
+
+function toggleMyPoolLabInfo() {
+    _myPoolLabInfoOpen = !_myPoolLabInfoOpen;
+    _renderMyPoolLabControls();
+}
+
+function jumpToLeaderboardSelfFromLab() {
+    closeMyPoolLab();
+    scrollLeaderboardToSelf();
 }
 
 function _renderBestAvailableRankStrip() {
@@ -13359,6 +13760,13 @@ Object.assign(window, {
     updateBestAvailableLabFilter,
     resetBestAvailableLabFilters,
     toggleBestAvailableLabInfo,
+    showMyPoolLab,
+    closeMyPoolLab,
+    updateMyPoolLabFilter,
+    resetMyPoolLabFilters,
+    toggleMyPoolLabInfo,
+    toggleLeaderboardSelfLabInfo,
+    jumpToLeaderboardSelfFromLab,
     selectBestAvailableSquad,
     closeBestAvailableExplorer,
     showPlayerProfile,
