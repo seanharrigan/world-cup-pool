@@ -9604,7 +9604,9 @@ function renderLeaderboardSelfCardSkeleton() {
                         <div class="h-12 animate-pulse rounded-xl bg-white/70"></div>
                     </div>
                 </div>
-                <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div class="h-14 animate-pulse rounded-xl bg-white/70"></div>
+                    <div class="h-14 animate-pulse rounded-xl bg-white/70"></div>
                     <div class="h-14 animate-pulse rounded-xl bg-white/70"></div>
                     <div class="h-14 animate-pulse rounded-xl bg-white/70"></div>
                 </div>
@@ -9695,11 +9697,16 @@ function _renderLeaderboardSelfLabPreview(entry) {
         ? `Ranked against ${realisticTotal} realistic squads. There are ${allLegal} all-legal combinations, but this cuts out low-spend throwaway builds.`
         : 'Global rank is loading separately so the leaderboard can show up first.';
     const squadRows = _getMyPoolLabSquadRows(entry);
+    const mostPoints = [...squadRows]
+        .sort((a, b) => b.points - a.points || b.pointsPerDollar - a.pointsPerDollar || a.name.localeCompare(b.name))[0] || null;
     const bestValue = [...squadRows]
         .filter((team) => team.points > 0)
         .sort((a, b) => b.pointsPerDollar - a.pointsPerDollar || b.points - a.points || a.name.localeCompare(b.name))[0] || null;
     const biggestBust = [...squadRows]
         .sort((a, b) => Number(b.eliminated) - Number(a.eliminated) || a.pointsPerDollar - b.pointsPerDollar || b.cost - a.cost || a.name.localeCompare(b.name))[0] || null;
+    const bestLiveTeam = [...squadRows]
+        .filter((team) => !team.eliminated)
+        .sort((a, b) => b.points - a.points || b.pointsPerDollar - a.pointsPerDollar || a.name.localeCompare(b.name))[0] || null;
     const pickTile = (label, team, fallback) => `
         <div class="rounded-xl border border-gray-200/80 bg-white/60 px-3 py-2">
             <div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-500">${escapeHtml(label)}</div>
@@ -9741,9 +9748,11 @@ function _renderLeaderboardSelfLabPreview(entry) {
             <div id="leaderboard-self-lab-info" class="hidden mt-3 rounded-xl border border-emerald-200 bg-white/80 px-3 py-2 text-[10px] font-bold leading-relaxed text-gray-600">
                 Global rank uses the realistic squad universe: $140-$150 spent, 3-5 Tier 3 teams, and either one Tier 1 with at least two Tier 2s or no Tier 1 with at least four Tier 2s.
             </div>
-            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+            <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                ${pickTile('Most Points', mostPoints, 'No points yet')}
                 ${pickTile('Best Value', bestValue, 'No value pick yet')}
                 ${pickTile('Biggest Bust', biggestBust, 'No bust yet')}
+                ${pickTile('Best Live Team', bestLiveTeam, 'No live team')}
             </div>
         </div>
     `;
