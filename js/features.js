@@ -9626,6 +9626,15 @@ function _getMyPoolLabContext(email = userEmail, filters = DEFAULT_MY_POOL_LAB_F
     return (_getMyPoolLabData(filters).contexts || []).find((context) => context.email === email) || null;
 }
 
+function toggleLeaderboardSelfLabInfo(event) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    const info = document.getElementById('leaderboard-self-lab-info');
+    if (info) info.classList.toggle('hidden');
+}
+
 function _getLeaderboardSelfGlobalRankKey(entry) {
     if (!entry) return '';
     return [
@@ -9740,8 +9749,8 @@ function _renderLeaderboardSelfLabPreview(entry) {
     const percentileLabel = snapshot?.percentileLabel || 'Loading';
     const summaryLines = snapshot
         ? [
-            `${realisticTotal} realistic squads ranked by points, then lower cost.`,
-            `${allLegal} all-legal combinations exist; this view removes low-spend throwaway builds.`
+            `${realisticTotal} realistic squads ranked by points.`,
+            `${allLegal} total legal combinations exist, but this view filters out low-spend builds nobody would realistically pick.`
         ]
         : [
             'Leaderboard loads first.',
@@ -9836,6 +9845,9 @@ function _renderLeaderboardSelfLabPreview(entry) {
                 <div class="min-w-0">
                     <div class="flex items-center gap-2">
                         <span class="theme-accent-text text-[9px] font-black uppercase tracking-[0.22em]">Global Rank</span>
+                        <button type="button" onclick="toggleLeaderboardSelfLabInfo(event)"
+                            class="flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white text-[10px] font-black text-gray-500 transition-colors hover:border-emerald-400 hover:text-emerald-700"
+                            aria-label="Explain global rank">i</button>
                     </div>
                     <div class="mt-1 max-w-2xl space-y-0.5 text-[10px] font-bold leading-relaxed text-gray-500">
                         ${summaryLines.map((line) => `<div>${escapeHtml(line)}</div>`).join('')}
@@ -9851,6 +9863,9 @@ function _renderLeaderboardSelfLabPreview(entry) {
                         <div class="mt-1 text-base font-black text-gray-900 ${snapshot ? '' : 'animate-pulse text-gray-500'}">${percentileLabel || '-'}</div>
                     </div>
                 </div>
+            </div>
+            <div id="leaderboard-self-lab-info" class="hidden mt-3 rounded-xl border border-emerald-200 bg-white/80 px-3 py-2 text-[10px] font-bold leading-relaxed text-gray-600">
+                Global rank compares your squad to the realistic squad universe, not every possible legal squad. Realistic means $140-$150 spent, 3-5 Tier 3 teams, 0 or 1 Tier 1 team, and the rest mostly Tier 2 teams. The larger all-legal number includes low-spend and throwaway combinations, so it is shown only as context.
             </div>
             ${rankSpectrumHtml}
             <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -14048,6 +14063,7 @@ Object.assign(window, {
     updateMyPoolLabFilter,
     resetMyPoolLabFilters,
     toggleMyPoolLabInfo,
+    toggleLeaderboardSelfLabInfo,
     jumpToLeaderboardSelfFromLab,
     selectBestAvailableSquad,
     closeBestAvailableExplorer,
