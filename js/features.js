@@ -9604,7 +9604,7 @@ function renderLeaderboardSelfCardSkeleton() {
                         <div class="h-12 animate-pulse rounded-xl bg-white/70"></div>
                     </div>
                 </div>
-                <div class="mt-3 h-14 animate-pulse rounded-xl bg-white/70"></div>
+                <div class="mt-3 h-32 animate-pulse rounded-xl bg-white/70"></div>
                 <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <div class="h-14 animate-pulse rounded-xl bg-white/70"></div>
                     <div class="h-14 animate-pulse rounded-xl bg-white/70"></div>
@@ -9624,15 +9624,6 @@ function _getMyPoolLabData(filters = DEFAULT_MY_POOL_LAB_FILTERS) {
 function _getMyPoolLabContext(email = userEmail, filters = DEFAULT_MY_POOL_LAB_FILTERS) {
     if (!email) return null;
     return (_getMyPoolLabData(filters).contexts || []).find((context) => context.email === email) || null;
-}
-
-function toggleLeaderboardSelfLabInfo(event) {
-    if (event) {
-        event.stopPropagation();
-        event.preventDefault();
-    }
-    const info = document.getElementById('leaderboard-self-lab-info');
-    if (info) info.classList.toggle('hidden');
 }
 
 function _getLeaderboardSelfGlobalRankKey(entry) {
@@ -9659,17 +9650,68 @@ function _scheduleLeaderboardSelfGlobalRankUpdate(entry) {
     const requestId = ++_leaderboardSelfGlobalRankRequestId;
     const calculate = () => {
         const data = _getMyPoolLabData(DEFAULT_MY_POOL_LAB_FILTERS);
-        const context = (data.contexts || []).find((candidate) => candidate.email === userEmail) || null;
+        const contexts = data.contexts || [];
+        const context = contexts.find((candidate) => candidate.email === userEmail) || null;
+        const poolContexts = contexts
+            .filter((candidate) => Number(candidate.displayRank || 0) > 0)
+            .sort((a, b) => {
+                const rankDelta = Number(a.displayRank || 0) - Number(b.displayRank || 0);
+                if (rankDelta !== 0) return rankDelta;
+                return compareBestAvailableLabContexts(a, b);
+            });
+        const poolLeader = poolContexts[0] || null;
+        const poolLast = [...poolContexts]
+            .sort((a, b) => {
+                const rankDelta = Number(b.displayRank || 0) - Number(a.displayRank || 0);
+                if (rankDelta !== 0) return rankDelta;
+                if (a.totalPoints !== b.totalPoints) return a.totalPoints - b.totalPoints;
+                return String(a.nickname || a.realname || '').localeCompare(String(b.nickname || b.realname || ''));
+            })[0] || null;
+        const worstBucket = (data.buckets || []).reduce((worst, bucket) => {
+            if (!worst) return bucket;
+            if (bucket.score !== worst.score) return bucket.score < worst.score ? bucket : worst;
+            if (bucket.cost !== worst.cost) return bucket.cost > worst.cost ? bucket : worst;
+            return bucket.size > worst.size ? bucket : worst;
+        }, null);
+        const contextAnchor = (candidate, label) => candidate ? {
+            label,
+            name: candidate.nickname || candidate.realname || 'Pool entry',
+            rankLabel: candidate.filteredLegal ? _formatBestAvailableRankMidpointLabel({ ...candidate, legal: true }) : 'Outside',
+            points: Number(candidate.totalPoints || 0),
+            rankEnd: candidate.filteredLegal ? candidate.rankEnd : null,
+            percentileLabel: candidate.filteredLegal ? _formatBestAvailablePercentile({ ...candidate, legal: true }) : ''
+        } : null;
         if (requestId !== _leaderboardSelfGlobalRankRequestId) return;
 
         _leaderboardSelfGlobalRankSnapshot = {
             key,
             allLegalTotal: _getAllLegalSquadCount(),
             realisticTotal: data.totalLegalSquads,
-            rankLabel: context?.filteredLegal ? _formatBestAvailableRankRangeCompact({ ...context, legal: true }) : 'Outside field',
+            rankLabel: context?.filteredLegal ? _formatBestAvailableRankMidpointLabel({ ...context, legal: true }) : 'Outside field',
             percentileLabel: context?.filteredLegal ? _formatBestAvailablePercentile({ ...context, legal: true }) : '-',
             rankStart: context?.filteredLegal ? context.rankStart : null,
             rankEnd: context?.filteredLegal ? context.rankEnd : null,
+            anchors: {
+                bestOverall: data.bestBucket ? {
+                    label: 'Best overall',
+                    name: 'Generated best',
+                    rankLabel: '#1',
+                    points: Number(data.bestBucket.score || 0),
+                    rankEnd: 1n,
+                    percentileLabel: 'Top'
+                } : null,
+                poolLeader: contextAnchor(poolLeader, 'Pool 1st'),
+                you: contextAnchor(context, 'You'),
+                poolLast: contextAnchor(poolLast, 'Pool last'),
+                worstOverall: worstBucket ? {
+                    label: 'Worst overall',
+                    name: 'Generated worst',
+                    rankLabel: `#${_formatCompactBestAvailableNumber(data.totalLegalSquads)}`,
+                    points: Number(worstBucket.score || 0),
+                    rankEnd: data.totalLegalSquads,
+                    percentileLabel: 'Bottom'
+                } : null
+            },
             reasonText: context && !context.filteredLegal
                 ? [...(context.invalidReasons || []), ...(context.filterReasons || [])].slice(0, 1).join('')
                 : ''
@@ -9705,42 +9747,64 @@ function _renderLeaderboardSelfLabPreview(entry) {
             'Leaderboard loads first.',
             'Global rank is calculating in the background.'
         ];
-    const rankMarkerPct = snapshot?.rankEnd && snapshot?.realisticTotal
-        ? Math.max(0.5, Math.min(99.5, (Number(snapshot.rankEnd) / Math.max(1, Number(snapshot.realisticTotal))) * 100))
+    const rankPositionPct = (rankEnd) => rankEnd && snapshot?.realisticTotal
+        ? Math.max(0.5, Math.min(99.5, (Number(rankEnd) / Math.max(1, Number(snapshot.realisticTotal))) * 100))
         : null;
-    const rankMarkerAlignClass = rankMarkerPct === null ? 'translate-x-0' : _bestAvailableRankAlignClass(rankMarkerPct);
+    const anchorToneClasses = {
+        bestOverall: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+        poolLeader: 'border-blue-200 bg-blue-50 text-blue-700',
+        you: 'border-gray-900 bg-gray-900 text-white',
+        poolLast: 'border-amber-200 bg-amber-50 text-amber-700',
+        worstOverall: 'border-gray-300 bg-gray-100 text-gray-600'
+    };
+    const anchorDotClasses = {
+        bestOverall: 'bg-emerald-500',
+        poolLeader: 'bg-blue-500',
+        you: 'bg-gray-900',
+        poolLast: 'bg-amber-500',
+        worstOverall: 'bg-gray-400'
+    };
+    const spectrumAnchors = snapshot ? [
+        ['bestOverall', snapshot.anchors?.bestOverall],
+        ['poolLeader', snapshot.anchors?.poolLeader],
+        ['you', snapshot.anchors?.you],
+        ['poolLast', snapshot.anchors?.poolLast],
+        ['worstOverall', snapshot.anchors?.worstOverall]
+    ].filter(([, anchor]) => anchor).map(([key, anchor]) => ({
+        ...anchor,
+        key,
+        positionPct: rankPositionPct(anchor.rankEnd)
+    })) : [];
+    const spectrumMarkerHtml = spectrumAnchors
+        .filter((anchor) => anchor.positionPct !== null)
+        .map((anchor) => {
+            const alignClass = _bestAvailableRankAlignClass(anchor.positionPct);
+            return `
+                <div class="absolute top-1 h-8 w-px ${anchor.key === 'you' ? 'bg-gray-900/80' : 'bg-gray-500/45'}" style="left:${anchor.positionPct}%"></div>
+                <div class="absolute top-3 h-4 w-4 ${alignClass} rounded-full border-2 border-white ${anchorDotClasses[anchor.key]} shadow-sm" style="left:${anchor.positionPct}%" title="${escapeHtml(`${anchor.label}: ${anchor.rankLabel}, ${anchor.points} pts`)}"></div>
+            `;
+        }).join('');
+    const spectrumCardHtml = spectrumAnchors.map((anchor) => `
+        <div class="rounded-xl border ${anchorToneClasses[anchor.key]} px-2.5 py-2">
+            <div class="text-[8px] font-black uppercase tracking-[0.16em] opacity-75">${escapeHtml(anchor.label)}</div>
+            <div class="mt-1 truncate text-xs font-black">${escapeHtml(anchor.name || anchor.label)}</div>
+            <div class="mt-1 text-[11px] font-black">${escapeHtml(anchor.rankLabel || '-')}</div>
+            <div class="text-[9px] font-black uppercase tracking-[0.1em] opacity-75">${Number(anchor.points || 0)} pts</div>
+        </div>
+    `).join('');
     const rankSpectrumHtml = snapshot ? `
         <div class="mt-3 rounded-xl border border-gray-200/80 bg-white/60 px-3 py-3">
-            <div class="relative h-10">
+            <div class="relative h-10 px-1">
                 <div class="absolute left-0 right-0 top-5 h-2 rounded-full bg-gray-200"></div>
-                <div class="absolute left-0 top-5 h-2 rounded-full bg-emerald-300" style="width:${rankMarkerPct ?? 0}%"></div>
-                <div class="absolute left-0 top-3 h-4 w-4 rounded-full border-2 border-white bg-emerald-500 shadow-sm"></div>
-                <div class="absolute right-0 top-3 h-4 w-4 rounded-full border-2 border-white bg-gray-400 shadow-sm"></div>
-                ${rankMarkerPct !== null ? `
-                    <div class="absolute top-1 z-10 h-8 w-px bg-gray-900/70" style="left:${rankMarkerPct}%"></div>
-                    <div class="absolute top-0 ${rankMarkerAlignClass} rounded-full border border-emerald-300 bg-emerald-50 px-2 py-1 text-center shadow-sm" style="left:${rankMarkerPct}%">
-                        <div class="whitespace-nowrap text-[9px] font-black uppercase tracking-[0.12em] text-emerald-700">You</div>
-                    </div>
-                ` : ''}
+                <div class="absolute left-0 top-5 h-2 rounded-full bg-emerald-300" style="width:${rankPositionPct(snapshot.rankEnd) ?? 0}%"></div>
+                ${spectrumMarkerHtml}
             </div>
-            <div class="grid grid-cols-3 gap-2">
-                <div>
-                    <div class="text-[9px] font-black uppercase tracking-[0.14em] text-gray-500">Best</div>
-                    <div class="text-xs font-black text-gray-900">#1</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-[9px] font-black uppercase tracking-[0.14em] text-gray-500">You</div>
-                    <div class="text-xs font-black text-gray-900">${escapeHtml(rankLabel)}</div>
-                    <div class="text-[9px] font-black uppercase tracking-[0.12em] text-emerald-700">${escapeHtml(percentileLabel || '-')}</div>
-                </div>
-                <div class="text-right">
-                    <div class="text-[9px] font-black uppercase tracking-[0.14em] text-gray-500">Bottom</div>
-                    <div class="text-xs font-black text-gray-900">#${escapeHtml(realisticTotal)}</div>
-                </div>
+            <div class="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+                ${spectrumCardHtml}
             </div>
         </div>
     ` : `
-        <div class="mt-3 h-14 animate-pulse rounded-xl bg-white/70"></div>
+        <div class="mt-3 h-32 animate-pulse rounded-xl bg-white/70"></div>
     `;
     const squadRows = _getMyPoolLabSquadRows(entry);
     const mostPoints = [...squadRows]
@@ -9772,9 +9836,6 @@ function _renderLeaderboardSelfLabPreview(entry) {
                 <div class="min-w-0">
                     <div class="flex items-center gap-2">
                         <span class="theme-accent-text text-[9px] font-black uppercase tracking-[0.22em]">Global Rank</span>
-                        <button type="button" onclick="toggleLeaderboardSelfLabInfo(event)"
-                            class="flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white text-[10px] font-black text-gray-500 transition-colors hover:border-emerald-400 hover:text-emerald-700"
-                            aria-label="Explain global rank">i</button>
                     </div>
                     <div class="mt-1 max-w-2xl space-y-0.5 text-[10px] font-bold leading-relaxed text-gray-500">
                         ${summaryLines.map((line) => `<div>${escapeHtml(line)}</div>`).join('')}
@@ -9790,9 +9851,6 @@ function _renderLeaderboardSelfLabPreview(entry) {
                         <div class="mt-1 text-base font-black text-gray-900 ${snapshot ? '' : 'animate-pulse text-gray-500'}">${percentileLabel || '-'}</div>
                     </div>
                 </div>
-            </div>
-            <div id="leaderboard-self-lab-info" class="hidden mt-3 rounded-xl border border-emerald-200 bg-white/80 px-3 py-2 text-[10px] font-bold leading-relaxed text-gray-600">
-                Global rank uses realistic squads: $140-$150 spent, 3-5 Tier 3 teams, and then mostly Tier 2s. A squad can use 0 or 1 Tier 1; Tier-1 builds need at least two Tier 2s, and no-Tier-1 builds need at least four Tier 2s. No fixed squad size.
             </div>
             ${rankSpectrumHtml}
             <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -11766,6 +11824,29 @@ function _formatBestAvailableRankRangeCompact(context) {
     const end = _formatCompactBestAvailableNumber(context.rankEnd ?? context.rankStart);
     if (!_isBestAvailableRankRange(context)) return `#${start}`;
     return start === end ? `~#${end}` : `#${start}-${end}`;
+}
+
+function _formatBestAvailableRankMidpointNumber(value) {
+    const parsed = typeof value === 'bigint' ? Number(value) : Number(value);
+    if (!Number.isFinite(parsed)) return '-';
+    const abs = Math.abs(parsed);
+    if (abs >= 1_000_000_000) return `${(parsed / 1_000_000_000).toFixed(1)}B`;
+    if (abs >= 1_000_000) return `${(parsed / 1_000_000).toFixed(1)}M`;
+    if (abs >= 1_000) return `${(parsed / 1_000).toFixed(1)}K`;
+    return parsed.toFixed(1);
+}
+
+function _formatBestAvailableRankMidpointLabel(context) {
+    if (!context?.legal && !context?.filteredLegal) return 'Not legal';
+    if (Number(context.exactTopRank || 0) > 0) return `#${_formatCompactBestAvailableNumber(context.exactTopRank)}`;
+    if (context.rankStart === null || context.rankStart === undefined) return '-';
+
+    const start = Number(context.rankStart);
+    const end = Number(context.rankEnd ?? context.rankStart);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return '-';
+    if (start === end) return `#${_formatCompactBestAvailableNumber(start)}`;
+
+    return `#${_formatBestAvailableRankMidpointNumber((start + end) / 2)}`;
 }
 
 function _bestAvailableLabCacheKey(filters = {}) {
@@ -13967,7 +14048,6 @@ Object.assign(window, {
     updateMyPoolLabFilter,
     resetMyPoolLabFilters,
     toggleMyPoolLabInfo,
-    toggleLeaderboardSelfLabInfo,
     jumpToLeaderboardSelfFromLab,
     selectBestAvailableSquad,
     closeBestAvailableExplorer,
