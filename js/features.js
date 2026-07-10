@@ -9586,41 +9586,59 @@ function _renderLeaderboardSelfLabPreview() {
     const context = _getMyPoolLabContext(userEmail, DEFAULT_MY_POOL_LAB_FILTERS);
     const allLegal = _formatCompactBestAvailableNumber(_getAllLegalSquadCount());
     const realisticTotal = _formatCompactBestAvailableNumber(data.totalLegalSquads);
-    const rankLabel = context?.filteredLegal ? _formatBestAvailableRankRangeCompact({ ...context, legal: true }) : 'Outside realistic';
+    const rankLabel = context?.filteredLegal ? _formatBestAvailableRankRangeCompact({ ...context, legal: true }) : 'Outside field';
     const percentileLabel = context?.filteredLegal ? _formatBestAvailablePercentile({ ...context, legal: true }) : '';
-    const reasonText = context && !context.filteredLegal
-        ? [...(context.invalidReasons || []), ...(context.filterReasons || [])].slice(0, 1).join('')
-        : 'Realistic squad universe';
+    const squadRows = _getMyPoolLabSquadRows(context);
+    const bestValue = [...squadRows]
+        .filter((team) => team.points > 0)
+        .sort((a, b) => b.pointsPerDollar - a.pointsPerDollar || b.points - a.points || a.name.localeCompare(b.name))[0] || null;
+    const biggestBust = [...squadRows]
+        .sort((a, b) => Number(b.eliminated) - Number(a.eliminated) || a.pointsPerDollar - b.pointsPerDollar || b.cost - a.cost || a.name.localeCompare(b.name))[0] || null;
+    const pickTile = (label, team, fallback) => `
+        <div class="rounded-xl border border-gray-200/80 bg-white/60 px-3 py-2">
+            <div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-500">${escapeHtml(label)}</div>
+            <div class="mt-1 flex min-w-0 items-center gap-2">
+                ${team ? `<span class="shrink-0 text-base leading-none ${team.eliminated ? 'opacity-60 grayscale' : ''}">${team.flag || ''}</span>` : ''}
+                <div class="min-w-0">
+                    <div class="truncate text-sm font-black text-gray-900">${team ? escapeHtml(team.name) : escapeHtml(fallback)}</div>
+                    ${team ? `<div class="text-[9px] font-black uppercase tracking-[0.1em] text-gray-500">${Number(team.points || 0)} pts · ${team.pointsPerDollar.toFixed(2)} / $</div>` : ''}
+                </div>
+            </div>
+        </div>
+    `;
 
     return `
-        <div class="mt-4 border-t border-gray-200/80 pt-4">
-            <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="mt-4 border-t border-gray-200/80 pt-4 lg:col-span-2">
+            <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="min-w-0">
                     <div class="flex items-center gap-2">
-                        <span class="theme-accent-text text-[9px] font-black uppercase tracking-[0.22em]">My Pool Lab</span>
+                        <span class="theme-accent-text text-[9px] font-black uppercase tracking-[0.22em]">Global Rank</span>
                         <button type="button" onclick="toggleLeaderboardSelfLabInfo(event)"
                             class="flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white text-[10px] font-black text-gray-500 transition-colors hover:border-emerald-400 hover:text-emerald-700"
-                            aria-label="Explain realistic squad universe">i</button>
+                            aria-label="Explain global rank">i</button>
                     </div>
-                    <div class="mt-1 text-[10px] font-bold leading-relaxed text-gray-500">
-                        Ranked against ${realisticTotal} realistic squads, from ${allLegal} all-legal combinations.
+                    <div class="mt-1 text-[10px] font-bold leading-relaxed text-gray-500 max-w-2xl">
+                        Ranked against ${realisticTotal} realistic squads. There are ${allLegal} all-legal combinations, but this cuts out low-spend throwaway builds.
                     </div>
                 </div>
-                <div class="grid min-w-[240px] grid-cols-2 gap-3 text-right">
-                    <div>
-                        <div class="text-[9px] font-black uppercase tracking-[0.16em] text-gray-500">Realistic Rank</div>
-                        <div class="mt-1 text-lg font-black text-gray-900">${rankLabel}</div>
+                <div class="grid min-w-[250px] grid-cols-2 gap-3 text-right">
+                    <div class="rounded-xl border border-gray-200/80 bg-white/60 px-3 py-2">
+                        <div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-500">Global Rank</div>
+                        <div class="mt-1 text-base font-black text-gray-900">${rankLabel}</div>
                     </div>
-                    <div>
-                        <div class="text-[9px] font-black uppercase tracking-[0.16em] text-gray-500">Percentile</div>
-                        <div class="mt-1 text-lg font-black text-gray-900">${percentileLabel || '-'}</div>
+                    <div class="rounded-xl border border-gray-200/80 bg-white/60 px-3 py-2">
+                        <div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-500">Percentile</div>
+                        <div class="mt-1 text-base font-black text-gray-900">${percentileLabel || '-'}</div>
                     </div>
                 </div>
             </div>
             <div id="leaderboard-self-lab-info" class="hidden mt-3 rounded-xl border border-emerald-200 bg-white/80 px-3 py-2 text-[10px] font-bold leading-relaxed text-gray-600">
-                Realistic means $140-$150 spent, 3-5 Tier 3 teams, and either one Tier 1 with at least two Tier 2s or no Tier 1 with at least four Tier 2s. It trims out low-spend and throwaway builds that almost nobody would pick.
+                Global rank uses the realistic squad universe: $140-$150 spent, 3-5 Tier 3 teams, and either one Tier 1 with at least two Tier 2s or no Tier 1 with at least four Tier 2s.
             </div>
-            <div class="mt-2 text-[10px] font-bold text-gray-500">${escapeHtml(reasonText)}</div>
+            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                ${pickTile('Best Value', bestValue, 'No value pick yet')}
+                ${pickTile('Biggest Bust', biggestBust, 'No bust yet')}
+            </div>
         </div>
     `;
 }
@@ -9669,13 +9687,11 @@ function renderLeaderboardSelfCard(leaderboardData = [], profilesMap = new Map()
     const topEntry = leaderboardData[0] || myEntry;
     const pointsBehindFirst = Math.max(0, Number(topEntry.totalPoints || 0) - Number(myEntry.totalPoints || 0));
     const thirdEntry = leaderboardData[2] || null;
-    const rankDistanceToMoney = rank ? Math.max(0, rank - 3) : 0;
     const pointsToMoney = thirdEntry ? Math.max(0, Number(thirdEntry.totalPoints || 0) - Number(myEntry.totalPoints || 0)) : 0;
-    const rankDistanceLabel = `${rankDistanceToMoney} rank${rankDistanceToMoney === 1 ? '' : 's'}`;
     const moneyLabel = rank && rank <= 3
         ? `${rankOrdinalText} prize spot`
         : thirdEntry
-            ? `${pointsToMoney} pts to 3rd / ${rankDistanceLabel}`
+            ? `${pointsToMoney} pts to 3rd`
             : 'Prize picture forming';
     const behindLabel = pointsBehindFirst === 0 ? 'Tied for 1st' : `${pointsBehindFirst} behind 1st`;
     const squadFlags = !appSettings.hideTeamSelection
