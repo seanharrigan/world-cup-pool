@@ -9604,6 +9604,7 @@ function renderLeaderboardSelfCardSkeleton() {
                         <div class="h-12 animate-pulse rounded-xl bg-white/70"></div>
                     </div>
                 </div>
+                <div class="mt-3 h-14 animate-pulse rounded-xl bg-white/70"></div>
                 <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <div class="h-14 animate-pulse rounded-xl bg-white/70"></div>
                     <div class="h-14 animate-pulse rounded-xl bg-white/70"></div>
@@ -9667,6 +9668,8 @@ function _scheduleLeaderboardSelfGlobalRankUpdate(entry) {
             realisticTotal: data.totalLegalSquads,
             rankLabel: context?.filteredLegal ? _formatBestAvailableRankRangeCompact({ ...context, legal: true }) : 'Outside field',
             percentileLabel: context?.filteredLegal ? _formatBestAvailablePercentile({ ...context, legal: true }) : '-',
+            rankStart: context?.filteredLegal ? context.rankStart : null,
+            rankEnd: context?.filteredLegal ? context.rankEnd : null,
             reasonText: context && !context.filteredLegal
                 ? [...(context.invalidReasons || []), ...(context.filterReasons || [])].slice(0, 1).join('')
                 : ''
@@ -9693,9 +9696,52 @@ function _renderLeaderboardSelfLabPreview(entry) {
     const realisticTotal = snapshot ? _formatCompactBestAvailableNumber(snapshot.realisticTotal) : '';
     const rankLabel = snapshot?.rankLabel || 'Loading';
     const percentileLabel = snapshot?.percentileLabel || 'Loading';
-    const summaryText = snapshot
-        ? `Ranked against ${realisticTotal} realistic squads. There are ${allLegal} all-legal combinations, but this cuts out low-spend throwaway builds.`
-        : 'Global rank is loading separately so the leaderboard can show up first.';
+    const summaryLines = snapshot
+        ? [
+            `${realisticTotal} realistic squads ranked by points, then lower cost.`,
+            `${allLegal} all-legal combinations exist; this view removes low-spend throwaway builds.`
+        ]
+        : [
+            'Leaderboard loads first.',
+            'Global rank is calculating in the background.'
+        ];
+    const rankMarkerPct = snapshot?.rankEnd && snapshot?.realisticTotal
+        ? Math.max(0.5, Math.min(99.5, (Number(snapshot.rankEnd) / Math.max(1, Number(snapshot.realisticTotal))) * 100))
+        : null;
+    const rankMarkerAlignClass = rankMarkerPct === null ? 'translate-x-0' : _bestAvailableRankAlignClass(rankMarkerPct);
+    const rankSpectrumHtml = snapshot ? `
+        <div class="mt-3 rounded-xl border border-gray-200/80 bg-white/60 px-3 py-3">
+            <div class="relative h-10">
+                <div class="absolute left-0 right-0 top-5 h-2 rounded-full bg-gray-200"></div>
+                <div class="absolute left-0 top-5 h-2 rounded-full bg-emerald-300" style="width:${rankMarkerPct ?? 0}%"></div>
+                <div class="absolute left-0 top-3 h-4 w-4 rounded-full border-2 border-white bg-emerald-500 shadow-sm"></div>
+                <div class="absolute right-0 top-3 h-4 w-4 rounded-full border-2 border-white bg-gray-400 shadow-sm"></div>
+                ${rankMarkerPct !== null ? `
+                    <div class="absolute top-1 z-10 h-8 w-px bg-gray-900/70" style="left:${rankMarkerPct}%"></div>
+                    <div class="absolute top-0 ${rankMarkerAlignClass} rounded-full border border-emerald-300 bg-emerald-50 px-2 py-1 text-center shadow-sm" style="left:${rankMarkerPct}%">
+                        <div class="whitespace-nowrap text-[9px] font-black uppercase tracking-[0.12em] text-emerald-700">You</div>
+                    </div>
+                ` : ''}
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                <div>
+                    <div class="text-[9px] font-black uppercase tracking-[0.14em] text-gray-500">Best</div>
+                    <div class="text-xs font-black text-gray-900">#1</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-[9px] font-black uppercase tracking-[0.14em] text-gray-500">You</div>
+                    <div class="text-xs font-black text-gray-900">${escapeHtml(rankLabel)}</div>
+                    <div class="text-[9px] font-black uppercase tracking-[0.12em] text-emerald-700">${escapeHtml(percentileLabel || '-')}</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-[9px] font-black uppercase tracking-[0.14em] text-gray-500">Bottom</div>
+                    <div class="text-xs font-black text-gray-900">#${escapeHtml(realisticTotal)}</div>
+                </div>
+            </div>
+        </div>
+    ` : `
+        <div class="mt-3 h-14 animate-pulse rounded-xl bg-white/70"></div>
+    `;
     const squadRows = _getMyPoolLabSquadRows(entry);
     const mostPoints = [...squadRows]
         .sort((a, b) => b.points - a.points || b.pointsPerDollar - a.pointsPerDollar || a.name.localeCompare(b.name))[0] || null;
@@ -9730,8 +9776,8 @@ function _renderLeaderboardSelfLabPreview(entry) {
                             class="flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white text-[10px] font-black text-gray-500 transition-colors hover:border-emerald-400 hover:text-emerald-700"
                             aria-label="Explain global rank">i</button>
                     </div>
-                    <div class="mt-1 text-[10px] font-bold leading-relaxed text-gray-500 max-w-2xl">
-                        ${escapeHtml(summaryText)}
+                    <div class="mt-1 max-w-2xl space-y-0.5 text-[10px] font-bold leading-relaxed text-gray-500">
+                        ${summaryLines.map((line) => `<div>${escapeHtml(line)}</div>`).join('')}
                     </div>
                 </div>
                 <div class="grid min-w-[250px] grid-cols-2 gap-3 text-right">
@@ -9748,6 +9794,7 @@ function _renderLeaderboardSelfLabPreview(entry) {
             <div id="leaderboard-self-lab-info" class="hidden mt-3 rounded-xl border border-emerald-200 bg-white/80 px-3 py-2 text-[10px] font-bold leading-relaxed text-gray-600">
                 Global rank uses realistic squads: $140-$150 spent, 3-5 Tier 3 teams, and then mostly Tier 2s. A squad can use 0 or 1 Tier 1; Tier-1 builds need at least two Tier 2s, and no-Tier-1 builds need at least four Tier 2s. No fixed squad size.
             </div>
+            ${rankSpectrumHtml}
             <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 ${pickTile('Most Points', mostPoints, 'No points yet')}
                 ${pickTile('Best Value', bestValue, 'No value pick yet')}
