@@ -41,6 +41,13 @@ const teamResultsSortState = {
     'public-team-results-body': { key: 'team', direction: 'asc' }
 };
 
+const publicTeamResultsFilters = {
+    tier: 'all',
+    region: 'all',
+    minCost: '',
+    maxCost: ''
+};
+
 const stageMultiplierLabels = {
     Group: 'x1',
     R32: 'x2',
@@ -7431,7 +7438,7 @@ async function setupDashboard() {
 
 function updatePublicTeamSortIndicators() {
     const sortState = teamResultsSortState['public-team-results-body'];
-    const keys = ['team', 'group', 'pickedPct', 'total', 'G1', 'G2', 'G3', 'Bonus', 'R32', 'R16', 'QF', 'SM', 'F'];
+    const keys = ['team', 'group', 'pickedPct', 'pointsPerDollar', 'total', 'G1', 'G2', 'G3', 'Bonus', 'R32', 'R16', 'QF', 'SM', 'F'];
 
     keys.forEach((key) => {
         const arrow = document.getElementById(`sort-arrow-public-${key}`);
@@ -7450,6 +7457,70 @@ function updatePublicTeamSortIndicators() {
         arrow.classList.remove('theme-accent-text');
         arrow.classList.add('text-gray-500');
     });
+}
+
+function updatePublicTeamResultsFilterControls(visibleCount = null) {
+    ['all', '1', '2', '3'].forEach((tier) => {
+        const button = document.getElementById(`results-tier-filter-${tier}`);
+        if (!button) return;
+        const isActive = publicTeamResultsFilters.tier === tier;
+        button.classList.toggle('bg-gray-900', isActive);
+        button.classList.toggle('text-white', isActive);
+        button.classList.toggle('shadow-sm', isActive);
+        button.classList.toggle('text-gray-500', !isActive);
+        button.classList.toggle('hover:text-gray-900', !isActive);
+    });
+
+    const regionSelect = document.getElementById('results-region-filter');
+    if (regionSelect && regionSelect.value !== publicTeamResultsFilters.region) {
+        regionSelect.value = publicTeamResultsFilters.region;
+    }
+
+    const minCostInput = document.getElementById('results-cost-min');
+    if (minCostInput && minCostInput.value !== publicTeamResultsFilters.minCost) {
+        minCostInput.value = publicTeamResultsFilters.minCost;
+    }
+
+    const maxCostInput = document.getElementById('results-cost-max');
+    if (maxCostInput && maxCostInput.value !== publicTeamResultsFilters.maxCost) {
+        maxCostInput.value = publicTeamResultsFilters.maxCost;
+    }
+
+    const countLabel = document.getElementById('results-filter-count');
+    if (countLabel && visibleCount !== null) {
+        countLabel.textContent = `${visibleCount} ${visibleCount === 1 ? 'team' : 'teams'}`;
+    }
+}
+
+function normalizePublicCostFilter(value) {
+    if (value === null || value === undefined || value === '') return '';
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return '';
+    return String(Math.max(0, Math.min(50, Math.round(parsed))));
+}
+
+function setPublicTeamResultsFilter(key, value) {
+    if (!(key in publicTeamResultsFilters)) return;
+
+    if (key === 'tier') {
+        publicTeamResultsFilters.tier = ['all', '1', '2', '3'].includes(String(value)) ? String(value) : 'all';
+    } else if (key === 'region') {
+        publicTeamResultsFilters.region = String(value || 'all');
+    } else {
+        publicTeamResultsFilters[key] = normalizePublicCostFilter(value);
+    }
+
+    updatePublicTeamResultsFilterControls();
+    fetchPublicTeamResults();
+}
+
+function resetPublicTeamResultsFilters() {
+    publicTeamResultsFilters.tier = 'all';
+    publicTeamResultsFilters.region = 'all';
+    publicTeamResultsFilters.minCost = '';
+    publicTeamResultsFilters.maxCost = '';
+    updatePublicTeamResultsFilterControls();
+    fetchPublicTeamResults();
 }
 
 function setTeamResultsSort(targetId, key) {
@@ -7763,6 +7834,8 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
     if (!body) {
         return;
     }
+    const isPublicResultsTable = targetId === 'public-team-results-body';
+    const columnCount = isPublicResultsTable ? 14 : 13;
 
     const knockoutStageMap = {
         R32: 'R32',
@@ -7772,7 +7845,7 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
         Finals: 'F'
     };
 
-    body.innerHTML = '<tr><td colspan="13" class="px-4 py-8 text-center text-gray-500 uppercase text-xs">Loading team results...</td></tr>';
+    body.innerHTML = `<tr><td colspan="${columnCount}" class="px-4 py-8 text-center text-gray-500 uppercase text-xs">Loading team results...</td></tr>`;
 
     try {
         await fetchAdvancedTeams();
@@ -7824,7 +7897,7 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
 
         const teamBreakdownMap = buildTeamStageBreakdownMap(matches || [], teams, advancedTeams);
 
-        const rows = [...teams]
+        let rows = [...teams]
             .filter((team) => team.qualified !== false)
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((team) => {
@@ -7885,11 +7958,14 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
                 const totalPoints = stageBreakdown.total;
                 const pickedCount = pickedUsersByTeam.get(team.name)?.size || 0;
                 const pickedPct = totalPlayers > 0 ? Math.round((pickedCount / totalPlayers) * 100) : 0;
+                const teamCost = Number(team.cost || 0);
+                const pointsPerDollar = teamCost > 0 ? totalPoints / teamCost : 0;
 
                 return {
                     team,
                     totalPoints,
                     pickedPct,
+                    pointsPerDollar,
                     slotPoints: {
                         G1: stageBreakdown.G1,
                         G2: stageBreakdown.G2,
@@ -7922,6 +7998,13 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
                                 <div class="mt-1 text-[9px] font-black uppercase tracking-[0.14em] ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}">${pickedCount} picked</div>
                             </div>
                         </td>
+                        ${isPublicResultsTable ? `
+                        <td class="px-3 py-3">
+                            <div class="min-w-[70px] py-1 text-center">
+                                <div class="text-[15px] font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'} leading-none">${pointsPerDollar.toFixed(2)}</div>
+                                <div class="mt-1 text-[9px] font-black uppercase tracking-[0.14em] ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}">$${teamCost}</div>
+                            </div>
+                        </td>` : ''}
                         <td class="px-3 py-3">
                             <div class="min-w-[64px] py-1 text-center">
                                 <div class="text-[15px] font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'} leading-none">${totalPoints}</div>
@@ -7945,7 +8028,24 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
                 };
             });
 
+        if (isPublicResultsTable) {
+            const minCost = publicTeamResultsFilters.minCost === '' ? null : Number(publicTeamResultsFilters.minCost);
+            const maxCost = publicTeamResultsFilters.maxCost === '' ? null : Number(publicTeamResultsFilters.maxCost);
+            rows = rows.filter((row) => {
+                const teamCost = Number(row.team.cost || 0);
+                if (publicTeamResultsFilters.tier !== 'all' && String(row.team.tier) !== publicTeamResultsFilters.tier) return false;
+                if (publicTeamResultsFilters.region !== 'all' && row.team.region !== publicTeamResultsFilters.region) return false;
+                if (minCost !== null && teamCost < minCost) return false;
+                if (maxCost !== null && teamCost > maxCost) return false;
+                return true;
+            });
+        }
+
         const sortState = teamResultsSortState[targetId];
+        if (isPublicResultsTable && appSettings.hideTeamSelection && sortState?.key === 'pickedPct') {
+            sortState.key = 'team';
+            sortState.direction = 'asc';
+        }
         if (sortState) {
             rows.sort((a, b) => {
                 let comparison = 0;
@@ -7956,6 +8056,8 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
                     comparison = a.team.group.localeCompare(b.team.group);
                 } else if (sortState.key === 'pickedPct') {
                     comparison = a.pickedPct - b.pickedPct;
+                } else if (sortState.key === 'pointsPerDollar') {
+                    comparison = a.pointsPerDollar - b.pointsPerDollar;
                 } else if (sortState.key === 'total') {
                     comparison = a.totalPoints - b.totalPoints;
                 } else {
@@ -7963,21 +8065,22 @@ async function renderTeamResultsTable(targetId, theme = 'dark') {
                 }
 
                 if (comparison === 0) {
-                    comparison = a.team.name.localeCompare(b.team.name);
+                    return a.team.name.localeCompare(b.team.name);
                 }
 
                 return sortState.direction === 'asc' ? comparison : -comparison;
             });
         }
 
-        body.innerHTML = rows.map((row) => row.html).join('') || '<tr><td colspan="13" class="px-4 py-8 text-center text-gray-500 uppercase text-xs">No teams found.</td></tr>';
+        body.innerHTML = rows.map((row) => row.html).join('') || `<tr><td colspan="${columnCount}" class="px-4 py-8 text-center text-gray-500 uppercase text-xs">No teams found.</td></tr>`;
 
         if (targetId === 'public-team-results-body') {
             updateResultsSelectionVisibility();
             updatePublicTeamSortIndicators();
+            updatePublicTeamResultsFilterControls(rows.length);
         }
     } catch (error) {
-        body.innerHTML = '<tr><td colspan="13" class="px-4 py-8 text-center text-red-400 uppercase text-xs">Could not load team results.</td></tr>';
+        body.innerHTML = `<tr><td colspan="${columnCount}" class="px-4 py-8 text-center text-red-400 uppercase text-xs">Could not load team results.</td></tr>`;
     }
 }
 
@@ -12868,6 +12971,8 @@ Object.assign(window, {
     setupResultsPage,
     setupStatsPage,
     setTeamResultsSort,
+    setPublicTeamResultsFilter,
+    resetPublicTeamResultsFilters,
     fetchAdminHistory,
     renderScheduleBrowser,
     renderKnockoutBracket,
