@@ -11462,6 +11462,19 @@ function _formatBestAvailableRankLabel(context) {
     return _isBestAvailableRankRange(context) ? `#${start} to #${end}` : `#${start}`;
 }
 
+function _formatBestAvailablePercentile(context) {
+    if (!context?.legal) return '';
+    const total = Number(context.totalLegalSquads || 0);
+    const rank = Number(context.exactTopRank || context.rankEnd || context.rankStart || 0);
+    if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(rank) || rank <= 0) return '';
+
+    const pct = Math.min(100, Math.max(0, (rank / total) * 100));
+    if (pct < 0.01) return 'Top <0.01%';
+    if (pct < 1) return `Top ${pct.toFixed(2)}%`;
+    if (pct < 10) return `Top ${pct.toFixed(1)}%`;
+    return `Top ${Math.round(pct)}%`;
+}
+
 function _renderBestAvailablePoolContextCard() {
     const context = window._bestAvailablePoolContext || null;
     if (!context) {
@@ -11473,6 +11486,7 @@ function _renderBestAvailablePoolContextCard() {
     const safeEmail = escapeJsSingleQuoted(context.email || '');
     const playerName = context.nickname || context.realname || 'Best pool entry';
     const rankLabel = _formatBestAvailableRankLabel(context);
+    const percentileLabel = _formatBestAvailablePercentile(context);
     const totalLegal = _formatBestAvailableInteger(context.totalLegalSquads);
     const exactTopRank = Number(context.exactTopRank || 0);
     const locationLabel = exactTopRank > 0
@@ -11497,6 +11511,7 @@ function _renderBestAvailablePoolContextCard() {
         </div>
         <div class="shrink-0 rounded-xl border border-emerald-400/30 bg-gray-950/50 px-3 py-2 text-left sm:text-right">
             <div class="text-lg font-black text-emerald-200">${rankLabel}</div>
+            ${percentileLabel ? `<div class="mt-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-300">${percentileLabel}</div>` : ''}
             <div class="text-[9px] font-black uppercase tracking-[0.12em] text-gray-400">of ${totalLegal} legal squads</div>
             <div class="mt-1 text-[9px] font-bold text-gray-500">${tieNote}</div>
         </div>
