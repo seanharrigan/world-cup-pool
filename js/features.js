@@ -9561,6 +9561,59 @@ function hideLeaderboardSelfCard() {
     card.innerHTML = '';
 }
 
+function renderLeaderboardSelfCardSkeleton() {
+    const card = document.getElementById('leaderboard-self-card');
+    if (!card) return;
+    if (!userEmail) {
+        hideLeaderboardSelfCard();
+        return;
+    }
+
+    card.innerHTML = `
+        <div class="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(500px,0.95fr)] lg:items-center xl:grid-cols-[minmax(0,1.45fr)_minmax(560px,0.95fr)]">
+            <div class="flex min-w-0 items-center gap-4">
+                <div class="h-14 w-14 shrink-0 animate-pulse rounded-full bg-emerald-100"></div>
+                <div class="min-w-0 flex-1 space-y-2">
+                    <div class="h-3 w-28 animate-pulse rounded bg-emerald-100"></div>
+                    <div class="h-7 w-56 max-w-full animate-pulse rounded bg-gray-200"></div>
+                    <div class="h-3 w-32 animate-pulse rounded bg-gray-200"></div>
+                    <div class="flex gap-1.5 pt-1">
+                        <div class="h-4 w-6 animate-pulse rounded bg-gray-200"></div>
+                        <div class="h-4 w-6 animate-pulse rounded bg-gray-200"></div>
+                        <div class="h-4 w-6 animate-pulse rounded bg-gray-200"></div>
+                        <div class="h-4 w-6 animate-pulse rounded bg-gray-200"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid w-full grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+                ${['Rank', 'Points', 'Behind 1st', 'To Money'].map((label) => `
+                    <div class="min-w-0">
+                        <div class="text-[9px] font-black uppercase tracking-[0.18em] text-gray-500">${label}</div>
+                        <div class="mt-2 h-5 w-20 animate-pulse rounded bg-gray-200"></div>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="mt-4 border-t border-gray-200/80 pt-4 lg:col-span-2">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="min-w-0 space-y-2">
+                        <div class="h-3 w-28 animate-pulse rounded bg-emerald-100"></div>
+                        <div class="h-3 w-80 max-w-full animate-pulse rounded bg-gray-200"></div>
+                    </div>
+                    <div class="grid min-w-[250px] grid-cols-2 gap-3">
+                        <div class="h-12 animate-pulse rounded-xl bg-white/70"></div>
+                        <div class="h-12 animate-pulse rounded-xl bg-white/70"></div>
+                    </div>
+                </div>
+                <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div class="h-14 animate-pulse rounded-xl bg-white/70"></div>
+                    <div class="h-14 animate-pulse rounded-xl bg-white/70"></div>
+                </div>
+            </div>
+        </div>
+    `;
+    card.classList.remove('hidden');
+}
+
 function _getMyPoolLabData(filters = DEFAULT_MY_POOL_LAB_FILTERS) {
     return _getCachedBestAvailableLabData({ ...filters, realisticOnly: true });
 }
@@ -9579,16 +9632,69 @@ function toggleLeaderboardSelfLabInfo(event) {
     if (info) info.classList.toggle('hidden');
 }
 
-function _renderLeaderboardSelfLabPreview() {
+function _getLeaderboardSelfGlobalRankKey(entry) {
+    if (!entry) return '';
+    return [
+        userEmail || '',
+        Number(entry.totalPoints || 0),
+        getSquadSignature(entry.squad || []),
+        _bestAvailableLabCacheKey(DEFAULT_MY_POOL_LAB_FILTERS)
+    ].join('|');
+}
+
+function _getLeaderboardSelfGlobalRankSnapshot(entry) {
+    const key = _getLeaderboardSelfGlobalRankKey(entry);
+    return _leaderboardSelfGlobalRankSnapshot?.key === key ? _leaderboardSelfGlobalRankSnapshot : null;
+}
+
+function _scheduleLeaderboardSelfGlobalRankUpdate(entry) {
+    if (appSettings.hideTeamSelection || !entry || !userEmail) return;
+
+    const key = _getLeaderboardSelfGlobalRankKey(entry);
+    if (_leaderboardSelfGlobalRankSnapshot?.key === key) return;
+
+    const requestId = ++_leaderboardSelfGlobalRankRequestId;
+    const calculate = () => {
+        const data = _getMyPoolLabData(DEFAULT_MY_POOL_LAB_FILTERS);
+        const context = (data.contexts || []).find((candidate) => candidate.email === userEmail) || null;
+        if (requestId !== _leaderboardSelfGlobalRankRequestId) return;
+
+        _leaderboardSelfGlobalRankSnapshot = {
+            key,
+            allLegalTotal: _getAllLegalSquadCount(),
+            realisticTotal: data.totalLegalSquads,
+            rankLabel: context?.filteredLegal ? _formatBestAvailableRankRangeCompact({ ...context, legal: true }) : 'Outside field',
+            percentileLabel: context?.filteredLegal ? _formatBestAvailablePercentile({ ...context, legal: true }) : '-',
+            reasonText: context && !context.filteredLegal
+                ? [...(context.invalidReasons || []), ...(context.filterReasons || [])].slice(0, 1).join('')
+                : ''
+        };
+
+        const leaderboardData = window._leaderboardData || [];
+        if (leaderboardData.some((candidate) => candidate.email === userEmail)) {
+            renderLeaderboardSelfCard(leaderboardData);
+        }
+    };
+
+    if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(calculate, { timeout: 1200 });
+    } else {
+        window.setTimeout(calculate, 0);
+    }
+}
+
+function _renderLeaderboardSelfLabPreview(entry) {
     if (appSettings.hideTeamSelection) return '';
 
-    const data = _getMyPoolLabData(DEFAULT_MY_POOL_LAB_FILTERS);
-    const context = _getMyPoolLabContext(userEmail, DEFAULT_MY_POOL_LAB_FILTERS);
-    const allLegal = _formatCompactBestAvailableNumber(_getAllLegalSquadCount());
-    const realisticTotal = _formatCompactBestAvailableNumber(data.totalLegalSquads);
-    const rankLabel = context?.filteredLegal ? _formatBestAvailableRankRangeCompact({ ...context, legal: true }) : 'Outside field';
-    const percentileLabel = context?.filteredLegal ? _formatBestAvailablePercentile({ ...context, legal: true }) : '';
-    const squadRows = _getMyPoolLabSquadRows(context);
+    const snapshot = _getLeaderboardSelfGlobalRankSnapshot(entry);
+    const allLegal = snapshot ? _formatCompactBestAvailableNumber(snapshot.allLegalTotal) : '';
+    const realisticTotal = snapshot ? _formatCompactBestAvailableNumber(snapshot.realisticTotal) : '';
+    const rankLabel = snapshot?.rankLabel || 'Loading';
+    const percentileLabel = snapshot?.percentileLabel || 'Loading';
+    const summaryText = snapshot
+        ? `Ranked against ${realisticTotal} realistic squads. There are ${allLegal} all-legal combinations, but this cuts out low-spend throwaway builds.`
+        : 'Global rank is loading separately so the leaderboard can show up first.';
+    const squadRows = _getMyPoolLabSquadRows(entry);
     const bestValue = [...squadRows]
         .filter((team) => team.points > 0)
         .sort((a, b) => b.pointsPerDollar - a.pointsPerDollar || b.points - a.points || a.name.localeCompare(b.name))[0] || null;
@@ -9618,17 +9724,17 @@ function _renderLeaderboardSelfLabPreview() {
                             aria-label="Explain global rank">i</button>
                     </div>
                     <div class="mt-1 text-[10px] font-bold leading-relaxed text-gray-500 max-w-2xl">
-                        Ranked against ${realisticTotal} realistic squads. There are ${allLegal} all-legal combinations, but this cuts out low-spend throwaway builds.
+                        ${escapeHtml(summaryText)}
                     </div>
                 </div>
                 <div class="grid min-w-[250px] grid-cols-2 gap-3 text-right">
                     <div class="rounded-xl border border-gray-200/80 bg-white/60 px-3 py-2">
                         <div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-500">Global Rank</div>
-                        <div class="mt-1 text-base font-black text-gray-900">${rankLabel}</div>
+                        <div class="mt-1 text-base font-black text-gray-900 ${snapshot ? '' : 'animate-pulse text-gray-500'}">${rankLabel}</div>
                     </div>
                     <div class="rounded-xl border border-gray-200/80 bg-white/60 px-3 py-2">
                         <div class="text-[8px] font-black uppercase tracking-[0.18em] text-gray-500">Percentile</div>
-                        <div class="mt-1 text-base font-black text-gray-900">${percentileLabel || '-'}</div>
+                        <div class="mt-1 text-base font-black text-gray-900 ${snapshot ? '' : 'animate-pulse text-gray-500'}">${percentileLabel || '-'}</div>
                     </div>
                 </div>
             </div>
@@ -9730,15 +9836,18 @@ function renderLeaderboardSelfCard(leaderboardData = [], profilesMap = new Map()
                     <div class="mt-1 text-sm font-black text-gray-900">${escapeHtml(moneyLabel)}</div>
                 </div>
             </div>
-            ${_renderLeaderboardSelfLabPreview()}
+            ${_renderLeaderboardSelfLabPreview(myEntry)}
         </div>
     `;
     card.classList.remove('hidden');
+    _scheduleLeaderboardSelfGlobalRankUpdate(myEntry);
 }
 
 async function fetchLeaderboard() {
     const body = document.getElementById('leaderboard-body');
-    hideLeaderboardSelfCard();
+    _leaderboardSelfGlobalRankSnapshot = null;
+    _leaderboardSelfGlobalRankRequestId += 1;
+    renderLeaderboardSelfCardSkeleton();
     // Show animated placeholder rows while scores are calculated.
     // Columns: rank, points, player+squad, upside, then 7 stage-points cols (G, Bonus, R32, R16, QF, SM, F)
     const skeletonCell = '<td class="px-2 py-2.5 text-center"><div class="h-4 w-6 bg-gray-200 rounded animate-pulse mx-auto"></div></td>';
@@ -11507,6 +11616,8 @@ const DEFAULT_MY_POOL_LAB_FILTERS = { ...DEFAULT_BEST_AVAILABLE_LAB_FILTERS };
 let _myPoolLabFilters = { ...DEFAULT_MY_POOL_LAB_FILTERS };
 let _myPoolLabInfoOpen = false;
 let _bestAvailableLabDataCache = new Map();
+let _leaderboardSelfGlobalRankSnapshot = null;
+let _leaderboardSelfGlobalRankRequestId = 0;
 
 function showBestAvailableExplorer() {
     if (appSettings.hideTeamSelection) {
