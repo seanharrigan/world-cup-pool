@@ -7,6 +7,7 @@ const {
     buildLeaderboardData,
     getSquadSignature,
     buildBestAvailableSquadsData,
+    buildBestAvailableSquadRankings,
     buildBestAvailableTeamData
 } = window.WorldCupScoring;
 
@@ -15,6 +16,19 @@ const {
 } = window.WorldCupThirdPlaceMapping || { THIRD_PLACE_MAPPING: {} };
 
 const BEST_AVAILABLE_EXPLORER_LIMIT = 100;
+
+function compareBestAvailablePoolContexts(a, b) {
+    if (!a && !b) return 0;
+    if (!a) return 1;
+    if (!b) return -1;
+    if (a.totalPoints !== b.totalPoints) return b.totalPoints - a.totalPoints;
+    if (a.rankStart !== b.rankStart) return a.rankStart < b.rankStart ? -1 : 1;
+    if (a.totalCost !== b.totalCost) return a.totalCost - b.totalCost;
+    const aPoolRank = Number(a.displayRank || Number.POSITIVE_INFINITY);
+    const bPoolRank = Number(b.displayRank || Number.POSITIVE_INFINITY);
+    if (aPoolRank !== bPoolRank) return aPoolRank - bPoolRank;
+    return String(a.nickname || a.realname || '').localeCompare(String(b.nickname || b.realname || ''));
+}
 
 function getTeamStatus(teamName) {
     return {
@@ -9623,6 +9637,32 @@ async function fetchLeaderboard() {
             rank: index + 1,
             owners: bestAvailableOwnersBySignature.get(candidate.signature) || []
         }));
+        const bestAvailablePoolContexts = buildBestAvailableSquadRankings(
+            allMatches || [],
+            teams,
+            advancedTeams,
+            eliminatedTeams,
+            enrichedLeaderboardData.map((user) => ({
+                email: user.email,
+                nickname: user.nickname,
+                realname: user.realname,
+                avatarUrl: user.avatarUrl,
+                favoriteTeam: user.favoriteTeam,
+                displayRank: user.displayRank,
+                leaderboardPoints: user.totalPoints,
+                squad: user.squad || []
+            }))
+        ).map((context) => {
+            const displayedSquad = annotatedBestAvailableSquads.find((squad) => squad.signature === context.signature);
+            return {
+                ...context,
+                exactTopRank: displayedSquad?.rank || null,
+                shownInTopList: Boolean(displayedSquad)
+            };
+        });
+        const bestAvailablePoolContext = [...bestAvailablePoolContexts]
+            .filter((context) => context.legal)
+            .sort(compareBestAvailablePoolContexts)[0] || null;
 
         const lbUpsideMap = _buildUpsideMap(leaderboardData);
 
@@ -9814,6 +9854,8 @@ async function fetchLeaderboard() {
         localStorage.setItem('wc_pool_lb_ranks', JSON.stringify(newRanks));
         window._leaderboardData = enrichedLeaderboardData;
         window._bestAvailableSquads = annotatedBestAvailableSquads;
+        window._bestAvailablePoolContext = bestAvailablePoolContext;
+        window._bestAvailablePoolContexts = bestAvailablePoolContexts;
         window._leaderboardTeamPointsMap = leaderboardTeamPointsMap;
         window._leaderboardTeamBreakdownMap = leaderboardTeamBreakdownMap;
         window._playerChipsByEmail = Object.fromEntries(playerChips);
@@ -11297,6 +11339,67 @@ function _bestAvailableRankAlignClass(positionPct) {
     return '-translate-x-1/2';
 }
 
+function _formatBestAvailableInteger(value) {
+    if (value === null || value === undefined) return '-';
+    if (typeof value === 'bigint') return value.toLocaleString();
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed.toLocaleString() : '-';
+}
+
+function _isBestAvailableRankRange(context) {
+    return Boolean(context?.rankStart !== null && context?.rankEnd !== null && context.rankEnd > context.rankStart);
+}
+
+function _formatBestAvailableRankLabel(context) {
+    if (!context?.legal) return 'Not legal';
+    if (Number(context.exactTopRank || 0) > 0) return `#${Number(context.exactTopRank)}`;
+
+    const start = _formatBestAvailableInteger(context.rankStart);
+    const end = _formatBestAvailableInteger(context.rankEnd);
+    return _isBestAvailableRankRange(context) ? `#${start} to #${end}` : `#${start}`;
+}
+
+function _renderBestAvailablePoolContextCard() {
+    const context = window._bestAvailablePoolContext || null;
+    if (!context) {
+        return `<div class="mt-3 rounded-2xl border border-gray-800 bg-gray-950/55 px-3 py-3 text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">
+            No real pool squads are available for this comparison yet.
+        </div>`;
+    }
+
+    const safeEmail = escapeJsSingleQuoted(context.email || '');
+    const playerName = context.nickname || context.realname || 'Best pool entry';
+    const rankLabel = _formatBestAvailableRankLabel(context);
+    const totalLegal = _formatBestAvailableInteger(context.totalLegalSquads);
+    const exactTopRank = Number(context.exactTopRank || 0);
+    const locationLabel = exactTopRank > 0
+        ? `Shown in the top ${BEST_AVAILABLE_EXPLORER_LIMIT}`
+        : `Outside the top ${BEST_AVAILABLE_EXPLORER_LIMIT}`;
+    const poolRankLabel = Number(context.displayRank || 0) > 0 ? `Pool rank #${Number(context.displayRank)}` : 'Pool rank unavailable';
+    const tieNote = _isBestAvailableRankRange(context)
+        ? 'Range means there are other legal squads tied on points and cost.'
+        : 'Rank uses points first, then lower cost.';
+
+    return `<button type="button" onclick="closeBestAvailableExplorer();showPlayerProfile('${safeEmail}')"
+        class="mt-3 flex w-full flex-col gap-3 rounded-2xl border border-emerald-500/35 bg-emerald-950/35 px-3 py-3 text-left transition-colors hover:border-emerald-300/70 hover:bg-emerald-900/40 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex min-w-0 items-center gap-3">
+            ${_renderPlayerAvatar(context.avatarUrl, context.favoriteTeam, 36, playerName)}
+            <div class="min-w-0">
+                <div class="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-300">Best real pool entry</div>
+                <div class="truncate text-sm font-black text-white">${escapeHtml(playerName)}</div>
+                <div class="mt-0.5 text-[10px] font-black uppercase tracking-[0.1em] text-emerald-200/80">
+                    ${poolRankLabel} &middot; ${Number(context.totalPoints || 0)} pts &middot; ${locationLabel}
+                </div>
+            </div>
+        </div>
+        <div class="shrink-0 rounded-xl border border-emerald-400/30 bg-gray-950/50 px-3 py-2 text-left sm:text-right">
+            <div class="text-lg font-black text-emerald-200">${rankLabel}</div>
+            <div class="text-[9px] font-black uppercase tracking-[0.12em] text-gray-400">of ${totalLegal} legal squads</div>
+            <div class="mt-1 text-[9px] font-bold text-gray-500">${tieNote}</div>
+        </div>
+    </button>`;
+}
+
 function _renderBestAvailableRankStrip() {
     const strip = document.getElementById('best-available-rank-strip');
     if (!strip) return;
@@ -11358,7 +11461,7 @@ function _renderBestAvailableRankStrip() {
         <div class="flex items-center justify-between gap-4">
             <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Rank map</div>
             <div class="text-right text-[9px] font-black uppercase tracking-[0.14em] ${exactOwnerCount > 0 ? 'text-emerald-300' : 'text-gray-600'}">
-                ${exactOwnerCount > 0 ? `${exactOwnerCount} exact player ${exactOwnerCount === 1 ? 'match' : 'matches'}` : `No exact player matches in top ${BEST_AVAILABLE_EXPLORER_LIMIT}`}
+                ${exactOwnerCount > 0 ? `${exactOwnerCount} exact player ${exactOwnerCount === 1 ? 'match' : 'matches'}` : `No player squads in top ${BEST_AVAILABLE_EXPLORER_LIMIT}`}
             </div>
         </div>
         <div class="mt-2 px-2 pb-1 sm:px-3">
@@ -11370,6 +11473,7 @@ function _renderBestAvailableRankStrip() {
                 ${markerMarkup}
             </div>
         </div>
+        ${_renderBestAvailablePoolContextCard()}
     `;
 }
 

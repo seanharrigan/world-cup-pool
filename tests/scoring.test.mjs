@@ -13,6 +13,7 @@ const {
     buildLeaderboardData,
     getSquadSignature,
     buildBestAvailableSquadsData,
+    buildBestAvailableSquadRankings,
     buildBestAvailableTeamData
 } = require('../js/scoring.js');
 
@@ -467,4 +468,29 @@ test('best available squads can return fewer than eight teams when extras do not
     assert.equal(bestTeam.totalCost, 6);
     assert.equal(bestTeam.totalPoints, 3);
     assert.deepEqual(bestTeam.squad.map((team) => team.name).sort(), ['Haiti', 'Iraq', 'Jordan']);
+});
+
+test('best available squad rankings can place a real squad outside the displayed top list', () => {
+    const tinyTeams = [
+        { name: 'Spain', flag: '🇪🇸', cost: 10, tier: 1 },
+        { name: 'Morocco', flag: '🇲🇦', cost: 10, tier: 2 },
+        { name: 'Iraq', flag: '🇮🇶', cost: 1, tier: 3 },
+        { name: 'Jordan', flag: '🇯🇴', cost: 1, tier: 3 },
+        { name: 'Haiti', flag: '🇭🇹', cost: 1, tier: 3 }
+    ];
+    const advanced = new Set(tinyTeams.map((team) => team.name));
+    const candidates = buildBestAvailableSquadsData([], tinyTeams, advanced, new Set(), { limit: 2 });
+    const [poolContext] = buildBestAvailableSquadRankings([], tinyTeams, advanced, new Set(), [{
+        email: 'pool@example.com',
+        nickname: 'Pool Leader',
+        squad: tinyTeams.filter((team) => ['Iraq', 'Jordan', 'Haiti'].includes(team.name))
+    }]);
+
+    assert.equal(poolContext.legal, true);
+    assert.equal(poolContext.totalPoints, 3);
+    assert.equal(poolContext.totalCost, 3);
+    assert.equal(poolContext.totalLegalSquads, 4n);
+    assert.equal(poolContext.rankStart, 4n);
+    assert.equal(poolContext.rankEnd, 4n);
+    assert.equal(candidates.some((candidate) => candidate.signature === poolContext.signature), false);
 });
