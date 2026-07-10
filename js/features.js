@@ -9593,7 +9593,13 @@ function renderLeaderboardSelfCardSkeleton() {
                     </div>
                 `).join('')}
             </div>
-            <div class="mt-4 border-t border-gray-200/80 pt-4 lg:col-span-2">
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 lg:col-span-2">
+                <div class="h-14 animate-pulse rounded-xl bg-white/70"></div>
+                <div class="h-14 animate-pulse rounded-xl bg-white/70"></div>
+                <div class="h-14 animate-pulse rounded-xl bg-white/70"></div>
+                <div class="h-14 animate-pulse rounded-xl bg-white/70"></div>
+            </div>
+            <div class="border-t border-gray-200/80 pt-4 lg:col-span-2">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div class="min-w-0 space-y-2">
                         <div class="h-3 w-28 animate-pulse rounded bg-emerald-100"></div>
@@ -9605,12 +9611,6 @@ function renderLeaderboardSelfCardSkeleton() {
                     </div>
                 </div>
                 <div class="mt-3 h-32 animate-pulse rounded-xl bg-white/70"></div>
-                <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <div class="h-14 animate-pulse rounded-xl bg-white/70"></div>
-                    <div class="h-14 animate-pulse rounded-xl bg-white/70"></div>
-                    <div class="h-14 animate-pulse rounded-xl bg-white/70"></div>
-                    <div class="h-14 animate-pulse rounded-xl bg-white/70"></div>
-                </div>
             </div>
         </div>
     `;
@@ -9715,7 +9715,7 @@ function _scheduleLeaderboardSelfGlobalRankUpdate(entry) {
                 worstOverall: worstBucket ? {
                     label: 'Worst overall',
                     name: 'Generated worst',
-                    rankLabel: `#${_formatCompactBestAvailableNumber(data.totalLegalSquads)}`,
+                    rankLabel: `#${_formatBestAvailableRankMidpointNumber(data.totalLegalSquads)}`,
                     points: Number(worstBucket.score || 0),
                     rankEnd: data.totalLegalSquads,
                     percentileLabel: 'Bottom'
@@ -9743,8 +9743,8 @@ function _renderLeaderboardSelfLabPreview(entry) {
     if (appSettings.hideTeamSelection) return '';
 
     const snapshot = _getLeaderboardSelfGlobalRankSnapshot(entry);
-    const allLegal = snapshot ? _formatCompactBestAvailableNumber(snapshot.allLegalTotal) : '';
-    const realisticTotal = snapshot ? _formatCompactBestAvailableNumber(snapshot.realisticTotal) : '';
+    const allLegal = snapshot ? _formatBestAvailableRankMidpointNumber(snapshot.allLegalTotal) : '';
+    const realisticTotal = snapshot ? _formatBestAvailableRankMidpointNumber(snapshot.realisticTotal) : '';
     const rankLabel = snapshot?.rankLabel || 'Loading';
     const percentileLabel = snapshot?.percentileLabel || 'Loading';
     const summaryLines = snapshot
@@ -9773,6 +9773,13 @@ function _renderLeaderboardSelfLabPreview(entry) {
         poolLast: 'bg-amber-500',
         worstOverall: 'bg-gray-400'
     };
+    const anchorDotRingClasses = {
+        bestOverall: 'ring-emerald-100',
+        poolLeader: 'ring-blue-100',
+        you: 'ring-gray-200',
+        poolLast: 'ring-amber-100',
+        worstOverall: 'ring-gray-100'
+    };
     const spectrumAnchors = snapshot ? [
         ['bestOverall', snapshot.anchors?.bestOverall],
         ['poolLeader', snapshot.anchors?.poolLeader],
@@ -9788,22 +9795,30 @@ function _renderLeaderboardSelfLabPreview(entry) {
         .filter((anchor) => anchor.positionPct !== null)
         .map((anchor) => {
             const alignClass = _bestAvailableRankAlignClass(anchor.positionPct);
+            const titlePercentile = anchor.percentileLabel && !['bestOverall', 'worstOverall'].includes(anchor.key)
+                ? `${anchor.percentileLabel}, `
+                : '';
             return `
-                <div class="absolute top-1 h-8 w-px ${anchor.key === 'you' ? 'bg-gray-900/80' : 'bg-gray-500/45'}" style="left:${anchor.positionPct}%"></div>
-                <div class="absolute top-3 h-4 w-4 ${alignClass} rounded-full border-2 border-white ${anchorDotClasses[anchor.key]} shadow-sm" style="left:${anchor.positionPct}%" title="${escapeHtml(`${anchor.label}: ${anchor.rankLabel}, ${anchor.points} pts`)}"></div>
+                <div class="absolute top-4 h-4 w-4 ${alignClass} rounded-full border-2 border-white ${anchorDotClasses[anchor.key]} shadow-sm ring-4 ${anchorDotRingClasses[anchor.key]}" style="left:${anchor.positionPct}%" title="${escapeHtml(`${anchor.label}: ${anchor.rankLabel}, ${titlePercentile}${anchor.points} pts`)}"></div>
             `;
         }).join('');
+    const percentileChipHtml = (anchor) => anchor.percentileLabel && !['bestOverall', 'worstOverall'].includes(anchor.key)
+        ? `<span class="rounded-full bg-white/70 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.08em] opacity-90">${escapeHtml(anchor.percentileLabel)}</span>`
+        : '';
     const spectrumCardHtml = spectrumAnchors.map((anchor) => `
-        <div class="rounded-xl border ${anchorToneClasses[anchor.key]} px-2.5 py-2">
+        <div class="rounded-xl border ${anchorToneClasses[anchor.key]} px-3 py-2.5 shadow-sm">
             <div class="text-[8px] font-black uppercase tracking-[0.16em] opacity-75">${escapeHtml(anchor.label)}</div>
             <div class="mt-1 truncate text-xs font-black">${escapeHtml(anchor.name || anchor.label)}</div>
-            <div class="mt-1 text-[11px] font-black">${escapeHtml(anchor.rankLabel || '-')}</div>
+            <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                <span class="text-[11px] font-black">${escapeHtml(anchor.rankLabel || '-')}</span>
+                ${percentileChipHtml(anchor)}
+            </div>
             <div class="text-[9px] font-black uppercase tracking-[0.1em] opacity-75">${Number(anchor.points || 0)} pts</div>
         </div>
     `).join('');
     const rankSpectrumHtml = snapshot ? `
-        <div class="mt-3 rounded-xl border border-gray-200/80 bg-white/60 px-3 py-3">
-            <div class="relative h-10 px-1">
+        <div class="mt-3 rounded-2xl border border-gray-200/80 bg-white/70 px-3 py-3">
+            <div class="relative h-11 px-2">
                 <div class="absolute left-0 right-0 top-5 h-2 rounded-full bg-gray-200"></div>
                 <div class="absolute left-0 top-5 h-2 rounded-full bg-emerald-300" style="width:${rankPositionPct(snapshot.rankEnd) ?? 0}%"></div>
                 ${spectrumMarkerHtml}
@@ -9840,7 +9855,13 @@ function _renderLeaderboardSelfLabPreview(entry) {
     `;
 
     return `
-        <div class="mt-4 border-t border-gray-200/80 pt-4 lg:col-span-2">
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 lg:col-span-2">
+            ${pickTile('Most Points', mostPoints, 'No points yet')}
+            ${pickTile('Best Value', bestValue, 'No value pick yet')}
+            ${pickTile('Biggest Bust', biggestBust, 'No bust yet')}
+            ${pickTile('Best Live Team', bestLiveTeam, 'No live team')}
+        </div>
+        <div class="border-t border-gray-200/80 pt-4 lg:col-span-2">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="min-w-0">
                     <div class="flex items-center gap-2">
@@ -9868,12 +9889,6 @@ function _renderLeaderboardSelfLabPreview(entry) {
                 Global rank compares your squad to the realistic squad universe, not every possible legal squad. Realistic means $140-$150 spent, 3-5 Tier 3 teams, 0 or 1 Tier 1 team, and the rest mostly Tier 2 teams. The larger all-legal number includes low-spend and throwaway combinations, so it is shown only as context.
             </div>
             ${rankSpectrumHtml}
-            <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                ${pickTile('Most Points', mostPoints, 'No points yet')}
-                ${pickTile('Best Value', bestValue, 'No value pick yet')}
-                ${pickTile('Biggest Bust', biggestBust, 'No bust yet')}
-                ${pickTile('Best Live Team', bestLiveTeam, 'No live team')}
-            </div>
         </div>
     `;
 }
@@ -11845,10 +11860,10 @@ function _formatBestAvailableRankMidpointNumber(value) {
     const parsed = typeof value === 'bigint' ? Number(value) : Number(value);
     if (!Number.isFinite(parsed)) return '-';
     const abs = Math.abs(parsed);
-    if (abs >= 1_000_000_000) return `${(parsed / 1_000_000_000).toFixed(1)}B`;
+    if (abs >= 1_000_000_000) return `${(parsed / 1_000_000_000).toFixed(2)}B`;
     if (abs >= 1_000_000) return `${(parsed / 1_000_000).toFixed(1)}M`;
     if (abs >= 1_000) return `${(parsed / 1_000).toFixed(1)}K`;
-    return parsed.toFixed(1);
+    return Math.round(parsed).toLocaleString();
 }
 
 function _formatBestAvailableRankMidpointLabel(context) {
