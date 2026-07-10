@@ -14,6 +14,7 @@ const {
     getSquadSignature,
     buildBestAvailableSquadsData,
     buildBestAvailableSquadRankings,
+    buildBestAvailableFilteredSquadRankings,
     buildBestAvailableTeamData
 } = require('../js/scoring.js');
 
@@ -493,4 +494,107 @@ test('best available squad rankings can place a real squad outside the displayed
     assert.equal(poolContext.rankStart, 4n);
     assert.equal(poolContext.rankEnd, 4n);
     assert.equal(candidates.some((candidate) => candidate.signature === poolContext.signature), false);
+});
+
+test('filtered best available rankings preserve the unfiltered legal universe', () => {
+    const tinyTeams = [
+        { name: 'Spain', flag: '🇪🇸', cost: 10, tier: 1 },
+        { name: 'Morocco', flag: '🇲🇦', cost: 10, tier: 2 },
+        { name: 'Iraq', flag: '🇮🇶', cost: 1, tier: 3 },
+        { name: 'Jordan', flag: '🇯🇴', cost: 1, tier: 3 },
+        { name: 'Haiti', flag: '🇭🇹', cost: 1, tier: 3 }
+    ];
+    const advanced = new Set(tinyTeams.map((team) => team.name));
+
+    const result = buildBestAvailableFilteredSquadRankings([], tinyTeams, advanced, new Set(), [{
+        email: 'pool@example.com',
+        nickname: 'Pool Leader',
+        squad: tinyTeams.filter((team) => ['Iraq', 'Jordan', 'Haiti'].includes(team.name))
+    }]);
+
+    assert.equal(result.totalLegalSquads, 4n);
+    assert.equal(result.bestBucket.score, 5);
+    assert.equal(result.contexts[0].filteredLegal, true);
+    assert.equal(result.contexts[0].rankStart, 4n);
+});
+
+test('filtered best available rankings apply cost and point ranges', () => {
+    const tinyTeams = [
+        { name: 'Spain', flag: '🇪🇸', cost: 50, tier: 1 },
+        { name: 'Morocco', flag: '🇲🇦', cost: 30, tier: 2 },
+        { name: 'Canada', flag: '🇨🇦', cost: 30, tier: 2 },
+        { name: 'Iraq', flag: '🇮🇶', cost: 20, tier: 3 },
+        { name: 'Jordan', flag: '🇯🇴', cost: 20, tier: 3 },
+        { name: 'Haiti', flag: '🇭🇹', cost: 20, tier: 3 }
+    ];
+    const advanced = new Set(tinyTeams.map((team) => team.name));
+
+    const result = buildBestAvailableFilteredSquadRankings([], tinyTeams, advanced, new Set(), [{
+        email: 'low@example.com',
+        nickname: 'Low Cost',
+        squad: tinyTeams.filter((team) => ['Iraq', 'Jordan', 'Haiti'].includes(team.name))
+    }], {
+        minCost: 120,
+        maxCost: 140,
+        minScore: 5,
+        maxScore: 5
+    });
+
+    assert.equal(result.totalLegalSquads, 3n);
+    assert.equal(result.bestBucket.score, 5);
+    assert.equal(result.bestBucket.cost, 120);
+    assert.equal(result.contexts[0].filteredLegal, false);
+    assert.ok(result.contexts[0].filterReasons.includes('Below $120 minimum cost'));
+});
+
+test('filtered best available rankings apply tier requirements and realistic-only heuristic', () => {
+    const tinyTeams = [
+        { name: 'Spain', flag: '🇪🇸', cost: 50, tier: 1 },
+        { name: 'Morocco', flag: '🇲🇦', cost: 30, tier: 2 },
+        { name: 'Canada', flag: '🇨🇦', cost: 30, tier: 2 },
+        { name: 'Mexico', flag: '🇲🇽', cost: 25, tier: 2 },
+        { name: 'USA', flag: '🇺🇸', cost: 25, tier: 2 },
+        { name: 'Iraq', flag: '🇮🇶', cost: 10, tier: 3 },
+        { name: 'Jordan', flag: '🇯🇴', cost: 10, tier: 3 },
+        { name: 'Haiti', flag: '🇭🇹', cost: 10, tier: 3 },
+        { name: 'Qatar', flag: '🇶🇦', cost: 2, tier: 3 },
+        { name: 'Curacao', flag: '🇨🇼', cost: 2, tier: 3 },
+        { name: 'Cape Verde', flag: '🇨🇻', cost: 2, tier: 3 }
+    ];
+    const advanced = new Set(tinyTeams.map((team) => team.name));
+
+    const result = buildBestAvailableFilteredSquadRankings([], tinyTeams, advanced, new Set(), [
+        {
+            email: 'realistic@example.com',
+            nickname: 'Realistic',
+            squad: tinyTeams.filter((team) => ['Spain', 'Morocco', 'Canada', 'Iraq', 'Jordan', 'Haiti'].includes(team.name))
+        },
+        {
+            email: 'cheap@example.com',
+            nickname: 'Cheap',
+            squad: tinyTeams.filter((team) => ['Iraq', 'Jordan', 'Haiti'].includes(team.name))
+        },
+        {
+            email: 'too-many-t3@example.com',
+            nickname: 'Too Many Tier 3s',
+            squad: tinyTeams.filter((team) => ['Spain', 'Morocco', 'Canada', 'Iraq', 'Jordan', 'Haiti', 'Qatar', 'Curacao', 'Cape Verde'].includes(team.name))
+        }
+    ], {
+        requireTierOne: true,
+        requireTierTwo: true,
+        realisticOnly: true
+    });
+
+    const realistic = result.contexts.find((context) => context.email === 'realistic@example.com');
+    const cheap = result.contexts.find((context) => context.email === 'cheap@example.com');
+    const tooManyTier3s = result.contexts.find((context) => context.email === 'too-many-t3@example.com');
+
+    assert.ok(result.totalLegalSquads > 0n);
+    assert.equal(realistic.filteredLegal, true);
+    assert.equal(realistic.squadSize, 6);
+    assert.equal(cheap.filteredLegal, false);
+    assert.ok(cheap.filterReasons.includes('No Tier 1 team'));
+    assert.ok(cheap.filterReasons.includes('Outside realistic $140-$150 spend'));
+    assert.equal(tooManyTier3s.filteredLegal, false);
+    assert.ok(tooManyTier3s.filterReasons.includes('Outside realistic 3-5 Tier 3 range'));
 });

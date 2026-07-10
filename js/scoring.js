@@ -458,6 +458,267 @@
         return { buckets, totalLegalSquads };
     }
 
+    function normalizeBestAvailableLabFilters(rawFilters = {}) {
+        const finiteOrNull = (value) => {
+            if (value === null || value === undefined || value === '') return null;
+            const parsed = Number(value);
+            return Number.isFinite(parsed) ? parsed : null;
+        };
+
+        return {
+            minScore: finiteOrNull(rawFilters.minScore),
+            maxScore: finiteOrNull(rawFilters.maxScore),
+            minCost: finiteOrNull(rawFilters.minCost),
+            maxCost: finiteOrNull(rawFilters.maxCost),
+            requireTierOne: Boolean(rawFilters.requireTierOne),
+            requireTierTwo: Boolean(rawFilters.requireTierTwo),
+            realisticOnly: Boolean(rawFilters.realisticOnly)
+        };
+    }
+
+    function bestAvailableBucketPassesLabFilters(bucket, filters = {}) {
+        if (filters.minScore !== null && bucket.score < filters.minScore) return false;
+        if (filters.maxScore !== null && bucket.score > filters.maxScore) return false;
+        if (filters.minCost !== null && bucket.cost < filters.minCost) return false;
+        if (filters.maxCost !== null && bucket.cost > filters.maxCost) return false;
+        if (filters.requireTierOne && bucket.tierOneCount < 1) return false;
+        if (filters.requireTierTwo && bucket.tierTwoCount < 1) return false;
+
+        if (filters.realisticOnly) {
+            if (bucket.cost < 140 || bucket.cost > 150) return false;
+            if (bucket.tierThreeCount < 3 || bucket.tierThreeCount > 5) return false;
+            if (bucket.tierOneCount === 1) {
+                if (bucket.tierTwoCount < 2) return false;
+            } else if (bucket.tierTwoCount < 4) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function getBestAvailableFilteredLegalBuckets(eligibleTeams = [], teamPointsMap = {}, rawFilters = {}) {
+        const filters = normalizeBestAvailableLabFilters(rawFilters);
+        let states = new Map([['0|0|0|0|0|0', 1n]]);
+
+        eligibleTeams.forEach((team) => {
+            const nextStates = new Map(states);
+            const teamPoints = Number(teamPointsMap[team.name] || 0);
+            const teamCost = Number(team.cost || 0);
+            const teamTier = Number(team.tier || 0);
+            const teamTierOneIncrement = teamTier === 1 ? 1 : 0;
+            const teamTierTwoIncrement = teamTier === 2 ? 1 : 0;
+            const teamTierThreeIncrement = teamTier === 3 ? 1 : 0;
+
+            states.forEach((count, key) => {
+                const [cost, tierOneCount, tierTwoCount, tierThreeCount, size, score] = key.split('|').map(Number);
+                const nextCost = cost + teamCost;
+                if (nextCost > 150) return;
+
+                const nextTierOneCount = tierOneCount + teamTierOneIncrement;
+                if (nextTierOneCount > 1) return;
+
+                const nextTierTwoCount = Math.min(4, tierTwoCount + teamTierTwoIncrement);
+                const nextTierThreeCount = Math.min(6, tierThreeCount + teamTierThreeIncrement);
+                const nextSize = size + 1;
+                const nextScore = score + teamPoints;
+                const nextKey = `${nextCost}|${nextTierOneCount}|${nextTierTwoCount}|${nextTierThreeCount}|${nextSize}|${nextScore}`;
+                addBestAvailableCount(nextStates, nextKey, count);
+            });
+
+            states = nextStates;
+        });
+
+        const buckets = [];
+        let totalLegalSquads = 0n;
+        states.forEach((count, key) => {
+            const [cost, tierOneCount, tierTwoCount, tierThreeCount, size, score] = key.split('|').map(Number);
+            if (tierOneCount > 1 || tierThreeCount < 3) return;
+
+            const bucket = { cost, score, count, tierOneCount, tierTwoCount, tierThreeCount, size };
+            if (!bestAvailableBucketPassesLabFilters(bucket, filters)) return;
+
+            totalLegalSquads += count;
+            buckets.push(bucket);
+        });
+
+        return { buckets, totalLegalSquads, filters };
+    }
+
+    function getBestAvailableLabFilterReasons(summary, filters = {}) {
+        const reasons = [];
+
+        if (filters.minScore !== null && summary.totalPoints < filters.minScore) {
+            reasons.push(`Below ${filters.minScore} point minimum`);
+        }
+        if (filters.maxScore !== null && summary.totalPoints > filters.maxScore) {
+            reasons.push(`Above ${filters.maxScore} point maximum`);
+        }
+        if (filters.minCost !== null && summary.totalCost < filters.minCost) {
+            reasons.push(`Below $${filters.minCost} minimum cost`);
+        }
+        if (filters.maxCost !== null && summary.totalCost > filters.maxCost) {
+            reasons.push(`Above $${filters.maxCost} maximum cost`);
+        }
+        if (filters.requireTierOne && summary.tierOneCount < 1) {
+            reasons.push('No Tier 1 team');
+        }
+        if (filters.requireTierTwo && summary.tierTwoCount < 1) {
+            reasons.push('No Tier 2 team');
+        }
+        if (filters.realisticOnly) {
+            if (summary.totalCost < 140 || summary.totalCost > 150) {
+                reasons.push('Outside realistic $140-$150 spend');
+            }
+            if (summary.tierThreeCount < 3 || summary.tierThreeCount > 5) {
+                reasons.push('Outside realistic 3-5 Tier 3 range');
+            }
+            if (summary.tierOneCount === 1 && summary.tierTwoCount < 2) {
+                reasons.push('Realistic Tier 1 builds need at least two Tier 2s');
+            }
+            if (summary.tierOneCount === 0 && summary.tierTwoCount < 4) {
+                reasons.push('No-Tier-1 builds need at least four Tier 2s');
+            }
+        }
+
+        return reasons;
+    }
+
+    function buildBestAvailableFilteredSquadRankings(allMatches = [], teamsList = [], advancedTeamsSet = new Set(), eliminatedTeamsSet = new Set(), trackedSquads = [], rawFilters = {}) {
+        const eligibleTeams = (teamsList || []).filter((team) => team && team.name && team.qualified !== false);
+        const eligibleTeamMap = new Map(eligibleTeams.map((team) => [team.name, team]));
+        const teamPointsMap = buildTeamPointsMap(allMatches, eligibleTeams, advancedTeamsSet);
+        const teamBreakdownMap = buildTeamStageBreakdownMap(allMatches, eligibleTeams, advancedTeamsSet);
+        const { buckets, totalLegalSquads, filters } = getBestAvailableFilteredLegalBuckets(eligibleTeams, teamPointsMap, rawFilters);
+        const bestBucket = buckets.reduce((best, bucket) => {
+            if (!best) return bucket;
+            if (bucket.score !== best.score) return bucket.score > best.score ? bucket : best;
+            if (bucket.cost !== best.cost) return bucket.cost < best.cost ? bucket : best;
+            if (bucket.size !== best.size) return bucket.size < best.size ? bucket : best;
+            return bucket;
+        }, null);
+
+        const contexts = (trackedSquads || []).map((entry) => {
+            const sourceSquad = Array.isArray(entry?.squad) ? entry.squad : [];
+            const seenTeams = new Set();
+            const normalizedSquad = [];
+            const invalidReasons = [];
+            let totalCost = 0;
+            let tierOneCount = 0;
+            let tierTwoCount = 0;
+            let tierThreeCount = 0;
+            let totalPoints = 0;
+            let stagePoints = emptyStagePoints();
+
+            sourceSquad.forEach((squadTeam) => {
+                const teamName = String(squadTeam?.name || '').trim();
+                const team = eligibleTeamMap.get(teamName);
+                if (!teamName) return;
+                if (seenTeams.has(teamName)) {
+                    invalidReasons.push(`${teamName} appears more than once`);
+                    return;
+                }
+                seenTeams.add(teamName);
+
+                if (!team) {
+                    invalidReasons.push(`${teamName} is not eligible`);
+                    return;
+                }
+
+                const teamCost = Number(team.cost ?? squadTeam.cost ?? 0);
+                const teamTier = Number(team.tier ?? squadTeam.tier ?? 0);
+                const teamPoints = Number(teamPointsMap[teamName] || 0);
+                const teamBreakdown = teamBreakdownMap[teamName] || emptyStagePoints();
+                totalCost += teamCost;
+                totalPoints += teamPoints;
+                tierOneCount += teamTier === 1 ? 1 : 0;
+                tierTwoCount += teamTier === 2 ? 1 : 0;
+                tierThreeCount += teamTier === 3 ? 1 : 0;
+                stagePoints = addStagePoints(stagePoints, teamBreakdown);
+                normalizedSquad.push({
+                    name: teamName,
+                    flag: team.flag || squadTeam.flag,
+                    cost: teamCost,
+                    tier: teamTier,
+                    eliminated: eliminatedTeamsSet.has(teamName)
+                });
+            });
+
+            if (totalCost > 150) invalidReasons.push('Squad is over the $150 budget');
+            if (tierOneCount > 1) invalidReasons.push('Squad has more than one Tier 1 team');
+            if (tierThreeCount < 3) invalidReasons.push('Squad has fewer than three Tier 3 teams');
+
+            const summary = {
+                totalPoints,
+                totalCost,
+                tierOneCount,
+                tierTwoCount,
+                tierThreeCount,
+                size: normalizedSquad.length
+            };
+            const filterReasons = invalidReasons.length === 0
+                ? getBestAvailableLabFilterReasons(summary, filters)
+                : [];
+            const filteredLegal = invalidReasons.length === 0 && filterReasons.length === 0;
+
+            let higherScoreCount = 0n;
+            let cheaperSameScoreCount = 0n;
+            let sameScoreCount = 0n;
+            let sameScoreSameCostCount = 0n;
+
+            if (filteredLegal) {
+                buckets.forEach((bucket) => {
+                    if (bucket.score > totalPoints) {
+                        higherScoreCount += bucket.count;
+                    } else if (bucket.score === totalPoints) {
+                        sameScoreCount += bucket.count;
+                        if (bucket.cost < totalCost) {
+                            cheaperSameScoreCount += bucket.count;
+                        } else if (bucket.cost === totalCost) {
+                            sameScoreSameCostCount += bucket.count;
+                        }
+                    }
+                });
+            }
+
+            const rankStart = filteredLegal ? higherScoreCount + cheaperSameScoreCount + 1n : null;
+            const rankEnd = rankStart === null ? null : rankStart + sameScoreSameCostCount - 1n;
+
+            return {
+                ...entry,
+                legal: invalidReasons.length === 0,
+                filteredLegal,
+                invalidReasons,
+                filterReasons,
+                totalPoints,
+                totalCost,
+                tierOneCount,
+                tierTwoCount,
+                tierThreeCount,
+                squadSize: normalizedSquad.length,
+                stagePoints,
+                squad: normalizedSquad,
+                signature: getSquadSignature(normalizedSquad),
+                rankStart,
+                rankEnd,
+                pointsRank: filteredLegal ? higherScoreCount + 1n : null,
+                higherScoreCount,
+                cheaperSameScoreCount,
+                sameScoreCount,
+                sameScoreSameCostCount,
+                totalLegalSquads
+            };
+        });
+
+        return {
+            contexts,
+            buckets,
+            totalLegalSquads,
+            bestBucket,
+            filters
+        };
+    }
+
     function buildBestAvailableSquadRankings(allMatches = [], teamsList = [], advancedTeamsSet = new Set(), eliminatedTeamsSet = new Set(), trackedSquads = []) {
         const eligibleTeams = (teamsList || []).filter((team) => team && team.name && team.qualified !== false);
         const eligibleTeamMap = new Map(eligibleTeams.map((team) => [team.name, team]));
@@ -589,6 +850,7 @@
         getSquadSignature,
         buildBestAvailableSquadsData,
         buildBestAvailableSquadRankings,
+        buildBestAvailableFilteredSquadRankings,
         buildBestAvailableTeamData
     };
 
