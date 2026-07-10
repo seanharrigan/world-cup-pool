@@ -13626,10 +13626,11 @@ const WRAPPED_HOSTS = ['USA', 'Mexico', 'Canada'];
 const WRAPPED_EXCLUDE = new Set(['seanigan44@gmail.com']); // test account — excluded from all stats
 let _wrappedKeyHandler = null;
 
-// Registry of published update decks (newest first). Add an entry to publish a new one.
-// `build` selects the builder; only 'picks' (the pool recap) exists for now.
+// Registry of published update decks, in the order shown on Updates.
+// `build` selects the deck builder.
 const WRAPPED_DECKS = [
-    { id: 'picks-are-in', title: 'Picks Are In', date: 'Jun 11, 2026', build: 'picks' }
+    { id: 'picks-are-in', title: 'Picks Are In', date: 'Jun 11, 2026', subtitle: 'Pre-tournament pool recap', build: 'picks' },
+    { id: 'group-stage-receipts', title: 'Group Stage Receipts', date: 'Jun 27, 2026', subtitle: 'Group stage recap', build: 'groupStage' }
 ];
 
 function _wrappedTeamByName() {
@@ -13643,6 +13644,84 @@ function _wrappedEsc(s) {
 }
 function _wrappedMoney(n) { return '$' + Math.round(n).toLocaleString(); }
 function _wrappedPeople(n) { return n === 1 ? '1 player' : n + ' players'; }
+function _wrappedSlideHTML(extra, inner) {
+    return '<section class="wr-slide ' + (extra || '') + '"><div class="wr-inner">' + inner + '</div></section>';
+}
+function _wrappedStatSlide(kicker, big, caption, isFlag) {
+    return _wrappedSlideHTML(isFlag ? 'wr-blue' : '',
+        '<div class="wr-kicker">' + _wrappedEsc(kicker) + '</div><div class="wr-bignum">' + big + '</div><p class="wr-caption">' + caption + '</p>');
+}
+function _wrappedChipList(names, options = {}) {
+    const flagOf = options.flagOf || (() => '');
+    const withFlag = Boolean(options.withFlag);
+    return '<div class="wr-namelist">' + (names || []).slice(0, 24).map((n) =>
+        '<span class="wr-chip">' + _wrappedEsc(typeof n === 'string' ? n : n.name) + (withFlag && n.fav ? ' ' + flagOf(n.fav) : '') + '</span>').join('') + '</div>';
+}
+function _wrappedBarRows(rows) {
+    const safeRows = rows || [];
+    const max = Math.max(1, ...safeRows.map((r) => Number(r.value) || 0));
+    return '<div class="wr-bars">' + safeRows.map((r) => {
+        const value = Number(r.value) || 0;
+        const w = Math.round((value / max) * 100);
+        const displayValue = r.displayValue == null ? value : r.displayValue;
+        return '<div class="wr-bar-row">'
+            + '<div class="wr-bar-label">' + (r.flag ? r.flag + ' ' : '') + _wrappedEsc(r.label) + '</div>'
+            + '<div class="wr-bar-track"><div class="wr-bar-fill" style="width:' + w + '%"></div></div>'
+            + '<div class="wr-bar-val">' + _wrappedEsc(displayValue) + '</div></div>';
+    }).join('') + '</div>';
+}
+function _wrappedRenderDeck(host, slides) {
+    const count = slides.length;
+    host.innerHTML =
+        '<div class="wr-deck" id="wr-deck">' + slides.join('') + '</div>'
+        + '<div class="wr-progress" id="wr-progress"></div>'
+        + '<div class="wr-hint" id="wr-hint">Swipe or tap Next · ↑ back</div>'
+        + '<div class="wr-controls">'
+        + '<button class="wr-prev" id="wr-prev" aria-label="Previous">↑</button>'
+        + '<button class="wr-next" id="wr-next">Next ↓</button>'
+        + '</div>';
+
+    _setupWrappedNav(count);
+    if (typeof twemoji !== 'undefined') _wrappedRenderFlags(host);
+}
+function _wrappedBuildPoolContext(picks, profiles) {
+    const profByEmail = {};
+    (profiles || []).forEach((p) => { if (p && p.email) profByEmail[p.email.toLowerCase()] = p; });
+    const isBlocked = (email) => { const p = profByEmail[(email || '').toLowerCase()]; return !!(p && p.blocked); };
+    const nameOf = (email) => {
+        const p = profByEmail[(email || '').toLowerCase()];
+        return (p && (p.nickname || p.realname)) || (email || '').split('@')[0] || 'Someone';
+    };
+
+    const squads = {};
+    (picks || []).forEach((row) => {
+        if (!row || !row.user_email) return;
+        const key = row.user_email.toLowerCase();
+        if (isBlocked(row.user_email) || WRAPPED_EXCLUDE.has(key)) return;
+        (squads[key] = squads[key] || []).push(row);
+    });
+
+    return {
+        profByEmail,
+        isBlocked,
+        nameOf,
+        squads,
+        players: Object.keys(squads),
+        includedPicks: Object.values(squads).flat()
+    };
+}
+function _wrappedTeamPickCounts(squads) {
+    const teamCount = {};
+    Object.values(squads || {}).forEach((sq) => {
+        const seen = new Set();
+        sq.forEach((r) => {
+            if (!r || seen.has(r.team_name)) return;
+            seen.add(r.team_name);
+            teamCount[r.team_name] = (teamCount[r.team_name] || 0) + 1;
+        });
+    });
+    return teamCount;
+}
 
 // Public table on the Updates page — one row per published deck.
 function renderUpdatesTable() {
@@ -13651,7 +13730,7 @@ function renderUpdatesTable() {
     body.innerHTML = WRAPPED_DECKS.map((d) =>
         '<tr class="text-gray-900">'
         + '<td class="px-5 py-4"><div class="text-sm font-black uppercase">' + _wrappedEsc(d.title) + '</div>'
-        + '<div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Pool recap</div></td>'
+        + '<div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">' + _wrappedEsc(d.subtitle || 'Pool recap') + '</div></td>'
         + '<td class="px-5 py-4 hidden sm:table-cell text-[11px] font-bold uppercase tracking-[0.15em] text-gray-500">' + _wrappedEsc(d.date) + '</td>'
         + '<td class="px-5 py-4 text-right"><button onclick="openWrappedDeck(\'' + _wrappedEsc(d.id) + '\')" class="rounded-xl bg-gray-900 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-colors hover:bg-gray-700">Open ▶</button></td>'
         + '</tr>'
@@ -13677,13 +13756,27 @@ async function openWrappedDeck(deckId) {
     host.innerHTML = '<div class="wr-state"><div class="wr-spinner"></div><div class="wr-sub">Loading…</div></div>';
 
     try {
+        if (deck.build === 'groupStage') {
+            const [picksRes, profRes, matchesRes, advancementRes] = await Promise.all([
+                supabaseClient.from('picks').select('user_email, team_name, tier, cost'),
+                supabaseClient.from('profiles').select('email, nickname, realname, favorite_team, home_country, has_paid, blocked, picks_save_count, avatar_url, updated_at'),
+                supabaseClient.from('matches').select('*'),
+                supabaseClient.from('team_advancement').select('team_name, advanced_to_knockouts, eliminated')
+            ]);
+            if (picksRes.error) throw picksRes.error;
+            if (profRes.error) throw profRes.error;
+            if (matchesRes.error) throw matchesRes.error;
+            if (advancementRes.error) throw advancementRes.error;
+            _buildGroupStageWrappedDeck(host, picksRes.data || [], profRes.data || [], matchesRes.data || [], advancementRes.data || []);
+            return;
+        }
+
         const [picksRes, profRes] = await Promise.all([
             supabaseClient.from('picks').select('user_email, team_name, tier, cost'),
             supabaseClient.from('profiles').select('email, nickname, realname, favorite_team, home_country, has_paid, blocked, picks_save_count')
         ]);
         if (picksRes.error) throw picksRes.error;
         if (profRes.error) throw profRes.error;
-        // Only the 'picks' builder exists for now; future decks can branch on deck.build.
         _buildWrappedDeck(host, picksRes.data || [], profRes.data || []);
     } catch (e) {
         host.innerHTML = '<div class="wr-state"><div class="wr-headline" style="font-size:30px">Couldn\'t load</div>'
@@ -13704,33 +13797,12 @@ function closeWrappedDeck() {
 function _buildWrappedDeck(host, picks, profiles) {
     const TEAM_BY_NAME = _wrappedTeamByName();
     const flagOf = (name) => (TEAM_BY_NAME[name] && TEAM_BY_NAME[name].flag) || '';
-
-    const profByEmail = {};
-    profiles.forEach((p) => { if (p && p.email) profByEmail[p.email.toLowerCase()] = p; });
-    const isBlocked = (email) => { const p = profByEmail[(email || '').toLowerCase()]; return !!(p && p.blocked); };
-    const nameOf = (email) => {
-        const p = profByEmail[(email || '').toLowerCase()];
-        return (p && (p.nickname || p.realname)) || (email || '').split('@')[0] || 'Someone';
-    };
-
-    // Group picks into squads by user_email (skip blocked + excluded test accounts)
-    const squads = {};
-    picks.forEach((row) => {
-        if (!row || !row.user_email) return;
-        const key = row.user_email.toLowerCase();
-        if (isBlocked(row.user_email) || WRAPPED_EXCLUDE.has(key)) return;
-        (squads[key] = squads[key] || []).push(row);
-    });
-    const players = Object.keys(squads);
+    const { profByEmail, nameOf, squads, players } = _wrappedBuildPoolContext(picks, profiles);
     const playerCount = players.length;
     const pot = WRAPPED_ENTRY_FEE * playerCount;
 
     // Team popularity (distinct squads containing each team)
-    const teamCount = {};
-    Object.values(squads).forEach((sq) => {
-        const seen = new Set();
-        sq.forEach((r) => { if (seen.has(r.team_name)) return; seen.add(r.team_name); teamCount[r.team_name] = (teamCount[r.team_name] || 0) + 1; });
-    });
+    const teamCount = _wrappedTeamPickCounts(squads);
     const pickedTeams = Object.entries(teamCount).sort((a, b) => b[1] - a[1]);
     const mostTeam = pickedTeams[0] || null;
     const leastTeam = pickedTeams.length ? pickedTeams[pickedTeams.length - 1] : null;
@@ -13842,22 +13914,10 @@ function _buildWrappedDeck(host, picks, profiles) {
         (names.has(fav) ? loyalists : traitors).push({ name: nameOf(e), fav });
     });
 
-    const slideHTML = (extra, inner) => '<section class="wr-slide ' + extra + '"><div class="wr-inner">' + inner + '</div></section>';
-    const statSlide = (kicker, big, caption, isFlag) => slideHTML(isFlag ? 'wr-blue' : '',
-        '<div class="wr-kicker">' + _wrappedEsc(kicker) + '</div><div class="wr-bignum">' + big + '</div><p class="wr-caption">' + caption + '</p>');
-    const chipList = (names, withFlag) => '<div class="wr-namelist">' + names.slice(0, 24).map((n) =>
-        '<span class="wr-chip">' + _wrappedEsc(typeof n === 'string' ? n : n.name) + (withFlag && n.fav ? ' ' + flagOf(n.fav) : '') + '</span>').join('') + '</div>';
-    // rows = [{label, value, flag}], max for scaling
-    const barRows = (rows) => {
-        const max = Math.max(1, ...rows.map((r) => r.value));
-        return '<div class="wr-bars">' + rows.map((r) => {
-            const w = Math.round((r.value / max) * 100);
-            return '<div class="wr-bar-row">'
-                + '<div class="wr-bar-label">' + (r.flag ? r.flag + ' ' : '') + _wrappedEsc(r.label) + '</div>'
-                + '<div class="wr-bar-track"><div class="wr-bar-fill" style="width:' + w + '%"></div></div>'
-                + '<div class="wr-bar-val">' + r.value + '</div></div>';
-        }).join('') + '</div>';
-    };
+    const slideHTML = _wrappedSlideHTML;
+    const statSlide = _wrappedStatSlide;
+    const chipList = (names, withFlag) => _wrappedChipList(names, { withFlag, flagOf });
+    const barRows = _wrappedBarRows;
     const tierBarsSlide = (tierNum) => {
         const rows = allTeams.filter((t) => t.tier === tierNum && t.qualified !== false && (Number(t.cost) || 0) > 0)
             .map((t) => ({ label: t.name, value: teamCount[t.name] || 0, flag: t.flag }))
@@ -13977,18 +14037,223 @@ function _buildWrappedDeck(host, picks, profiles) {
     // Closer
     slides.push(slideHTML('wr-blue', '<h1 class="wr-headline">Good luck 🍀</h1><p class="wr-caption" style="margin-top:14px">The tournament starts now. Let\'s see whose squad holds up.</p><div class="wr-sub" style="margin-top:26px">WC2026 Pool · Picks Are In</div>'));
 
-    const count = slides.length;
-    host.innerHTML =
-        '<div class="wr-deck" id="wr-deck">' + slides.join('') + '</div>'
-        + '<div class="wr-progress" id="wr-progress"></div>'
-        + '<div class="wr-hint" id="wr-hint">Swipe or tap Next · ↑ back</div>'
-        + '<div class="wr-controls">'
-        + '<button class="wr-prev" id="wr-prev" aria-label="Previous">↑</button>'
-        + '<button class="wr-next" id="wr-next">Next ↓</button>'
-        + '</div>';
+    _wrappedRenderDeck(host, slides);
+}
 
-    _setupWrappedNav(count);
-    if (typeof twemoji !== 'undefined') _wrappedRenderFlags(host);
+function _buildGroupStageWrappedDeck(host, picks, profiles, matches, advancementRows) {
+    const TEAM_BY_NAME = _wrappedTeamByName();
+    const flagOf = (name) => (TEAM_BY_NAME[name] && TEAM_BY_NAME[name].flag) || '';
+    const allTeams = (typeof teams !== 'undefined' ? teams : []);
+    const qualifiedTeams = allTeams.filter((t) => t.qualified !== false && (Number(t.cost) || 0) > 0);
+    const { squads, players, includedPicks, nameOf } = _wrappedBuildPoolContext(picks, profiles);
+    const playerCount = players.length;
+
+    if (!playerCount) {
+        host.innerHTML = '<div class="wr-state"><div class="wr-headline" style="font-size:30px">No picks yet</div>'
+            + '<p class="wr-caption" style="margin-top:12px">Once players save squads, the group-stage recap will appear here.</p></div>';
+        return;
+    }
+
+    const groupMatches = (matches || []).filter((match) =>
+        match
+        && match.stage === 'Group'
+        && match.is_finished !== false
+        && match.score_home != null
+        && match.score_away != null
+    );
+    const advancedSet = new Set(
+        (advancementRows || [])
+            .filter((row) => row && row.advanced_to_knockouts)
+            .map((row) => row.team_name)
+    );
+    const groupEliminatedTeams = new Set(
+        qualifiedTeams
+            .filter((team) => !advancedSet.has(team.name))
+            .map((team) => team.name)
+    );
+    const profilesMap = buildProfilesMap((profiles || []).filter((p) => p && !p.blocked));
+    const teamPointsMap = buildTeamPointsMap(groupMatches, qualifiedTeams, advancedSet);
+    const leaderboard = buildLeaderboardData(includedPicks, groupMatches, profilesMap, qualifiedTeams, advancedSet, groupEliminatedTeams)
+        .map((entry, index) => ({ ...entry, groupRank: index + 1 }));
+    const teamCount = _wrappedTeamPickCounts(squads);
+
+    const pct = (count, total) => total > 0 ? Math.round((count / total) * 100) : 0;
+    const pointLabel = (n) => Number(n || 0) + ' pt' + (Number(n || 0) === 1 ? '' : 's');
+    const moneyLabel = (n) => '$' + Math.round(Number(n || 0));
+    const valueLabel = (n) => (Number(n || 0)).toFixed(2) + '/$';
+    const playerMetricRows = (rows, valueKey, displayFn) => rows.map((row) => ({
+        label: '#' + row.groupRank + ' ' + row.nickname,
+        value: Number(row[valueKey]) || 0,
+        displayValue: displayFn ? displayFn(row) : row[valueKey]
+    }));
+
+    const teamRows = qualifiedTeams.map((team) => {
+        const points = Number(teamPointsMap[team.name] || 0);
+        const cost = Number(team.cost || 0);
+        const pickedCount = Number(teamCount[team.name] || 0);
+        return {
+            ...team,
+            points,
+            pickedCount,
+            pickedPct: pct(pickedCount, playerCount),
+            advanced: advancedSet.has(team.name),
+            groupEliminated: groupEliminatedTeams.has(team.name),
+            pointsPerDollar: cost > 0 ? points / cost : 0
+        };
+    });
+
+    const playerRows = leaderboard.map((entry) => {
+        const squadRows = squads[(entry.email || '').toLowerCase()] || [];
+        const uniqueTeams = Array.from(new Map(squadRows.map((row) => [row.team_name, row])).values());
+        const advancedCount = uniqueTeams.filter((row) => advancedSet.has(row.team_name)).length;
+        const eliminatedSpend = uniqueTeams
+            .filter((row) => groupEliminatedTeams.has(row.team_name))
+            .reduce((sum, row) => sum + (Number((TEAM_BY_NAME[row.team_name] || {}).cost || row.cost || 0)), 0);
+        return {
+            ...entry,
+            advancedCount,
+            eliminatedSpend,
+            squadSize: uniqueTeams.length
+        };
+    });
+
+    const standingsRows = playerRows.slice(0, 10);
+    const leader = standingsRows[0] || null;
+    const tiedLeaders = leader ? playerRows.filter((entry) => entry.totalPoints === leader.totalPoints) : [];
+    const advancedRows = playerRows
+        .slice()
+        .sort((a, b) => b.advancedCount - a.advancedCount || b.totalPoints - a.totalPoints || a.nickname.localeCompare(b.nickname))
+        .slice(0, 10);
+    const toughestRows = playerRows
+        .slice()
+        .sort((a, b) => a.totalPoints - b.totalPoints || a.nickname.localeCompare(b.nickname))
+        .slice(0, 10);
+    const bustExposureRows = playerRows
+        .slice()
+        .sort((a, b) => b.eliminatedSpend - a.eliminatedSpend || a.totalPoints - b.totalPoints || a.nickname.localeCompare(b.nickname))
+        .slice(0, 10);
+    const bestTeamRows = teamRows
+        .slice()
+        .sort((a, b) => b.points - a.points || b.pickedCount - a.pickedCount || a.name.localeCompare(b.name))
+        .slice(0, 10);
+    const valueRows = teamRows
+        .filter((team) => team.points > 0)
+        .sort((a, b) => b.pointsPerDollar - a.pointsPerDollar || b.points - a.points || a.name.localeCompare(b.name))
+        .slice(0, 10);
+    const worstReturnRows = teamRows
+        .filter((team) => team.pickedCount > 0)
+        .sort((a, b) => a.pointsPerDollar - b.pointsPerDollar || b.cost - a.cost || b.pickedCount - a.pickedCount || a.name.localeCompare(b.name))
+        .slice(0, 10);
+    const popularPaidRows = teamRows
+        .filter((team) => team.advanced && team.pickedCount > 0)
+        .sort((a, b) => b.pickedCount - a.pickedCount || b.points - a.points || a.name.localeCompare(b.name))
+        .slice(0, 10);
+
+    const slides = [];
+    slides.push(_wrappedSlideHTML('wr-blue',
+        '<div class="wr-brand">WC2026 POOL</div><h1 class="wr-headline" style="margin-top:10px">Group Stage Receipts</h1>'
+        + '<p class="wr-caption" style="margin-top:14px">The groups are done. Here is who cooked, who survived, and whose squad took some damage.</p>'));
+
+    slides.push(_wrappedSlideHTML('wr-gold',
+        '<div class="wr-kicker">Snapshot</div><div class="wr-bignum">' + groupMatches.length + '</div>'
+        + '<p class="wr-caption">group-stage matches are in the books. Advancement bonuses are included.</p>'
+        + '<div class="wr-payouts">'
+        + '<div class="wr-payrow"><span class="wr-place">Advanced</span><span class="wr-amt" style="color:#34d399">' + advancedSet.size + '</span></div>'
+        + '<div class="wr-payrow"><span class="wr-place">Out after groups</span><span class="wr-amt" style="color:#f59e0b">' + groupEliminatedTeams.size + '</span></div>'
+        + '<div class="wr-payrow"><span class="wr-place">Pool squads</span><span class="wr-amt" style="color:#60a5fa">' + playerCount + '</span></div>'
+        + '</div>'));
+
+    if (standingsRows.length) {
+        slides.push(_wrappedSlideHTML('',
+            '<div class="wr-kicker">Standings After Groups</div><h1 class="wr-headline" style="font-size:clamp(24px,6vw,40px);margin-bottom:6px">Top 10</h1>'
+            + _wrappedBarRows(standingsRows.map((entry) => ({
+                label: '#' + entry.groupRank + ' ' + entry.nickname,
+                value: entry.totalPoints,
+                displayValue: pointLabel(entry.totalPoints)
+            })))));
+    }
+
+    if (leader) {
+        slides.push(_wrappedStatSlide('Group Stage Leader', _wrappedEsc(leader.nickname),
+            pointLabel(leader.totalPoints) + ' after groups. '
+            + (tiedLeaders.length > 1 ? (tiedLeaders.length - 1) + ' more player' + (tiedLeaders.length === 2 ? '' : 's') + ' tied the lead.' : 'Top of the table when the knockouts started.')));
+    }
+
+    if (advancedRows.length) {
+        slides.push(_wrappedSlideHTML('',
+            '<div class="wr-kicker">Most Teams Advanced</div><h1 class="wr-headline" style="font-size:clamp(24px,6vw,40px);margin-bottom:6px">Still Alive</h1>'
+            + '<p class="wr-caption" style="margin-bottom:6px">Who carried the most teams into the knockouts.</p>'
+            + _wrappedBarRows(playerMetricRows(advancedRows, 'advancedCount', (row) => row.advancedCount + '/' + row.squadSize))));
+    }
+
+    if (bestTeamRows.length) {
+        slides.push(_wrappedSlideHTML('',
+            '<div class="wr-kicker">Best Team Performers</div><h1 class="wr-headline" style="font-size:clamp(24px,6vw,40px);margin-bottom:6px">Group Stars</h1>'
+            + _wrappedBarRows(bestTeamRows.map((team) => ({
+                label: team.name,
+                flag: team.flag,
+                value: team.points,
+                displayValue: pointLabel(team.points)
+            })))));
+    }
+
+    if (valueRows.length) {
+        slides.push(_wrappedSlideHTML('',
+            '<div class="wr-kicker">Best Value Picks</div><h1 class="wr-headline" style="font-size:clamp(24px,6vw,40px);margin-bottom:6px">Points Per Dollar</h1>'
+            + _wrappedBarRows(valueRows.map((team) => ({
+                label: team.name,
+                flag: team.flag,
+                value: team.pointsPerDollar,
+                displayValue: valueLabel(team.pointsPerDollar)
+            })))));
+    }
+
+    if (worstReturnRows.length) {
+        slides.push(_wrappedSlideHTML('',
+            '<div class="wr-kicker">Worst Team Returns</div><h1 class="wr-headline" style="font-size:clamp(24px,6vw,40px);margin-bottom:6px">Costly Misses</h1>'
+            + '<p class="wr-caption" style="margin-bottom:6px">Picked teams with the weakest points per dollar.</p>'
+            + _wrappedBarRows(worstReturnRows.map((team) => ({
+                label: team.name + ' (' + moneyLabel(team.cost) + ')',
+                flag: team.flag,
+                value: Math.max(0.01, team.cost),
+                displayValue: valueLabel(team.pointsPerDollar) + ' · ' + pointLabel(team.points)
+            })))));
+    }
+
+    if (bustExposureRows.length) {
+        slides.push(_wrappedSlideHTML('',
+            '<div class="wr-kicker">Biggest Bust Exposure</div><h1 class="wr-headline" style="font-size:clamp(24px,6vw,40px);margin-bottom:6px">Eliminated Spend</h1>'
+            + '<p class="wr-caption" style="margin-bottom:6px">Budget tied up in teams that missed the knockouts.</p>'
+            + _wrappedBarRows(playerMetricRows(bustExposureRows, 'eliminatedSpend', (row) => moneyLabel(row.eliminatedSpend)))));
+    }
+
+    if (toughestRows.length) {
+        slides.push(_wrappedSlideHTML('',
+            '<div class="wr-kicker">Toughest Starts</div><h1 class="wr-headline" style="font-size:clamp(24px,6vw,40px);margin-bottom:6px">Bottom 10</h1>'
+            + '<p class="wr-caption" style="margin-bottom:6px">Least points on the board after the groups.</p>'
+            + _wrappedBarRows(toughestRows.map((entry) => ({
+                label: '#' + entry.groupRank + ' ' + entry.nickname,
+                value: Math.max(1, entry.totalPoints),
+                displayValue: pointLabel(entry.totalPoints)
+            })))));
+    }
+
+    if (popularPaidRows.length) {
+        slides.push(_wrappedSlideHTML('',
+            '<div class="wr-kicker">Popular Picks That Paid Off</div><h1 class="wr-headline" style="font-size:clamp(24px,6vw,40px);margin-bottom:6px">Crowd Wins</h1>'
+            + _wrappedBarRows(popularPaidRows.map((team) => ({
+                label: team.name,
+                flag: team.flag,
+                value: team.pickedCount,
+                displayValue: team.pickedCount + '/' + playerCount + ' · ' + pointLabel(team.points)
+            })))));
+    }
+
+    slides.push(_wrappedSlideHTML('wr-blue',
+        '<h1 class="wr-headline">Knockouts Await</h1><p class="wr-caption" style="margin-top:14px">The group-stage receipts are filed. Now every match can swing the pool.</p>'
+        + '<div class="wr-sub" style="margin-top:26px">WC2026 Pool · Group Stage Receipts</div>'));
+
+    _wrappedRenderDeck(host, slides);
 }
 
 function _wrappedRenderFlags(root) {
