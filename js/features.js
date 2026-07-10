@@ -9561,6 +9561,31 @@ function hideLeaderboardSelfCard() {
     card.innerHTML = '';
 }
 
+function _leaderboardSelfRankSpectrumSkeletonHtml() {
+    return `
+        <div class="mt-3 rounded-2xl border border-gray-200/80 bg-white/70 px-3 py-3">
+            <div class="relative h-11 px-2">
+                <div class="absolute left-0 right-0 top-5 h-2 animate-pulse rounded-full bg-gray-200"></div>
+                <div class="absolute left-0 top-4 h-4 w-4 animate-pulse rounded-full border-2 border-white bg-emerald-200 ring-4 ring-emerald-50"></div>
+                <div class="absolute left-[14%] top-4 h-4 w-4 animate-pulse rounded-full border-2 border-white bg-blue-200 ring-4 ring-blue-50"></div>
+                <div class="absolute left-[50%] top-4 h-4 w-4 animate-pulse rounded-full border-2 border-white bg-gray-300 ring-4 ring-gray-100"></div>
+                <div class="absolute right-[14%] top-4 h-4 w-4 animate-pulse rounded-full border-2 border-white bg-amber-200 ring-4 ring-amber-50"></div>
+                <div class="absolute right-0 top-4 h-4 w-4 animate-pulse rounded-full border-2 border-white bg-gray-300 ring-4 ring-gray-100"></div>
+            </div>
+            <div class="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+                ${Array.from({ length: 5 }).map(() => `
+                    <div class="rounded-xl border border-gray-200 bg-white/70 px-3 py-2.5">
+                        <div class="h-2 w-20 animate-pulse rounded bg-gray-200"></div>
+                        <div class="mt-2 h-3 w-24 animate-pulse rounded bg-gray-200"></div>
+                        <div class="mt-2 h-3 w-16 animate-pulse rounded bg-gray-200"></div>
+                        <div class="mt-1.5 h-2 w-12 animate-pulse rounded bg-gray-200"></div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
 function renderLeaderboardSelfCardSkeleton() {
     const card = document.getElementById('leaderboard-self-card');
     if (!card) return;
@@ -9610,7 +9635,7 @@ function renderLeaderboardSelfCardSkeleton() {
                         <div class="h-12 animate-pulse rounded-xl bg-white/70"></div>
                     </div>
                 </div>
-                <div class="mt-3 h-32 animate-pulse rounded-xl bg-white/70"></div>
+                ${_leaderboardSelfRankSpectrumSkeletonHtml()}
             </div>
         </div>
     `;
@@ -9791,15 +9816,46 @@ function _renderLeaderboardSelfLabPreview(entry) {
         key,
         positionPct: rankPositionPct(anchor.rankEnd)
     })) : [];
-    const spectrumMarkerHtml = spectrumAnchors
+    const markerAnchors = (() => {
+        const anchors = spectrumAnchors
+            .filter((anchor) => anchor.positionPct !== null)
+            .map((anchor) => ({ ...anchor, markerPct: anchor.positionPct }))
+            .sort((a, b) => a.positionPct - b.positionPct);
+        const minGap = 2.8;
+
+        anchors.forEach((anchor, index) => {
+            if (index === 0) {
+                anchor.markerPct = Math.max(0.5, anchor.markerPct);
+                return;
+            }
+            anchor.markerPct = Math.max(anchor.markerPct, anchors[index - 1].markerPct + minGap);
+        });
+
+        if (anchors.length && anchors[anchors.length - 1].markerPct > 99.5) {
+            anchors[anchors.length - 1].markerPct = 99.5;
+            for (let index = anchors.length - 2; index >= 0; index -= 1) {
+                anchors[index].markerPct = Math.min(anchors[index].markerPct, anchors[index + 1].markerPct - minGap);
+            }
+        }
+
+        anchors.forEach((anchor, index) => {
+            anchor.markerPct = Math.max(0.5, Math.min(99.5, anchor.markerPct));
+            if (index > 0 && anchor.markerPct - anchors[index - 1].markerPct < minGap) {
+                anchor.markerPct = Math.min(99.5, anchors[index - 1].markerPct + minGap);
+            }
+        });
+
+        return anchors;
+    })();
+    const spectrumMarkerHtml = markerAnchors
         .filter((anchor) => anchor.positionPct !== null)
         .map((anchor) => {
-            const alignClass = _bestAvailableRankAlignClass(anchor.positionPct);
+            const alignClass = _bestAvailableRankAlignClass(anchor.markerPct);
             const titlePercentile = anchor.percentileLabel && !['bestOverall', 'worstOverall'].includes(anchor.key)
                 ? `${anchor.percentileLabel}, `
                 : '';
             return `
-                <div class="absolute top-4 h-4 w-4 ${alignClass} rounded-full border-2 border-white ${anchorDotClasses[anchor.key]} shadow-sm ring-4 ${anchorDotRingClasses[anchor.key]}" style="left:${anchor.positionPct}%" title="${escapeHtml(`${anchor.label}: ${anchor.rankLabel}, ${titlePercentile}${anchor.points} pts`)}"></div>
+                <div class="absolute top-4 h-4 w-4 ${alignClass} rounded-full border-2 border-white ${anchorDotClasses[anchor.key]} shadow-sm ring-4 ${anchorDotRingClasses[anchor.key]}" style="left:${anchor.markerPct}%" title="${escapeHtml(`${anchor.label}: ${anchor.rankLabel}, ${titlePercentile}${anchor.points} pts`)}"></div>
             `;
         }).join('');
     const percentileChipHtml = (anchor) => anchor.percentileLabel && !['bestOverall', 'worstOverall'].includes(anchor.key)
@@ -9828,7 +9884,7 @@ function _renderLeaderboardSelfLabPreview(entry) {
             </div>
         </div>
     ` : `
-        <div class="mt-3 h-32 animate-pulse rounded-xl bg-white/70"></div>
+        ${_leaderboardSelfRankSpectrumSkeletonHtml()}
     `;
     const squadRows = _getMyPoolLabSquadRows(entry);
     const mostPoints = [...squadRows]
@@ -11939,10 +11995,15 @@ function _formatBestAvailablePercentile(context) {
     if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(rank) || rank <= 0) return '';
 
     const pct = Math.min(100, Math.max(0, (rank / total) * 100));
-    if (pct < 0.01) return 'Top <0.01%';
-    if (pct < 1) return `Top ${pct.toFixed(2)}%`;
-    if (pct < 10) return `Top ${pct.toFixed(1)}%`;
-    return `Top ${Math.round(pct)}%`;
+    const formatPct = (value) => {
+        if (value < 0.01) return '<0.01%';
+        if (value < 1) return `${value.toFixed(2)}%`;
+        if (value < 10) return `${value.toFixed(1)}%`;
+        return `${Math.round(value)}%`;
+    };
+
+    if (pct <= 50) return `Top ${formatPct(pct)}`;
+    return `Bottom ${formatPct(100 - pct)}`;
 }
 
 function _getBestAvailableRealisticPoolContext() {
