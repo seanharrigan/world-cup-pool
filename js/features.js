@@ -9746,7 +9746,7 @@ function _renderLeaderboardSelfLabPreview(entry) {
                 </div>
             </div>
             <div id="leaderboard-self-lab-info" class="hidden mt-3 rounded-xl border border-emerald-200 bg-white/80 px-3 py-2 text-[10px] font-bold leading-relaxed text-gray-600">
-                Global rank uses the realistic squad universe: $140-$150 spent, 3-5 Tier 3 teams, and either one Tier 1 with at least two Tier 2s or no Tier 1 with at least four Tier 2s.
+                Global rank uses realistic squads: $140-$150 spent, 3-5 Tier 3 teams, and then mostly Tier 2s. A squad can use 0 or 1 Tier 1; Tier-1 builds need at least two Tier 2s, and no-Tier-1 builds need at least four Tier 2s. No fixed squad size.
             </div>
             <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 ${pickTile('Most Points', mostPoints, 'No points yet')}
@@ -11787,8 +11787,28 @@ function _formatBestAvailablePercentile(context) {
     return `Top ${Math.round(pct)}%`;
 }
 
+function _getBestAvailableRealisticPoolContext() {
+    const data = _getCachedBestAvailableLabData(DEFAULT_BEST_AVAILABLE_LAB_FILTERS);
+    const context = [...(data.contexts || [])]
+        .filter((candidate) => candidate.filteredLegal)
+        .sort(compareBestAvailableLabContexts)[0] || null;
+
+    if (!context) return null;
+
+    const displayedSquad = (window._bestAvailableSquads || [])
+        .find((squad) => squad.signature === context.signature);
+
+    return {
+        ...context,
+        exactTopRank: null,
+        shownInTopList: Boolean(displayedSquad),
+        topListRank: displayedSquad?.rank || null,
+        totalLegalSquads: data.totalLegalSquads
+    };
+}
+
 function _renderBestAvailablePoolContextCard() {
-    const context = window._bestAvailablePoolContext || null;
+    const context = _getBestAvailableRealisticPoolContext();
     if (!context) {
         return `<div class="mt-3 rounded-2xl border border-gray-800 bg-gray-950/55 px-3 py-3 text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">
             No real pool squads are available for this comparison yet.
@@ -11797,17 +11817,16 @@ function _renderBestAvailablePoolContextCard() {
 
     const safeEmail = escapeJsSingleQuoted(context.email || '');
     const playerName = context.nickname || context.realname || 'Best pool entry';
-    const rankLabel = _formatBestAvailableRankLabel(context);
-    const percentileLabel = _formatBestAvailablePercentile(context);
+    const rankLabel = _formatBestAvailableRankRangeCompact({ ...context, legal: true, exactTopRank: null });
+    const percentileLabel = _formatBestAvailablePercentile({ ...context, legal: true, exactTopRank: null });
     const totalLegal = _formatCompactBestAvailableNumber(context.totalLegalSquads);
-    const exactTopRank = Number(context.exactTopRank || 0);
-    const locationLabel = exactTopRank > 0
+    const locationLabel = context.shownInTopList
         ? `Shown in the top ${BEST_AVAILABLE_EXPLORER_LIMIT}`
         : `Outside the top ${BEST_AVAILABLE_EXPLORER_LIMIT}`;
     const poolRankLabel = Number(context.displayRank || 0) > 0 ? `Pool rank #${Number(context.displayRank)}` : 'Pool rank unavailable';
     const tieNote = _isBestAvailableRankRange(context)
-        ? 'Range means there are other legal squads tied on points and cost.'
-        : 'Rank uses points first, then lower cost.';
+        ? 'Range means other realistic squads are tied on points and cost.'
+        : 'Realistic rank uses points first, then lower cost.';
 
     return `<button type="button" onclick="showBestAvailableLab('${safeEmail}')"
         class="mt-3 flex w-full flex-col gap-3 rounded-2xl border border-emerald-500/35 bg-emerald-950/35 px-3 py-3 text-left transition-colors hover:border-emerald-300/70 hover:bg-emerald-900/40 sm:flex-row sm:items-center sm:justify-between">
@@ -11824,7 +11843,7 @@ function _renderBestAvailablePoolContextCard() {
         <div class="shrink-0 rounded-xl border border-emerald-400/30 bg-gray-950/50 px-3 py-2 text-left sm:text-right">
             <div class="text-lg font-black text-emerald-200">${rankLabel}</div>
             ${percentileLabel ? `<div class="mt-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-300">${percentileLabel}</div>` : ''}
-            <div class="text-[9px] font-black uppercase tracking-[0.12em] text-gray-400">of ${totalLegal} legal squads</div>
+            <div class="text-[9px] font-black uppercase tracking-[0.12em] text-gray-400">of ${totalLegal} realistic squads</div>
             <div class="mt-1 text-[9px] font-bold text-gray-500">${tieNote}</div>
         </div>
     </button>`;
@@ -11874,7 +11893,7 @@ function _renderBestAvailableLabControls() {
 
     const infoMarkup = _bestAvailableLabInfoOpen ? `
         <div class="rounded-xl border border-emerald-500/25 bg-emerald-950/25 p-3 text-[10px] font-bold leading-relaxed text-emerald-100/80">
-            There are about ${_formatCompactBestAvailableNumber(_getAllLegalSquadCount())} all-legal combinations. This lab uses realistic squads: $140-$150 spent, 3-5 Tier 3s, and either one Tier 1 with at least two Tier 2s or no Tier 1 with at least four Tier 2s.
+            There are about ${_formatCompactBestAvailableNumber(_getAllLegalSquadCount())} all-legal combinations. This lab uses realistic squads: $140-$150 spent, 3-5 Tier 3s, and then mostly Tier 2s. Squads can use 0 or 1 Tier 1; Tier-1 builds need at least two Tier 2s, and no-Tier-1 builds need at least four Tier 2s.
         </div>
     ` : '';
 
@@ -12147,7 +12166,7 @@ function _renderMyPoolLabControls() {
                         class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-gray-700 text-[11px] font-black text-gray-400 transition-colors hover:border-emerald-400 hover:text-emerald-200"
                         aria-label="Explain realistic squad universe">i</button>
                 </div>
-                <div class="text-[10px] font-bold leading-relaxed text-gray-500">$140-$150 spend · 3-5 Tier 3s · sensible Tier 1/Tier 2 mix.</div>
+                <div class="text-[10px] font-bold leading-relaxed text-gray-500">$140-$150 spend · 3-5 Tier 3s · 0-1 Tier 1 · rest mostly Tier 2s.</div>
                 ${infoMarkup}
             </div>
             <div>
