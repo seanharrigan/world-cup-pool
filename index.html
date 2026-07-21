@@ -1543,6 +1543,7 @@
                     <div class="flex flex-wrap gap-2 rounded-3xl border border-gray-800 bg-gray-950/70 p-2 shadow-[0_18px_40px_rgba(0,0,0,0.25)]">
                         <button onclick="showAdminTab('manager')" id="admin-tab-manager" class="admin-tab active rounded-xl border border-blue-400/40 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-950 shadow-lg shadow-blue-500/10 transition-all duration-200">Match Manager</button>
                         <button onclick="showAdminTab('verifytournament')" id="admin-tab-verifytournament" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Verify Tournament</button>
+                        <button onclick="showAdminTab('finalaudit')" id="admin-tab-finalaudit" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Final Audit</button>
                         <button onclick="showAdminTab('advancement')" id="admin-tab-advancement" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Tournament Status</button>
                         <button onclick="showAdminTab('manage')" id="admin-tab-manage" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Players</button>
                         <button onclick="showAdminTab('notifications')" id="admin-tab-notifications" class="admin-tab rounded-xl border border-transparent bg-transparent px-4 py-3 text-[10px] font-black uppercase tracking-[0.23em] text-gray-400 transition-all duration-200 hover:border-gray-700 hover:bg-gray-800/80 hover:text-white">Notifications</button>
@@ -1735,6 +1736,22 @@
                         <div id="admin-vt-section-tiebreakers"></div>
                         <div id="admin-vt-section-bracket"></div>
                         <div id="admin-vt-section-structural"></div>
+                    </div>
+                </div>
+
+                <div id="admin-panel-finalaudit" class="admin-panel hidden space-y-5">
+                    <div class="rounded-3xl border border-gray-700 bg-gray-800 p-6 shadow-2xl">
+                        <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                            <div>
+                                <div class="text-[9px] font-black uppercase tracking-[0.2em] text-blue-400">Read-only payout verification</div>
+                                <h2 class="mt-1 text-xl font-black uppercase tracking-tight text-white">Final Score &amp; Points Audit</h2>
+                                <p class="mt-2 max-w-3xl text-xs font-bold leading-relaxed text-gray-400">Compares every stored match with a fresh football-data.org result, independently recalculates every team and entrant total, and flags anything that could affect prize payouts. This tool cannot change Supabase entries.</p>
+                            </div>
+                            <button id="admin-final-audit-run" type="button" onclick="fetchAdminFinalAudit()" class="shrink-0 rounded-2xl bg-blue-600 px-5 py-4 text-[10px] font-black uppercase tracking-[0.22em] text-white transition-colors hover:bg-blue-500 disabled:cursor-wait disabled:opacity-60">Run Fresh Audit</button>
+                        </div>
+                    </div>
+                    <div id="admin-final-audit-root" class="space-y-5">
+                        <div class="rounded-3xl border border-gray-700 bg-gray-800 p-10 text-center text-xs font-black uppercase tracking-[0.2em] text-gray-500">Run the audit when you are ready to verify final payouts.</div>
                     </div>
                 </div>
 
@@ -2623,6 +2640,7 @@
     <script src="js/scoring.js?v=20260628a"></script>
     <script src="js/third-place-mapping.js?v=20260416b"></script>
     <script src="js/features.js?v=20260710a"></script>
+    <script src="js/final-audit.js?v=20260720a"></script>
     <script src="js/app.js?v=20260623a"></script>
 </body>
 </html>

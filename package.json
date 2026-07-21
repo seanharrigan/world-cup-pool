@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "node --test tests/sync-world-cup-date.test.mjs tests/scoring.test.mjs tests/tournament-logic.test.mjs",
+    "test": "node --test tests/sync-world-cup-date.test.mjs tests/scoring.test.mjs tests/tournament-logic.test.mjs tests/final-audit.test.mjs",
     "stress": "node tests/stress-sim.mjs"
   },
   "keywords": [],

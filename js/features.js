@@ -4414,6 +4414,13 @@ function showAdminTab(tabId) {
     }
     if (tabId === 'verify') fetchAdminKnockoutVerify();
     if (tabId === 'verifytournament') fetchAdminVerifyTournament();
+    if (tabId === 'finalaudit') {
+        const auditRoot = document.getElementById('admin-final-audit-root');
+        if (auditRoot && !auditRoot.dataset.loaded && typeof window.fetchAdminFinalAudit === 'function') {
+            auditRoot.dataset.loaded = 'true';
+            window.fetchAdminFinalAudit();
+        }
+    }
     if (tabId === 'matchsync') {
         // Auto-load on first open (read-only, no execute)
         const rowsEl = document.getElementById('matchsync-rows');
